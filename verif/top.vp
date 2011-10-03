@@ -1,0 +1,119 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Top module for simulation, used for simple module testing. Should not
+ * be mistaken as a full fledged verification environment. It's not!
+ * 
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 03, 2011  shacham   init version - ported my wallace env
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF']); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF']);
+
+module `mname` ();
+
+   int seed;
+   
+   //; # Generate the DUT here
+   //; my $FP_obj = generate('CascadeFPMult', 'CascadeFPMult_u');
+
+   //; # Read what kind of DUT the user wanted so you can test it
+   //; my $sig_width = $FP_obj->get_param('SignalWidth');
+   //; my $exp_width = $FP_obj->get_param('ExponentWidth');
+   //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
+   //; my $product_width = 2 * $sig_width + 2;
+  
+   // local signals for driving inputs
+   logic [`$sig_width - 1`:0] 		      SigA, SigB;
+   logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
+   logic 				      IncA, IncB;
+
+   
+   // local signals for observing outputs
+   logic [`$exp_width + 1`:0] 		      ExpAB;
+   logic [`$product_width - 1`: 0] 	      ManAB;
+   logic 				      SignAB, ExpAB, ManAB, ANAB, InfAB, ZeroAB, RStickyAB;
+  
+   // local signals for expected values
+   logic [`$exp_width + 1`:0] 		      ExpAB_gld;
+   logic [`$product_width - 1`: 0] 	      ManAB_gld;
+   logic 				      SignAB_gld, ExpAB_gld, ManAB_gld, ANAB_gld, InfAB_gld, ZeroAB_gld, RStickyAB_gld;
+
+
+   // Instantiate the dut here
+   `$FP_obj->instantiate()` (
+			     // inputs:
+			     //; if ($verif_mode =~ /ON/){
+			     .dumptolog(1'b1),
+			     //; }
+			     .A({ExpA, SigA}), .B({ExpB, SigB}), .IncA(IncA), .IncB(IncB),
+			     //outputs:
+			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
+			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
+			     );
+   
+   // Manage/Run the test here
+   initial begin
+      int i;
+      $display("%t: AGENT IS ALIVE -- NOW RUN TESTS...", $time);
+      for (i=0; i<10; i++) begin
+	 SigA = $random(seed);
+	 ExpA = $random(seed);
+	 IncA = $random(seed);
+	 SigB = $random(seed);
+	 ExpB = $random(seed);
+	 IncB = $random(seed);
+	 #100;
+// FIXME:	 assert (expected_== total_)
+// FIXME:	   $display("%t: Agent: Calculating 0x%h * 0x%h -- Expected:0x%h -- Found: 0x%h", 
+// FIXME:		    $time,multiplier_, multiplicand_, expected_, total_);else
+// FIXME:	     $fatal("%t: SVA ERROR  Agent: Calculating 0x%h * 0x%h -- Expected:0x%h -- Found: 0x%h", 
+// FIXME:		    $time,multiplier_, multiplicand_, expected_, total_);
+      end // for (i=0; i<10; i++)
+      #100;
+      $display("%t: AGENT IS DONE", $time);
+   end
+   
+   //-------------------------------------------------------------------------//
+   // general intialization procedure
+   initial begin
+      int dummy;
+      // if this is a "+wave" run, it must record all signals
+      if ( $test$plusargs("wave") ) 
+	begin
+           $display("%t: Starting Wave Capture",$time);
+           //         levels  instance
+           $vcdpluson(0,        top);
+	   $vcdplusmemon(0,     top);
+        end
+      // find the seed for this run
+      if ( $test$plusargs("seed") ) 
+	begin
+	   $value$plusargs("seed=%d", seed);
+	end else begin
+           seed = 12345;
+	end
+      $display("%t:\tUsing seed %d",$time, seed);
+      dummy = $random(seed);
+   end
+   
+   
+endmodule : `mname`

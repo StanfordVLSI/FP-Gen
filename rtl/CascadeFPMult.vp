@@ -1,0 +1,213 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Sameh: FIXME -- put module description here
+ * 
+ * 
+ * Parameters:
+ * * SignalWidth, ExponentWidth, EnableDenormals
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 01, 2011   shacham   init version - ported Sameh's original code to 
+ *                         genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX;
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $sig_width = parameter(Name=>'SignalWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'ON', 
+//;                           List=>['ON','OFF'], 
+//;                           Doc=>"Enable denormal? (Fixme: Sameh, please put a better explanation for this one)");
+//;#  OLD  function integer clogb2 (input integer depth);
+//;#  OLD    integer n;
+//;#  OLD    begin
+//;#  OLD      n = depth;
+//;#  OLD      for(clogb2=0; n>0; clogb2=clogb2+1)
+//;#  OLD        n = n >> 1;
+//;#  OLD    end
+//;#  OLD  endfunction // clogb2
+//;#  OLD  localparam shift_width = clogb2(`$sig_width`+1)+1;
+//; my $shift_width = POSIX::ceil(log($sig_width+1)/log(2))+1;
+//; my $product_width = 2 * $sig_width + 2;
+
+module `mname`(
+  //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+  //; }
+    input logic [`$exp_width + $sig_width`:0] A, B,
+    input logic 			      IncA, IncB,	
+    output logic 			      SignAB, NANAB, InfAB, ZeroAB, RStickyAB,
+    output logic [`$exp_width + 1`:0] 	      ExpAB,
+    output logic [`$product_width - 1`: 0]    ManAB
+	       );
+   
+   logic [`$sig_width - 1`:0] 		      SigA, SigB;
+   logic [`$sig_width`:0] 		      ManA, ManB;
+   logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
+   logic [`$exp_width + 1`:0] 		      bias_offset, Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
+   logic [`$product_width - 1`: 0] 	      ManAB_unnormalized, ManAB_normalized;
+
+   logic 				      NANorInfA, NANorInfB, zeroSigA, zeroSigB, InfA;
+   logic 				      InfB, NANA, NANB, SignA, SignB, ZeroExpA, ZeroExpB;
+   logic 				      ZeroA, ZeroB, co_dummy0, co_dummy1, co_dummy2;
+   logic 				      co_dummy3, co_dummy4, noShift, denormalAB;
+
+
+  assign SigA  = A[`$sig_width - 1` : 0 ];
+  assign SigB  = B[`$sig_width - 1` : 0 ];
+  assign ZeroExpA  =  A[`$exp_width + $sig_width - 1`:`$sig_width`] == 0;
+  assign ZeroExpB  =  B[`$exp_width + $sig_width - 1`:`$sig_width`] == 0;
+  assign ExpA  = { A[`$exp_width + $sig_width - 1` : `$sig_width + 1` ] , ZeroExpA | A[`$sig_width`] }; // convert denormals exponents to normal
+  assign ExpB  = { B[`$exp_width + $sig_width - 1` : `$sig_width + 1` ] , ZeroExpB | B[`$sig_width`] }; // convert denormals exponents to normal
+  assign SignA = A[ `$exp_width + $sig_width` ];
+  assign SignB = B[ `$exp_width + $sig_width` ];
+
+  assign NANorInfA =  ExpA=={(`$exp_width`){1'b1}};
+  assign NANorInfB =  ExpB=={(`$exp_width`){1'b1}};
+  assign zeroSigA  =  SigA==0 & ~IncA;
+  assign zeroSigB  =  SigB==0 & ~IncB;
+  assign ZeroA     =  zeroSigA & ZeroExpA;
+  assign ZeroB     =  zeroSigB & ZeroExpB;
+  assign InfA      =  zeroSigA & NANorInfA;
+  assign InfB      =  zeroSigB & NANorInfB;
+  assign NANA      = ~zeroSigA & NANorInfA;
+  assign NANB      = ~zeroSigB & NANorInfB;
+
+  assign NANAB = NANA | NANB | (InfA & ZeroB) | (InfB & ZeroA);
+  assign InfAB = (InfB | InfA) & ~NANAB ;
+
+
+  assign ManA = { ~ZeroExpA , SigA };
+  assign ManB = { ~ZeroExpB , SigB };
+
+   // BIAS = {($exp_width-1){1'b1}} = {(`$exp_width-1`){1'b1}}
+  assign bias_offset = - {(`$exp_width-1`){1'b1}}; // sign extend the bias to be exp_width+2=`$exp_width`+2 wide
+
+  // Eab = Ea + Eb - BIAS - LZD_A - LZD_B
+
+   // sign extend the exponents by 2 bits since the maximum positive result is:
+   //         2^($exp_width+1) - 2^($exp_width-1) - 1 = 2^(`$exp_width+1`) - 2^(`$exp_width-1`) - 1
+   // and the minimum negative result is: 
+   //         - 2^($exp_width-1) + 1 = - 2^(`$exp_width-1`) + 1
+
+  DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
+					.ci(1'b0), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
+
+   //; if ($enable_denormals=~ /ON/i){
+   // enable_denormals = on
+    logic [`$exp_width + 1`:0] Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5, Eab_1_ps0;
+    logic [`$exp_width + 1`:0] Eab_1_ps1, ExpAB_1, denormalShiftConst, SHD_ps0, SHD_ps1, SHD_wide;
+    logic [`2*$product_width - 1` : 0] ManAB_shifted;
+    logic [`$shift_width - 1`:0] LZD_A, LZD_B, normalShiftConst, SHN_ps0, SHN_ps1, SHN;
+    logic [`$shift_width + 1`:0] shiftAmount;
+    logic co_dummy5, co_dummy6, co_dummy7;
+
+    DW_lzd #(`$sig_width`+1) LZDA ( .a({ManA[`$sig_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
+    DW_lzd #(`$sig_width`+1) LZDB ( .a({ManB[`$sig_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
+
+    DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0),.b(Eab_ps1),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A}),
+					  .ci(1'b1), .carry(Eab_ps2), .sum(Eab_ps3), 
+					  .co(co_dummy1) );
+    DW01_csa #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2),.b(Eab_ps3),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
+					  .ci(1'b1), .carry(Eab_ps4), .sum(Eab_ps5), 
+					  .co(co_dummy2) );
+    DW01_csa #(`$exp_width`+2) EAB_1_CSA (.a(Eab_ps2),.b(Eab_ps3),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
+					  .ci(1'b0), .carry(Eab_1_ps0), .sum(Eab_1_ps1), 
+					  .co(co_dummy7) );
+
+    assign ExpAB_1 = Eab_1_ps0 + Eab_1_ps1; // ExpAB - 1
+    CompoundAdder#(`$exp_width`+2) ExpAdd (.a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+
+    //Normal Shift Amount = `$sig_width` + 1 - LZD_A - LZD_B = `$sig_width` + 3 + ~LZD_A + ~LZD_B
+    assign normalShiftConst = `$sig_width` + 3;
+    DW01_csa #(`$shift_width`) SHN_CSA (.a(~LZD_A),.b(~LZD_B),.c(normalShiftConst),.ci(1'b0), .carry(SHN_ps0), .sum(SHN_ps1), .co(co_dummy5) );
+    assign SHN = SHN_ps0 + SHN_ps1;
+
+    //Denormal Shift Amount = `$sig_width` + 1 + 1 - Eab_ps0 - Eab_ps1 = `$sig_width` + 4 + ~Eab_ps0 + ~Eab_ps1
+    assign denormalShiftConst = `$sig_width` + 4;
+    DW01_csa #(`$exp_width`+2) SHD_CSA (.a(~Eab_ps0),.b(~Eab_ps1),.c(denormalShiftConst),.ci(1'b0), .carry(SHD_ps0), .sum(SHD_ps1), .co(co_dummy6) );
+    assign SHD_wide = SHD_ps0 + SHD_ps1;
+
+    assign denormalAB = ExpAB_1[`$exp_width`+1];
+    assign shiftAmount = denormalAB? (|SHD_wide[`$exp_width`+1:`$shift_width+2`] ? 
+				      {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) : {1'b0,SHN};
+
+    assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>shiftAmount;
+    assign ManAB_normalized = ManAB_shifted[`$product_width + $sig_width`:`$sig_width`+1];
+    assign RStickyAB = |ManAB_shifted[`$sig_width`:0] | ( ManAB_normalized==0 & ~ZeroAB);
+
+   //; }else{           
+   // enable_denormals = off
+   assign denormalAB = 0;
+   assign ManAB_normalized = ManAB_unnormalized;
+   assign RStickyAB = 0;
+   CompoundAdder#(`$exp_width + 2`) ExpAdd (.a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+   //; }
+
+
+
+  logic [`$product_width + 1`: 0] ManAB_pp0, ManAB_pp1;
+  OSMultiplier #(`$sig_width+1`,2) Mul ( .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1));
+  assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
+
+
+/*
+  DW02_mult #(`$sig_width`+1, `$sig_width`+1 ) U1 ( .A(ManA),   .B(ManB),
+                                                  .TC(1'b0), //Two's complement: 0 = unsigned, 1 = signed
+                                                  .PRODUCT(ManAB_unnormalized));
+*/
+
+
+  assign noShift = ManAB_normalized[`$product_width - 1`];
+  assign ZeroAB = ZeroA|ZeroB;
+//  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
+  assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
+
+  assign ManAB = ManAB_normalized;
+  assign SignAB = SignA ^ SignB;
+
+
+
+//; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+     begin
+	$display ("`mname`: ZeroExpA=%b ZeroA=%b InfA=%b ExpA=%h ManA=%h, SigA=%h IncA=%b",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
+	$display ("`mname`: ZeroExpB=%b ZeroB=%b InfB=%b ExpB=%h ManB=%h, SigB=%h IncB=%b",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB);
+	$display ("`mname`: ExpAB =%h , ManAB =%h",ExpAB, ManAB);
+	$display ("`mname`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
+	$display ("`mname`: ManAB_pp0=%b", ManAB_pp0);
+	$display ("`mname`: ManAB_pp1=%b", ManAB_pp1);
+	$display ("`mname`: ManAB_unnormalized =%h ManAB_normalized =%h ",ManAB_unnormalized,ManAB_normalized);
+	$display ("`mname`: noShift =%b ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
+	$display ("`mname`: ZeroAB=%b InfAB=%b NANAB=%b RStickyAB=%b",ZeroAB, InfAB, NANAB, RStickyAB);
+     end
+ //; }
+
+endmodule : `mname`
