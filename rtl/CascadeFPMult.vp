@@ -26,7 +26,8 @@
  * PARAMETERIZATION
  * ****************************************************************************/
 //; # Perl Libraries
-//; use POSIX;
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -42,16 +43,9 @@
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'ON', 
 //;                           List=>['ON','OFF'], 
 //;                           Doc=>"Enable denormal? (Fixme: Sameh, please put a better explanation for this one)");
-//;#  OLD  function integer clogb2 (input integer depth);
-//;#  OLD    integer n;
-//;#  OLD    begin
-//;#  OLD      n = depth;
-//;#  OLD      for(clogb2=0; n>0; clogb2=clogb2+1)
-//;#  OLD        n = n >> 1;
-//;#  OLD    end
-//;#  OLD  endfunction // clogb2
-//;#  OLD  localparam shift_width = clogb2(`$sig_width`+1)+1;
-//; my $shift_width = POSIX::ceil(log($sig_width+1)/log(2))+1;
+//;
+//; # And some local variables
+//; my $shift_width = CeilOfLog2($sig_width+1) + 1;
 //; my $product_width = 2 * $sig_width + 2;
 
 module `mname`(

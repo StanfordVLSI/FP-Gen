@@ -40,7 +40,7 @@ GENESIS_PRIMITIVES :=
 
 GENESIS_ENV :=		$(TOP_MODULE).vp
 
-GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp CompoundAdder.vp
+GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp CompoundAdder.vp SklanskyAdderTree.vp
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 

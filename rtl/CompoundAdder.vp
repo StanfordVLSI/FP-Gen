@@ -65,7 +65,8 @@ module `mname` (
   assign g = in0 & in1;
   assign p = in0 ^ in1;
 
-  SklanskyAdderTree #(`$width`) CompoundAdderTree (.g(g), .p(p), .G(G), .P(P));
+  //; my $CompoundAdderTree_obj = generate('SklanskyAdderTree', 'CompoundAdderTree', Width=>$width); 
+  `$CompoundAdderTree_obj->instantiate` (.g(g), .p(p), .G(G), .P(P));
 
    // the cout is not accurate
   assign {cout0, carry0} = { G   , 1'b0}; 

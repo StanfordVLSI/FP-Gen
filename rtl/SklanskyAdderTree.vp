@@ -1,0 +1,86 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Sameh: FIXME -- put module description here
+ * Note that G & P are group signals from 0 to i, while g & p are individual 
+ * signals.
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor); # For floor rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>109, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+
+module `mname` (
+    input logic [`$width-1`:0] g,p,
+    output logic [`$width-1`:0] G,P
+		);
+   
+   //; if ($synth_mode =~ /ON/) {
+   /* 
+    synopsys dc_tcl_script_begin
+    set_ungroup [current_design] true
+    set_flatten true -effort high -phase true -design [current_design]
+    */
+   //; }
+
+   //; if ($width > 3) {
+     // Use internal signals for upper part of the tree:
+     logic [`$width-floor($width/2)-1`:0] G_Upper, P_Upper;
+
+     //;# Generate upper and lower trees
+     //; my $lowerTree_obj = generate('SklanskyAdderTree', 'lowerTree', Width=>floor($width/2));
+     //; my $UpperTree_obj = generate('SklanskyAdderTree', 'UpperTree', Width=>$width-floor($width/2)); 
+
+     // Instantiate upper and lower trees
+     `$lowerTree_obj->instantiate()` (.g(g[`floor($width/2)-1`:0]), .p(p[`floor($width/2)-1`:0]),
+				      .G(G[`floor($width/2)-1`:0]), .P(P[`floor($width/2)-1`:0])
+				      );
+
+     `$UpperTree_obj->instantiate()` (.g(g[`$width-1`:`floor($width/2)`]), .p(p[`$width-1`:`floor($width/2)`]),
+     				   .G(G_Upper[`$width-floor($width/2)-1`:0]),.P(P_Upper[`$width-floor($width/2)-1`:0])
+     				   );
+     
+     //; for (my $i=0 ; $i<$width-floor($width/2); $i++){
+       assign G[`$i+floor($width/2)`] = G_Upper[`$i`] | (P_Upper[`$i`] & G[`floor($width/2)-1`]);
+       assign P[`$i+floor($width/2)`] = P_Upper[`$i`] & P[`floor($width/2)-1`];
+     //; } # End of "for (my $i=0..."
+   
+
+   //; } else { # I.e., if NOT $width > 3...
+     assign G[0] = g[0];
+     assign P[0] = p[0];
+     //; for (my $i=1 ; $i<$width ; $i++){
+       assign G[`$i`] = g[`$i`] | (p[`$i`] & G[`$i-1`]);
+       assign P[`$i`] = p[`$i`] & P[`$i-1`];
+     //; } # End of "for (my $i=0..."
+   //; } 
+   
+endmodule
