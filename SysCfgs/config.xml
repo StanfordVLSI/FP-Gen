@@ -4,7 +4,7 @@
   <InstanceName>top</InstanceName>
   <Parameters>
     <ParameterItem>
-      <Doc></Doc>
+      <Doc>Verification mode determines whether or not monitors and drivers are on. Possible values are ON or Off.</Doc>
       <Name>VERIF_MODE</Name>
       <Range>
         <List>ON</List>
@@ -29,15 +29,6 @@
       <InstanceName>CascadeFPMult_u</InstanceName>
       <Parameters>
         <ParameterItem>
-          <Doc>Width of the signal for the multiplier (default is IEEE Double, 52 bit)</Doc>
-          <Name>SignalWidth</Name>
-          <Range>
-            <Min>4</Min>
-            <Step>1</Step>
-          </Range>
-          <Val>52</Val>
-        </ParameterItem>
-        <ParameterItem>
           <Doc>Width of the signal for the multiplier (default is IEEE Double, 11 bit)</Doc>
           <Name>ExponentWidth</Name>
           <Range>
@@ -54,6 +45,15 @@
             <List>OFF</List>
           </Range>
           <Val>ON</Val>
+        </ParameterItem>
+        <ParameterItem>
+          <Doc>Width of the signal for the multiplier (default is IEEE Double, 52 bit)</Doc>
+          <Name>SignalWidth</Name>
+          <Range>
+            <Min>4</Min>
+            <Step>1</Step>
+          </Range>
+          <Val>52</Val>
         </ParameterItem>
       </Parameters>
       <SubInstances>
