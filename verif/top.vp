@@ -50,12 +50,12 @@ module `mname` ();
    // local signals for observing outputs
    logic [`$exp_width + 1`:0] 		      ExpAB;
    logic [`$product_width - 1`: 0] 	      ManAB;
-   logic 				      SignAB, ExpAB, ManAB, ANAB, InfAB, ZeroAB, RStickyAB;
+   logic 				      SignAB, ANAB, InfAB, ZeroAB, RStickyAB;
   
    // local signals for expected values
    logic [`$exp_width + 1`:0] 		      ExpAB_gld;
    logic [`$product_width - 1`: 0] 	      ManAB_gld;
-   logic 				      SignAB_gld, ExpAB_gld, ManAB_gld, ANAB_gld, InfAB_gld, ZeroAB_gld, RStickyAB_gld;
+   logic 				      SignAB_gld, ANAB_gld, InfAB_gld, ZeroAB_gld, RStickyAB_gld;
 
 
    // Instantiate the dut here

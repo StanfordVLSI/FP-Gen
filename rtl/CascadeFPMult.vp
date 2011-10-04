@@ -143,7 +143,9 @@ module `mname`(
 					  .co(co_dummy7) );
 
     assign ExpAB_1 = Eab_1_ps0 + Eab_1_ps1; // ExpAB - 1
-    CompoundAdder#(`$exp_width`+2) ExpAdd (.a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+   
+   //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
+   `$ExpAdd_obj->instantiate()` (.a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
 
     //Normal Shift Amount = `$sig_width` + 1 - LZD_A - LZD_B = `$sig_width` + 3 + ~LZD_A + ~LZD_B
     assign normalShiftConst = `$sig_width` + 3;

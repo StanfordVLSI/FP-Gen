@@ -11,6 +11,9 @@ ifndef SIM_ENGINE
 SIM_ENGINE := synopsys
   $(warning WARNING: SIM_ENGINE not specified. Using default SIM_ENGINE=synopsys) 
   $(warning WARNING: Rerun with SIM_ENGINE=synopsys or SIM_ENGINE=mentor)
+ifndef SYNOPSYS
+ $(error ERROR: Path to SYNOPSYS not set)
+endif
 endif
 
 
@@ -37,7 +40,7 @@ GENESIS_PRIMITIVES :=
 
 GENESIS_ENV :=		$(TOP_MODULE).vp
 
-GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp 
+GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp CompoundAdder.vp
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 
@@ -108,7 +111,8 @@ VERILOG_DESIGN :=
 
 VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
 
-VERILOG_LIBS := 	
+VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
+			+incdir+$(SYNOPSYS)/dw/sim_ver/
 
 
 # "-sverilog" enables system verilog

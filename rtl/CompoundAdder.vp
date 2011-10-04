@@ -1,0 +1,102 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Sameh: FIXME -- put module description here
+ * 
+ * 
+ * Parameters:
+ * * Width, EnableCarryIn, ZeroWidth
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 03, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>109, Min=>2, Step=>1,
+//;                       Doc=>"Width of signals to be added");
+//; my $enable_ci = parameter(Name=>'EnableCarryIn', Val=>'OFF', List=>['ON','OFF'],
+//;                       Doc=>"FIXME Sameh: what does this param do?");
+//; my $zero_width = parameter(Name=>'ZeroWidth', Val=>0, Min=>0, Step=>1,
+//;                       Doc=>"FIXME Sameh: what does this param do?");
+
+module `mname` (
+    //; if ($verif_mode =~ /ON/){
+    input dumptolog,
+    //; }
+    input [`$width-1`:0] a, b,
+    input 	      ci,
+    output 	      co0, co1, zero0, zero1,
+    output [`$width-1`:0] sum0,sum1
+		);
+   
+
+   logic [`$width-1`:0]   g,p,G,P, carry0, carry1;
+   logic [`$width-1`:0]   in0, in1;
+   logic 		  cout, cout0, cout1;
+
+   //; if ($enable_ci =~ /ON/) {
+   //Half adder
+   assign in0          = a^b;
+   assign {cout , in1} = { a&b , ci};
+   //; }else{
+   assign cout = 0;
+   assign in0 = a ;
+   assign in1 = b;
+   //; }
+   
+  assign g = in0 & in1;
+  assign p = in0 ^ in1;
+
+  SklanskyAdderTree #(`$width`) CompoundAdderTree (.g(g), .p(p), .G(G), .P(P));
+
+   // the cout is not accurate
+  assign {cout0, carry0} = { G   , 1'b0}; 
+  assign {cout1, carry1} = { G|P , 1'b1};
+
+  assign sum0 = p ^ carry0;
+  assign sum1 = p ^ carry1;
+
+  assign co0 = cout0 | cout;
+  assign co1 = cout1 | cout;
+
+/*
+  assign {co0, sum0} = a + b;
+  assign {co1, sum1} = a + b + 1;
+*/
+
+   //; if ($zero_width > 0){
+   SumComparator #(`$zero_width`) SC0 (.a(in0[`$zero_width-1`:0]), .b(in1[`$zero_width-1`:0]), .sum({ (`$zero_width`){1'b0}}), .equal(zero0));
+   SumComparator #(`$zero_width`) SC1 (.a(in0[`$zero_width-1`:0]), .b(in1[`$zero_width-1`:0]), .sum({ (`$zero_width`){1'b1}}), .equal(zero1));
+   //; }
+
+
+   
+   //; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+   begin
+      $display ("CompoundAdder: a=%h b=%h ci=%b",a, b, ci);
+      $display ("CompoundAdder: sum0=%h co0=%h zero0=%b",sum0, co0, zero0);
+      $display ("CompoundAdder: sum1=%h co1=%h zero1=%b",sum1, co1, zero1);
+   end
+   //; }
+
+endmodule
+
