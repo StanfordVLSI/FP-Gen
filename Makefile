@@ -1,9 +1,12 @@
--include Makefile.local
-
 ################################################################################
 ################ Makefile Definitions
 ################################################################################
+# This little trick finds where the makefile exists
+FPGEN_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
+$(warning WARNING: FPGEN home set to $(FPGEN_HOME)) 
 
+# this line enables a local Makefile to override values of the main makefile
+-include Makefile.local
 
 ########### Generic Env Defs ############
 #########################################
@@ -25,12 +28,12 @@ TOP_MODULE := top
 
 # list src folders and include folders
 GENESIS_SRC := 	-srcpath ./			\
-		-srcpath ./rtl			\
-		-srcpath ./verif			
+		-srcpath $(FPGEN_HOME)/rtl	\
+		-srcpath $(FPGEN_HOME)/verif			
 
 GENESIS_INC := 	-incpath ./			\
-		-incpath ./rtl			\
-		-incpath ./verif
+		-incpath $(FPGEN_HOME)/rtl	\
+		-incpath $(FPGEN_HOME)/verif
 
 # vpath directive tells where to search for *.vp and *.vph files
 vpath 	%.vp  $(GENESIS_SRC)
