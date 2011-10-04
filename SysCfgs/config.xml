@@ -13,7 +13,7 @@
       <Val>ON</Val>
     </ParameterItem>
     <ParameterItem>
-      <Doc></Doc>
+      <Doc>Synthesis mode determines whether or not special synthesis constructs are used. Possible values are ON or Off.</Doc>
       <Name>SYNTH_MODE</Name>
       <Range>
         <List>ON</List>
