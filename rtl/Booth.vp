@@ -1,0 +1,144 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Booth encoding for a multiplier.
+ * 
+ * Booth encoder produce the partial products for computing (x+xinc)*(y+yinc)
+ * 
+ * xinc yinc  result
+ * 0    0     xy
+ * 0    1     xy+x     (through y[-1]=yinc of booth encoding)
+ * 1    0     xy+y     (through adding y as pp[0])
+ * 1    1     xy+x+y+1 (through both methods and 1 is added to pp[2] to S[0])
+ * 
+ * Sign encoding:
+ * --------------
+ * SSSSSS.....S = -1 + ~S
+ * 
+ * S0 S0 S0 S0 S0 S0 S0 S0 S0 S0                              ~S0                      ~S0  S0  S0
+ *                                                          0  -1
+ * S1 S1 S1 S1 S1 S1 S1 S1                 =            ~S1               =          1 ~S1
+ *                                                    0  -1
+ * S2 S2 S2 S2 S2 S2                              ~S2                          1 ~S2
+ *                                              0  -1
+ * 
+ * 
+ * Final tree:
+ * -----------                  __
+ *                              S0 S0 S0 *  *  *  *  *  *  *  *  0  0
+ *                              __
+ *                           1  S1 *  *  *  *  *  *  *  *  0  S0
+ *                        __
+ *                     1  S2 *  *  *  *  *  *  *  *  0  S1
+ *                  __
+ *               1  S3 *  *  *  *  *  *  *  *  0  S2
+ * 
+ *   __
+ * 1 Sn *  *  *  *  *  *  *  *  0  S(n-1)
+ * 
+ *                           Sn = 0 (because y is extended)    
+ * 
+ * 
+ * Parameters:
+ * * Width, BoothType
+ * 
+ * Exported Parameters:
+ * * PPWidth, PPCount
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis + a little restructuring
+ * 
+ * ****************************************************************************/
+
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3,
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)");
+//;
+//; # Declare some local variables
+//; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3 
+//; my $pp_count = ($booth==1)? $width : ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
+//; my $pp_width = ($booth==1)? $width+1 : $width+3*$booth;
+//;
+//; # Inform the world about the partial products properties
+//; parameter(Name=>'PPWidth', Val=>$pp_width, Force=>1, 
+//;           Doc=>"This is the calculated partial product width for Booth=$booth and Width=$width");
+//; parameter(Name=>'PPCount', Val=>$pp_count+1, Force=>1, 
+//;           Doc=>"This is the calculated number of partial products for Booth=$booth and Width=$width. ".
+//;                "Note that it includes a +1 to account for xinc and yinc");
+
+module `mname`(
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input [`$width-1`:0] x, y,
+    input 		 xinc, yinc,
+    output [`$pp_width-1`:0] pp [0:`$pp_count`] // `$pp_count`+1 to account for xinc and yinc
+		);
+   
+   logic [`$extended_width`-1:0] extended_y;
+   //yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
+   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
+   
+   logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
+   logic [`$pp_count-1`:0] 	 S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended b
+
+   logic [`$width-1`:0] 	 x_b;
+   assign x_b = ~x;
+   
+   logic [`$extended_width-2`:0] y_edge_vector;
+   assign y_edge_vector = extended_y[`$extended_width-1`:1] ~^ extended_y[`$extended_width-2`:0];
+
+   //; if ($booth==2) {
+   //;   for(my $i=0; $i < $pp_count; $i++){
+   //;     my $BoothEnc_obj = generate('Booth2Enc', "Booth2Enc_u$i", Width=>$width);
+   `$BoothEnc->instantiate`(.x(x), .x_b(x_b), 
+			   .y_edge_vector(y_edge_vector[`2*$i+1`:`2*$i`]), .y2(extended_y[`2*$i+2`]) ,
+			   .pp(initial_pp[`$i`]), .S(S[`$i`]));
+   //;   }
+   //; } elsif ($booth==3) {
+   logic [`$width+1`:0] 	 x3, x3_b;
+   HardMultiple3 #(`$width`) HM3 (.x(x), .x3(x3));
+   assign x3_b = ~ x3;
+   //;   for(my $i=0; $i < $pp_count; $i++){
+   booth3encoder #(`$width`) booth(.x(x), .x_b(x_b), 
+				   .x3(x3), .x3_b(x3_b),
+				   .y_edge_vector(y_edge_vector[`3*$i+2`:`3*$i`]), .y3(extended_y[`3*$i+3`]) , 
+				   .pp(initial_pp[`$i`]), .S(S[`$i`])
+				   );
+   //;   }
+   //; }
+      
+   assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
+   assign pp[1] = {initial_pp[0][`$width`+`$booth`-1], {(`$booth`){S[0]}}, initial_pp[0][`$width`+`$booth`-2:0], {(`$booth`){1'b0}}};
+   assign pp[2] = {1'b0, {(`$booth`-1){1'b1}}, initial_pp[1], {(`$booth`-2){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
+   //; for(my $i=3; $i < $pp_count+1; $i++) {
+   assign pp[`$i`] = {1'b0, {(`$booth`-1){1'b1}}, initial_pp[`$i-1`], {(`$booth-1`){1'b0}},S[`$i-2`]};
+   //; }
+
+
+endmodule: `mname`
+
