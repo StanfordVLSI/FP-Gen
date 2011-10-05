@@ -1,50 +1,68 @@
-//;# Import Libs
-//; use POSIX ();
-//;
-//  PARAMETERS:
-//; my $N = parameter(name=>'N', val=>4, 
-//;                   doc=>"This is the bit width of the partial products",
-//;                   list=>[1,2,3,4,5,6,7,8,9,16,32,64]);
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
 
-// EXAMPLE: Parameters that are just for demonstration of parameters
-//==================================================================
-//; my $internal;
-//; my $cond = parameter(name=>'COND', val=>'false', 
-//;                      doc=>"the value can be true or false",
-//;                       list=>['false','true']);
-//; if ($cond =~ /true/){
-//;   $internal = parameter(name=>'Internal', val=>4, doc=>'This param only exists if COND==true');
-//; }
-//; my $withMin = parameter(name=>'ParWithMin', val=>107, min=>106);
-//; my $withMax = parameter(name=>'ParWithMax', val=>200, max=>210);
-//; my $withMinStep = parameter(name=>'ParWithMinStep', val=>309, min=>300, step=>3);
-//; my $withMaxStep = parameter(name=>'ParWithMaxStep', val=>404, max=>410, step=>2);
-//; my $withMinMax = parameter(name=>'ParWithMinMax', val=>505, min=>500, max=>510);
-//; my $withMinMaxStep = parameter(name=>'ParWithMinMaxStep', val=>622, min=>610, max=>630, step=>2);
-//;
-//; my $me = parameter(name=>'ParamExamplePointerToMe', val=>$self);
-//; my $hsh = parameter(name=>'ParamHash', val=>{Assoc=>4, waySize=>4096, wordSize=>64, lineSize=>256});
-//; my $you = parameter(name=>'ParamComplexStruct', 
-//;                     val=>['value', [1,2,3,4], {a=>1,b=>2,c=>3,d=>['a','b','c','x']}],
-//;                     doc=>'This is realy a complex type that no one should ever use as parameter');
-//==================================================================
+/* *****************************************************************************
+ * Description:
+ * This is a Wallace summation tree for PPCount partial products of PPWidth width.
+ * 
+ *                  FIXME OFER: merge sum and carry using DW01_csa
+ * 
+ * Parameters:
+ * * PPWidth, BoothType, PPCount
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported my original no booth wallace
+ * 
+ * ****************************************************************************/
 
-// Wallace tree for N=`$N` partioal products of width N=`$N` //
-module `mname()` 
-  ( input logic [`$N-1`:0] pp[`$N-1`:0],
-    output logic [`2*$N-1`:0] sum,	   
-    output logic [`2*$N-1`:0] carry		   
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor); # For floor rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $pp_width = parameter(Name=>'PPWidth', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Bit width of the partial products");
+//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
+//; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>3, Step=>1,
+//;                       Doc=>"What booth was used to create the partial products? ".
+//;                            "(This determines the slope of the partial products ".
+//;                            "paralleloid)");
+//;
+//; # Some variables initialization
+//; my $hight = $pp_count;
+//; my $width = $pp_width + $booth*($pp_count-1);  # add a booth width for every extra partial product
+//; my $final_width = $width;
+
+module `mname()` ( 
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$pp_width-1`:0] pp [0:`$pp_count-1`],
+    output [`$width-1`:0] out0,out1
    );
 
-   //; my $hight = $N;
-   //; my $width = 2*$N;  
    //; my $step = 0;
    // make pps rectangular (insert 0s!)  
-   logic [`2*$N-1`:0] 	      pp0_step`$step`;
-   assign pp0_step`$step` = {{(`$N`){1'b0}}, pp[0]};
-   //; for (my $i=1; $i<$N; $i++) {
-   logic [`2*$N-1`:0] 	      pp`$i`_step`$step`;
-   assign pp`$i`_step`$step` = {{(`$N-$i`){1'b0}}, pp[`$i`], {`$i`{1'b0}}};
+   logic [`$width-1`:0]   pp0_step`$step`;
+   assign pp0_step`$step` = {{(`$width-$pp_width`){1'b0}}, pp[0]};
+   //; for (my $i=1; $i<$pp_count; $i++) {
+   logic [`$width-1`:0] 	      pp`$i`_step`$step`;
+   assign pp`$i`_step`$step` = {{(`$width-$pp_width-$i*$booth`){1'b0}}, pp[`$i`], {`$i*$booth`{1'b0}}};
    //; }
 
 
@@ -52,7 +70,7 @@ module `mname()`
    //;   $step++; $width++;
    // STARTING TREE REDUCTION STEP `$step`
    // Sum:
-   //;   for (my $i=0; $i < POSIX::floor($hight/3); $i++){
+   //;   for (my $i=0; $i < floor($hight/3); $i++){
    logic [`$width-1`:0]       pp`$i`_step`$step`;
    assign pp`$i`_step`$step` = {1'b0, // pad with a zero
 				pp`3*$i`_step`$step-1` ^ 
@@ -62,8 +80,8 @@ module `mname()`
    //;   } # end of "for (my $i..."
 
    // Carry:
-   //;   for (my $i=0; $i < POSIX::floor($hight/3); $i++){
-   //;     my $idx = $i + POSIX::floor($hight/3);
+   //;   for (my $i=0; $i < floor($hight/3); $i++){
+   //;     my $idx = $i + floor($hight/3);
    logic [`$width-1`:0] pp`$idx`_step`$step`;
    assign pp`$idx`_step`$step` = {(pp`3*$i`_step`$step-1` & pp`3*$i+1`_step`$step-1`) | 
 				  (pp`3*$i+1`_step`$step-1` & pp`3*$i+2`_step`$step-1`) |
@@ -74,20 +92,20 @@ module `mname()`
    
    // Left overs:
    //;   for (my $i=0; $i < $hight%3; $i++){
-   //;     my $old_idx = $i + 3*POSIX::floor($hight/3);
-   //;     my $new_idx = $i + 2 * POSIX::floor($hight/3);
+   //;     my $old_idx = $i + 3*floor($hight/3);
+   //;     my $new_idx = $i + 2 * floor($hight/3);
    logic [`$width-1`:0] pp`$new_idx`_step`$step`;
    assign pp`$new_idx`_step`$step` = {1'b0, pp`$old_idx`_step`$step-1`};
    //;   } # end of "for (my $i..."
-   //; $hight = 2 * POSIX::floor($hight/3) + $hight%3;
+   //; $hight = 2 * floor($hight/3) + $hight%3;
    // END TREE REDUCTION STEP `$step`
 
    
    //; } # end of "while($hight > 2)..."
 
    // Ignore all the top bits and assign final PPs to output
-   assign sum = pp0_step`$step`[`2*$N-1`:0];
-   assign carry = pp1_step`$step`[`2*$N-1`:0];
+   assign out0 = pp0_step`$step`[`$final_width-1`:0];
+   assign out1 = pp1_step`$step`[`$final_width-1`:0];
    
    
 endmodule : `mname` 
