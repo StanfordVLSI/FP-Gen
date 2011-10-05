@@ -9,9 +9,8 @@
 
 /* *****************************************************************************
  * Description:
- * Sameh: FIXME -- put module description here
- * Note that G & P are group signals from 0 to i, while g & p are individual 
- * signals.
+ * Sklansky tree module creates group propagate and generate signals P & G from bit proapagate and generate signals p, g
+ * Note that G[i] & P[i] are group signals for bits from 0 to i, while g[i] & p[i] are individual signals. 
  * 
  * 
  * Parameters:
