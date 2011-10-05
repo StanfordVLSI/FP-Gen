@@ -9,7 +9,7 @@
 
 /* *****************************************************************************
  * Description:
- * Sameh: FIXME -- put module description here
+ * A floating point multiplier that takes two floating point number A, B and produces the result AxB in full precision without any truncation. The output may be used for constructing a cascade FMA or rounded to input precision to construct a FP multiplier
  * 
  * 
  * Parameters:
@@ -42,7 +42,7 @@
 //;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'ON', 
 //;                           List=>['ON','OFF'], 
-//;                           Doc=>"Enable denormal? (Fixme: Sameh, please put a better explanation for this one)");
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values of inputs A and B correctly");
 //;
 //; # And some local variables
 //; my $shift_width = CeilOfLog2($sig_width+1) + 1;
