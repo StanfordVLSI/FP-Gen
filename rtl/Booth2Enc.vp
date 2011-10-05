@@ -1,0 +1,72 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Booth TWO encoding for a multiplier.
+ * 
+ * Booth encoder produce the partial products for computing (x+xinc)*(y+yinc)
+ * 
+ * Modified Booth 2 encoder
+ * 
+ * Y[2:0]     out  =  pp   +   S
+ * 
+ * 0 0 0      +0      100000  +0      
+ * 0 0 1      +X      (10X)   +0
+ * 0 1 0      +X      (10X)   +0
+ * 0 1 1      +2X     (1X0)   +0
+ * 1 0 0      -2X     (0~X1)  +1
+ * 1 0 1      -X      (01~X)  +1
+ * 1 1 0      -X      (01~X)  +1
+ * 1 1 1      -0      011111  +1
+ * 
+ * NOTE: There is 1 to be augmented to the left of the partial products 
+ *       excepf for the first one
+ * 
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 05, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+
+
+module `mname` (
+    input [`$width-1`:0]    x, x_b,
+    input [1:0] 	    y_edge_vector,  // y_edge_vector[i] = y[i]==y[i+1]
+    input 		    y2,             // y[3]
+    output [`$width+1`:0]   pp,             //extend width by two: 1 bit for sign and second for shifting for 2X multiple
+    output 		    S
+		);
+   
+   logic [`$width-1`:0]     x_out;
+   assign S = y2;
+   assign x_out = S ? x_b: x;
+   assign pp = y_edge_vector[0] ? y_edge_vector[1]? {~S,{(`$width+1`){S}}} : {~S,x_out,S} : {~S,S,x_out};
+endmodule
+

@@ -115,7 +115,7 @@ module `mname`(
    //; if ($booth==2) {
    //;   for(my $i=0; $i < $pp_count; $i++){
    //;     my $BoothEnc_obj = generate('Booth2Enc', "Booth2Enc_u$i", Width=>$width);
-   `$BoothEnc->instantiate`(.x(x), .x_b(x_b), 
+   `$BoothEnc_obj->instantiate`(.x(x), .x_b(x_b), 
 			   .y_edge_vector(y_edge_vector[`2*$i+1`:`2*$i`]), .y2(extended_y[`2*$i+2`]) ,
 			   .pp(initial_pp[`$i`]), .S(S[`$i`]));
    //;   }
