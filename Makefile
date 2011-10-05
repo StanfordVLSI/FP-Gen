@@ -2,8 +2,8 @@
 ################ Makefile Definitions
 ################################################################################
 # This little trick finds where the makefile exists
-FPGEN_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
-$(warning WARNING: FPGEN home set to $(FPGEN_HOME)) 
+DESIGN_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
+$(warning WARNING: FPGEN home set to $(DESIGN_HOME)) 
 
 # this line enables a local Makefile to override values of the main makefile
 -include Makefile.local
@@ -28,12 +28,12 @@ TOP_MODULE := top
 
 # list src folders and include folders
 GENESIS_SRC := 	-srcpath ./			\
-		-srcpath $(FPGEN_HOME)/rtl	\
-		-srcpath $(FPGEN_HOME)/verif			
+		-srcpath $(DESIGN_HOME)/rtl	\
+		-srcpath $(DESIGN_HOME)/verif			
 
 GENESIS_INC := 	-incpath ./			\
-		-incpath $(FPGEN_HOME)/rtl	\
-		-incpath $(FPGEN_HOME)/verif
+		-incpath $(DESIGN_HOME)/rtl	\
+		-incpath $(DESIGN_HOME)/verif
 
 # vpath directive tells where to search for *.vp and *.vph files
 vpath 	%.vp  $(GENESIS_SRC)
@@ -43,7 +43,8 @@ GENESIS_PRIMITIVES :=
 
 GENESIS_ENV :=		$(TOP_MODULE).vp
 
-GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp CompoundAdder.vp SklanskyAdderTree.vp
+GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp CompoundAdder.vp 	\
+			SklanskyAdderTree.vp Multiplier.vp
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 

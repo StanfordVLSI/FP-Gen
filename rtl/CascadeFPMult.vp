@@ -170,7 +170,8 @@ module `mname`(
 
 
   logic [`$product_width + 1`: 0] ManAB_pp0, ManAB_pp1;
-  OSMultiplier #(`$sig_width+1`,2) Mul ( .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1));
+   //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$sig_width+1);
+   `$Mul_obj->instantiate()` ( .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1));
   assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
 
 
