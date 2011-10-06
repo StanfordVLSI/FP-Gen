@@ -1,0 +1,155 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * -----------
+ * TestBench for FP Mult-Acc
+ * 
+ * Runtime Arguments 
+ * -----------------
+ * (Via the "make run RUN=+<runtime_flag[=value]>" notation)
+ * * Wave, Seed, NumTrans
+ * 
+ * Parameters:
+ * -----------
+ * * SignalWidth, ExponentWidth, TestDenormals
+ * * NumTrans, Seed
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 05, 2011  shacham   init version - test generator for FP Mult-Acc
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $sig_width = parameter(Name=>'SignalWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
+//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
+//;                           Doc=>"Number of test transactions to run ".
+//;                                "(can be overriden at runtime using the '+NumTrans=value' command line notation)");
+//; my $seed = parameter(Name=>'Seed',Val=>12345, Min=>0, Step=>1,
+//;                      Doc=>"Seed for random values".
+//;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
+//;                                 
+program automatic `mname` (
+    output logic dumptolog,
+    output logic [`$sig_width - 1`:0] 	SigA, SigB, SigC,
+    output logic [`$exp_width - 1`:0] 	ExpA, ExpB, ExpC,
+    output logic 			SignA, SignB, SignC
+		);
+
+   // Local variables and handles for controlling the simulation
+   int 					seed=`$seed`;
+   int 					num_trans = `$num_trans`;
+   int 					dummy;
+   //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
+   //;                              SignalWidth=>$sig_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //;                              TestDenormals=>$test_denormals);
+   `$TransGenA_obj->mname` TransGenA;
+   //; my $TransGenA_obj = generate('FPTransaction','TransGenB',
+   //;                              SignalWidth=>$sig_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //;                              TestDenormals=>$test_denormals);
+   `$TransGenA_obj->mname` TransGenB;
+   //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
+   //;                              SignalWidth=>$sig_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //;                              TestDenormals=>$test_denormals);
+   `$TransGenA_obj->mname` TransGenC;
+   
+   
+   initial begin
+      $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
+      // some simulation control initialization
+      get_command_line_args();
+      dummy = $urandom(seed);
+      TransGenA = new();
+      TransGenB = new();
+      TransGenC = new();
+
+      $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
+      // some simulation wire values initialization
+     dumptolog = 1'b0;
+      SigA = 0;
+      ExpA = 0;
+      SigB = 0;
+      ExpB = 0;
+      for (int i=0; i<num_trans; i++) 
+	begin
+	   // Assign values to the lines
+	   dumptolog = 1'b0;
+	   TransGenA.randomize();
+	   TransGenB.randomize();
+	   TransGenC.randomize();
+
+	   SignA = TransGenA.Sign;    SigA = TransGenA.Signal;    ExpA = TransGenA.Exponent;
+	   SignB = TransGenB.Sign;    SigB = TransGenB.Signal;    ExpB = TransGenB.Exponent;
+	   SignC = TransGenC.Sign;    SigC = TransGenC.Signal;    ExpC = TransGenC.Exponent;
+	   $write("%t: Transaction #%0d: ", $time, i);
+	   $write("SignA=%b ExpA=0x%h FractionA=0x%h | ", SignA, ExpA, SigA);
+	   $write("SignB=%b ExpB=0x%h FractionB=0x%h | ", SignB, ExpB, SigB);
+	   $write("SignC=%b ExpC=0x%h FractionC=0x%h \n", SignC, ExpC, SigC);
+	   
+	   // wait for it...
+	   #100;
+	   dumptolog = 1'b1;
+
+	   // now check results...
+	   // FIXME
+
+	   // wait before starting over
+	   #100;
+    	end // for (int i=0; i<num_trans; i++)
+      
+      #1000; // give the lines some time to settle
+      $display("%t: TESTBENCH IS DONE -- TEST PASS", $time);
+   end // initial begin
+   
+   
+   
+   //-------------------------------------------------------------------------//
+   // general intialization procedure
+   task get_command_line_args;
+      // if this is a "+wave" run, it must record all signals
+      if ( $test$plusargs("Wave") ) 
+	begin
+           $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
+           //         levels  instance
+           $vcdpluson(0,        top);
+	   $vcdplusmemon(0,     top);
+        end
+      // find the seed for this run
+      if ( $test$plusargs("Seed") ) 
+	begin
+	   $value$plusargs("Seed=%d", seed);
+	   $display("%t:\tRuntime input +Seed=%d found",$time, seed);
+	end
+      if ( $test$plusargs("NumTrans") )
+	begin
+	   $value$plusargs("NumTrans=%d", num_trans);
+	   $display("%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
+	end
+   endtask // get_command_line_args
+   
+      
+endprogram : `mname`

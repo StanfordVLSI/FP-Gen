@@ -34,10 +34,7 @@
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off.");
 
-module `mname` ();
-
-   int seed;
-   
+module `mname` ();   
    //; # Generate the DUT here
    //; my $FP_obj = generate('CascadeFPMult', 'CascadeFPMult_u');
 
@@ -48,8 +45,9 @@ module `mname` ();
    //; my $product_width = 2 * $sig_width + 2;
   
    // local signals for driving inputs
-   logic [`$sig_width - 1`:0] 		      SigA, SigB;
-   logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
+   logic [`$sig_width - 1`:0] 		      SigA, SigB, SigC;
+   logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
+   logic 				      SignA, SignB, SignC;
    logic 				      IncA, IncB;
 
    
@@ -58,68 +56,40 @@ module `mname` ();
    logic [`$product_width - 1`: 0] 	      ManAB;
    logic 				      SignAB, ANAB, InfAB, ZeroAB, RStickyAB;
   
-   // local signals for expected values
-   logic [`$exp_width + 1`:0] 		      ExpAB_gld;
-   logic [`$product_width - 1`: 0] 	      ManAB_gld;
-   logic 				      SignAB_gld, ANAB_gld, InfAB_gld, ZeroAB_gld, RStickyAB_gld;
-
-
+   //; if ($verif_mode =~ /ON/){
+   logic 				      dumptolog;
+   //; }
+   
    // Instantiate the dut here
    `$FP_obj->instantiate()` (
 			     // inputs:
 			     //; if ($verif_mode =~ /ON/){
-			     .dumptolog(1'b1),
+			     .dumptolog(dumptolog),
 			     //; }
-			     .A({ExpA, SigA}), .B({ExpB, SigB}), .IncA(IncA), .IncB(IncB),
+			     .A({SignA, ExpA, SigA}), .B({SignB, ExpB, SigB}), .IncA(IncA), .IncB(IncB),
 			     //outputs:
 			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
 			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
 			     );
-   
-   // Manage/Run the test here
-   initial begin
-      int i;
-      $display("%t: AGENT IS ALIVE -- NOW RUN TESTS...", $time);
-      for (i=0; i<10; i++) begin
-	 SigA = $random(seed);
-	 ExpA = $random(seed);
-	 IncA = $random(seed);
-	 SigB = $random(seed);
-	 ExpB = $random(seed);
-	 IncB = $random(seed);
-	 #100;
-// FIXME:	 assert (expected_== total_)
-// FIXME:	   $display("%t: Agent: Calculating 0x%h * 0x%h -- Expected:0x%h -- Found: 0x%h", 
-// FIXME:		    $time,multiplier_, multiplicand_, expected_, total_);else
-// FIXME:	     $fatal("%t: SVA ERROR  Agent: Calculating 0x%h * 0x%h -- Expected:0x%h -- Found: 0x%h", 
-// FIXME:		    $time,multiplier_, multiplicand_, expected_, total_);
-      end // for (i=0; i<10; i++)
-      #100;
-      $display("%t: AGENT IS DONE", $time);
-   end
-   
-   //-------------------------------------------------------------------------//
-   // general intialization procedure
-   initial begin
-      int dummy;
-      // if this is a "+wave" run, it must record all signals
-      if ( $test$plusargs("wave") ) 
-	begin
-           $display("%t: Starting Wave Capture",$time);
-           //         levels  instance
-           $vcdpluson(0,        top);
-	   $vcdplusmemon(0,     top);
-        end
-      // find the seed for this run
-      if ( $test$plusargs("seed") ) 
-	begin
-	   $value$plusargs("seed=%d", seed);
-	end else begin
-           seed = 12345;
-	end
-      $display("%t:\tUsing seed %d",$time, seed);
-      dummy = $random(seed);
-   end
-   
+
+
+   //; if ($verif_mode =~ /ON/){
+   // ------------------------ VERIFICATION HARNES ---------------------------//
+   // Instantiate the TestGenerator here:
+   //; my $TestBench_obj = generate('TestBench', 'TestBench', 
+   //;                              SignalWidth=>$sig_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //;                              TestDenormals=>$enable_denormals);
+   `$TestBench_obj->instantiate` (
+				// outputs:
+				.dumptolog(dumptolog),
+				.SignA(SignA), .ExpA(ExpA), .SigA(SigA), 
+				.SignB(SignB), .ExpB(ExpB), .SigB(SigB), 
+				.SignC(SignC), .ExpC(ExpC), .SigC(SigC)
+				// inputs
+				//.SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
+				//.NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
+				);
+   //; } # End of "if ($verif_mode..."
    
 endmodule : `mname`

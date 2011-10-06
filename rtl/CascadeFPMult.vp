@@ -9,7 +9,10 @@
 
 /* *****************************************************************************
  * Description:
- * A floating point multiplier that takes two floating point number A, B and produces the result AxB in full precision without any truncation. The output may be used for constructing a cascade FMA or rounded to input precision to construct a FP multiplier
+ * A floating point multiplier that takes two floating point number A, B and 
+ * produces the result AxB in full precision without any truncation. 
+ * The output may be used for constructing a cascade FMA or rounded to 
+ * input precision to construct a FP multiplier
  * 
  * 
  * Parameters:
@@ -40,9 +43,10 @@
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
-//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'ON', 
-//;                           List=>['ON','OFF'], 
-//;                           Doc=>"Enable denormals parameters to enable handling denormal values of inputs A and B correctly");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
 //;
 //; # And some local variables
 //; my $shift_width = CeilOfLog2($sig_width+1) + 1;
@@ -111,8 +115,8 @@ module `mname`(
   DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
 					.ci(1'b0), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
 
-   //; if ($enable_denormals=~ /ON/i){
-   // enable_denormals = on
+   //; if ($enable_denormals=~ /YES/i){
+   // enable_denormals = YES
     logic [`$exp_width + 1`:0] Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5, Eab_1_ps0;
     logic [`$exp_width + 1`:0] Eab_1_ps1, ExpAB_1, denormalShiftConst, SHD_ps0, SHD_ps1, SHD_wide;
     logic [`2*$product_width - 1` : 0] ManAB_shifted;
@@ -160,7 +164,7 @@ module `mname`(
     assign RStickyAB = |ManAB_shifted[`$sig_width`:0] | ( ManAB_normalized==0 & ~ZeroAB);
 
    //; }else{           
-   // enable_denormals = off
+   // enable_denormals = NO
    assign denormalAB = 0;
    assign ManAB_normalized = ManAB_unnormalized;
    assign RStickyAB = 0;

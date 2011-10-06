@@ -52,16 +52,16 @@ module `mname()` (
    //; if ($verif_mode =~ /ON/){
     input logic dumptolog,
    //; }
-    input logic [`$pp_width-1`:0] pp [0:`$pp_count-1`],
-    output [`$width-1`:0] out0,out1
+    input logic [`$pp_width-1`:0]   pp [0:`$pp_count-1`],
+    output logic [`$width-1`:0]     out0,out1
    );
 
    //; my $step = 0;
    // make pps rectangular (insert 0s!)  
-   logic [`$width-1`:0]   pp0_step`$step`;
+   logic [`$width-1`:0] 	    pp0_step`$step`;
    assign pp0_step`$step` = {{(`$width-$pp_width`){1'b0}}, pp[0]};
    //; for (my $i=1; $i<$pp_count; $i++) {
-   logic [`$width-1`:0] 	      pp`$i`_step`$step`;
+   logic [`$width-1`:0] 	    pp`$i`_step`$step`;
    assign pp`$i`_step`$step` = {{(`$width-$pp_width-$i*$booth`){1'b0}}, pp[`$i`], {`$i*$booth`{1'b0}}};
    //; }
 

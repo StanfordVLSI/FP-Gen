@@ -1,0 +1,47 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Single transaction generator for FP Mult-Acc
+ * Multiple constraints are specified and they MUST be turned off/on
+ * by the instantiators of the transaction. 
+ * 
+ * Parameters:
+ * * SignalWidth, ExponentWidth
+ * 
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 05, 2011  shacham   init version - test generator for FP Mult-Acc
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $sig_width = parameter(Name=>'SignalWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier ".
+//;                           "(default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier ".
+//;                           "(default is IEEE Double, 11 bit)");
+
+class `mname`;
+   /* TO ME: Within class definitions, the rand and randc modifiers signal variables 
+    * that are to undergo randomization. randc specifies permutation-based randomization, 
+    * where a variable will take on all possible values once before any value is repeated. 
+    * Variables without modifiers are not randomized. */
+   rand bit [`$sig_width - 1`:0] 	Signal;
+   rand bit [`$exp_width - 1`:0] 	Exponent;
+   rand bit 				Sign;
+endclass : `mname`
