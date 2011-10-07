@@ -106,9 +106,9 @@ program automatic `mname` (
 	   SignB = TransGenB.Sign;    SigB = TransGenB.Signal;    ExpB = TransGenB.Exponent;
 	   SignC = TransGenC.Sign;    SigC = TransGenC.Signal;    ExpC = TransGenC.Exponent;
 	   $write("%t: Transaction #%0d: ", $time, i);
-	   $write("SignA=%b ExpA=0x%h FractionA=0x%h | ", SignA, ExpA, SigA);
-	   $write("SignB=%b ExpB=0x%h FractionB=0x%h | ", SignB, ExpB, SigB);
-	   $write("SignC=%b ExpC=0x%h FractionC=0x%h \n", SignC, ExpC, SigC);
+	   $write("TransTypeA=%s SignA=%b ExpA=0x%h FractionA=0x%h | ", TransGenA.TransType.name(), SignA, ExpA, SigA);
+	   $write("TransTypeB=%s SignB=%b ExpB=0x%h FractionB=0x%h | ", TransGenB.TransType.name(), SignB, ExpB, SigB);
+	   $write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, SigC);
 	   
 	   // wait for it...
 	   #100;

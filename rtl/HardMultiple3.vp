@@ -62,11 +62,11 @@ module `mname` (
    logic [`$prefix_tree_size-1`:0] 	ph_b, pk_b, PH, PK;
 
    //; if ($prefix_tree_depth%2==1) { # output is not inverted
-   SklanskyTree #(`$prefix_tree_size`) SklanskyTree (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
-						   .GH(GH), .PH(PH), .GK(GK), .PK(PK), .dumptolog(dumptolog));
+   // FIXME //   SklanskyTree #(`$prefix_tree_size`) SklanskyTree (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
+   // FIXME //						   .GH(GH), .PH(PH), .GK(GK), .PK(PK), .dumptolog(dumptolog));
    //; } else { # output is inverted
-   SklanskyTree #(`$prefix_tree_size`) SklanskyTree (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
-						   .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK), .dumptolog(dumptolog));
+   // FIXME //   SklanskyTree #(`$prefix_tree_size`) SklanskyTree (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
+   // FIXME //						   .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK), .dumptolog(dumptolog));
    assign GH = ~ GH_b;
    assign GK = ~ GK_b;
    //; }
