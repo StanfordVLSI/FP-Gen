@@ -38,15 +38,6 @@
           <Val>11</Val>
         </ParameterItem>
         <ParameterItem>
-          <Doc>Enable denormal? (Fixme: Sameh, please put a better explanation for this one)</Doc>
-          <Name>EnableDenormals</Name>
-          <Range>
-            <List>ON</List>
-            <List>OFF</List>
-          </Range>
-          <Val>ON</Val>
-        </ParameterItem>
-        <ParameterItem>
           <Doc>Width of the signal for the multiplier (default is IEEE Double, 52 bit)</Doc>
           <Name>SignalWidth</Name>
           <Range>
@@ -61,7 +52,7 @@
           <BaseModuleName>CompoundAdder</BaseModuleName>
           <ImmutableParameters>
             <ParameterItem>
-              <Doc>FIXME Sameh: what does this param do?</Doc>
+              <Doc>checks the lower ZeroWidth bits of sum and sum+1 if they are zero</Doc>
               <Name>ZeroWidth</Name>
               <Range>
                 <Min>0</Min>
@@ -79,7 +70,7 @@
               <Val>13</Val>
             </ParameterItem>
             <ParameterItem>
-              <Doc>FIXME Sameh: what does this param do?</Doc>
+              <Doc>Enables a carry in bit at the LSB in addition to the 2 addends</Doc>
               <Name>EnableCarryIn</Name>
               <Range>
                 <List>ON</List>
@@ -259,6 +250,612 @@
             </SubInstanceItem>
           </SubInstances>
           <UniqueModuleName>CompoundAdder_unq1</UniqueModuleName>
+        </SubInstanceItem>
+        <SubInstanceItem>
+          <BaseModuleName>Multiplier</BaseModuleName>
+          <ImmutableParameters>
+            <ParameterItem>
+              <Doc>Signal bit widths</Doc>
+              <Name>Width</Name>
+              <Range>
+                <Min>1</Min>
+                <Step>1</Step>
+              </Range>
+              <Val>53</Val>
+            </ParameterItem>
+          </ImmutableParameters>
+          <InstanceName>Mul</InstanceName>
+          <Parameters>
+            <ParameterItem>
+              <Doc>Summation tree type. (Supported trees: Wallace, OS1Tree, OS2Tree, ZMTree, Array)</Doc>
+              <Name>TreeType</Name>
+              <Range>
+                <List>WallaceTree</List>
+                <List>OS1Tree</List>
+                <List>OS2Tree</List>
+                <List>ZMTree</List>
+                <List>Array</List>
+              </Range>
+              <Val>WallaceTree</Val>
+            </ParameterItem>
+            <ParameterItem>
+              <Doc>Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)</Doc>
+              <Name>BoothType</Name>
+              <Range>
+                <Max>3</Max>
+                <Min>1</Min>
+                <Step>1</Step>
+              </Range>
+              <Val>2</Val>
+            </ParameterItem>
+          </Parameters>
+          <SubInstances>
+            <SubInstanceItem>
+              <BaseModuleName>Booth</BaseModuleName>
+              <ImmutableParameters>
+                <ParameterItem>
+                  <Doc>Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)</Doc>
+                  <Name>BoothType</Name>
+                  <Range>
+                    <Max>3</Max>
+                    <Min>1</Min>
+                    <Step>1</Step>
+                  </Range>
+                  <Val>2</Val>
+                </ParameterItem>
+                <ParameterItem>
+                  <Doc>Signal bit widths</Doc>
+                  <Name>Width</Name>
+                  <Range>
+                    <Min>1</Min>
+                    <Step>1</Step>
+                  </Range>
+                  <Val>53</Val>
+                </ParameterItem>
+                <ParameterItem>
+                  <Doc>This is the calculated partial product width for Booth=2 and Width=53</Doc>
+                  <Name>PPWidth</Name>
+                  <Range></Range>
+                  <Val>59</Val>
+                </ParameterItem>
+                <ParameterItem>
+                  <Doc>This is the calculated number of partial products for Booth=2 and Width=53. Note that it includes a +1 to account for xinc and yinc</Doc>
+                  <Name>PPCount</Name>
+                  <Range></Range>
+                  <Val>28</Val>
+                </ParameterItem>
+              </ImmutableParameters>
+              <InstanceName>Booth</InstanceName>
+              <Parameters></Parameters>
+              <SubInstances>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u0</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u1</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u2</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u3</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u4</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u5</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u6</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u7</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u8</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u9</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u10</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u11</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u12</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u13</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u14</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u15</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u16</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u17</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u18</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u19</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u20</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u21</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u22</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u23</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u24</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u25</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+                <SubInstanceItem>
+                  <BaseModuleName>Booth2Enc</BaseModuleName>
+                  <ImmutableParameters>
+                    <ParameterItem>
+                      <Doc>Signal bit widths</Doc>
+                      <Name>Width</Name>
+                      <Range>
+                        <Min>1</Min>
+                        <Step>1</Step>
+                      </Range>
+                      <Val>53</Val>
+                    </ParameterItem>
+                  </ImmutableParameters>
+                  <InstanceName>Booth2Enc_u26</InstanceName>
+                  <Parameters></Parameters>
+                  <SubInstances></SubInstances>
+                  <UniqueModuleName>Booth2Enc_unq1</UniqueModuleName>
+                </SubInstanceItem>
+              </SubInstances>
+              <UniqueModuleName>Booth_unq1</UniqueModuleName>
+            </SubInstanceItem>
+            <SubInstanceItem>
+              <BaseModuleName>WallaceTree</BaseModuleName>
+              <ImmutableParameters>
+                <ParameterItem>
+                  <Doc>Bit width of the partial products</Doc>
+                  <Name>PPWidth</Name>
+                  <Range>
+                    <Min>2</Min>
+                    <Step>1</Step>
+                  </Range>
+                  <Val>59</Val>
+                </ParameterItem>
+                <ParameterItem>
+                  <Doc>What booth was used to create the partial products? (This determines the slope of the partial products paralleloid)</Doc>
+                  <Name>BoothType</Name>
+                  <Range>
+                    <Max>3</Max>
+                    <Min>1</Min>
+                    <Step>1</Step>
+                  </Range>
+                  <Val>2</Val>
+                </ParameterItem>
+                <ParameterItem>
+                  <Doc>Number of partial products to sum</Doc>
+                  <Name>PPCount</Name>
+                  <Range>
+                    <Min>2</Min>
+                    <Step>1</Step>
+                  </Range>
+                  <Val>28</Val>
+                </ParameterItem>
+              </ImmutableParameters>
+              <InstanceName>Tree</InstanceName>
+              <Parameters></Parameters>
+              <SubInstances></SubInstances>
+              <UniqueModuleName>WallaceTree_unq1</UniqueModuleName>
+            </SubInstanceItem>
+          </SubInstances>
+          <UniqueModuleName>Multiplier_unq1</UniqueModuleName>
         </SubInstanceItem>
       </SubInstances>
       <UniqueModuleName>CascadeFPMult_unq1</UniqueModuleName>

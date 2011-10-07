@@ -9,51 +9,44 @@
 
 /* *****************************************************************************
  * Description:
- * Booth encoding for a multiplier.
+ * ------------
+ * Booth THREE encoding for a multiplier.
  * 
  * Booth encoder produce the partial products for computing (x+xinc)*(y+yinc)
  * 
- * xinc yinc  result
- * 0    0     xy
- * 0    1     xy+x     (through y[-1]=yinc of booth encoding)
- * 1    0     xy+y     (through adding y as pp[0])
- * 1    1     xy+x+y+1 (through both methods and 1 is added to pp[2] to S[0])
+ * Modified Booth 3 encoder
  * 
- * Sign encoding:
- * --------------
- * SSSSSS.....S = -1 + ~S
+ * Y[3:0]     out  =  pp   +   S
  * 
- * S0 S0 S0 S0 S0 S0 S0 S0 S0 S0                              ~S0                      ~S0  S0  S0
- *                                                          0  -1
- * S1 S1 S1 S1 S1 S1 S1 S1                 =            ~S1               =          1 ~S1
- *                                                    0  -1
- * S2 S2 S2 S2 S2 S2                              ~S2                          1 ~S2
- *                                              0  -1
+ * 0 0 0 0      +0      100000   +0      
+ * 0 0 0 1      +X      (100X)   +0
+ * 0 0 1 0      +X      (100X)   +0
+ * 0 0 1 1      +2X     (10X0)   +0
+ * 0 1 0 0      +2X     100000   +0      
+ * 0 1 0 1      +3X     (1X3)    +0
+ * 0 1 1 0      +3X     (1X3)    +0
+ * 0 1 1 1      +4X     (1X00)   +0
+ * 1 0 0 0      -4X     (0~X11)  +1      
+ * 1 0 0 1      -3X     (0~X3)   +1
+ * 1 0 1 0      -3X     (0~X3)   +1
+ * 1 0 1 1      -2X     (01~X1)  +1
+ * 1 1 0 0      -2X     (01~X1)  +1
+ * 1 1 0 1      -X      (011~X)  +1
+ * 1 1 1 0      -X      (011~X)  +1
+ * 1 1 1 1      -0      011111   +1
  * 
- * 
- * Final tree:
- * -----------                  __
- *                              S0 S0 S0 *  *  *  *  *  *  *  *  0  0
- *                              __
- *                           1  S1 *  *  *  *  *  *  *  *  0  S0
- *                        __
- *                     1  S2 *  *  *  *  *  *  *  *  0  S1
- *                  __
- *               1  S3 *  *  *  *  *  *  *  *  0  S2
- * 
- *   __
- * 1 Sn *  *  *  *  *  *  *  *  0  S(n-1)
- * 
- *                           Sn = 0 (because y is extended)    
+ * NOTE: there is 1 to be augmented to the left of the partial products 
+ *       except for the first one
  * 
  * 
  * Parameters:
- * * Width, BoothType
+ * -----------
+ * * Width
  * 
  * Change bar:
  * -----------
  * Date           Author    Description
- * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
  * ****************************************************************************/
 
@@ -68,155 +61,26 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3,
-//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)");
 
 
 
+module `mname` (
+    input [`$width-1`:0] 	x, x_b,
+    input [`$width+1`:0] 	x3, x3_b,
+    input [2:0] 		y_edge_vector,		// y_edge_vector[i] = y[i]==y[i+1]
+    input 			y3,                   	// y[3]
+    output [`$width+2`:0] 	pp,               	//extend width by two: 1 bit for sign and second for shifting for 2X multiple
+    output 		  S
+		);
+   
 
-module Booth(x,xinc, y, yinc, pp, dumptolog);
-  parameter width=53;
-  parameter BoothType=3;  // Valid Values are 2 and 3
-	
-  localparam extended_width = width + 1 + BoothType - ( width % BoothType);   // extended_width = width is odd?  width+2: width+3 
-  localparam pp_count = (width + BoothType) / BoothType;  // pp_count = width is odd? (width+1)/2 : (width+2)/2
-  localparam pp_width = width + 3 * BoothType;
-
-  input [width-1:0] x, y;
-  input xinc, yinc;
+   logic [`$width-1`:0]   x_out;
   
-  output [pp_width-1:0]  pp [0:pp_count] ; //add an extra term for xinc
-  input dumptolog;
 
-
- 
-  genvar i;
-  generate
-  begin 
-    wire [extended_width-1:0] extended_y;
-    //yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
-    assign extended_y = {{(BoothType - ( width % BoothType) ) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
-    wire [width+BoothType-1:0]  initial_pp [0:pp_count-1] ;
-    wire [pp_count-1:0] S;  // S[pp_count-1] is guaranteed to be 0 because of the sign extension of 0 in extended b
-
-    wire [width-1:0] x_b;
-    assign x_b = ~x;
-    wire [extended_width-2:0] y_edge_vector;
-    assign y_edge_vector = extended_y[extended_width-1:1] ~^ extended_y[extended_width-2:0];
-
-    if (BoothType==2)
-      for(i=0; i < pp_count; i=i+1)
-      begin: Booth2Enc
-		      booth2encoder #(width) booth(.x(x), .x_b(x_b), .y_edge_vector(y_edge_vector[2*i+1:2*i]), .y2(extended_y[2*i+2]) ,
-                                       .pp(initial_pp[i]), .S(S[i]));
-      end
-    else if (BoothType==3)
-    begin
-      wire [width+1:0] x3, x3_b;
-      HardMultiple3 #(width) HM3 (.x(x), .x3(x3));
-      assign x3_b = ~ x3;
-      for(i=0; i < pp_count; i=i+1)
-      begin: Booth3Enc
-		      booth3encoder #(width) booth(.x(x), .x_b(x_b), .x3(x3), .x3_b(x3_b),
-                .y_edge_vector(y_edge_vector[3*i+2:3*i]), .y3(extended_y[3*i+3]) , .pp(initial_pp[i]), .S(S[i]));
-      end
-    end // if (BoothType==3)
-     
-
-   assign pp[0] = xinc ? {{(BoothType){1'b0}}, y, {(2*BoothType){1'b0}}} : 0;
-   assign pp[1] = {initial_pp[0][width+BoothType-1], {(BoothType){S[0]}}, initial_pp[0][width+BoothType-2:0], {(BoothType){1'b0}}};
-   assign pp[2] = {1'b0, {(BoothType-1){1'b1}}, initial_pp[1], {(BoothType-2){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
-   for(i=3; i < pp_count+1; i=i+1)
-   begin
-        assign pp[i] = {1'b0, {(BoothType-1){1'b1}}, initial_pp[i-1], {(BoothType-1){1'b0}},S[i-2]};
-   end
-  end
-  endgenerate
-
-
-
-endmodule
-
-
-/*
-Modified Booth 2 encoder
-
-Y[2:0]     out  =  pp   +   S
-
-0 0 0      +0      100000  +0      
-0 0 1      +X      (10X)   +0
-0 1 0      +X      (10X)   +0
-0 1 1      +2X     (1X0)   +0
-1 0 0      -2X     (0~X1)  +1
-1 0 1      -X      (01~X)  +1
-1 1 0      -X      (01~X)  +1
-1 1 1      -0      011111  +1
-
-NOTE: there is 1 to be augmented to the left of the partial products excepf for the first one
-*/
-
-
-module booth2encoder (x, x_b, y_edge_vector, y2 , pp, S);
-  parameter width=24;
-   input [width-1:0] x, x_b;
-   input [1:0] 	     y_edge_vector;  // y_edge_vector[i] = y[i]==y[i+1]
-   input 	     y2;                   // y[3]
-   output [width+1:0] pp; //extend width by two: 1 bit for sign and second for shifting for 2X multiple
-   output 	      S;
-   
-   wire [width-1:0]   x_out;
-   
-   assign S = y2;
+   assign S = y3;
    assign x_out = S ? x_b: x;
-   assign pp = y_edge_vector[0] ? y_edge_vector[1]? {~S,{(width+1){S}}} : {~S,x_out,S} : {~S,S,x_out};
-endmodule
-
-
-/*
-Modified Booth 3 encoder
-
-Y[3:0]     out  =  pp   +   S
-
-0 0 0 0      +0      100000   +0      
-0 0 0 1      +X      (100X)   +0
-0 0 1 0      +X      (100X)   +0
-0 0 1 1      +2X     (10X0)   +0
-0 1 0 0      +2X     100000   +0      
-0 1 0 1      +3X     (1X3)    +0
-0 1 1 0      +3X     (1X3)    +0
-0 1 1 1      +4X     (1X00)   +0
-1 0 0 0      -4X     (0~X11)  +1      
-1 0 0 1      -3X     (0~X3)   +1
-1 0 1 0      -3X     (0~X3)   +1
-1 0 1 1      -2X     (01~X1)  +1
-1 1 0 0      -2X     (01~X1)  +1
-1 1 0 1      -X      (011~X)  +1
-1 1 1 0      -X      (011~X)  +1
-1 1 1 1      -0      011111   +1
-
-NOTE: there is 1 to be augmented to the left of the partial products except for the first one
-*/
-
-
-
-
-
-module booth3encoder (x, x_b, x3, x3_b, y_edge_vector, y3 , pp, S);
-  parameter width=1;
-	input [width-1:0] x, x_b;
-  input [width+1:0] x3, x3_b;
-	input [2:0] y_edge_vector;  // y_edge_vector[i] = y[i]==y[i+1]
-  input y3;                   // y[3]
-	output [width+2:0] pp; //extend width by two: 1 bit for sign and second for shifting for 2X multiple
-	output S;
-
-	wire [width-1:0] x_out;
-  
-
-	assign S = y3;
-  assign x_out = S ? x_b: x;
 
   /*
   reg [width+2:0] softPP;
@@ -233,30 +97,30 @@ module booth3encoder (x, x_b, x3, x3_b, y_edge_vector, y3 , pp, S);
 
   assign pp = softPP;
   */
-  reg [width+2:0] pp0124, pp;
-  wire [1:0] mux_control;
+   logic [`$width+2`:0] 	  pp0124;
+   logic [1:0] 		  mux_control;
 
-  assign mux_control = {y3, ~(y_edge_vector[1] & y_edge_vector[0]) ,  ~(~(~y_edge_vector[2] & y_edge_vector[1]) & y_edge_vector[0]) };
-  
-  always @*
-  begin
-    case (mux_control)
-      2'b00:  pp0124 = {~S,{(width+2){S}}};                 // 0      (y[0]==y[1]==y[2]==y[3])              //111
-      2'b01:  pp0124 = {~S,x_out,S,S};                      // +/-4X  (y[0]==y[1]==y[2]) & (y[2]!=y[3])     //011
-      2'b10:  pp0124 = {~S,S,x_out,S};                      // +/-2X  (y[0]==y[1]) & (y[1]!=y[2])           //101,001
-      2'b11:  pp0124 = {~S,S,S,x_out};                      // +/-X   (y[0]!=y[1]) & (y[2]==y[3])           //100,110,000,010
-    endcase
+   assign mux_control = {y3, ~(y_edge_vector[1] & y_edge_vector[0]) ,  ~(~(~y_edge_vector[2] & y_edge_vector[1]) & y_edge_vector[0]) };
+   
+   always_comb
+     begin
+	case (mux_control)
+	  2'b00:  pp0124 = {~S,{(`$width+2`){S}}};                 // 0      (y[0]==y[1]==y[2]==y[3])              //111
+  	  2'b01:  pp0124 = {~S,x_out,S,S};                      // +/-4X  (y[0]==y[1]==y[2]) & (y[2]!=y[3])     //011
+  	  2'b10:  pp0124 = {~S,S,x_out,S};                      // +/-2X  (y[0]==y[1]) & (y[1]!=y[2])           //101,001
+  	  2'b11:  pp0124 = {~S,S,S,x_out};                      // +/-X   (y[0]!=y[1]) & (y[2]==y[3])           //100,110,000,010
+        endcase
     
-    casex ({(y_edge_vector[0] | y_edge_vector[2]),S})
-       2'b00:  pp = {~S,x3};                       
-       2'b01:  pp = {~S,x3_b};
-       2'b1x:  pp = pp0124;
-    endcase
-  end
+	casex ({(y_edge_vector[0] | y_edge_vector[2]),S})
+	  2'b00:  pp = {~S,x3};                       
+	  2'b01:  pp = {~S,x3_b};
+	  2'b1x:  pp = pp0124;
+	endcase
+     end
   
 
 /*  assign pp = y_edge_vector[0] ?
                     (y_edge_vector[2] ?  {~S,x3_out} : {~S,S,S,x_out})
                    :(y_edge_vector[1] ?  {~S,S,x_out,S}: y_edge_vector[2]? {~S,x_out,S,S} : {~S,{(width+2){S}}} );*/
  
-endmodule
+endmodule : `mname`

@@ -112,24 +112,37 @@ module `mname`(
    logic [`$extended_width-2`:0] y_edge_vector;
    assign y_edge_vector = extended_y[`$extended_width-1`:1] ~^ extended_y[`$extended_width-2`:0];
 
+   
    //; if ($booth==2) {
+   // Instantiate the booth encoders
    //;   for(my $i=0; $i < $pp_count; $i++){
    //;     my $BoothEnc_obj = generate('Booth2Enc', "Booth2Enc_u$i", Width=>$width);
-   `$BoothEnc_obj->instantiate`(.x(x), .x_b(x_b), 
-			   .y_edge_vector(y_edge_vector[`2*$i+1`:`2*$i`]), .y2(extended_y[`2*$i+2`]) ,
-			   .pp(initial_pp[`$i`]), .S(S[`$i`]));
-   //;   }
+   `$BoothEnc_obj->instantiate`
+     (.x(x), .x_b(x_b), .y_edge_vector(y_edge_vector[`2*$i+1`:`2*$i`]), 
+      .y2(extended_y[`2*$i+2`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
+   
+   //;   } # End of "for(my $i=0..."
+   //;
    //; } elsif ($booth==3) {
+   //;
+   // Prepare the 3*X and its inverse
    logic [`$width+1`:0] 	 x3, x3_b;
-   HardMultiple3 #(`$width`) HM3 (.x(x), .x3(x3));
+   //; my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
+   `$HM3_obj->instantiate` (
+			    //; if ($verif_mode =~ /ON/){
+			    .dumptolog(dumptolog),
+			    //; }
+			    .x(x), .x3(x3));
    assign x3_b = ~ x3;
+
+   // Instantiate the booth encoders
    //;   for(my $i=0; $i < $pp_count; $i++){
-   booth3encoder #(`$width`) booth(.x(x), .x_b(x_b), 
-				   .x3(x3), .x3_b(x3_b),
-				   .y_edge_vector(y_edge_vector[`3*$i+2`:`3*$i`]), .y3(extended_y[`3*$i+3`]) , 
-				   .pp(initial_pp[`$i`]), .S(S[`$i`])
-				   );
-   //;   }
+   //;     my $BoothEnc_obj = generate('Booth3Enc', "Booth3Enc_u$i", Width=>$width);
+   `$BoothEnc_obj->instantiate`
+     (.x(x), .x_b(x_b), .x3(x3), .x3_b(x3_b), .y_edge_vector(y_edge_vector[`3*$i+2`:`3*$i`]), 
+      .y3(extended_y[`3*$i+3`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
+   
+   //;   } # End of "for(my $i=0..."
    //; }
       
    assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;

@@ -1,0 +1,139 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * Given X of Width bits, produces the value 3*X
+ * 
+ * Refer to G.A. Ruiz1 and Mercedes Granda "Efficient hardware implementation 
+ * of 3X for radix-8 encoding" Microelectronics Journal, 2008
+ * 
+ * Parameters:
+ * -----------
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor ceil log); # For ceiling rounding math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//;
+//; # Local Variables
+//; my $prefix_tree_size = floor(($width-3)/4) + 1;
+//; my $prefix_tree_depth = CeilOfLog2($prefix_tree_size);
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic 			dumptolog,
+   //; }
+    input logic [`$width-1`:0] 		x,
+    output logic [`$width+1`:0] 	x3
+		);
+   
+/*
+  assign x3 = {2'b0,x} + {1'b0,x,1'b0};
+*/
+
+   logic [`$width`:0] 			H,K;  // odd values are not used!
+   logic [`$prefix_tree_size-1`:0] 	gh_b, gk_b, GH, GK, GH_b, GK_b;
+   logic [`$prefix_tree_size-1`:0] 	ph_b, pk_b, PH, PK;
+
+   //; if ($prefix_tree_depth%2==1) { # output is not inverted
+   SklanskyTree #(`$prefix_tree_size`) SklanskyTree (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
+						   .GH(GH), .PH(PH), .GK(GK), .PK(PK), .dumptolog(dumptolog));
+   //; } else { # output is inverted
+   SklanskyTree #(`$prefix_tree_size`) SklanskyTree (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
+						   .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK), .dumptolog(dumptolog));
+   assign GH = ~ GH_b;
+   assign GK = ~ GK_b;
+   //; }
+
+   assign gh_b[0] = ~( x[2] | (x[1] & x[0]));
+   assign gk_b[0] = ~( x[2] & x[1] );
+   assign ph_b[0] = 1'b1;
+   assign pk_b[0] = 1'b1;
+   
+   assign H[0] = x[0];
+   assign H[2] = GH[0];
+  
+   assign K[0] = 1'b0;
+   assign K[2] = GK[0];
+   
+   //; for(my $j=1; $j < $prefix_tree_size; $j++) {
+   assign gh_b[`$j`] = ~( x[`4*$j+2`] | (x[`4*$j+1`] & x[`4*$j`]) );
+   assign gk_b[`$j`] = ~( x[`4*$j+2`] & (x[`4*$j+1`] | x[`4*$j`]) );
+   assign ph_b[`$j`] = ~( x[`4*$j+1`] &  x[`4*$j-1`] );
+   assign pk_b[`$j`] = ~( x[`4*$j+1`] |  x[`4*$j-1`] );
+   
+   assign H[`4*$j`]   = x[`4*$j`] | ( x[`4*$j-1`] & H[`4*$j-2`] );
+   assign H[`4*$j+2`] = GH[`$j`];
+   
+   assign K[`4*$j  `] = x[`4*$j`] & (x[`4*$j-1`] | K[`4*$j-2`]);   
+   assign K[`4*$j+2`] = GK[`$j`];
+   //; }
+    
+   //; for (my $i = $width - ($width - 3) % 4 ; $i < $width ; $i++) {
+   //;   if ($i%2==0) {
+   assign H[`$i`] = x[`$i`] | (x[`$i-1`] & H[`$i-2`]);
+   assign K[`$i`] = x[`$i`] & (x[`$i-1`] | K[`$i-2`]);
+   //;   }
+   //; }
+
+   //; if ($width%2==0) {
+   assign H[`$width`] = x[`$width-1`] & H[`$width-2`];
+   assign K[`$width`] = 1'b0;
+   //; }
+
+   assign x3[0] = x[0];
+   //; for (my $i = 1 ; $i < $width ; $i++) {
+   //;   if ($i%2==0) {
+   assign x3[`$i`] = x[`$i`] ^ (x[`$i-1`] & ~H[`$i-2`] | ~x[`$i-1`] & K[`$i-2`]);
+   //;   } else {
+   assign x3[`$i`] = x[`$i`] ^ (H[`$i-1`] & ~K[`$i-1`]);
+   //;   }
+   //; }
+  
+   //; if ($width%2==0) {
+   assign x3[`$width`]   = x[`$width-1`] & ~H[`$width-2`] | ~x[`$width-1`] & K[`$width-2`];
+   assign x3[`$width+1`] = H[`$width`] & ~K[`$width`];
+   //; } else {
+   assign x3[`$width`] = H[`$width-1`] & ~K[`$width-1`];
+   assign x3[`$width+1`] = K[`$width-1`];
+   //; }
+
+   //; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+     begin
+	$write ("\t`mname`: depth=`$prefix_tree_depth`, "); 
+	$write ("gh=%b ph=%b ", ~gh_b, ~ph_b);
+	$write ("gk=%b pk=%b ", ~gk_b, ~pk_b);
+	$write ("GH=%b ", GH);
+	$write ("GK=%b\n", GK);
+     end
+   //; }
+
+endmodule : `mname`
+

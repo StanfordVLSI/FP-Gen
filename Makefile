@@ -45,7 +45,8 @@ GENESIS_ENV :=		$(TOP_MODULE).vp TestBench.vp FPTransaction.vp
 
 GENESIS_DESIGN := 	CascadeFPMult.vp WallaceTree.vp CompoundAdder.vp 	\
 			SklanskyAdderTree.vp Multiplier.vp Booth.vp		\
-			Booth2Enc.vp
+			Booth2Enc.vp Booth3Enc.vp HardMultiple3.vp		\
+			SklanskyTree.vp
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 
