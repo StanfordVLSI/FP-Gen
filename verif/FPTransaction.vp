@@ -62,21 +62,24 @@
 //;
 //; # Parameter to enable per transaction control from command line
 //; my $NamedTransCtrl = parameter(Name=>'NamedTransCtrl', Val=>'',
-//; 				   List=>['','A'..'Z'],
-//;				   Doc=>"This parameter enables per-named-transaction control ".
-//;                                     "of the 'Distribution Weight' parameters from command line ".
-//;                                     "using the notation 'RUN=+Denorm100_DistWeightX=value' ".
-//;                                     "where X can be one of A..Z. NamedTransCtrl also accepts ".
-//;					"values A..Z or left empty");
+//; 			   List=>['','A'..'Z'],
+//;			   Doc=>"This parameter enables per-named-transaction control ".
+//;                             "of the 'Distribution Weight' parameters from the command line ".
+//;                             "using the notation 'RUN=+Any_DistWeightX=value' ".
+//;                             "where 'X' can be one of 'A' through 'Z', and 'Any' can be ".
+//;				"any of the below 'DistWeight' parameters. Allowed values for ".
+//;				"NamedTransCtrl are capital letters 'A' through 'Z' or it can be left empty");
 //; # Parameters to control constraints
 //; my $Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
 //;				Doc=>"Distribution weight for Zero pattern"); 
-//; my $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Denorm100 pattern");
-//; my $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for DenormFFF pattern");
-//; my $Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Denorm001 pattern");
+//; my $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
+//;				Doc=>"Distribution weight for Denorm with 100..0 pattern");
+//; my $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
+//;				Doc=>"Distribution weight for Denorm with FFF..F pattern");
+//; my $Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>2, Min=>0, Step=>1,
+//;				Doc=>"Distribution weight for Denorm with 000..01 pattern");
+//; my $DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>4, Min=>0, Step=>1,
+//;				Doc=>"Distribution weight for Denorm random (non-zero) pattern");
 //; my $QuietNaN_w = parameter(Name=>'QuietNaN_DistWeight', Val=>10, Min=>0, Step=>1,
 //;				Doc=>"Distribution weight for QuietNaN pattern");
 //; my $SignalingNaN_w = parameter(Name=>'SignalingNaN_DistWeight', Val=>10, Min=>0, Step=>1,
@@ -101,7 +104,7 @@ class `mname`;
     * that are to undergo randomization. randc specifies permutation-based randomization, 
     * where a variable will take on all possible values once before any value is repeated. 
     * Variables without modifiers are not randomized. */
-   typedef enum {Zero, Denorm100, DenormFFF, Denorm001, QuietNaN, 
+   typedef enum {Zero, Denorm100, DenormFFF, Denorm001, DenormRnd, QuietNaN, 
 		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, Random} FPTransType;
    rand FPTransType TransType;
    
@@ -117,7 +120,8 @@ class `mname`;
       TransType dist {Zero := `$Zero_w`, 
 		      Denorm100 := `$Denorm100_w`, 
 		      DenormFFF := `$DenormFFF_w`, 
-		      Denorm001 := `$Denorm001_w`, 
+		      Denorm001 := `$Denorm001_w`,
+		      DenormRnd := `$DenormRnd_w`,
 		      QuietNaN := `$QuietNaN_w`, 
 		      SignalingNaN := `$SignalingNaN_w`, 
 		      Min := `$Min_w`, 
@@ -133,6 +137,7 @@ class `mname`;
       (TransType == Denorm100) -> 	{ Signal == {1'b1, `$sig_width-1`'b0} };
       (TransType == DenormFFF) -> 	{ Signal == {(`$sig_width`){1'b1}} };
       (TransType == Denorm001) -> 	{ Signal == {`$sig_width-1`'b0, 1'b1} };
+      (TransType == DenormRnd) -> 	{ Signal != `$sig_width`'b0 };
       (TransType == QuietNaN) -> 	{ Signal[`$sig_width-1`] == 1'b1 };
       (TransType == SignalingNaN) -> 	{ Signal[`$sig_width-1`] == 1'b0 && Signal[`$sig_width-2`:0] != `$sig_width-1`'b0 };
       (TransType == Min) -> 		{ Signal == `$sig_width`'b0 };
@@ -148,6 +153,7 @@ class `mname`;
       (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
       (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
       (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
       (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
       (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
       (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
