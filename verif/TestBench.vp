@@ -66,16 +66,16 @@ program automatic `mname` (
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenA_obj->mname` TransGenA;
-   //; my $TransGenA_obj = generate('FPTransaction','TransGenB',
+   //; my $TransGenB_obj = generate('FPTransaction','TransGenB',
    //;                              SignalWidth=>$sig_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
-   `$TransGenA_obj->mname` TransGenB;
+   `$TransGenB_obj->mname` TransGenB;
    //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
    //;                              SignalWidth=>$sig_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
-   `$TransGenA_obj->mname` TransGenC;
+   `$TransGenC_obj->mname` TransGenC;
    
    
    initial begin

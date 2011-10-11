@@ -70,6 +70,8 @@
 //;				"any of the below 'DistWeight' parameters. Allowed values for ".
 //;				"NamedTransCtrl are capital letters 'A' through 'Z' or it can be left empty");
 //; # Parameters to control constraints
+//; my $SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
+//; 				Doc=>"Distribution weight for positive values (range is 0..100)");
 //; my $Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
 //;				Doc=>"Distribution weight for Zero pattern"); 
 //; my $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
@@ -96,8 +98,6 @@
 //;				Doc=>"Distribution weight for PointOneOneOne (0.111111111) pattern");
 //; my $Random_w = parameter(Name=>'Random_DistWeight', Val=>10, Min=>0, Step=>1,
 //;				Doc=>"Distribution weight for Random pattern");
-//; my $SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
-//; 				Doc=>"Distribution weight for positive values (range is 0..100)");
 
 class `mname`;
    /* TO ME: Within class definitions, the rand and randc modifiers signal variables 
@@ -112,27 +112,49 @@ class `mname`;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
 
+   /* The following class members hold the DEFAULT weights 
+    * for the various transaction types.
+    * However, they may be overwritten by the user at runtime
+    * using the "+Zero_w=newWeight" notation */
+   static bit 	AllWeightsInitialized = 0;	
+   static int 	SignIsPos_w = `$SignIsPos_w`;
+   static int 	Zero_w = `$Zero_w`;
+   static int 	Denorm100_w = `$Denorm100_w`; 
+   static int 	DenormFFF_w = `$DenormFFF_w`; 
+   static int 	Denorm001_w = `$Denorm001_w`;
+   static int 	DenormRnd_w = `$DenormRnd_w`;
+   static int 	QuietNaN_w = `$QuietNaN_w`; 
+   static int 	SignalingNaN_w = `$SignalingNaN_w`; 
+   static int 	Min_w = `$Min_w`; 
+   static int 	Max_w = `$Max_w`; 
+   static int 	Inf_w = `$Inf_w`; 
+   static int 	One_w = `$One_w`; 
+   static int 	PointOneOneOne_w = `$PointOneOneOne_w`; 
+   static int 	Random_w = `$Random_w`;
+   
+   // The following are constraints blocks for controling and generating
+   // meaningful transactions.
    constraint pick_sign{ 
-      Sign dist { 0 := `$SignIsPos_w`, 1 := `100-$SignIsPos_w` }; 
+      Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
    }
        
    constraint pick_trans_type{
-      TransType dist {Zero := `$Zero_w`, 
-		      Denorm100 := `$Denorm100_w`, 
-		      DenormFFF := `$DenormFFF_w`, 
-		      Denorm001 := `$Denorm001_w`,
-		      DenormRnd := `$DenormRnd_w`,
-		      QuietNaN := `$QuietNaN_w`, 
-		      SignalingNaN := `$SignalingNaN_w`, 
-		      Min := `$Min_w`, 
-		      Max := `$Max_w`, 
-		      Inf := `$Inf_w`, 
-		      One := `$One_w`, 
-		      PointOneOneOne := `$PointOneOneOne_w`, 
-		      Random := `$Random_w`};
+      TransType dist {Zero := Zero_w, 
+		      Denorm100 := Denorm100_w, 
+		      DenormFFF := DenormFFF_w, 
+		      Denorm001 := Denorm001_w,
+		      DenormRnd := DenormRnd_w,
+		      QuietNaN := QuietNaN_w, 
+		      SignalingNaN := SignalingNaN_w, 
+		      Min := Min_w, 
+		      Max := Max_w, 
+		      Inf := Inf_w, 
+		      One := One_w, 
+		      PointOneOneOne := PointOneOneOne_w, 
+		      Random := Random_w };
    }
 
-   constraint pick_fraction_val{
+     constraint pick_fraction_val{
       (TransType == Zero) -> 		{ Signal == `$sig_width`'b0 };
       (TransType == Denorm100) -> 	{ Signal == {1'b1, `$sig_width-1`'b0} };
       (TransType == DenormFFF) -> 	{ Signal == {(`$sig_width`){1'b1}} };
@@ -167,5 +189,68 @@ class `mname`;
    constraint order1 { 
       solve TransType before Signal, Exponent, Sign;
    }
-       
+     
+
+     // A constructor to read user defined, per simulation, weights
+     function new();
+	if (! AllWeightsInitialized) begin
+	   if ($test$plusargs("SignIsPos_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("SignIsPos_DistWeight`$NamedTransCtrl`=%d",  SignIsPos_w);
+	      $display("%t: `mname`: Runtime input +SignIsPos_DistWeight`$NamedTransCtrl`=%d found", $time, SignIsPos_w);
+	   end
+	   if ($test$plusargs("Zero_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Zero_DistWeight`$NamedTransCtrl`=%d",  Zero_w);
+	      $display("%t: `mname`: Runtime input +Zero_DistWeight`$NamedTransCtrl`=%d found", $time, Zero_w);
+	   end
+	   if ($test$plusargs("Denorm100_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Denorm100_DistWeight`$NamedTransCtrl`=%d",  Denorm100_w);
+	      $display("%t: `mname`: Runtime input +Denorm100_DistWeight`$NamedTransCtrl`=%d found", $time, Denorm100_w);
+	   end
+	   if ($test$plusargs("DenormFFF_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("DenormFFF_DistWeight`$NamedTransCtrl`=%d",  DenormFFF_w);
+	      $display("%t: `mname`: Runtime input +DenormFFF_DistWeight`$NamedTransCtrl`=%d found", $time, DenormFFF_w);
+	   end
+	   if ($test$plusargs("Denorm001_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Denorm001_DistWeight`$NamedTransCtrl`=%d",  Denorm001_w);
+	      $display("%t: `mname`: Runtime input +Denorm001_DistWeight`$NamedTransCtrl`=%d found", $time, Denorm001_w);
+	   end
+	   if ($test$plusargs("DenormRnd_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("DenormRnd_DistWeight`$NamedTransCtrl`=%d",  DenormRnd_w);
+	      $display("%t: `mname`: Runtime input +DenormRnd_DistWeight`$NamedTransCtrl`=%d found", $time, DenormRnd_w);
+	   end
+	   if ($test$plusargs("QuietNaN_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("QuietNaN_DistWeight`$NamedTransCtrl`=%d",  QuietNaN_w);
+	      $display("%t: `mname`: Runtime input +QuietNaN_DistWeight`$NamedTransCtrl`=%d found", $time, QuietNaN_w);
+	   end
+	   if ($test$plusargs("SignalingNaN_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("SignalingNaN_DistWeight`$NamedTransCtrl`=%d",  SignalingNaN_w);
+	      $display("%t: `mname`: Runtime input +SignalingNaN_DistWeight`$NamedTransCtrl`=%d found", $time, SignalingNaN_w);
+	   end
+	   if ($test$plusargs("Min_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Min_DistWeight`$NamedTransCtrl`=%d",  Min_w);
+	      $display("%t: `mname`: Runtime input +Min_DistWeight`$NamedTransCtrl`=%d found", $time, Min_w);
+	   end
+	   if ($test$plusargs("Max_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Max_DistWeight`$NamedTransCtrl`=%d",  Max_w);
+	      $display("%t: `mname`: Runtime input +Max_DistWeight`$NamedTransCtrl`=%d found", $time, Max_w);
+	   end
+	   if ($test$plusargs("Inf_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Inf_DistWeight`$NamedTransCtrl`=%d",  Inf_w);
+	      $display("%t: `mname`: Runtime input +Inf_DistWeight`$NamedTransCtrl`=%d found", $time, Inf_w);
+	   end
+	   if ($test$plusargs("One_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("One_DistWeight`$NamedTransCtrl`=%d",  One_w);
+	      $display("%t: `mname`: Runtime input +One_DistWeight`$NamedTransCtrl`=%d found", $time, One_w);
+	   end
+	   if ($test$plusargs("PointOneOneOne_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("PointOneOneOne_DistWeight`$NamedTransCtrl`=%d",  PointOneOneOne_w);
+	      $display("%t: `mname`: Runtime input +PointOneOneOne_DistWeight`$NamedTransCtrl`=%d found", $time, PointOneOneOne_w);
+	   end
+	   if ($test$plusargs("Random_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Random_DistWeight`$NamedTransCtrl`=%d",  Random_w);
+	      $display("%t: `mname`: Runtime input +Random_DistWeight`$NamedTransCtrl`=%d found", $time, Random_w);
+	   end
+	end // if (! AllWeightsInitialized)
+     endfunction 
 endclass : `mname`
+
