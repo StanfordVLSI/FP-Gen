@@ -1,0 +1,237 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * This is a SklanskyTree.
+ * G & P are group signals from 0 to i, while g & p are individual signals
+ * FIXME Sameh: why is it different than SklanskyAdderTree.vp??
+ * 
+ * 
+ * Parameters:
+ * -----------
+ * * Width (required at instantiation)
+ * * Radix (subject to optimization)
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 11, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor ceil log); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>64, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit width");
+//; my $radix = parameter(Name=>'Radix', Val=>2, Min=>1, Step=>1, Max=>4,
+//;                       Doc=>"Tree radix");
+//;
+//; # Define the clog function that returns an integer which has the value of the ceiling of the log base radix.
+//; sub CeilOfLogRadix{ return ceil(log(@_)/log($radix)); }
+//;
+//; # Local Variables
+//; my $width_by_radix = floor($width/$radix);
+//; my $tree_depth = CeilOfLogRadix($width);
+//; my $lower_tree_depth = CeilOfLogRadix($width/$radix);
+
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic 			dumptolog,
+   //; }
+    input logic [`$width-1`:0] 		gh_b, ph_b, gk_b, pk_b,
+    output logic [`$width-1`:0] 	GH, PH, GK, PK
+		     );
+   
+   //; if ($width > $radix){
+   logic [`$width-1`:0] 			GH_int , PH_int , GK_int , PK_int;
+
+   
+   //;   if ($lower_tree_depth==$tree_depth-2) {
+   //;     for (my $i=0 ; $i<$radix-1 ; $i++){
+   logic [`$width_by_radix-1`:0] 		GH_int_`$i`_b , PH_int_`$i`_b , GK_int_`$i`_b , PK_int_`$i`_b;
+   //;     my $LowerTree_obj = generate('SklanskyTree', "LowerTree_$i", Width=>$width_by_radix, Radix=>$radix);
+   `$LowerTree_obj->instantiate`
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+       .gh_b(gh_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), .ph_b(ph_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
+       .gk_b(gk_b[`($i+1)*($width_by_radix)-1`:`$i*$width_by_radix`]), .pk_b(pk_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
+       .GH(GH_int_`$i`_b), .PH(PH_int_`$i`_b),
+       .GK(GK_int_`$i`_b), .PK(PK_int_`$i`_b));
+   
+   assign GH_int[`($i+1)*$width_by_radix-1`:`$i*$width_by_radix`] = ~ GH_int_`$i`_b;
+   assign PH_int[`($i+1)*$width_by_radix-1`:`$i*$width_by_radix`] = ~ PH_int_`$i`_b;
+   assign GK_int[`($i+1)*$width_by_radix-1`:`$i*$width_by_radix`] = ~ GK_int_`$i`_b;
+   assign PK_int[`($i+1)*$width_by_radix-1`:`$i*$width_by_radix`] = ~ PK_int_`$i`_b;
+   //;     } # End of "for (my $i=0..."
+   //;   }else{
+   //;     for (my $i=0 ; $i<$radix-1 ; $i++){
+   //;     my $LowerTree_obj = generate('SklanskyTree', "LowerTree_$i", Width=>$width_by_radix, Radix=>$radix);
+   `$LowerTree_obj->instantiate`
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+       .gh_b(gh_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), .ph_b(ph_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
+       .gk_b(gk_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), .pk_b(pk_b[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
+       .GH(GH_int[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), .PH(PH_int[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
+       .GK(GK_int[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), .PK(PK_int[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]));
+   //;     } # End of "for (my $i=0..."
+   //;   } # End of "if ($lower_tree_depth..."
+   
+   
+   //;   my $UpperTree_obj = generate('SklanskyTree', 'UpperTree', Width=>$width-($radix-1)*($width_by_radix), Radix=>$radix);
+   `$UpperTree_obj->instantiate` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+       .gh_b(gh_b[`$width-1`:`($radix-1)*($width_by_radix)`]), .ph_b(ph_b[`$width-1`:`($radix-1)*($width_by_radix)`]),
+       .gk_b(gk_b[`$width-1`:`($radix-1)*($width_by_radix)`]), .pk_b(pk_b[`$width-1`:`($radix-1)*($width_by_radix)`]), 
+       .GH(GH_int[`$width-1`:`($radix-1)*($width_by_radix)`]), .PH(PH_int[`$width-1`:`($radix-1)*($width_by_radix)`]),
+       .GK(GK_int[`$width-1`:`($radix-1)*($width_by_radix)`]), .PK(PK_int[`$width-1`:`($radix-1)*($width_by_radix)`]));
+   
+   //;   for (my $i=0; $i < $width_by_radix ; $i++) {
+   assign GH[`$i`] = ~ GH_int[`$i`];
+   assign PH[`$i`] = ~ PH_int[`$i`];
+   assign GK[`$i`] = ~ GK_int[`$i`];
+   assign PK[`$i`] = ~ PK_int[`$i`];
+   //;   }
+
+   
+   //;   # Check if output is not inverted
+   //;   if ($tree_depth%2==1) { 
+   //;     for (my $i=$width_by_radix ; $i < ( $radix==2 ? $width : 2*($width_by_radix) ) ; $i++) {
+   assign GH[`$i`] = ~ ( GH_int[`$i`] & (PH_int[`$i`] | GH_int[`$width_by_radix-1`]) );
+   assign PH[`$i`] = ~ ( PH_int[`$i`] | PH_int[`$width_by_radix-1`] );
+   assign GK[`$i`] = ~ ( GK_int[`$i`] | PK_int[`$i`] & GK_int[`$width_by_radix-1`] );
+   assign PK[`$i`] = ~ ( PK_int[`$i`] & PK_int[`$width_by_radix-1`]);
+   //;     }
+   
+   //;     for (my $i=2*($width_by_radix) ; $i < ( $radix<3? 0 : $radix==3 ? $width : 3*($width_by_radix) ) ; $i++) {
+   assign GH[`$i`] = ~ ( GH_int[`$i`] & PH_int[`$i`] | GH_int[`$i`] & GH_int[`2*($width_by_radix)-1`] & PH_int[`2*($width_by_radix)-1`]
+                      | GH_int[`$i`] & GH_int[`2*($width_by_radix)-1`] & GH_int[`$width_by_radix-1`] );
+   assign PH[`$i`] = ~ ( PH_int[`$i`] | PH_int[`2*($width_by_radix)-1`] | PH_int[`$width_by_radix-1`]);
+   assign GK[`$i`] = ~ ( GK_int[`$i`] | PK_int[`$i`] & GK_int[`2*($width_by_radix)-1`]
+                      | PK_int[`$i`] & PK_int[`2*($width_by_radix)-1`] & GK_int[`$width_by_radix-1`] );
+   assign PK[`$i`] = ~ ( PK_int[`$i`] & PK_int[`2*($width_by_radix)-1`] & PK_int[`$width_by_radix-1`]);          
+   //;     }
+
+   //;     for (my $i=3*($width_by_radix) ; $i < ( $radix<4? 0 : $radix==4 ? $width : 4*($width_by_radix) ) ; $i++) {
+   assign GH[`$i`] = ~ ( GH_int[`$i`] & PH_int[`$i`]
+			 | GH_int[`$i`] & GH_int[`3*($width_by_radix)-1`] & PH_int[`3*($width_by_radix)-1`]
+			 | GH_int[`$i`] & GH_int[`3*($width_by_radix)-1`] & GH_int[`2*($width_by_radix)-1`] & PH_int[`2*($width_by_radix)-1`]
+			 | GH_int[`$i`] & GH_int[`3*($width_by_radix)-1`] & GH_int[`2*($width_by_radix)-1`] & GH_int[`$width_by_radix-1`] );
+   assign PH[`$i`] = ~ ( PH_int[`$i`] |   PH_int[`3*($width_by_radix)-1`] | PH_int[`2*($width_by_radix)-1`] | PH_int[`$width_by_radix-1`]);
+   assign GK[`$i`] = ~ ( GK_int[`$i`]
+			 | PK_int[`$i`] & GK_int[`3*($width_by_radix)-1`]
+			 | PK_int[`$i`] & PK_int[`3*($width_by_radix)-1`] & GK_int[`2*($width_by_radix)-1`]
+			 | PK_int[`$i`] & PK_int[`3*($width_by_radix)-1`] & PK_int[`2*($width_by_radix)-1`] & GK_int[`$width_by_radix-1`] );
+   assign PK[`$i`] = ~ ( PK_int[`$i`]   & PK_int[`3*($width_by_radix)-1`] & PK_int[`2*($width_by_radix)-1`] & PK_int[`$width_by_radix-1`] );          
+   //;     }
+   //;   }   
+   //;   else {
+   //    output is inverted
+   //;     for (my $i=$width_by_radix ; $i < ( $radix==2 ? $width : 2*($width_by_radix) ) ; $i++) {
+   assign GH[`$i`] = ~ ( GH_int[`$i`] | PH_int[`$i`] & GH_int[`$width_by_radix-1`] );
+   assign PH[`$i`] = ~ ( PH_int[`$i`] & PH_int[`$width_by_radix-1`]);
+   assign GK[`$i`] = ~ ( GK_int[`$i`] & (PK_int[`$i`] | GK_int[`$width_by_radix-1`]) );
+   assign PK[`$i`] = ~ ( PK_int[`$i`] | PK_int[`$width_by_radix-1`] );
+   //;     }
+   
+   //;     for (my $i=2*($width_by_radix) ; $i < ( $radix<3? 0 : $radix==3 ? $width : 3*($width_by_radix) ) ; $i++) {
+   assign GH[`$i`] = ~ ( GH_int[`$i`] | PH_int[`$i`] & GH_int[`2*($width_by_radix)-1`]
+                         | PH_int[`$i`] & PH_int[`2*($width_by_radix)-1`] & GH_int[`$width_by_radix-1`] );
+   assign PH[`$i`] = ~ ( PH_int[`$i`] & PH_int[`2*($width_by_radix)-1`] & PH_int[`$width_by_radix-1`]);
+   assign GK[`$i`] = ~ ( GK_int[`$i`] & PK_int[`$i`] | GK_int[`$i`] & GK_int[`2*($width_by_radix)-1`] & PK_int[`2*($width_by_radix)-1`]
+                         | GK_int[`$i`] & GK_int[`2*($width_by_radix)-1`] & GK_int[`$width_by_radix-1`] );
+   assign PK[`$i`] = ~ ( PK_int[`$i`] | PK_int[`2*($width_by_radix)-1`] | PK_int[`$width_by_radix-1`]);
+   //;     }
+   
+   //;     for (my $i=3*($width_by_radix) ; $i < ( $radix<4? 0 : $radix==4 ? $width : 4*($width_by_radix) ) ; $i++) {
+   assign GH[`$i`] = ~ ( GH_int[`$i`]
+			 | PH_int[`$i`] & GH_int[3*($width_by_radix)-1]
+			 | PH_int[`$i`] & PH_int[3*($width_by_radix)-1] & GH_int[2*($width_by_radix)-1]
+			 | PH_int[`$i`] & PH_int[3*($width_by_radix)-1] & PH_int[2*($width_by_radix)-1] & GH_int[$width_by_radix-1] );
+   assign PH[`$i`] = ~ ( PH_int[`$i`] & PH_int[3*($width_by_radix)-1] & PH_int[2*($width_by_radix)-1] & PH_int[$width_by_radix-1]);
+   assign GK[`$i`] = ~ ( GK_int[`$i`] & PK_int[`$i`]
+			 | GK_int[`$i`] & GK_int[3*($width_by_radix)-1] & PK_int[3*($width_by_radix)-1]
+			 | GK_int[`$i`] & GK_int[3*($width_by_radix)-1] & GK_int[2*($width_by_radix)-1] & PK_int[2*($width_by_radix)-1]
+			 | GK_int[`$i`] & GK_int[3*($width_by_radix)-1] & GK_int[2*($width_by_radix)-1] & GK_int[$width_by_radix-1] );
+   assign PK[`$i`] = ~ ( PK_int[`$i`] | PK_int[3*($width_by_radix)-1] | PK_int[2*($width_by_radix)-1] | PK_int[$width_by_radix-1]);        
+   //;     }
+   
+   //;   } #End of "output is inverted"...
+
+   
+   //; } # End of "if ($width > $radix)..."
+   //; elsif ($width==1) {
+   assign GH[0] = gh_b[0];
+   assign PH[0] = ph_b[0];
+   assign GK[0] = gk_b[0];
+   assign PK[0] = pk_b[0];
+   //; }  
+   //; else {  
+   assign GH[0] = ~ gh_b[0];
+   assign PH[0] = ~ ph_b[0];
+   assign GK[0] = ~ gk_b[0];
+   assign PK[0] = ~ pk_b[0];
+   
+   //;   if ($width > 1){
+   assign GH[1] = ~ ( gh_b[1] & (ph_b[1] | gh_b[0]) );
+   assign PH[1] = ~ ( ph_b[1] | ph_b[0] ) ;
+   assign GK[1] = ~ ( gk_b[1] | pk_b[1] & gk_b[0] ) ;
+   assign PK[1] = ~ ( pk_b[1] & pk_b[0] );
+   //;   }
+   
+   //;   if ($width > 2){
+   assign GH[2] = ~ ( gh_b[2] & ph_b[2] | gh_b[2] & gh_b[1] & ph_b[1] | gh_b[2] & gh_b[1] & gh_b[0]);
+   assign PH[2] = ~ ( ph_b[2] | ph_b[1] | ph_b[0]) ;
+   assign GK[2] = ~ ( gk_b[2] | pk_b[2] & gk_b[1] | pk_b[2] & pk_b[1] & gk_b[0] ) ;
+   assign PK[2] = ~ ( pk_b[2] & pk_b[1] & pk_b[0] );
+   //;   }
+   
+   //;   if ($width > 3){
+   assign GH[3] = ~ ( gh_b[3] & gh_b[3]
+		      | gh_b[3] & gh_b[2] & ph_b[2]
+		      | gh_b[3] & gh_b[2] & gh_b[1] & ph_b[1]
+		      | gh_b[3] & gh_b[2] & gh_b[1] & gh_b[0]);
+   assign PH[3] = ~ ( ph_b[3] | ph_b[2] | ph_b[1] | ph_b[0]) ;
+   assign GK[3] = ~ ( gk_b[3] 
+		      | pk_b[3] &  gk_b[2] 
+		      | pk_b[3] & pk_b[2] & gk_b[1]
+		      | pk_b[3] & pk_b[2] & pk_b[1] & gk_b[0] ) ;
+   assign PK[3] = ~ ( pk_b[3] & pk_b[2] & pk_b[1] & pk_b[0] );
+   //;   }
+   //; }
+   
+   
+   //; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+   begin
+      $display ("%t: `mname`: width =%d sklansky depth = %d",$time, `$width`, `$tree_depth`); 
+      $display ("%t: `mname`: gh_b=%b ph_b=%b gk_b=%b pk_b=%b", $time, gh_b, ph_b, gk_b, pk_b);
+      $display ("%t: `mname`: GH=%b PH=%b", $time, GH, PH);
+      $display ("%t: `mname`: GK=%b PK=%b", $time, GK, PK);
+   end
+   //; }
+endmodule : `mname`
