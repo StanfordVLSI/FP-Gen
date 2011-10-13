@@ -1,0 +1,53 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * FIXME Sameh: What is this module doing?
+ * Refer to J. Cortadella & J.M. Liaberia "Evaluation of A + B = K Conditions 
+ * Without Carry Propagation" IEEE transactions on Computer, November 1992 
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 13, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>109, Min=>2, Step=>1,
+//;                       Doc=>"Width of signals");
+
+
+module `mname` (
+    input [`$width-1`:0] a, b, sum;
+    output 		 equal
+		);
+   
+  
+   wire [`$width-1`:0] 	 v,w;
+   wire 		 dummy_co;
+
+   DW01_csa #(`$width`) CSA ( .a(a),.b(b), .c(~sum), .ci(1'b0), .carry(v), .sum(w), .co(dummy_co));
+
+   assign equal = & (v^w);
+
+endmodule : `maname`
+
