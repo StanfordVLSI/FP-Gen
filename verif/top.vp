@@ -48,7 +48,7 @@ module `mname` ();
    logic [`$sig_width - 1`:0] 		      SigA, SigB, SigC;
    logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
    logic 				      SignA, SignB, SignC;
-   logic 				      IncA, IncB;
+
 
    
    // local signals for observing outputs
@@ -61,6 +61,9 @@ module `mname` ();
    //; }
    
    // Instantiate the dut here
+   logic 				      IncA, IncB;
+   assign IncA = 0;
+   assign IncB = 0;
    `$FP_obj->instantiate()` (
 			     // inputs:
 			     //; if ($verif_mode =~ /ON/){
@@ -71,8 +74,12 @@ module `mname` ();
 			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
 			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
 			     );
-
-
+   
+   always @(posedge dumptolog)
+     begin
+	$display("%t: RESULT: SignAB=%1b ExpAB=0x%h FractionAB=0x%h", $time, SignAB, ExpAB, ManAB);
+     end
+   
    //; if ($verif_mode =~ /ON/){
    // ------------------------ VERIFICATION HARNES ---------------------------//
    // Instantiate the TestGenerator here:

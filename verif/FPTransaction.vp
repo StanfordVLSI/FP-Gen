@@ -96,8 +96,10 @@
 //;				Doc=>"Distribution weight for One pattern");
 //; my $PointOneOneOne_w = parameter(Name=>'PointOneOneOne_DistWeight', Val=>10, Min=>0, Step=>1,
 //;				Doc=>"Distribution weight for PointOneOneOne (0.111111111) pattern");
+//; my $EzAndSml_w = parameter(Name=>'EzAndSml_DistWeight', Val=>0, Min=>0, Step=>1,
+//;				Doc=>"Distribution weight for an easy and small number");
 //; my $Random_w = parameter(Name=>'Random_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Random pattern");
+//;				Doc=>"Distribution weight for Random (excluding Zero, Inf, Denorm and NaN) pattern");
 
 class `mname`;
    /* TO ME: Within class definitions, the rand and randc modifiers signal variables 
@@ -105,7 +107,7 @@ class `mname`;
     * where a variable will take on all possible values once before any value is repeated. 
     * Variables without modifiers are not randomized. */
    typedef enum {Zero, Denorm100, DenormFFF, Denorm001, DenormRnd, QuietNaN, 
-		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, Random} FPTransType;
+		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, EzAndSml, Random} FPTransType;
    rand FPTransType TransType;
    
    rand bit [`$sig_width - 1`:0] 	Signal;
@@ -129,7 +131,8 @@ class `mname`;
    static int 	Max_w = `$Max_w`; 
    static int 	Inf_w = `$Inf_w`; 
    static int 	One_w = `$One_w`; 
-   static int 	PointOneOneOne_w = `$PointOneOneOne_w`; 
+   static int 	PointOneOneOne_w = `$PointOneOneOne_w`;
+   static int 	EzAndSml_w =`$EzAndSml_w`;
    static int 	Random_w = `$Random_w`;
    
    // The following are constraints blocks for controling and generating
@@ -150,7 +153,8 @@ class `mname`;
 		      Max := Max_w, 
 		      Inf := Inf_w, 
 		      One := One_w, 
-		      PointOneOneOne := PointOneOneOne_w, 
+		      PointOneOneOne := PointOneOneOne_w,
+		      EzAndSml := EzAndSml_w,
 		      Random := Random_w };
    }
 
@@ -167,6 +171,7 @@ class `mname`;
       (TransType == Inf) -> 		{ Signal == `$sig_width`'b0 };
       (TransType == One) -> 		{ Signal == `$sig_width`'b0 };
       (TransType == PointOneOneOne) -> 	{ Signal == {(`$sig_width`){1'b1}}  };
+      (TransType == EzAndSml) ->	{ Signal inside {[1:10]} };
       (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
    }
      
@@ -183,7 +188,8 @@ class `mname`;
       (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
       (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
       (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
-      (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
+      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
    }
        
    constraint order1 { 
@@ -245,6 +251,10 @@ class `mname`;
 	   if ($test$plusargs("PointOneOneOne_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("PointOneOneOne_DistWeight`$NamedTransCtrl`=%d",  PointOneOneOne_w);
 	      $display("%t: `mname`: Runtime input +PointOneOneOne_DistWeight`$NamedTransCtrl`=%d found", $time, PointOneOneOne_w);
+	   end
+	   if ($test$plusargs("EzAndSml_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("EzAndSml_DistWeight`$NamedTransCtrl`=%d",  EzAndSml_w);
+	      $display("%t: `mname`: Runtime input +EzAndSml_DistWeight`$NamedTransCtrl`=%d found", $time, EzAndSml_w);
 	   end
 	   if ($test$plusargs("Random_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("Random_DistWeight`$NamedTransCtrl`=%d",  Random_w);
