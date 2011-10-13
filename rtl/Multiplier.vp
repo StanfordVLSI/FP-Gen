@@ -1,0 +1,94 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * This is a multiplier that uses a parametrized booth and parametrized 
+ * summation tree.
+ * 
+ * Parameters:
+ * * Width, BoothType, TreeType
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3,
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)");
+//; my $tree = parameter(Name=>'TreeType', Val=>'WallaceTree', List=>['WallaceTree','OS1Tree','OS2Tree','ZMTree','Array'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, OS1Tree, OS2Tree, ZMTree, Array)");
+
+module `mname`(
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$width-1`:0]    a,b,
+    input logic 		  ainc, binc,
+    output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
+		    );
+
+/* BOOTH ENCODING
+*/
+   //; # First we generate the Booth module
+   //; my $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth);
+   //;
+   //; # Now we can extract some properties from it: How many partial products and of of what widths
+   //; my $pp_count = $Booth_obj->get_param('PPCount');
+   //; my $pp_width = $Booth_obj->get_param('PPWidth');
+     
+   // Local signals for partial products
+   logic [`$pp_width-1`:0] 	  pp [0:`$pp_count-1`] ;
+
+   // Booth instance
+   `$Booth_obj->instantiate` (
+			      //; if ($verif_mode =~ /ON/){
+			      .dumptolog(dumptolog),
+			      //; }
+			      .x(a),.xinc(ainc), .y(b), .yinc(binc), .pp(pp)
+			      );
+
+/* SUMMATION TREE
+*/
+   /* RawOut0/1 hold the raw result from the tree summation, which (depending on the booth)
+    * have some unused bits. The width for RawOut is pp_width plus one booth width 
+    * for every additional pp. The total is thus width = pp_width + booth*(pp_count-1).
+    * (pp_width=`$pp_width`, pp_count=`$pp_count` and booth=`$booth`) */
+    logic [`$pp_width + $booth*($pp_count-1) -1`:0] RawOut0,RawOut1; 
+								  
+   //; my $Tree_obj = generate("$tree", 'Tree', PPWidth=>$pp_width, PPCount=>$pp_count, BoothType=>$booth);
+   `$Tree_obj->instantiate()` (
+ 			  //; if ($verif_mode =~ /ON/){
+			  .dumptolog(dumptolog),
+  			  //; }
+			  .pp(pp), .out0(RawOut0), .out1(RawOut1)
+			  );
+
+   // finally extract only the relevant bits
+    assign out0 = RawOut0[`2*$width+1+2*$booth`:`2*$booth`]; // FIXME: Sameh, please explain this...
+    assign out1 = RawOut1[`2*$width+1+2*$booth`:`2*$booth`];
+   
+
+endmodule
+
