@@ -168,7 +168,7 @@ module `mname`(
    assign denormalAB = 0;
    assign ManAB_normalized = ManAB_unnormalized;
    assign RStickyAB = 0;
-   //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2)); # FIXME Sameh: What about  EnableCarryIn=>'OFF', ZeroWidth=>0);   
+   //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
    `$ExpAdd_obj->instantiate()` (.a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
    //; }
 
