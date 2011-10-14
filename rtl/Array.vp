@@ -1,0 +1,98 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/array.vp#4 $
+ ** $DateTime: 2011/10/06 15:10:49 $
+ ** $Change: 9561 $
+ ** $Author: sameh $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * This is a array summation tree for PPCount partial products of PPWidth width.
+ * 
+ *                  
+ * 
+ * Parameters:
+ * * PPWidth, BoothType, PPCount
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported my original no booth wallace
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor); # For floor rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $pp_width = parameter(Name=>'PPWidth', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Bit width of the partial products");
+//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
+//; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>3, Step=>1,
+//;                       Doc=>"What booth was used to create the partial products? ".
+//;                            "(This determines the slope of the partial products ".
+//;                            "paralleloid)");
+//;
+//; # Some variables initialization
+//; my $width = $pp_width + $booth*($pp_count-1);  # add a booth width for every extra partial product
+
+module `mname()` ( 
+//; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+//; }
+    input logic [`$pp_width-1`:0]   pp [0:`$pp_count-1`],
+    output logic [`$width-1`:0]     out0,out1
+   );
+
+
+    assign out0[`$booth-1`:0] = pp[0][`$booth-1`:0];
+    assign out1[`$booth-1`:0] = {(`$booth`){1'b0}};
+
+    wire [`$pp_width-$booth-1`:0] inter_sum  [0:`$pp_count-2];
+    wire [`$pp_width-$booth`  :0] inter_carry[0:`$pp_count-2];
+
+    assign inter_sum[0]   =        pp[0][`$pp_width-1`:`$booth`];
+    assign inter_carry[0] = {1'b0, pp[1][`$pp_width-$booth-1`:0]};
+
+//; for (my $i=0; $i < $pp_count-2; $i++){
+
+      assign out0[`$booth*($i+2)-1`:`$booth*($i+1)`] = inter_sum  [`$i`][`$booth-1`:0] ;
+      assign out1[`$booth*($i+2)-1`:`$booth*($i+1)`] = inter_carry[`$i`][`$booth-1`:0] ;
+
+
+      DW01_csa #(`$pp_width-$booth`) CSA`$i` (
+        .a( pp[`$i+2`][`$pp_width-$booth-1`:0] ),
+        .b({ {(`$booth-1`){1'b0}}, inter_carry[`$i`][`$pp_width-$booth`:`$booth`]}),
+        .c({ pp[`$i+1`][`$pp_width-1`: `$pp_width-$booth`], inter_sum[`$i`][`$pp_width-$booth-1`:`$booth`]}), .ci(1'b0),
+        .sum(inter_sum[`$i+1`]),
+        .carry(inter_carry[`$i+1`][`$pp_width-$booth-1`:0]),
+        .co(   inter_carry[`$i+1`][`$pp_width-$booth`])
+        );
+//;  }
+
+    assign out0[`$width-1`: `$booth*($pp_count-1)`]  = {pp[`$pp_count-1`][`$pp_width-1`:`$pp_width-$booth`], inter_sum[`$pp_count-2`]};
+    assign out1[`$width-1`: `$booth*($pp_count-1)` = {{(`$booth-1`){1'b0}}, inter_carry[`$pp_count-2`]}
+
+//; if ($verif_mode =~ /ON/){
+	// synopsys translate_off
+	always @(posedge dumptolog)
+	begin
+		$display ("`mname`: out0 = %b", out0);
+		$display ("`mname`: out1 = %b", out1);
+	end
+	// synopsys translate_on
+
+ //; }
+endmodule
+
+
