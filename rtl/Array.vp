@@ -58,8 +58,8 @@ module `mname()` (
     assign out0[`$booth-1`:0] = pp[0][`$booth-1`:0];
     assign out1[`$booth-1`:0] = {(`$booth`){1'b0}};
 
-    wire [`$pp_width-$booth-1`:0] inter_sum  [0:`$pp_count-2];
-    wire [`$pp_width-$booth`  :0] inter_carry[0:`$pp_count-2];
+    wire [`$pp_width-$booth-1`:0] inter_sum  [0:`$pp_count-2`];
+    wire [`$pp_width-$booth`  :0] inter_carry[0:`$pp_count-2`];
 
     assign inter_sum[0]   =        pp[0][`$pp_width-1`:`$booth`];
     assign inter_carry[0] = {1'b0, pp[1][`$pp_width-$booth-1`:0]};
@@ -81,7 +81,7 @@ module `mname()` (
 //;  }
 
     assign out0[`$width-1`: `$booth*($pp_count-1)`]  = {pp[`$pp_count-1`][`$pp_width-1`:`$pp_width-$booth`], inter_sum[`$pp_count-2`]};
-    assign out1[`$width-1`: `$booth*($pp_count-1)` = {{(`$booth-1`){1'b0}}, inter_carry[`$pp_count-2`]}
+    assign out1[`$width-1`: `$booth*($pp_count-1)`] = {{(`$booth-1`){1'b0}}, inter_carry[`$pp_count-2`]};
 
 //; if ($verif_mode =~ /ON/){
 	// synopsys translate_off
