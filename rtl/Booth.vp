@@ -99,8 +99,15 @@ module `mname`(
     output [`$pp_width-1`:0] pp [0:`$pp_count`] // `$pp_count`+1 to account for xinc and yinc
 		);
    
+   //; if ($booth==1) {
+   
+   //;
+   //; } # End of "if ($booth==1)..." 
+   //; elsif ($booth==2 || $booth==3) {
+   //;   my $booth_module = "Booth".$booth."Enc";
+
    logic [`$extended_width`-1:0] extended_y;
-   //yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
+   // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
    assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
    
    logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
@@ -113,45 +120,42 @@ module `mname`(
    assign y_edge_vector = extended_y[`$extended_width-1`:1] ~^ extended_y[`$extended_width-2`:0];
 
    
-   //; if ($booth==2) {
-   // Instantiate the booth encoders
-   //;   for(my $i=0; $i < $pp_count; $i++){
-   //;     my $BoothEnc_obj = generate('Booth2Enc', "Booth2Enc_u$i", Width=>$width);
-   `$BoothEnc_obj->instantiate`
-     (.x(x), .x_b(x_b), .y_edge_vector(y_edge_vector[`2*$i+1`:`2*$i`]), 
-      .y2(extended_y[`2*$i+2`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
-   
-   //;   } # End of "for(my $i=0..."
-   //;
-   //; } elsif ($booth==3) {
-   //;
+   //;   # If booth==3 we need to prepare a 3*x and ~(3*x) products
+   //;   if ($booth==3) {
    // Prepare the 3*X and its inverse
    logic [`$width+1`:0] 	 x3, x3_b;
-   //; my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
+   //;   my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
    `$HM3_obj->instantiate` (
 			    //; if ($verif_mode =~ /ON/){
 			    .dumptolog(dumptolog),
 			    //; }
 			    .x(x), .x3(x3));
    assign x3_b = ~ x3;
+   //;   }
 
-   // Instantiate the booth encoders
+   
+   // Instantiate the booth `$booth` encoders
    //;   for(my $i=0; $i < $pp_count; $i++){
-   //;     my $BoothEnc_obj = generate('Booth3Enc', "Booth3Enc_u$i", Width=>$width);
+   //;     my $BoothEnc_obj = generate($booth_module, "Booth".$booth."Enc_u$i", Width=>$width);
    `$BoothEnc_obj->instantiate`
-     (.x(x), .x_b(x_b), .x3(x3), .x3_b(x3_b), .y_edge_vector(y_edge_vector[`3*$i+2`:`3*$i`]), 
-      .y3(extended_y[`3*$i+3`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
+     (.x(x), .x_b(x_b),
+      //;   if ($booth==3) {
+      .x3(x3), .x3_b(x3_b),
+      //;   }
+      .y_edge_vector(y_edge_vector[`$booth*($i+1)-1`:`$booth*$i`]), 
+      .y_msb(extended_y[`$booth*($i+1)`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
    
    //;   } # End of "for(my $i=0..."
-   //; }
-      
+
+   
+   // Finally, append the sign extenssions to the partial products
    assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
    assign pp[1] = {initial_pp[0][`$width`+`$booth`-1], {(`$booth`){S[0]}}, initial_pp[0][`$width`+`$booth`-2:0], {(`$booth`){1'b0}}};
    assign pp[2] = {1'b0, {(`$booth`-1){1'b1}}, initial_pp[1], {(`$booth`-2){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
-   //; for(my $i=3; $i < $pp_count+1; $i++) {
+   //;   for(my $i=3; $i < $pp_count+1; $i++) {
    assign pp[`$i`] = {1'b0, {(`$booth`-1){1'b1}}, initial_pp[`$i-1`], {(`$booth-1`){1'b0}},S[`$i-2`]};
-   //; }
-
+   //;   }
+   //; } # End of "elsif ($booth==2 || $booth==3)..."
 
 endmodule: `mname`
 

@@ -16,24 +16,24 @@
  * 
  * Modified Booth 3 encoder
  * 
- * Y[3:0]     out  =  pp   +   S
- * 
- * 0 0 0 0      +0      100000   +0      
- * 0 0 0 1      +X      (100X)   +0
- * 0 0 1 0      +X      (100X)   +0
- * 0 0 1 1      +2X     (10X0)   +0
- * 0 1 0 0      +2X     100000   +0      
- * 0 1 0 1      +3X     (1X3)    +0
- * 0 1 1 0      +3X     (1X3)    +0
- * 0 1 1 1      +4X     (1X00)   +0
- * 1 0 0 0      -4X     (0~X11)  +1      
- * 1 0 0 1      -3X     (0~X3)   +1
- * 1 0 1 0      -3X     (0~X3)   +1
- * 1 0 1 1      -2X     (01~X1)  +1
- * 1 1 0 0      -2X     (01~X1)  +1
- * 1 1 0 1      -X      (011~X)  +1
- * 1 1 1 0      -X      (011~X)  +1
- * 1 1 1 1      -0      011111   +1
+ * Y[3:0]     y_edge_vec    out  =  pp   +   S
+ * 	                  
+ * 0 0 0 0    -111          +0      100000   +0      
+ * 0 0 0 1    -110          +X      (100X)   +0
+ * 0 0 1 0    -100          +X      (100X)   +0
+ * 0 0 1 1    -101          +2X     (10X0)   +0
+ * 0 1 0 0    -001          +2X     100000   +0      
+ * 0 1 0 1    -000          +3X     (1X3)    +0
+ * 0 1 1 0    -010          +3X     (1X3)    +0
+ * 0 1 1 1    -011          +4X     (1X00)   +0
+ * 1 0 0 0    -011          -4X     (0~X11)  +1      
+ * 1 0 0 1    -010          -3X     (0~X3)   +1
+ * 1 0 1 0    -000          -3X     (0~X3)   +1
+ * 1 0 1 1    -001          -2X     (01~X1)  +1
+ * 1 1 0 0    -101          -2X     (01~X1)  +1
+ * 1 1 0 1    -100          -X      (011~X)  +1
+ * 1 1 1 0    -110          -X      (011~X)  +1
+ * 1 1 1 1    -111          -0      011111   +1
  * 
  * NOTE: there is 1 to be augmented to the left of the partial products 
  *       except for the first one
@@ -70,7 +70,7 @@ module `mname` (
     input logic [`$width-1`:0] 	x, x_b,
     input logic [`$width+1`:0] 	x3, x3_b,
     input logic [2:0] 		y_edge_vector,		// y_edge_vector[i] = y[i]==y[i+1]
-    input logic 		y3,                   	// y[3]
+    input logic 		y_msb,                 	// y[3]
     output logic [`$width+2`:0] pp,               	//extend width by two: 1 bit for sign and second for shifting for 2X multiple
     output logic 		S
 		);
@@ -79,7 +79,7 @@ module `mname` (
    logic [`$width-1`:0]   x_out;
   
 
-   assign S = y3;
+   assign S = y_msb;
    assign x_out = S ? x_b: x;
 
   /*
@@ -100,7 +100,7 @@ module `mname` (
    logic [`$width+2`:0] 	  pp0124;
    logic [1:0] 		  mux_control;
 
-   assign mux_control = {y3, ~(y_edge_vector[1] & y_edge_vector[0]) ,  ~(~(~y_edge_vector[2] & y_edge_vector[1]) & y_edge_vector[0]) };
+   assign mux_control = {y_msb, ~(y_edge_vector[1] & y_edge_vector[0]) ,  ~(~(~y_edge_vector[2] & y_edge_vector[1]) & y_edge_vector[0]) };
    
    always_comb
      begin

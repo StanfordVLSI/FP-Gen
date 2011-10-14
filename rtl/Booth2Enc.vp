@@ -59,13 +59,13 @@
 module `mname` (
     input [`$width-1`:0]    x, x_b,
     input [1:0] 	    y_edge_vector,  // y_edge_vector[i] = y[i]==y[i+1]
-    input 		    y2,             // y[3]
+    input 		    y_msb,          // y[2]
     output [`$width+1`:0]   pp,             //extend width by two: 1 bit for sign and second for shifting for 2X multiple
     output 		    S
 		);
    
    logic [`$width-1`:0]     x_out;
-   assign S = y2;
+   assign S = y_msb;
    assign x_out = S ? x_b: x;
    assign pp = y_edge_vector[0] ? y_edge_vector[1]? {~S,{(`$width+1`){S}}} : {~S,x_out,S} : {~S,S,x_out};
 endmodule
