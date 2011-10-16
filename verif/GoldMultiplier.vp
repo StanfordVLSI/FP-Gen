@@ -1,0 +1,60 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Gold model with full precision for FP multiplier
+ * 
+ * Parameters:
+ * * FPTransA_Ptr, FPTransB_Ptr (pointers to the FP transactions classes generators)
+ * 
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 15, 2011  shacham   init version -
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $FPTransA_Ptr = parameter(Name=>'FPTransA_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class generator object for FP trans A');
+//; my $FPTransB_Ptr = parameter(Name=>'FPTransB_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class generator object for FP trans B');
+//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) -- FIXME: Not sure what to do with this info here??");
+//; my $frac_width = $FPTransA_Ptr->get_param('FractionWidth');
+//; my $exp_width = $FPTransA_Ptr->get_param('ExponentWidth');
+//; my $typeA = $FPTransA_Ptr->mname;
+//; my $typeB = $FPTransB_Ptr->mname;
+//;
+
+class `mname`;
+
+   logic [`$frac_width - 1`:0] 	SigA, SigB, SigRes, SigExpected;
+   logic [`$exp_width - 1`:0] 	ExpA, ExpB, ExpRes, ExpExpected;
+   logic 			SignA, SignB, SignRes, SignExpected;
+   
+   function bit CheckMultResult(`$typeA` transA, `$typeB` transB,
+    logic 			    SignRes,
+    logic [`$exp_width + 1`:0] 	    ExpRes,
+    logic [`2*$frac_width+2 - 1`:0] ManRes);
+      
+
+      return 1'b0;
+      
+   endfunction
+				    
+
+
+endclass : `mname`

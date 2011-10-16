@@ -38,7 +38,11 @@
  * 
  * 
  * Parameters:
- * * SignalWidth, ExponentWidth
+ * * FractionWidth, ExponentWidth
+ * * NamedTransCtrl
+ * * SignIsPos_w, Zero_w, Denorm100_w, DenormFFF_w, Denorm001_w, DenormRnd_w, 
+ *   QuietNaN_w, SignalingNaN_w, Min_w, Max_w, Inf_w, One_w, PointOneOneOne_w,
+ *   EzAndSml_w, Random_w
  * 
  * 
  * 
@@ -51,7 +55,7 @@
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//; my $sig_width = parameter(Name=>'SignalWidth', Val=>52, 
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier ".
 //;                           "(default is IEEE Double, 52 bit)");
@@ -59,6 +63,10 @@
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier ".
 //;                           "(default is IEEE Double, 11 bit)");
+//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) -- FIXME -- Not sure what to do with this info??");
 //;
 //; # Parameter to enable per transaction control from command line
 //; my $NamedTransCtrl = parameter(Name=>'NamedTransCtrl', Val=>'',
@@ -110,7 +118,7 @@ class `mname`;
 		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, EzAndSml, Random} FPTransType;
    rand FPTransType TransType;
    
-   rand bit [`$sig_width - 1`:0] 	Signal;
+   rand bit [`$frac_width - 1`:0] 	Fraction;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
 
@@ -159,19 +167,19 @@ class `mname`;
    }
 
      constraint pick_fraction_val{
-      (TransType == Zero) -> 		{ Signal == `$sig_width`'b0 };
-      (TransType == Denorm100) -> 	{ Signal == {1'b1, `$sig_width-1`'b0} };
-      (TransType == DenormFFF) -> 	{ Signal == {(`$sig_width`){1'b1}} };
-      (TransType == Denorm001) -> 	{ Signal == {`$sig_width-1`'b0, 1'b1} };
-      (TransType == DenormRnd) -> 	{ Signal != `$sig_width`'b0 };
-      (TransType == QuietNaN) -> 	{ Signal[`$sig_width-1`] == 1'b1 };
-      (TransType == SignalingNaN) -> 	{ Signal[`$sig_width-1`] == 1'b0 && Signal[`$sig_width-2`:0] != `$sig_width-1`'b0 };
-      (TransType == Min) -> 		{ Signal == `$sig_width`'b0 };
-      (TransType == Max) -> 		{ Signal == {(`$sig_width`){1'b1}} };
-      (TransType == Inf) -> 		{ Signal == `$sig_width`'b0 };
-      (TransType == One) -> 		{ Signal == `$sig_width`'b0 };
-      (TransType == PointOneOneOne) -> 	{ Signal == {(`$sig_width`){1'b1}}  };
-      (TransType == EzAndSml) ->	{ Signal inside {[1:10]} };
+      (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
+      (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
+      (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
+      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 };
+      (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
+      (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
+      (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == Max) -> 		{ Fraction == {(`$frac_width`){1'b1}} };
+      (TransType == Inf) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == One) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == PointOneOneOne) -> 	{ Fraction == {(`$frac_width`){1'b1}}  };
+      (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
       (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
    }
      
@@ -193,7 +201,7 @@ class `mname`;
    }
        
    constraint order1 { 
-      solve TransType before Signal, Exponent, Sign;
+      solve TransType before Fraction, Exponent, Sign;
    }
      
 

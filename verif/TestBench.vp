@@ -19,7 +19,7 @@
  * 
  * Parameters:
  * -----------
- * * SignalWidth, ExponentWidth, TestDenormals
+ * * FractionWidth, ExponentWidth, TestDenormals
  * * NumTrans, Seed
  * 
  * 
@@ -33,7 +33,7 @@
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//; my $sig_width = parameter(Name=>'SignalWidth', Val=>52, 
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
@@ -50,32 +50,49 @@
 //;                      Doc=>"Seed for random values".
 //;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
 //;                                 
+//; my $product_width = 2 * $frac_width + 2;
+
 program automatic `mname` (
     output logic dumptolog,
-    output logic [`$sig_width - 1`:0] 	SigA, SigB, SigC,
+			   // signals to drive the design
+    output logic [`$frac_width - 1`:0] 	FracA, FracB, FracC,
     output logic [`$exp_width - 1`:0] 	ExpA, ExpB, ExpC,
-    output logic 			SignA, SignB, SignC
+    output logic 			SignA, SignB, SignC,
+
+			   // results from the design
+    input logic [`$product_width - 1`:0] ManRes,
+    input logic [`$exp_width + 1`:0] 	 ExpRes,
+    input logic 			 SignRes
 		);
 
    // Local variables and handles for controlling the simulation
    int 					seed=`$seed`;
    int 					num_trans = `$num_trans`;
    int 					dummy;
+
+   // FP transaction handles
    //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
-   //;                              SignalWidth=>$sig_width, 
+   //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
-   `$TransGenA_obj->mname` TransGenA;
+   `$TransGenA_obj->instantiate`;
    //; my $TransGenB_obj = generate('FPTransaction','TransGenB',
-   //;                              SignalWidth=>$sig_width, 
+   //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
-   `$TransGenB_obj->mname` TransGenB;
+   `$TransGenB_obj->instantiate`;
    //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
-   //;                              SignalWidth=>$sig_width, 
+   //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
-   `$TransGenC_obj->mname` TransGenC;
+   `$TransGenC_obj->instantiate`;
+
+   // Reference model
+   //; my $GoldRef_obj = generate('GoldMultiplier', 'GoldRef', 
+   //;                              FPTransA_Ptr=>$TransGenA_obj, 
+   //;                              FPTransB_Ptr=>$TransGenB_obj, 
+   //;                              TestDenormals=>$test_denormals);
+   `$GoldRef_obj->instantiate`;
    
    
    initial begin
@@ -86,13 +103,14 @@ program automatic `mname` (
       TransGenA = new();
       TransGenB = new();
       TransGenC = new();
+      GoldRef = new();
 
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
      dumptolog = 1'b0;
-      SigA = 0;
+      FracA = 0;
       ExpA = 0;
-      SigB = 0;
+      FracB = 0;
       ExpB = 0;
       for (int i=0; i<num_trans; i++) 
 	begin
@@ -102,20 +120,27 @@ program automatic `mname` (
 	   TransGenB.randomize();
 	   TransGenC.randomize();
 
-	   SignA = TransGenA.Sign;    SigA = TransGenA.Signal;    ExpA = TransGenA.Exponent;
-	   SignB = TransGenB.Sign;    SigB = TransGenB.Signal;    ExpB = TransGenB.Exponent;
-	   SignC = TransGenC.Sign;    SigC = TransGenC.Signal;    ExpC = TransGenC.Exponent;
+	   SignA = TransGenA.Sign;    FracA = TransGenA.Fraction;    ExpA = TransGenA.Exponent;
+	   SignB = TransGenB.Sign;    FracB = TransGenB.Fraction;    ExpB = TransGenB.Exponent;
+	   SignC = TransGenC.Sign;    FracC = TransGenC.Fraction;    ExpC = TransGenC.Exponent;
 	   $write("%t: Transaction #%0d: ", $time, i);
-	   $write("TransTypeA=%s SignA=%b ExpA=0x%h FractionA=0x%h | ", TransGenA.TransType.name(), SignA, ExpA, SigA);
-	   $write("TransTypeB=%s SignB=%b ExpB=0x%h FractionB=0x%h | ", TransGenB.TransType.name(), SignB, ExpB, SigB);
-	   $write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, SigC);
+	   $write("TransTypeA=%s SignA=%b ExpA=0x%h FractionA=0x%h | ", TransGenA.TransType.name(), SignA, ExpA, FracA);
+	   $write("TransTypeB=%s SignB=%b ExpB=0x%h FractionB=0x%h | ", TransGenB.TransType.name(), SignB, ExpB, FracB);
+	   $write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, FracC);
 	   
 	   // wait for it...
 	   #100;
-	   dumptolog = 1'b1;
+	   $display("%t: RESULT: SignRes=%1b ExpRes=0x%h ManRes=0x%h", $time, SignRes, ExpRes, ManRes);
 
 	   // now check results...
-	   // FIXME
+	   //if (! GoldRef.CheckMultResult(TransGenA, TransGenB, SignRes, ExpRes, ManRes) )
+	   if (0) // FIXME use line above
+	     begin
+		dumptolog = 1'b1;
+		#1;
+		$display("%t: ERROR Found", $time);
+		$finish(2);
+	     end
 
 	   // wait before starting over
 	   #100;

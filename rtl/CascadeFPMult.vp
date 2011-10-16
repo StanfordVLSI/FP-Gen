@@ -16,7 +16,7 @@
  * 
  * 
  * Parameters:
- * * SignalWidth, ExponentWidth, EnableDenormals
+ * * FractionWidth, ExponentWidth, EnableDenormals
  * 
  * Change bar:
  * -----------
@@ -37,34 +37,34 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $sig_width = parameter(Name=>'SignalWidth', Val=>52, 
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO)");
 //;
 //; # And some local variables
-//; my $shift_width = CeilOfLog2($sig_width+1) + 1;
-//; my $product_width = 2 * $sig_width + 2;
+//; my $shift_width = CeilOfLog2($frac_width+1) + 1;
+//; my $product_width = 2 * $frac_width + 2;
 
 module `mname`(
   //; if ($verif_mode =~ /ON/){
     input logic dumptolog,
   //; }
-    input logic [`$exp_width + $sig_width`:0] A, B,
+    input logic [`$exp_width + $frac_width`:0] A, B,
     input logic 			      IncA, IncB,	
     output logic 			      SignAB, NANAB, InfAB, ZeroAB, RStickyAB,
     output logic [`$exp_width + 1`:0] 	      ExpAB,
     output logic [`$product_width - 1`: 0]    ManAB
 	       );
    
-   logic [`$sig_width - 1`:0] 		      SigA, SigB;
-   logic [`$sig_width`:0] 		      ManA, ManB;
+   logic [`$frac_width - 1`:0] 		      SigA, SigB;
+   logic [`$frac_width`:0] 		      ManA, ManB;
    logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
    logic [`$exp_width + 1`:0] 		      bias_offset, Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
    logic [`$product_width - 1`: 0] 	      ManAB_unnormalized, ManAB_normalized;
@@ -75,14 +75,14 @@ module `mname`(
    logic 				      co_dummy3, co_dummy4, noShift, denormalAB;
 
 
-  assign SigA  = A[`$sig_width - 1` : 0 ];
-  assign SigB  = B[`$sig_width - 1` : 0 ];
-  assign ZeroExpA  =  (A[`$exp_width + $sig_width - 1`:`$sig_width`] == `$exp_width`'b0)? 1'b1:1'b0;
-  assign ZeroExpB  =  (B[`$exp_width + $sig_width - 1`:`$sig_width`] == `$exp_width`'b0)? 1'b1:1'b0;
-  assign ExpA  = { A[`$exp_width + $sig_width - 1` : `$sig_width + 1` ] , ZeroExpA | A[`$sig_width`] }; // convert denormals exponents to normal
-  assign ExpB  = { B[`$exp_width + $sig_width - 1` : `$sig_width + 1` ] , ZeroExpB | B[`$sig_width`] }; // convert denormals exponents to normal
-  assign SignA = A[ `$exp_width + $sig_width` ];
-  assign SignB = B[ `$exp_width + $sig_width` ];
+  assign SigA  = A[`$frac_width - 1` : 0 ];
+  assign SigB  = B[`$frac_width - 1` : 0 ];
+  assign ZeroExpA  =  (A[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
+  assign ZeroExpB  =  (B[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
+  assign ExpA  = { A[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpA | A[`$frac_width`] }; // convert denormals exponents to normal
+  assign ExpB  = { B[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpB | B[`$frac_width`] }; // convert denormals exponents to normal
+  assign SignA = A[ `$exp_width + $frac_width` ];
+  assign SignB = B[ `$exp_width + $frac_width` ];
 
   assign NANorInfA =  ExpA=={(`$exp_width`){1'b1}};
   assign NANorInfB =  ExpB=={(`$exp_width`){1'b1}};
@@ -124,8 +124,8 @@ module `mname`(
     logic [`$shift_width + 1`:0] shiftAmount;
     logic co_dummy5, co_dummy6, co_dummy7;
 
-    DW_lzd #(`$sig_width`+1) LZDA ( .a({ManA[`$sig_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
-    DW_lzd #(`$sig_width`+1) LZDB ( .a({ManB[`$sig_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
+    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
+    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
 
     DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0),.b(Eab_ps1),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A}),
@@ -145,13 +145,13 @@ module `mname`(
    //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
    `$ExpAdd_obj->instantiate()` (.a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
 
-    //Normal Shift Amount = `$sig_width` + 1 - LZD_A - LZD_B = `$sig_width` + 3 + ~LZD_A + ~LZD_B
-    assign normalShiftConst = `$sig_width` + 3;
+    //Normal Shift Amount = `$frac_width` + 1 - LZD_A - LZD_B = `$frac_width` + 3 + ~LZD_A + ~LZD_B
+    assign normalShiftConst = `$frac_width` + 3;
     DW01_csa #(`$shift_width`) SHN_CSA (.a(~LZD_A),.b(~LZD_B),.c(normalShiftConst),.ci(1'b0), .carry(SHN_ps0), .sum(SHN_ps1), .co(co_dummy5) );
     assign SHN = SHN_ps0 + SHN_ps1;
 
-    //Denormal Shift Amount = `$sig_width` + 1 + 1 - Eab_ps0 - Eab_ps1 = `$sig_width` + 4 + ~Eab_ps0 + ~Eab_ps1
-    assign denormalShiftConst = `$sig_width` + 4;
+    //Denormal Shift Amount = `$frac_width` + 1 + 1 - Eab_ps0 - Eab_ps1 = `$frac_width` + 4 + ~Eab_ps0 + ~Eab_ps1
+    assign denormalShiftConst = `$frac_width` + 4;
     DW01_csa #(`$exp_width`+2) SHD_CSA (.a(~Eab_ps0),.b(~Eab_ps1),.c(denormalShiftConst),.ci(1'b0), .carry(SHD_ps0), .sum(SHD_ps1), .co(co_dummy6) );
     assign SHD_wide = SHD_ps0 + SHD_ps1;
 
@@ -160,8 +160,8 @@ module `mname`(
 				      {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) : {1'b0,SHN};
 
     assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>shiftAmount;
-    assign ManAB_normalized = ManAB_shifted[`$product_width + $sig_width`:`$sig_width`+1];
-    assign RStickyAB = |ManAB_shifted[`$sig_width`:0] | ( ManAB_normalized==0 & ~ZeroAB);
+    assign ManAB_normalized = ManAB_shifted[`$product_width + $frac_width`:`$frac_width`+1];
+    assign RStickyAB = |ManAB_shifted[`$frac_width`:0] | ( ManAB_normalized==0 & ~ZeroAB);
 
    //; }else{           
    // enable_denormals = NO
@@ -175,13 +175,13 @@ module `mname`(
 
 
   logic [`$product_width + 1`: 0] ManAB_pp0, ManAB_pp1;
-   //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$sig_width+1);
+   //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$frac_width+1);
    `$Mul_obj->instantiate()` ( .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1));
   assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
 
 
 /*
-  DW02_mult #(`$sig_width`+1, `$sig_width`+1 ) U1 ( .A(ManA),   .B(ManB),
+  DW02_mult #(`$frac_width`+1, `$frac_width`+1 ) U1 ( .A(ManA),   .B(ManB),
                                                   .TC(1'b0), //Two's complement: 0 = unsigned, 1 = signed
                                                   .PRODUCT(ManAB_unnormalized));
 */
