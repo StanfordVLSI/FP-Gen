@@ -13,7 +13,7 @@
  * 
  * Parameters:
  * * FPTransA_Ptr, FPTransB_Ptr (pointers to the FP transactions classes generators)
- * 
+ * * FPTransRes_Ptr (pointer to a reult class generator)
  * 
  * 
  * Change bar:
@@ -29,32 +29,110 @@
 //;				 Doc=>'Pointer to the class generator object for FP trans A');
 //; my $FPTransB_Ptr = parameter(Name=>'FPTransB_Ptr', Val=>'',
 //;				 Doc=>'Pointer to the class generator object for FP trans B');
+//; my $FPTransRes_Ptr = parameter(Name=>'FPTransRes_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class object for FP observed result tran');
 //; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) -- FIXME: Not sure what to do with this info here??");
 //; my $frac_width = $FPTransA_Ptr->get_param('FractionWidth');
+//; my $fracRes_width = $FPTransRes_Ptr->get_param('FractionWidth');
 //; my $exp_width = $FPTransA_Ptr->get_param('ExponentWidth');
 //; my $typeA = $FPTransA_Ptr->mname;
 //; my $typeB = $FPTransB_Ptr->mname;
+//; my $typeRes = $FPTransRes_Ptr->mname;
 //;
 
 class `mname`;
 
-   logic [`$frac_width - 1`:0] 	SigA, SigB, SigRes, SigExpected;
-   logic [`$exp_width - 1`:0] 	ExpA, ExpB, ExpRes, ExpExpected;
-   logic 			SignA, SignB, SignRes, SignExpected;
+   logic [`$fracRes_width-1`:0] 	FracExpected;
+   logic [`$exp_width - 1`:0] 		ExpExpected;
+   logic 				SignExpected;
    
-   function bit CheckMultResult(`$typeA` transA, `$typeB` transB,
-    logic 			    SignRes,
-    logic [`$exp_width + 1`:0] 	    ExpRes,
-    logic [`2*$frac_width+2 - 1`:0] ManRes);
-      
 
-      return 1'b0;
+   function bit CheckMultResult(`$typeA` transA, `$typeB` transB, `$typeRes` transRes);
+      // Local Variables
+      logic 				overflow = 0, underflow = 0;
+      logic [`$exp_width + 1`:0] 	Exp_internal;
+      logic [`$fracRes_width`:0] 	Man_internal;
+
+      $write("%t: SENT:  TransTypeA=%s SignA=%b ExpA=0x%h FractionA=0x%h | ", $time,
+	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction);
+      $display("TransTypeB=%s SignB=%b ExpB=0x%h FractionB=0x%h",
+	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction);
+      $display("%t: RESULT: SignRes=%1b ExpRes=0x%h ManRes=0x%h", $time,
+	       transRes.Sign, transRes.Exponent, transRes.Fraction );
+
+
+      // First we calculate the expected sign, since it used in both regular and corner cases
+      // plus x plus ==> plus; plus x minus ==> minus; minus x minus ==> minus; 
+      SignExpected = transA.Sign ^ transB.Sign;
+
+      // Start with corner cases:
+      // 1. Either input is NaN                       Result is NaN
+      if (transA.TransType == `$typeA`::QuietNaN || transA.TransType == `$typeA`::SignalingNaN || 
+	  transB.TransType == `$typeB`::QuietNaN || transB.TransType == `$typeB`::SignalingNaN) begin
+	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
+	 $display ("DEBUG I AM HERE `$exp_width`'b%b", transRes.Exponent);
+	 
+	 if(transRes.Exponent == {(`$exp_width`){1'b1}} && transRes.Fraction != `$fracRes_width`'b0) begin
+	 $display ("DEBUG I AM HERE");
+	    return 1'b1;
+	 end
+      end 
       
+      // 2. 0*Inf                                     Result is NaN
+      //   (A=0 and B=Inf or vice-versa)                            
+      else if ( (transA.TransType == `$typeA`::Zero && transB.TransType == `$typeB`::Inf) || 
+		(transB.TransType == `$typeB`::Zero && transA.TransType == `$typeA`::Inf) ) begin
+	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
+	 if(transRes.Exponent == {(`$exp_width`){1'b1}} && transRes.Fraction != `$fracRes_width`'b0)
+	   return 1'b1;
+      end
+      
+      // 3. num*Inf or Inf*Inf                        Result is signed Inf
+      else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf) begin
+	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
+	 if(transRes.Exponent == {(`$fracRes_width`){1'b1}} && transRes.Fraction == `$fracRes_width`'b0 &&
+			       transRes.Sign == SignExpected) 
+	   return 1'b1;
+      end
+           
+      // Now for the normal case
+      else begin
+	 // Exp is in 0:2046 which correspond to -1023:1023 ==>
+	 // TotalExp is in 0:4092 but we nned to subtract 1023 ==>
+	 // if TotalExp < 1023 we are at underflow
+	 // if TotalExp > 2046+1023 we have overflow
+	 // Note that these numbers are for ieee double. In general these are:
+	 // Exp range: 0:2^$exp_width-2 ==> 0:2^`$exp_width-2` ==> 0:`2**$exp_width-2`
+	 // Exp offset: 2^($exp_width-1)-1 ==> 2^`$exp_width-1`-1 ==> `2**($exp_width-1) -1`
+	 Exp_internal = transA.Exponent + transB.Exponent;
+	 overflow = (Exp_internal > `2**$exp_width-2`+`2**($exp_width-1)-1`) ? 1'b1 : 1'b0;
+	 underflow = (Exp_internal < `2**($exp_width-1)-1`) ? 1'b1 : 1'b0;
+	 ExpExpected = Exp_internal - `2**($exp_width-1)-1`;
+
+	 
+	 Man_internal = {1'b1, transA.Fraction} * {1'b1, transB.Fraction};
+	 FracExpected = Man_internal[`$fracRes_width-1`:0];
+	 
+	 
+	 // FIXME : Do something with overflow and underflow?	     
+      end
+      
+      
+      $display("%t: EXPECTED: SignExpected=%1b ExpExpected=0x%h FracExpected=0x%h", $time,
+	       SignExpected, ExpExpected, FracExpected);
+
+      if (transRes.Sign == SignExpected &&
+	  transRes.Exponent == ExpExpected &&
+	  transRes.Fraction == FracExpected )
+	return 1'b1;
+      
+      // default: Fail
+      return 1'b0;
    endfunction
-				    
+		
 
 
 endclass : `mname`

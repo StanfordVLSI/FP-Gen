@@ -39,6 +39,7 @@
  * 
  * Parameters:
  * * FractionWidth, ExponentWidth
+ * * Random (YES/NO)
  * * NamedTransCtrl
  * * SignIsPos_w, Zero_w, Denorm100_w, DenormFFF_w, Denorm001_w, DenormRnd_w, 
  *   QuietNaN_w, SignalingNaN_w, Min_w, Max_w, Inf_w, One_w, PointOneOneOne_w,
@@ -68,46 +69,60 @@
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) -- FIXME -- Not sure what to do with this info??");
 //;
-//; # Parameter to enable per transaction control from command line
-//; my $NamedTransCtrl = parameter(Name=>'NamedTransCtrl', Val=>'',
-//; 			   List=>['','A'..'Z'],
-//;			   Doc=>"This parameter enables per-named-transaction control ".
-//;                             "of the 'Distribution Weight' parameters from the command line ".
-//;                             "using the notation 'RUN=+Any_DistWeightX=value' ".
-//;                             "where 'X' can be one of 'A' through 'Z', and 'Any' can be ".
-//;				"any of the below 'DistWeight' parameters. Allowed values for ".
-//;				"NamedTransCtrl are capital letters 'A' through 'Z' or it can be left empty");
-//; # Parameters to control constraints
-//; my $SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
-//; 				Doc=>"Distribution weight for positive values (range is 0..100)");
-//; my $Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Zero pattern"); 
-//; my $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Denorm with 100..0 pattern");
-//; my $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Denorm with FFF..F pattern");
-//; my $Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>2, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Denorm with 000..01 pattern");
-//; my $DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>4, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Denorm random (non-zero) pattern");
-//; my $QuietNaN_w = parameter(Name=>'QuietNaN_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for QuietNaN pattern");
-//; my $SignalingNaN_w = parameter(Name=>'SignalingNaN_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for SignalingNaN pattern");
-//; my $Min_w = parameter(Name=>'Min_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Min pattern");
-//; my $Max_w = parameter(Name=>'Max_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Max pattern");
-//; my $Inf_w = parameter(Name=>'Inf_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Inf pattern");
-//; my $One_w = parameter(Name=>'One_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for One pattern");
-//; my $PointOneOneOne_w = parameter(Name=>'PointOneOneOne_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for PointOneOneOne (0.111111111) pattern");
-//; my $EzAndSml_w = parameter(Name=>'EzAndSml_DistWeight', Val=>0, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for an easy and small number");
-//; my $Random_w = parameter(Name=>'Random_DistWeight', Val=>10, Min=>0, Step=>1,
-//;				Doc=>"Distribution weight for Random (excluding Zero, Inf, Denorm and NaN) pattern");
+//; # Is this a randomly generated transaction?
+//; my $rand_mode = parameter(Name=>'Random',
+//;                            Val=>'', List=>['YES','NO'],
+//;                            Doc=>"Is this a randomly generated transaction? ".
+//;				    "(Possible values are YES or NO)" ); 
+//;
+//; # In Random mode only:
+//; my $NamedTransCtrl;
+//; my ($SignIsPos_w, $Zero_w, $Denorm100_w, $DenormFFF_w, $Denorm001_w);
+//; my ($DenormRnd_w, $QuietNaN_w, $SignalingNaN_w, $Min_w, $Max_w, $Inf_w);
+//; my ($One_w, $PointOneOneOne_w, $EzAndSml_w, $Random_w);
+//;
+//; if ($rand_mode =~ /YES/){
+//;	# Parameter to enable per transaction control from command line
+//;	$NamedTransCtrl = parameter(Name=>'NamedTransCtrl', Val=>'',
+//;				   List=>['','A'..'Z'],
+//;				   Doc=>"This parameter enables per-named-transaction control ".
+//;	                            "of the 'Distribution Weight' parameters from the command line ".
+//;	                            "using the notation 'RUN=+Any_DistWeightX=value' ".
+//;	                            "where 'X' can be one of 'A' through 'Z', and 'Any' can be ".
+//;					"any of the below 'DistWeight' parameters. Allowed values for ".
+//;					"NamedTransCtrl are capital letters 'A' through 'Z' or it can be left empty");
+//;	# Parameters to control constraints
+//;	$SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
+//;					Doc=>"Distribution weight for positive values (range is 0..100)");
+//;	$Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Zero pattern"); 
+//;	$Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Denorm with 100..0 pattern");
+//;	$DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Denorm with FFF..F pattern");
+//;	$Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>2, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Denorm with 000..01 pattern");
+//;	$DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>4, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Denorm random (non-zero) pattern");
+//;	$QuietNaN_w = parameter(Name=>'QuietNaN_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for QuietNaN pattern");
+//;	$SignalingNaN_w = parameter(Name=>'SignalingNaN_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for SignalingNaN pattern");
+//;	$Min_w = parameter(Name=>'Min_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Min pattern");
+//;	$Max_w = parameter(Name=>'Max_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Max pattern");
+//;	$Inf_w = parameter(Name=>'Inf_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Inf pattern");
+//;	$One_w = parameter(Name=>'One_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for One pattern");
+//;	$PointOneOneOne_w = parameter(Name=>'PointOneOneOne_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for PointOneOneOne (0.111111111) pattern");
+//;	$EzAndSml_w = parameter(Name=>'EzAndSml_DistWeight', Val=>0, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for an easy and small number");
+//;	$Random_w = parameter(Name=>'Random_DistWeight', Val=>10, Min=>0, Step=>1,
+//;					Doc=>"Distribution weight for Random (excluding Zero, Inf, Denorm and NaN) pattern");
+//; }
 
 class `mname`;
    /* TO ME: Within class definitions, the rand and randc modifiers signal variables 
@@ -122,6 +137,67 @@ class `mname`;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
 
+   // Some setters:
+   // Kind of C'tor for a regular, NON-Random transaction
+   function ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, logic [`$frac_width - 1`:0] Frac);
+      this.Fraction = Frac;
+      this.Exponent = Exp;
+      this.Sign = Sign;
+      if(Exponent == `$exp_width`'b0) begin
+	 if (Fraction == `$frac_width`'b0)
+	   TransType = Zero;
+	 else
+	   TransType = DenormRnd; // since we don't care about distinctions within the dnorm range
+      end
+      
+      else if(Exponent == {(`$exp_width`){1'b1}}) begin
+	 if (Fraction == `$frac_width`'b0)
+	   TransType = Inf;
+	 else begin
+	    if (Fraction[`$frac_width-1`] == 1'b1)
+	      TransType = QuietNaN;
+	    else if (Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0)
+	      TransType = SignalingNaN;
+	    else begin
+	      $display("%t: ERROR: FPTransaction constructor encountered an unknown NaN type: Exp=%h, Frac=%h",
+		       $time, Exponent, Fraction);
+	       $finish(2);
+	    end	    
+	 end // else: !if(Fraction == `$frac_width`'b0)
+      end // if (Exponent == {(`$exp_width`){1'b1}})
+
+      else begin
+	 TransType = Random; // since we don't care about distinctions within the allowed range
+      end // else: !if(Exponent == {(`$exp_width`){1'b1}})
+   endfunction // new
+
+   
+   // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
+   function ForceSignExpMan(logic Sign, logic [`$exp_width - 1`:0] Exp, logic [`$frac_width`:0] Man);
+      if (Man[`$frac_width`] == 1'b1 || Exp == `$exp_width`'b0 || {(`$exp_width`){1'b1}}) begin
+	 // TO ME: should my condition be strickter? what if Man[`$frac_width`] == 1'b1 AND Exp == `$exp_width`'b0 ??
+	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+      end 
+      else begin
+	 $display("%t: ERROR: FPTransaction constructor encountered an unknown Mantissa type: Exp=%h, Man=%h",
+		  $time, Exponent, Man);
+	 $finish(2);
+      end	    
+   endfunction // new
+
+
+   // Some getters:
+   function bit IsPos();
+      return Sign == 1'b0;
+   endfunction // bit IsPos
+   
+   function bit IsNeg();
+      return Sign == 1'b1;
+   endfunction // bit IsPos
+
+   
+//;# In Random Mode ONLY:
+//; if ($rand_mode =~ /YES/){
    /* The following class members hold the DEFAULT weights 
     * for the various transaction types.
     * However, they may be overwritten by the user at runtime
@@ -205,7 +281,8 @@ class `mname`;
    }
      
 
-     // A constructor to read user defined, per simulation, weights
+     // C'tor for a Random transaction
+     // The constructor also reads user defined, per simulation, weights
      function new();
 	if (! AllWeightsInitialized) begin
 	   if ($test$plusargs("SignIsPos_DistWeight`$NamedTransCtrl`")) begin
@@ -269,6 +346,7 @@ class `mname`;
 	      $display("%t: `mname`: Runtime input +Random_DistWeight`$NamedTransCtrl`=%d found", $time, Random_w);
 	   end
 	end // if (! AllWeightsInitialized)
-     endfunction 
+     endfunction // new
+//; } # End of "if ($rand_mode =~ /YES/)..."
 endclass : `mname`
 

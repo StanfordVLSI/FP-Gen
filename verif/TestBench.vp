@@ -72,25 +72,37 @@ program automatic `mname` (
 
    // FP transaction handles
    //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
+   //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenA_obj->instantiate`;
    //; my $TransGenB_obj = generate('FPTransaction','TransGenB',
+   //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenB_obj->instantiate`;
    //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
+   //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenC_obj->instantiate`;
 
+   // one more handle for the observed output
+   //; my $TransRes_obj = generate('FPTransaction','TransRes',
+   //;				    Random=>'NO',
+   //;                              FractionWidth=>$product_width-1, 
+   //;                              ExponentWidth=>$exp_width, 
+   //;                              TestDenormals=>$test_denormals);
+   `$TransRes_obj->instantiate`;
+   
    // Reference model
    //; my $GoldRef_obj = generate('GoldMultiplier', 'GoldRef', 
    //;                              FPTransA_Ptr=>$TransGenA_obj, 
-   //;                              FPTransB_Ptr=>$TransGenB_obj, 
+   //;                              FPTransB_Ptr=>$TransGenB_obj,
+   //;                              FPTransRes_Ptr=>$TransRes_obj,
    //;                              TestDenormals=>$test_denormals);
    `$GoldRef_obj->instantiate`;
    
@@ -103,6 +115,7 @@ program automatic `mname` (
       TransGenA = new();
       TransGenB = new();
       TransGenC = new();
+      TransRes = new();
       GoldRef = new();
 
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
@@ -123,18 +136,15 @@ program automatic `mname` (
 	   SignA = TransGenA.Sign;    FracA = TransGenA.Fraction;    ExpA = TransGenA.Exponent;
 	   SignB = TransGenB.Sign;    FracB = TransGenB.Fraction;    ExpB = TransGenB.Exponent;
 	   SignC = TransGenC.Sign;    FracC = TransGenC.Fraction;    ExpC = TransGenC.Exponent;
-	   $write("%t: Transaction #%0d: ", $time, i);
-	   $write("TransTypeA=%s SignA=%b ExpA=0x%h FractionA=0x%h | ", TransGenA.TransType.name(), SignA, ExpA, FracA);
-	   $write("TransTypeB=%s SignB=%b ExpB=0x%h FractionB=0x%h | ", TransGenB.TransType.name(), SignB, ExpB, FracB);
-	   $write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, FracC);
+	   $display("%t: Transaction #%0d: ", $time, i);
+	   //$write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, FracC);
 	   
 	   // wait for it...
 	   #100;
-	   $display("%t: RESULT: SignRes=%1b ExpRes=0x%h ManRes=0x%h", $time, SignRes, ExpRes, ManRes);
-
+	   TransRes.ForceSignExpMan(SignRes, ExpRes, ManRes);
+	   
 	   // now check results...
-	   //if (! GoldRef.CheckMultResult(TransGenA, TransGenB, SignRes, ExpRes, ManRes) )
-	   if (0) // FIXME use line above
+	   if (! GoldRef.CheckMultResult(TransGenA, TransGenB, TransRes) )
 	     begin
 		dumptolog = 1'b1;
 		#1;
