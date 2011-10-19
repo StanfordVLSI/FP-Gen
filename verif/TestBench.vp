@@ -50,7 +50,7 @@
 //;                      Doc=>"Seed for random values".
 //;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
 //;                                 
-//; my $product_width = 2 * $frac_width + 2;
+//; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2
 
 program automatic `mname` (
     output logic dumptolog,
@@ -62,7 +62,8 @@ program automatic `mname` (
 			   // results from the design
     input logic [`$product_width - 1`:0] ManRes,
     input logic [`$exp_width + 1`:0] 	 ExpRes,
-    input logic 			 SignRes
+    input logic 			 SignRes,
+    input logic 			 NaNRes, InfRes, ZeroRes, RStickyRes 
 		);
 
    // Local variables and handles for controlling the simulation
@@ -144,7 +145,8 @@ program automatic `mname` (
 	   TransRes.ForceSignExpMan(SignRes, ExpRes, ManRes);
 	   
 	   // now check results...
-	   if (! GoldRef.CheckMultResult(TransGenA, TransGenB, TransRes) )
+	   GoldRef.CalcGold(TransGenA, TransGenB);
+	   if (! GoldRef.CheckMultResult(TransRes, NaNRes, InfRes, ZeroRes, RStickyRes) )
 	     begin
 		dumptolog = 1'b1;
 		#1;

@@ -45,93 +45,202 @@
 
 class `mname`;
 
-   logic [`$fracRes_width-1`:0] 	FracExpected;
-   logic [`$exp_width - 1`:0] 		ExpExpected;
-   logic 				SignExpected;
+   //; my $expectedResult_obj = clone($FPTransRes_Ptr, 'Expected');
+   `$expectedResult_obj->instantiate` = new();
+   logic 	   overflow = 0, underflow = 0;
+
    
 
-   function bit CheckMultResult(`$typeA` transA, `$typeB` transB, `$typeRes` transRes);
+   function bit CheckMultResult(`$typeRes` transRes, 
+				logic NaNRes, logic InfRes, logic ZeroRes, logic RStickyRes);
+      $display("%t: RESULT: Type=%s Sign=%1b Exp=0x%h Frac=0x%h IsNaN=%1b IsInf=%1b IsZero=%1b RSticky=%1b", $time,
+	       transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction, NaNRes, InfRes, ZeroRes, RStickyRes );
+
+      // First check flags:
+      if (NaNRes) begin
+	 if (Expected.TransType == `$typeRes`::QuietNaN || Expected.TransType == `$typeRes`::SignalingNaN)
+	   return 1'b1;
+      end
+      if (InfRes) begin
+	 if (Expected.TransType == `$typeRes`::Inf)
+	   return 1'b1;
+      end
+      else if (transRes.Sign == Expected.Sign &&
+	       transRes.Exponent == Expected.Exponent &&
+	       transRes.Fraction == Expected.Fraction )
+	return 1'b1;
+      
+      // default: Fail
+      return 1'b0;
+
+   endfunction // bit
+
+
+   
+   function CalcGold(`$typeA` transA, `$typeB` transB);
       // Local Variables
-      logic 				overflow = 0, underflow = 0;
-      logic [`$exp_width + 1`:0] 	Exp_internal;
-      logic [`$fracRes_width`:0] 	Man_internal;
-
-      $write("%t: SENT:  TransTypeA=%s SignA=%b ExpA=0x%h FractionA=0x%h | ", $time,
+      logic [`$fracRes_width-1`:0]    FracExpected;
+      logic [`$exp_width - 1`:0]      ExpExpected;
+      logic 			      SignExpected;
+      logic [`$exp_width + 1`:0]      Exp_internal, Exp_offset, Exp_max;
+      logic [`$fracRes_width`:0]      Man_internal;
+      logic 			      msbA, msbB;
+      int 			      sticky;
+      
+      
+      $write("%t: SENT:  TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h | ", $time,
 	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction);
-      $display("TransTypeB=%s SignB=%b ExpB=0x%h FractionB=0x%h",
+      $display("TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h",
 	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction);
-      $display("%t: RESULT: SignRes=%1b ExpRes=0x%h ManRes=0x%h", $time,
-	       transRes.Sign, transRes.Exponent, transRes.Fraction );
-
-
+      
+      
+      // init all values:
+      FracExpected = '0;
+      ExpExpected = '0;
+      SignExpected = '0;
+      
+      
       // First we calculate the expected sign, since it used in both regular and corner cases
       // plus x plus ==> plus; plus x minus ==> minus; minus x minus ==> minus; 
       SignExpected = transA.Sign ^ transB.Sign;
-
+      
       // Start with corner cases:
       // 1. Either input is NaN                       Result is NaN
       if (transA.TransType == `$typeA`::QuietNaN || transA.TransType == `$typeA`::SignalingNaN || 
 	  transB.TransType == `$typeB`::QuietNaN || transB.TransType == `$typeB`::SignalingNaN) begin
+
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 $display ("DEBUG I AM HERE `$exp_width`'b%b", transRes.Exponent);
-	 
-	 if(transRes.Exponent == {(`$exp_width`){1'b1}} && transRes.Fraction != `$fracRes_width`'b0) begin
-	 $display ("DEBUG I AM HERE");
-	    return 1'b1;
-	 end
+	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == SignExpected); };
       end 
       
       // 2. 0*Inf                                     Result is NaN
       //   (A=0 and B=Inf or vice-versa)                            
       else if ( (transA.TransType == `$typeA`::Zero && transB.TransType == `$typeB`::Inf) || 
 		(transB.TransType == `$typeB`::Zero && transA.TransType == `$typeA`::Inf) ) begin
+
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 if(transRes.Exponent == {(`$exp_width`){1'b1}} && transRes.Fraction != `$fracRes_width`'b0)
-	   return 1'b1;
+	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == SignExpected); };
       end
       
       // 3. num*Inf or Inf*Inf                        Result is signed Inf
       else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf) begin
-	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 if(transRes.Exponent == {(`$fracRes_width`){1'b1}} && transRes.Fraction == `$fracRes_width`'b0 &&
-			       transRes.Sign == SignExpected) 
-	   return 1'b1;
+	 Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected); };
       end
-           
+
+      // 4. 0*num or 0*0 or num*o
+      else if (transA.TransType == `$typeA`::Zero || transB.TransType == `$typeB`::Zero) begin
+	 Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
+      end
+
+//; if ($test_denormals =~ /NO/){
+      // 5. Treat denorms as zero 
+      else if (transA.TransType == `$typeA`::Denorm100 || transA.TransType == `$typeA`::DenormFFF || 
+	       transA.TransType == `$typeA`::Denorm001 || transA.TransType == `$typeA`::DenormRnd || 
+	       transB.TransType == `$typeB`::Denorm100 || transB.TransType == `$typeB`::DenormFFF || 
+	       transB.TransType == `$typeB`::Denorm001 || transB.TransType == `$typeB`::DenormRnd) begin
+	 Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
+      end
+//; }      
+      
       // Now for the normal case
       else begin
-	 // Exp is in 0:2046 which correspond to -1023:1023 ==>
-	 // TotalExp is in 0:4092 but we nned to subtract 1023 ==>
-	 // if TotalExp < 1023 we are at underflow
-	 // if TotalExp > 2046+1023 we have overflow
-	 // Note that these numbers are for ieee double. In general these are:
-	 // Exp range: 0:2^$exp_width-2 ==> 0:2^`$exp_width-2` ==> 0:`2**$exp_width-2`
-	 // Exp offset: 2^($exp_width-1)-1 ==> 2^`$exp_width-1`-1 ==> `2**($exp_width-1) -1`
+	 // first we find if there is a leading one:
+	 msbA = |(transA.Exponent);
+	 msbB = |(transB.Exponent);
+
+	 /* Now we calculate the new mantissa:
+	  * Note that man_internal was the result of 1.xxx * 1.xxx which means it has
+	  * the format zz.xxxxxx. But we nees a z.zxxxxxx format which means we need to do
+	  * one RIGHT shift. In addition, we need to shift LEFT all leading zeros
+	  * */
+	 Man_internal = {msbA, transA.Fraction} * {msbB, transB.Fraction};
+	 //$display("DEBUG: msb=%2b, full man=%h", Man_internal[`$fracRes_width`:`$fracRes_width-1`],Man_internal);
+	 
+
+	 /* Now for the exponent:
+	  * Exp is in 0:2046 which correspond to -1023:1023 ==>
+	  * TotalExp is in 0:4092 but we nned to subtract 1023 ==>
+	  * if TotalExp < 1023 we are at underflow
+	  * if TotalExp > 2046+1023 we have overflow
+	  * Note that these numbers are for ieee double. In general these are:
+	  * Exp range: 0:2^$exp_width-2 ==> 0:2^`$exp_width-2` ==> 0:`2**$exp_width-2`
+	  * Exp offset: 2^($exp_width-1)-1 ==> 2^`$exp_width-1`-1 ==> `2**($exp_width-1) -1`
+	  * */
 	 Exp_internal = transA.Exponent + transB.Exponent;
-	 overflow = (Exp_internal > `2**$exp_width-2`+`2**($exp_width-1)-1`) ? 1'b1 : 1'b0;
-	 underflow = (Exp_internal < `2**($exp_width-1)-1`) ? 1'b1 : 1'b0;
-	 ExpExpected = Exp_internal - `2**($exp_width-1)-1`;
+	 Exp_offset = `2**($exp_width-1)-1`;
+	 Exp_max = `2**$exp_width-2`;
+	 //$display("DEBUG: exp=%h", Exp_internal);
+	 
+//-----------------
 
-	 
-	 Man_internal = {1'b1, transA.Fraction} * {1'b1, transB.Fraction};
-	 FracExpected = Man_internal[`$fracRes_width-1`:0];
-	 
-	 
-	 // FIXME : Do something with overflow and underflow?	     
-      end
-      
-      
-      $display("%t: EXPECTED: SignExpected=%1b ExpExpected=0x%h FracExpected=0x%h", $time,
-	       SignExpected, ExpExpected, FracExpected);
+	 /* Time to convert the zz.xxxxxx to z.zxxxxxx AND get rid of leading zeros (if exist)
+	  */
+	 if (Man_internal[`$fracRes_width`] == 1'b1) begin
+	    Exp_internal +=1; /* this is a shift right by one for exp but no op
+			       * required for man */
+	 end
+	 else if (Man_internal[`$fracRes_width`:`$fracRes_width-1`] == 2'b01) begin
+	    Man_internal = {Man_internal[`$fracRes_width-1`:0], 1'b0}; /* this is a no shift as far as 
+									* exp is concerned */
+	    //$display("DEBUG: After zz.xxx=>z.zxxx: msb=%2b, full man=%h", Man_internal[`$fracRes_width`:`$fracRes_width-1`],Man_internal);
+	 end
+	 else begin
+	    /* this means that the mantissa starts with 00.xxxxxx 
+	     * but note that this is not Zero since this was already checked above.
+	     * So first we try to shift left as long as exp >= exp_offset */
+	    Man_internal = {Man_internal[`$fracRes_width-1`:0], 1'b0}; /* this first one is a no shift as far as 
+									* exp is concerned */
+	    while (Man_internal[`$fracRes_width`] == 1'b0 && 	// as long as the lead is 0 AND
+		   Exp_internal > Exp_offset			// exp is still in range
+		   ) begin
+	       Man_internal = {Man_internal[`$fracRes_width-1`:0], 1'b0};
+	       Exp_internal -=1;
+	    end
+	 end // else: !if(Man_internal[`$fracRes_width`] == 1'b1)
 
-      if (transRes.Sign == SignExpected &&
-	  transRes.Exponent == ExpExpected &&
-	  transRes.Fraction == FracExpected )
-	return 1'b1;
+//----------------------
+
+	 /* Now we consider the case of exp<exp_offset and try to shift right
+	  * while exp<exp_offset (and while there man is not all zeros)*/
+	 sticky = 0;
+	 while (Exp_internal < Exp_offset &&
+		Man_internal != `$fracRes_width+1`'b0) begin
+	    sticky = sticky | Man_internal[0];
+	    Man_internal = {1'b0, Man_internal[`$fracRes_width`:1]};
+	    Exp_internal +=1;
+	 end
+	 Man_internal += sticky;
+	 
+//----------------------
+
+	 // Finally, sum it all up:
+	 overflow = (Exp_internal > Exp_max+Exp_offset) ? 1'b1 : 1'b0;
+	 underflow = (Exp_internal < Exp_offset) ? 1'b1 : 1'b0;
+	 if (overflow)
+	   Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected); };
+	 else if (underflow) begin
+	    if (sticky) begin
+	       ExpExpected = 0;
+	       FracExpected = sticky;
+	       Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
+	    end else begin
+	       Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
+	    end
+	 end else begin
+	    ExpExpected = Exp_internal - Exp_offset;
+	    FracExpected = Man_internal[`$fracRes_width-1`:0];
+	    Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
+	 end
+      end // End of the "normal" case (no special input)
       
-      // default: Fail
-      return 1'b0;
-   endfunction
+      
+
+      // finally put it in your memory for a later check 
+      $display("%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+	       Expected.TransType.name(), Expected.Sign, Expected.Exponent, Expected.Fraction);
+   endfunction // CalcGold
+   
+   
 		
 
 

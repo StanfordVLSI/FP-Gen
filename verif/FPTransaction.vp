@@ -39,12 +39,16 @@
  * 
  * Parameters:
  * * FractionWidth, ExponentWidth
- * * Random (YES/NO)
- * * NamedTransCtrl
- * * SignIsPos_w, Zero_w, Denorm100_w, DenormFFF_w, Denorm001_w, DenormRnd_w, 
- *   QuietNaN_w, SignalingNaN_w, Min_w, Max_w, Inf_w, One_w, PointOneOneOne_w,
- *   EzAndSml_w, Random_w
- * 
+ * * TestDenormals -- generate denormal transactions? (YES/NO)
+ * * Random -- Enables control of transaction distribution weights by parameters (YES/NO)
+ *   * If Random == YES then the following are the parameters to control the weights:
+ *     SignIsPos_DistWeight, Zero_DistWeight, QuietNaN_DistWeight, SignalingNaN_DistWeight, 
+ *     Min_DistWeight, Max_DistWeight, Inf_DistWeight, One_DistWeight, PointOneOneOne_DistWeight, 
+ *     EzAndSml_DistWeight, Random_DistWeight
+ *     If  TestDenormals == YES the following parameters also exists:
+ *       Denorm100_DistWeight, DenormFFF_DistWeight, Denorm001_DistWeight, DenormRnd_DistWeight
+ * * NamedTransCtrl -- Enables per transaction module control of weights at runtime ('', 'A'..'Z')
+ *  
  * 
  * 
  * Change bar:
@@ -67,7 +71,7 @@
 //; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
-//;                                "of inputs A and B correctly (YES/NO) -- FIXME -- Not sure what to do with this info??");
+//;                                "of inputs A and B correctly (YES/NO)");
 //;
 //; # Is this a randomly generated transaction?
 //; my $rand_mode = parameter(Name=>'Random',
@@ -77,8 +81,8 @@
 //;
 //; # In Random mode only:
 //; my $NamedTransCtrl;
-//; my ($SignIsPos_w, $Zero_w, $Denorm100_w, $DenormFFF_w, $Denorm001_w);
-//; my ($DenormRnd_w, $QuietNaN_w, $SignalingNaN_w, $Min_w, $Max_w, $Inf_w);
+//; my ($SignIsPos_w, $Zero_w, $QuietNaN_w, $SignalingNaN_w, $Min_w, $Max_w, $Inf_w);
+//; my $DenormRnd_w = 0; my $Denorm100_w = 0; my $DenormFFF_w = 0; my $Denorm001_w = 0;
 //; my ($One_w, $PointOneOneOne_w, $EzAndSml_w, $Random_w);
 //;
 //; if ($rand_mode =~ /YES/){
@@ -95,15 +99,17 @@
 //;	$SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
 //;					Doc=>"Distribution weight for positive values (range is 0..100)");
 //;	$Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
-//;					Doc=>"Distribution weight for Zero pattern"); 
-//;	$Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
-//;					Doc=>"Distribution weight for Denorm with 100..0 pattern");
-//;	$DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
-//;					Doc=>"Distribution weight for Denorm with FFF..F pattern");
-//;	$Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>2, Min=>0, Step=>1,
-//;					Doc=>"Distribution weight for Denorm with 000..01 pattern");
-//;	$DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>4, Min=>0, Step=>1,
-//;					Doc=>"Distribution weight for Denorm random (non-zero) pattern");
+//;					Doc=>"Distribution weight for Zero pattern");
+//; 	if ($test_denormals =~ /NO/){
+//;	  $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
+//;	  				Doc=>"Distribution weight for Denorm with 100..0 pattern");
+//;	  $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
+//;	  				Doc=>"Distribution weight for Denorm with FFF..F pattern");
+//;	  $Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>2, Min=>0, Step=>1,
+//;	  				Doc=>"Distribution weight for Denorm with 000..01 pattern");
+//;	  $DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>4, Min=>0, Step=>1,
+//;	  				Doc=>"Distribution weight for Denorm random (non-zero) pattern");
+//;     }
 //;	$QuietNaN_w = parameter(Name=>'QuietNaN_DistWeight', Val=>10, Min=>0, Step=>1,
 //;					Doc=>"Distribution weight for QuietNaN pattern");
 //;	$SignalingNaN_w = parameter(Name=>'SignalingNaN_DistWeight', Val=>10, Min=>0, Step=>1,
@@ -169,21 +175,35 @@ class `mname`;
       else begin
 	 TransType = Random; // since we don't care about distinctions within the allowed range
       end // else: !if(Exponent == {(`$exp_width`){1'b1}})
-   endfunction // new
+   endfunction // ForceSignExpFrac
+   
 
    
    // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
    function ForceSignExpMan(logic Sign, logic [`$exp_width - 1`:0] Exp, logic [`$frac_width`:0] Man);
-      if (Man[`$frac_width`] == 1'b1 || Exp == `$exp_width`'b0 || {(`$exp_width`){1'b1}}) begin
+      $display("DEBIG: Exp=%b =?= %b",Exp,`$exp_width`'b0);
+      
+      if (Man[`$frac_width`] == 1'b1) begin
 	 // TO ME: should my condition be strickter? what if Man[`$frac_width`] == 1'b1 AND Exp == `$exp_width`'b0 ??
 	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
-      end 
+      end
+      else if (Exp == `$exp_width`'b0) begin // Denorm and Zero cases
+	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+      end
+      else if (Exp == {(`$exp_width`){1'b1}}) begin // Inf and NaN cases
+	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+      end
+      else if (1 /*FIXME*/) begin
+	 $display("ERROR: MUST FIX ME SOON!");
+	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+      end
       else begin
 	 $display("%t: ERROR: FPTransaction constructor encountered an unknown Mantissa type: Exp=%h, Man=%h",
 		  $time, Exponent, Man);
 	 $finish(2);
       end	    
-   endfunction // new
+   endfunction // ForceSignExpMan
+   
 
 
    // Some getters:
@@ -194,6 +214,45 @@ class `mname`;
    function bit IsNeg();
       return Sign == 1'b1;
    endfunction // bit IsPos
+
+   // To make auto generation of special cases easier:
+   constraint pick_fraction_val{
+      (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
+      (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
+      (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
+      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 };
+      (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
+      (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
+      (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == Max) -> 		{ Fraction == {(`$frac_width`){1'b1}} };
+      (TransType == Inf) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == One) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == PointOneOneOne) -> 	{ Fraction == {(`$frac_width`){1'b1}}  };
+      (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
+      (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
+   }
+     
+   constraint pick_exponent_val{
+      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
+      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
+      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
+      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
+      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
+      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
+   }
+       
+   constraint order1 { 
+      solve TransType before Fraction, Exponent, Sign;
+   }
 
    
 //;# In Random Mode ONLY:
@@ -242,43 +301,6 @@ class `mname`;
 		      Random := Random_w };
    }
 
-     constraint pick_fraction_val{
-      (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
-      (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
-      (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
-      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 };
-      (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
-      (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
-      (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == Max) -> 		{ Fraction == {(`$frac_width`){1'b1}} };
-      (TransType == Inf) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == One) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == PointOneOneOne) -> 	{ Fraction == {(`$frac_width`){1'b1}}  };
-      (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
-      (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
-   }
-     
-   constraint pick_exponent_val{
-      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
-      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
-      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
-      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
-      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
-      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
-   }
-       
-   constraint order1 { 
-      solve TransType before Fraction, Exponent, Sign;
-   }
      
 
      // C'tor for a Random transaction
@@ -293,6 +315,7 @@ class `mname`;
 	      $value$plusargs("Zero_DistWeight`$NamedTransCtrl`=%d",  Zero_w);
 	      $display("%t: `mname`: Runtime input +Zero_DistWeight`$NamedTransCtrl`=%d found", $time, Zero_w);
 	   end
+	   //;   if ($test_denormals =~ /NO/){
 	   if ($test$plusargs("Denorm100_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("Denorm100_DistWeight`$NamedTransCtrl`=%d",  Denorm100_w);
 	      $display("%t: `mname`: Runtime input +Denorm100_DistWeight`$NamedTransCtrl`=%d found", $time, Denorm100_w);
@@ -309,6 +332,7 @@ class `mname`;
 	      $value$plusargs("DenormRnd_DistWeight`$NamedTransCtrl`=%d",  DenormRnd_w);
 	      $display("%t: `mname`: Runtime input +DenormRnd_DistWeight`$NamedTransCtrl`=%d found", $time, DenormRnd_w);
 	   end
+	   //;   } # End of "if ($test_denormals..."	   
 	   if ($test$plusargs("QuietNaN_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("QuietNaN_DistWeight`$NamedTransCtrl`=%d",  QuietNaN_w);
 	      $display("%t: `mname`: Runtime input +QuietNaN_DistWeight`$NamedTransCtrl`=%d found", $time, QuietNaN_w);

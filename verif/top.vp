@@ -90,8 +90,8 @@ module `mname` ();
 				.SignB(SignB), .ExpB(ExpB), .FracB(FracB), 
 				.SignC(SignC), .ExpC(ExpC), .FracC(FracC),
 				// inputs
-				.SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB)
-				//.NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
+				.SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB),
+				.NaNRes(NANAB), .InfRes(InfAB), .ZeroRes(ZeroAB), .RStickyRes(RStickyAB) 
 				);
    //; } # End of "if ($verif_mode..."
    
