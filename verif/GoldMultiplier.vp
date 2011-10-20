@@ -47,8 +47,6 @@ class `mname`;
 
    //; my $expectedResult_obj = clone($FPTransRes_Ptr, 'Expected');
    `$expectedResult_obj->instantiate` = new();
-   logic 	   overflow = 0, underflow = 0;
-
    
 
    function bit CheckMultResult(`$typeRes` transRes, 
@@ -85,8 +83,9 @@ class `mname`;
       logic [`$exp_width + 1`:0]      Exp_internal, Exp_offset, Exp_max;
       logic [`$fracRes_width`:0]      Man_internal;
       logic 			      msbA, msbB;
-      int 			      sticky;
-      
+      logic 			      sticky = 0;
+      logic 			      overflow = 0, underflow = 0;
+
       
       $write("%t: SENT:  TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h | ", $time,
 	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction);
@@ -187,7 +186,7 @@ class `mname`;
 	 else begin
 	    /* this means that the mantissa starts with 00.xxxxxx 
 	     * but note that this is not Zero since this was already checked above.
-	     * So first we try to shift left as long as exp >= exp_offset */
+	     * So first we try to shift LEFT as long as exp >= exp_offset */
 	    Man_internal = {Man_internal[`$fracRes_width-1`:0], 1'b0}; /* this first one is a no shift as far as 
 									* exp is concerned */
 	    while (Man_internal[`$fracRes_width`] == 1'b0 && 	// as long as the lead is 0 AND
@@ -200,9 +199,9 @@ class `mname`;
 
 //----------------------
 
-	 /* Now we consider the case of exp<exp_offset and try to shift right
-	  * while exp<exp_offset (and while there man is not all zeros)*/
-	 sticky = 0;
+	 /* Now we consider the case of exp<exp_offset and try to shift RIGHT
+	  * while exp<exp_offset (and while the man is not all zeros)*/
+	 sticky = 1'b0;
 	 while (Exp_internal < Exp_offset &&
 		Man_internal != `$fracRes_width+1`'b0) begin
 	    sticky = sticky | Man_internal[0];

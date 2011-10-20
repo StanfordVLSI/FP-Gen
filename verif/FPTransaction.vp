@@ -181,20 +181,28 @@ class `mname`;
    
    // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
    function ForceSignExpMan(logic Sign, logic [`$exp_width - 1`:0] Exp, logic [`$frac_width`:0] Man);
-      $display("DEBIG: Exp=%b =?= %b",Exp,`$exp_width`'b0);
-      
-      if (Man[`$frac_width`] == 1'b1) begin
-	 // TO ME: should my condition be strickter? what if Man[`$frac_width`] == 1'b1 AND Exp == `$exp_width`'b0 ??
-	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+      // FIXME Sameh! How do you make a floating point representation from this input?
+
+      if (Exp != `$exp_width`'b0 && Exp != {(`$exp_width`){1'b1}} 
+	  && Man[`$frac_width`:`$frac_width-1`] == 2'b01) begin //simple case first
+	 this.ForceSignExpFrac(Sign, Exp, {Man[`$frac_width - 2`:0], 1'b0});
+$display("DEBUG: Exp!=0 and Exp!=111..1 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
+      end
+      else if (Exp != `$exp_width`'b0 && Exp != {(`$exp_width`){1'b1}} 
+	       && Man[`$frac_width`] == 1'b1) begin //semi-simple case first
+	 this.ForceSignExpFrac(Sign, Exp+1, Man[`$frac_width - 1`:0]);
+$display("DEBUG: Exp!=0 and Exp!=111..1 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
       end
       else if (Exp == `$exp_width`'b0) begin // Denorm and Zero cases
 	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
-      end
+$display("DEBUG: Exp==0 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
+     end
       else if (Exp == {(`$exp_width`){1'b1}}) begin // Inf and NaN cases
 	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+$display("DEBUG: Exp==111..1 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
       end
       else if (1 /*FIXME*/) begin
-	 $display("ERROR: MUST FIX ME SOON!");
+$display("ERROR: MUST FIX ME SOON!");
 	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
       end
       else begin

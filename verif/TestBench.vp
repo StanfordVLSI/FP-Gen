@@ -137,7 +137,7 @@ program automatic `mname` (
 	   SignA = TransGenA.Sign;    FracA = TransGenA.Fraction;    ExpA = TransGenA.Exponent;
 	   SignB = TransGenB.Sign;    FracB = TransGenB.Fraction;    ExpB = TransGenB.Exponent;
 	   SignC = TransGenC.Sign;    FracC = TransGenC.Fraction;    ExpC = TransGenC.Exponent;
-	   $display("%t: Transaction #%0d: ", $time, i);
+	   $display("\n%t: Transaction #%0d: ", $time, i);
 	   //$write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, FracC);
 	   
 	   // wait for it...
