@@ -234,7 +234,11 @@ class `mname`;
 	    ExpExpected = Exp_internal - Exp_offset;
 	    FracExpected = Man_internal[`$fracRes_width-1`:0];
 	    if (ExpExpected==1 && Man_internal[`$fracRes_width`]==1'b0) // Denorm case ==> zero the exp
+	      //; if ($test_denormals =~ /NO/){
+	      Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
+              //; } else {
 	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected);
+	      //; }
 	    else							  // Normal case
 	      Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
 	 end

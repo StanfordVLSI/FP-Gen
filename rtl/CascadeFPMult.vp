@@ -143,7 +143,13 @@ module `mname`(
     assign ExpAB_1 = Eab_1_ps0 + Eab_1_ps1; // ExpAB - 1
    
    //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
-   `$ExpAdd_obj->instantiate()` (.a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+   `$ExpAdd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+
 
     //Normal Shift Amount = `$frac_width` + 1 - LZD_A - LZD_B = `$frac_width` + 3 + ~LZD_A + ~LZD_B
     assign normalShiftConst = `$frac_width` + 3;
@@ -169,14 +175,26 @@ module `mname`(
    assign ManAB_normalized = ManAB_unnormalized;
    assign RStickyAB = 0;
    //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
-   `$ExpAdd_obj->instantiate()` (.a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+   `$ExpAdd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4)
+      );
    //; }
 
 
 
   logic [`$product_width + 1`: 0] ManAB_pp0, ManAB_pp1;
    //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$frac_width+1);
-   `$Mul_obj->instantiate()` ( .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1));
+   `$Mul_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+      .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1)
+      );
   assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
 
 
