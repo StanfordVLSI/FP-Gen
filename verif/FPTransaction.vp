@@ -180,36 +180,31 @@ class `mname`;
 
    
    // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
+   // IMPORTANT: This function was custom built for the CascadeFPMult format
    function ForceSignExpMan(logic Sign, logic [`$exp_width - 1`:0] Exp, logic [`$frac_width`:0] Man);
-      // FIXME Sameh! How do you make a floating point representation from this input?
 
-      if (Exp != `$exp_width`'b0 && Exp != {(`$exp_width`){1'b1}} 
-	  && Man[`$frac_width`:`$frac_width-1`] == 2'b01) begin //simple case first
-	 this.ForceSignExpFrac(Sign, Exp, {Man[`$frac_width - 2`:0], 1'b0});
-$display("DEBUG: Exp!=0 and Exp!=111..1 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
+$write("DEBUG: Sign=%1b, Exp=0x%h, Man=0x%h -- My thoughts: ", Sign, Exp, Man);
+      
+      if (Exp == `$exp_width`'b0) begin // Zero cases
+	 this.ForceSignExpFrac(Sign, Exp, `$frac_width`'b0);
+$display("Exp==0  ==> Assume Zero");
       end
-      else if (Exp != `$exp_width`'b0 && Exp != {(`$exp_width`){1'b1}} 
-	       && Man[`$frac_width`] == 1'b1) begin //semi-simple case first
-	 this.ForceSignExpFrac(Sign, Exp+1, Man[`$frac_width - 1`:0]);
-$display("DEBUG: Exp!=0 and Exp!=111..1 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
-      end
-      else if (Exp == `$exp_width`'b0) begin // Denorm and Zero cases
+      else if (Exp == `$exp_width`'b1) begin // Denorm and Normal cases
+	 if (Man[`$frac_width`] == 1'b0) begin  // Denorm
+	    this.ForceSignExpFrac(Sign, `$exp_width`'b0, Man[`$frac_width - 1`:0]);
+$display("Exp==1, Man[msb]=0  ==> Assume Denorm");
+	 end else begin 			// Normals (with wxp=1)
+	    this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
+$display("Exp==1, Man[msb]=1  ==> Assume Normal");
+	 end
+      end else if (Exp == {(`$exp_width`){1'b1}}) begin // Inf and NaN cases
 	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
-$display("DEBUG: Exp==0 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
-     end
-      else if (Exp == {(`$exp_width`){1'b1}}) begin // Inf and NaN cases
-	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
-$display("DEBUG: Exp==111..1 and Man's msb[`$frac_width`:`$frac_width-1`]=%2b", Man[`$frac_width`:`$frac_width-1`]);
+$display("Exp==111..1 ==> Assuming Inf or NaN");
       end
-      else if (1 /*FIXME*/) begin
-$display("ERROR: MUST FIX ME SOON!");
+      else begin 					// Just normal cases
+$display("Normal Case!");
 	 this.ForceSignExpFrac(Sign, Exp, Man[`$frac_width - 1`:0]);
       end
-      else begin
-	 $display("%t: ERROR: FPTransaction constructor encountered an unknown Mantissa type: Exp=%h, Man=%h",
-		  $time, Exponent, Man);
-	 $finish(2);
-      end	    
    endfunction // ForceSignExpMan
    
 

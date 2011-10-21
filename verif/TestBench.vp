@@ -138,14 +138,13 @@ program automatic `mname` (
 	   SignB = TransGenB.Sign;    FracB = TransGenB.Fraction;    ExpB = TransGenB.Exponent;
 	   SignC = TransGenC.Sign;    FracC = TransGenC.Fraction;    ExpC = TransGenC.Exponent;
 	   $display("\n%t: Transaction #%0d: ", $time, i);
-	   //$write("TransTypeC=%s SignC=%b ExpC=0x%h FractionC=0x%h \n", TransGenC.TransType.name(), SignC, ExpC, FracC);
+	   GoldRef.CalcGold(TransGenA, TransGenB);
 	   
 	   // wait for it...
 	   #100;
 	   TransRes.ForceSignExpMan(SignRes, ExpRes, ManRes);
 	   
 	   // now check results...
-	   GoldRef.CalcGold(TransGenA, TransGenB);
 	   if (! GoldRef.CheckMultResult(TransRes, NaNRes, InfRes, ZeroRes, RStickyRes) )
 	     begin
 		dumptolog = 1'b1;

@@ -190,10 +190,14 @@ module `mname`(
   assign noShift = ManAB_normalized[`$product_width - 1`];
   assign ZeroAB = ZeroA|ZeroB;
 //  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
-  assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
 
-  assign ManAB = ManAB_normalized;
+  // Sameh? assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
+  // Sameh? assign ManAB = ManAB_normalized;
+
+  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
+  assign ManAB = noShift? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],1'b0};
   assign SignAB = SignA ^ SignB;
+
 
 
 

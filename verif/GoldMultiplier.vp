@@ -82,7 +82,7 @@ class `mname`;
       logic 			      SignExpected;
       logic [`$exp_width + 1`:0]      Exp_internal, Exp_offset, Exp_max;
       logic [`$fracRes_width`:0]      Man_internal;
-      logic 			      msbA, msbB;
+      logic 			      msbA, msbB, denormA, denormB;
       logic 			      sticky = 0;
       logic 			      overflow = 0, underflow = 0;
 
@@ -146,6 +146,9 @@ class `mname`;
 	 // first we find if there is a leading one:
 	 msbA = |(transA.Exponent);
 	 msbB = |(transB.Exponent);
+	 denormA = ~msbA;
+	 denormB = ~msbB;
+	 
 
 	 /* Now we calculate the new mantissa:
 	  * Note that man_internal was the result of 1.xxx * 1.xxx which means it has
@@ -158,14 +161,16 @@ class `mname`;
 
 	 /* Now for the exponent:
 	  * Exp is in 0:2046 which correspond to -1023:1023 ==>
-	  * TotalExp is in 0:4092 but we nned to subtract 1023 ==>
+	  * TotalExp is in 0:4092 but we need to subtract 1023 ==>
 	  * if TotalExp < 1023 we are at underflow
 	  * if TotalExp > 2046+1023 we have overflow
 	  * Note that these numbers are for ieee double. In general these are:
 	  * Exp range: 0:2^$exp_width-2 ==> 0:2^`$exp_width-2` ==> 0:`2**$exp_width-2`
 	  * Exp offset: 2^($exp_width-1)-1 ==> 2^`$exp_width-1`-1 ==> `2**($exp_width-1) -1`
+	  * 
+	  * Also, for denorms, exp is saved as 00..0 but it actually represents 1'b1
 	  * */
-	 Exp_internal = transA.Exponent + transB.Exponent;
+	 Exp_internal = transA.Exponent + transB.Exponent + denormA + denormA;
 	 Exp_offset = `2**($exp_width-1)-1`;
 	 Exp_max = `2**$exp_width-2`;
 	 //$display("DEBUG: exp=%h", Exp_internal);
@@ -186,7 +191,7 @@ class `mname`;
 	 else begin
 	    /* this means that the mantissa starts with 00.xxxxxx 
 	     * but note that this is not Zero since this was already checked above.
-	     * So first we try to shift LEFT as long as exp >= exp_offset */
+	     * So first we try to shift LEFT as long as exp > exp_offset */
 	    Man_internal = {Man_internal[`$fracRes_width-1`:0], 1'b0}; /* this first one is a no shift as far as 
 									* exp is concerned */
 	    while (Man_internal[`$fracRes_width`] == 1'b0 && 	// as long as the lead is 0 AND
@@ -199,10 +204,10 @@ class `mname`;
 
 //----------------------
 
-	 /* Now we consider the case of exp<exp_offset and try to shift RIGHT
-	  * while exp<exp_offset (and while the man is not all zeros)*/
+	 /* Now we consider the case of exp<exp_offset+1 and try to shift RIGHT
+	  * while exp<exp_offset+1 (and while the man is not all zeros)*/
 	 sticky = 1'b0;
-	 while (Exp_internal < Exp_offset &&
+	 while (Exp_internal < Exp_offset+1 &&
 		Man_internal != `$fracRes_width+1`'b0) begin
 	    sticky = sticky | Man_internal[0];
 	    Man_internal = {1'b0, Man_internal[`$fracRes_width`:1]};
@@ -214,7 +219,7 @@ class `mname`;
 
 	 // Finally, sum it all up:
 	 overflow = (Exp_internal > Exp_max+Exp_offset) ? 1'b1 : 1'b0;
-	 underflow = (Exp_internal < Exp_offset) ? 1'b1 : 1'b0;
+	 underflow = (Exp_internal < Exp_offset+1) ? 1'b1 : 1'b0;
 	 if (overflow)
 	   Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected); };
 	 else if (underflow) begin
@@ -228,7 +233,10 @@ class `mname`;
 	 end else begin
 	    ExpExpected = Exp_internal - Exp_offset;
 	    FracExpected = Man_internal[`$fracRes_width-1`:0];
-	    Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
+	    if (ExpExpected==1 && Man_internal[`$fracRes_width`]==1'b0) // Denorm case ==> zero the exp
+	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected);
+	    else							  // Normal case
+	      Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
 	 end
       end // End of the "normal" case (no special input)
       
