@@ -86,9 +86,13 @@ module `mname`(
 			  );
 
    // finally extract only the relevant bits
+   //; if ($booth==1){
+    assign out0 = RawOut0[`2*$width+1`:`2*$booth`]; // FIXME: Sameh, please explain this...
+    assign out1 = RawOut1[`2*$width+1`:`2*$booth`];
+   //; }else{ # booth==2 or booth==3
     assign out0 = RawOut0[`2*$width+1+2*$booth`:`2*$booth`]; // FIXME: Sameh, please explain this...
     assign out1 = RawOut1[`2*$width+1+2*$booth`:`2*$booth`];
-   
+   //; }
 
 endmodule
 
