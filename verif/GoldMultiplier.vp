@@ -63,10 +63,34 @@ class `mname`;
 	 if (Expected.TransType == `$typeRes`::Inf)
 	   return 1'b1;
       end
-      else if (transRes.Sign == Expected.Sign &&
-	       transRes.Exponent == Expected.Exponent &&
-	       transRes.Fraction == Expected.Fraction )
-	return 1'b1;
+      if (RStickyRes) begin
+	 //corner case alert: if FP==1.111111 or FP==0.111111 and rsticky we need exp+1
+	 if (transRes.Fraction == {(`$fracRes_width`){1'b1}}) begin
+	    if (transRes.Exponent < `2**$exp_width-2`) begin // from exp to exp+1 or from denorm to norm
+	       if (transRes.Sign == Expected.Sign &&
+		   transRes.Exponent+1 == Expected.Exponent &&
+		   transRes.Fraction+1 == Expected.Fraction ) begin
+		  return 1'b1;
+	       end
+	    end else begin // exp >= max_exp
+	       if (Expected.TransType == `$typeRes`::Inf)
+		 return 1'b1;
+	    end
+	 end else begin // if (transRes.Fraction == {(`$fracRes_width`){1'b1}})
+	    if (transRes.Sign == Expected.Sign &&
+		transRes.Exponent == Expected.Exponent &&
+		transRes.Fraction+1 == Expected.Fraction ) begin
+	       return 1'b1;
+	    end
+	 end
+      end // if (RStickyRes)
+      
+      // Normal case
+      if (transRes.Sign == Expected.Sign &&
+	  transRes.Exponent == Expected.Exponent &&
+	  transRes.Fraction == Expected.Fraction ) begin
+	 return 1'b1;
+      end
       
       // default: Fail
       return 1'b0;
@@ -156,7 +180,7 @@ class `mname`;
 	  * one RIGHT shift. In addition, we need to shift LEFT all leading zeros
 	  * */
 	 Man_internal = {msbA, transA.Fraction} * {msbB, transB.Fraction};
-	 //$display("DEBUG: msb=%2b, full man=%h", Man_internal[`$fracRes_width`:`$fracRes_width-1`],Man_internal);
+$display("DEBUG: full man=%h", Man_internal);
 	 
 
 	 /* Now for the exponent:
@@ -173,7 +197,7 @@ class `mname`;
 	 Exp_internal = transA.Exponent + transB.Exponent + denormA + denormA;
 	 Exp_offset = `2**($exp_width-1)-1`;
 	 Exp_max = `2**$exp_width-2`;
-	 //$display("DEBUG: exp=%h", Exp_internal);
+$display("DEBUG: exp=%h", Exp_internal);
 	 
 //-----------------
 
@@ -212,8 +236,10 @@ class `mname`;
 	    sticky = sticky | Man_internal[0];
 	    Man_internal = {1'b0, Man_internal[`$fracRes_width`:1]};
 	    Exp_internal +=1;
+$display("DEBUG: full man=%h", Man_internal);
 	 end
 	 Man_internal += sticky;
+$display("DEBUG: full man=%h", Man_internal);
 	 
 //----------------------
 
