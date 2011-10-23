@@ -180,7 +180,7 @@ class `mname`;
 	  * one RIGHT shift. In addition, we need to shift LEFT all leading zeros
 	  * */
 	 Man_internal = {msbA, transA.Fraction} * {msbB, transB.Fraction};
-$display("DEBUG: full man=%h", Man_internal);
+	 //$display("DEBUG: full man=%h", Man_internal);
 	 
 
 	 /* Now for the exponent:
@@ -197,7 +197,7 @@ $display("DEBUG: full man=%h", Man_internal);
 	 Exp_internal = transA.Exponent + transB.Exponent + denormA + denormA;
 	 Exp_offset = `2**($exp_width-1)-1`;
 	 Exp_max = `2**$exp_width-2`;
-$display("DEBUG: exp=%h", Exp_internal);
+	 //$display("DEBUG: exp=%h", Exp_internal);
 	 
 //-----------------
 
@@ -236,10 +236,10 @@ $display("DEBUG: exp=%h", Exp_internal);
 	    sticky = sticky | Man_internal[0];
 	    Man_internal = {1'b0, Man_internal[`$fracRes_width`:1]};
 	    Exp_internal +=1;
-$display("DEBUG: full man=%h", Man_internal);
+	    //$display("DEBUG: full man=%h", Man_internal);
 	 end
 	 Man_internal += sticky;
-$display("DEBUG: full man=%h", Man_internal);
+	 //$display("DEBUG: full man=%h", Man_internal);
 	 
 //----------------------
 

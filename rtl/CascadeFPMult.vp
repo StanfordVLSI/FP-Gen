@@ -74,6 +74,9 @@ module `mname`(
    logic 				      ZeroA, ZeroB, co_dummy0, co_dummy1, co_dummy2;
    logic 				      co_dummy3, co_dummy4, noShift, denormalAB;
 
+   logic 				      RStickyAB_int, ManAB_normalized_nextbit;
+   
+
 
   assign SigA  = A[`$frac_width - 1` : 0 ];
   assign SigB  = B[`$frac_width - 1` : 0 ];
@@ -166,8 +169,9 @@ module `mname`(
 				      {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) : {1'b0,SHN};
 
     assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>shiftAmount;
-    assign ManAB_normalized = ManAB_shifted[`$product_width + $frac_width`:`$frac_width`+1];
-    assign RStickyAB = |ManAB_shifted[`$frac_width`:0] | ( ManAB_normalized==0 & ~ZeroAB);
+    assign ManAB_normalized = ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`];
+    assign ManAB_normalized_nextbit = ManAB_shifted[`$frac_width`];
+    assign RStickyAB_int = |ManAB_shifted[`$frac_width-1`:0] | ( ManAB_normalized==0 & ~ZeroAB);
 
    //; }else{           
    // enable_denormals = NO
@@ -213,9 +217,10 @@ module `mname`(
   // Sameh? assign ManAB = ManAB_normalized;
 
   assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
-  assign ManAB = noShift? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],1'b0};
+  assign ManAB = noShift? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],ManAB_normalized_nextbit};
   assign SignAB = SignA ^ SignB;
-
+  assign RStickyAB = noShift?  RStickyAB_int|ManAB_normalized_nextbit : RStickyAB_int;
+   
 
 
 
