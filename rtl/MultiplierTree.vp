@@ -1,0 +1,105 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/MultiplierTree.vp#4 $
+ ** $DateTime: 2011/10/06 15:10:49 $
+ ** $Change: 9561 $
+ ** $Author: sameh $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * MultiplierTree is a summation tree for PPCount partial products of PPWidth width.
+ * 
+ *                  
+ * 
+ * Parameters:
+ * * PPWidth, BoothType, PPCount
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 21, 2011   Sameh     initial version
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor); # For floor rounding math
+//; use List::Util qw[min max];
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $pp_width = parameter(Name=>'PPWidth', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Bit width of the partial products");
+//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
+//; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>3, Step=>1,
+//;                       Doc=>"What booth was used to create the partial products? ".
+//;                            "(This determines the slope of the partial products ".
+//;                            "paralleloid)");
+//;
+//; # Some variables initialization
+//; my $width = $pp_width + $booth*($pp_count-1);  # add a booth width for every extra partial product
+//; my $columns = $pp_width + $booth*($pp_count-3); 
+
+module `mname()` ( 
+//; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+//; }
+    input logic [`$pp_width-1`:0]   pp [0:`$pp_count-1`],
+    output logic [`$width-1`:0]     out0,out1
+   );
+
+    assign out0[`$booth-1`:0] =   pp[0][`$booth-1`:0];
+    assign out1[`$booth`:0] = { (`$booth+1`){1'b0} };
+
+//; my $old_column_pp_count=2;
+//; for (my $j=$booth; $j < $width-$booth ; $j++){
+//;   my $new_column_pp_count = min( 1 + floor($j/$booth), $pp_count , 1 + floor(($width-1-$j)/$booth) );
+//;   my $last_row = min( floor($j/$booth), $pp_count-1);
+//;   my $treecolumn_obj = generate('ArrayColumn', "column_$j", PPCount=>$new_column_pp_count, ColumnPosition=>$j, MinRow=>$last_row-$new_column_pp_count+1, BoothType => $booth);
+//;   if($new_column_pp_count>2){
+      wire [`$new_column_pp_count-3`:0] c_`$j`;
+//;   }
+      `$treecolumn_obj->instantiate()`  (.pp( { pp[`$last_row`][`$j-$last_row*$booth`]
+//;   for(my $row=$last_row-1; $row > $last_row-$new_column_pp_count; $row--){
+                                              , pp[`$row`][`$j-$row*$booth`]
+//;   }
+                                              }),
+//;   if ($old_column_pp_count==2){
+                                         .ci(`$new_column_pp_count-$old_column_pp_count+1`'b0),                                     
+//;   }elsif ($new_column_pp_count<$old_column_pp_count){
+                                         .ci(c_`$j-1`),                                     
+//;   }else{
+                                         .ci({c_`$j-1`,`$new_column_pp_count-$old_column_pp_count+1`'b0}),
+//;   }
+//;   if($new_column_pp_count>2){
+                                         .co(c_`$j`),
+//;   }
+                                         .sum(out0[`$j`]), .carry(out1[`$j+1`]));
+//;   $old_column_pp_count=$new_column_pp_count;
+//; }
+
+    assign out0[`$width-1`:`$width-$booth`] = pp[`$pp_count-1`][`$pp_width-1`:`$pp_width-$booth-1`];
+    assign out1[`$width-1`:`$width-$booth+1`] = { (`$booth-1`){1'b0} };
+    
+
+//; if ($verif_mode =~ /ON/){
+	// synopsys translate_off
+	always @(posedge dumptolog)
+	begin
+		$display ("`mname`: out0 = %b", out0);
+		$display ("`mname`: out1 = %b", out1);
+	end
+	// synopsys translate_on
+
+ //; }
+endmodule
+
+

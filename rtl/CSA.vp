@@ -1,0 +1,8 @@
+module `mname()` (input logic a,b,ci,
+            output logic s, co);
+
+
+  DW01_add #(1)  add ( .A(a), .B(b), .CI(ci), .SUM(s), .CO(co) );
+
+//  DW01_ADD_ABC add(.A(a),.B(b),.C(ci),.S(s),.COUT(co));
+endmodule

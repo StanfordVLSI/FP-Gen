@@ -1,0 +1,91 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/ArrayColumn.vp#4 $
+ ** $DateTime: 2011/10/06 15:10:49 $
+ ** $Change: 9561 $
+ ** $Author: sameh $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * This is a ArrayColumn that process a vertical slice in multiplication tree 
+ * using a linear array architecture
+ *
+ * Parameters:
+ * * PPCount
+ *
+ * Inputs:
+ * * PPCount inputs                
+ * * (PPCount-1) ci
+ * 
+ * Outputs:
+ * * sum
+ * * carry
+ * * (PPCount-2) co
+ *
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 21, 2011   Sameh     initial version
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor); # For floor rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+
+//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
+//; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
+//;                          Doc=>"The column number");
+//; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
+//;                          Doc=>"The starting row position");
+//; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>3, Step=>1,
+//;                       Doc=>"What booth was used to create the partial products? ".
+//;                            "(This determines the slope of the partial products ".
+//;                            "paralleloid)");
+
+module `mname()` (
+    input logic [`$pp_count-1`:0] pp,
+    output logic sum, carry,
+    input logic  [`$pp_count-2`:0] ci
+//;if($pp_count>2){
+    , output logic [`$pp_count-3`:0] co
+//;}
+   );
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+
+      logic  [`$pp_count-2`:0] inter_sum;
+      assign inter_sum[0] = pp[0];
+
+
+
+//; for (my $i=0; $i < $pp_count-2; $i++){
+//;   my $row = $min_row + $i;
+//;   my $Y = $col - $row * $booth; 
+//;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp[`$i+1`]), .b(inter_sum[`$i`]), .ci(ci[`$i`]), .s(inter_sum[`$i+1`]), .co(co[`$i`]) );
+//; }
+
+//; my $row= $min_row + $pp_count-2;
+//; my $Y = $col - $row * $booth;
+//; my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp[`$pp_count-1`]), .b(inter_sum[`$pp_count-2`]), .ci(ci[`$pp_count-2`]), .s(sum),.co(carry));
+
+
+endmodule
+
+
