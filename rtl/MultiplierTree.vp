@@ -43,6 +43,8 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
+//; my $tree_type = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','Array'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array)");
 //;
 //; # Some variables initialization
 //; my $width = $pp_width + $booth*($pp_count-1);  # add a booth width for every extra partial product
@@ -63,7 +65,7 @@ module `mname()` (
 //; for (my $j=$booth; $j < $width-$booth ; $j++){
 //;   my $new_column_pp_count = min( 1 + floor($j/$booth), $pp_count , 1 + floor(($width-1-$j)/$booth) );
 //;   my $last_row = min( floor($j/$booth), $pp_count-1);
-//;   my $treecolumn_obj = generate('ArrayColumn', "column_$j", PPCount=>$new_column_pp_count, ColumnPosition=>$j, MinRow=>$last_row-$new_column_pp_count+1, BoothType => $booth);
+//;   my $treecolumn_obj = generate("${tree_type}Column", "column_$j", PPCount=>$new_column_pp_count, ColumnPosition=>$j, MinRow=>$last_row-$new_column_pp_count+1, BoothType => $booth);
 //;   if($new_column_pp_count>2){
       wire [`$new_column_pp_count-3`:0] c_`$j`;
 //;   }
