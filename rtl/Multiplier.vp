@@ -37,8 +37,8 @@
 //;                       Doc=>"Signal bit widths");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)");
-//; my $tree = parameter(Name=>'TreeType', Val=>'WallaceTree', List=>['WallaceTree','OS1Tree','OS2Tree','ZMTree','Array'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, OS1Tree, OS2Tree, ZMTree, Array)");
+//; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array) (Soon:OS1Tree, OS2Tree, ZMTree, Array)");
 
 module `mname`(
    //; if ($verif_mode =~ /ON/){
@@ -77,7 +77,9 @@ module `mname`(
     * (pp_width=`$pp_width`, pp_count=`$pp_count` and booth=`$booth`) */
     logic [`$pp_width + $booth*($pp_count-1) -1`:0] RawOut0,RawOut1; 
 								  
-   //; my $Tree_obj = generate("MultiplierTree", 'Tree', PPWidth=>$pp_width, PPCount=>$pp_count, BoothType=>$booth,TreeType=>'Wallace');
+   //; my $Tree_obj = generate("MultiplierTree", 'Tree', PPWidth=>$pp_width, 
+   //;			        PPCount=>$pp_count, BoothType=>$booth,
+   //;			        TreeType=>$tree);
    `$Tree_obj->instantiate()` (
  			  //; if ($verif_mode =~ /ON/){
 			  .dumptolog(dumptolog),
@@ -85,12 +87,15 @@ module `mname`(
 			  .pp(pp), .out0(RawOut0), .out1(RawOut1)
 			  );
 
-   // finally extract only the relevant bits
+   /* Finally extract only the relevant bits:
+    * LSBs are typically padding to account for adding xinc and yinc at the same significance as pp0
+    * MSBs are typically sign extensions
+    * */
    //; if ($booth==1){
-    assign out0 = RawOut0[`2*$width+1`:`2*$booth`]; // FIXME: Sameh, please explain this...
+    assign out0 = RawOut0[`2*$width+1`:`2*$booth`];
     assign out1 = RawOut1[`2*$width+1`:`2*$booth`];
    //; }else{ # booth==2 or booth==3
-    assign out0 = RawOut0[`2*$width+1+2*$booth`:`2*$booth`]; // FIXME: Sameh, please explain this...
+    assign out0 = RawOut0[`2*$width+1+2*$booth`:`2*$booth`];
     assign out1 = RawOut1[`2*$width+1+2*$booth`:`2*$booth`];
    //; }
 

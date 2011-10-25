@@ -42,8 +42,10 @@ vpath 	%.vph $(GENESIS_INC)
 GENESIS_PRIMITIVES :=	
 
 GENESIS_ENV :=		$(wildcard $(DESIGN_HOME)/verif/*.vp)
+GENESIS_ENV :=		$(notdir $(GENESIS_ENV)) 
 
 GENESIS_DESIGN := 	$(wildcard $(DESIGN_HOME)/rtl/*.vp)
+GENESIS_DESIGN := 	$(notdir $(GENESIS_DESIGN))
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 
