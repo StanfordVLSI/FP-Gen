@@ -100,15 +100,15 @@ module `mname` (
    logic [`$width+2`:0] 	  pp0124;
    logic [1:0] 		  mux_control;
 
-   assign mux_control = {y_msb, ~(y_edge_vector[1] & y_edge_vector[0]) ,  ~(~(~y_edge_vector[2] & y_edge_vector[1]) & y_edge_vector[0]) };
+   assign mux_control = {(y_edge_vector[1] | y_edge_vector[0]) ,  ((y_edge_vector[2] & ~y_edge_vector[1]) | y_edge_vector[0]) };
    
    always_comb
      begin
 	case (mux_control)
-	  2'b00:  pp0124 = {~S,{(`$width+2`){S}}};                 // 0      (y[0]==y[1]==y[2]==y[3])              //111
-  	  2'b01:  pp0124 = {~S,x_out,S,S};                      // +/-4X  (y[0]==y[1]==y[2]) & (y[2]!=y[3])     //011
-  	  2'b10:  pp0124 = {~S,S,x_out,S};                      // +/-2X  (y[0]==y[1]) & (y[1]!=y[2])           //101,001
-  	  2'b11:  pp0124 = {~S,S,S,x_out};                      // +/-X   (y[0]!=y[1]) & (y[2]==y[3])           //100,110,000,010
+	  2'b00:  pp0124 = {~S,{(`$width+2`){S}}};              // 0      (y[0]==y[1]==y[2]==y[3])           //yedge = 000
+  	  2'b01:  pp0124 = {~S,x_out,S,S};                      // +/-4X  (y[0]==y[1]==y[2]) & (y[2]!=y[3])  //yedge = 100
+  	  2'b10:  pp0124 = {~S,S,x_out,S};                      // +/-2X  (y[0]==y[1]) & (y[1]!=y[2])        //yedge = X10
+  	  2'b11:  pp0124 = {~S,S,S,x_out};                      // +/-X   (y[0]!=y[1]) & (y[2]==y[3])        //yedge = 0X1
         endcase
     
 	casex ({(y_edge_vector[0] | y_edge_vector[2]),S})

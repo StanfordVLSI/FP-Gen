@@ -40,13 +40,24 @@
  * Oct 23, 2011   sameh     Booth 2 mux
  * ****************************************************************************/
 
+
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+
 module `mname` (
    input [1:0]    x, x_b,
-   input [1:0]    y_edge_vector,  // y_edge_vector[i] = y[i]==y[i+1]
+   input [1:0]    y_edge_vector,  // y_edge_vector[i] = y[i]!=y[i+1]
    input          y_msb,          // y[2]
    output out );
    
    logic [1:0] x_out;
-   assign x_out = y_msb ? x_b: x;
-   assign out = y_edge_vector[0] ? y_edge_vector[1]? y_msb : x_out[0] : x_out[1];
+
+//; if ($verif_mode =~ /ON/){
+   assign x_out[0] = y_msb ^ x[0];
+   assign x_out[1] = y_msb ^ x[1];
+   assign out = y_edge_vector[0] ? x_out[1] : y_edge_vector[1]? x_out[0]  :  y_msb;
+//; } else {
+   XOR2D1BWPLVT U1 (.A1(x[0]),.A2(y_msb),.Z(x_out[0]));
+   XOR2D1BWPLVT U2 (.A1(x[1]),.A2(y_msb),.Z(x_out[1]));
+   MUX3D2BWPLVT U3 (.I0(y_msb),.I1(x_out[0]), .I2(x_out[1]), .S0(y_edge_vector[1]),.S1(y_edge_vector[0]),.Z(x_temp));
+//; }
 endmodule

@@ -121,7 +121,7 @@ module `mname`(
    assign x_b = ~x;
    
    logic [`$extended_width-2`:0] y_edge_vector;
-   assign y_edge_vector = extended_y[`$extended_width-1`:1] ~^ extended_y[`$extended_width-2`:0];
+   assign y_edge_vector = extended_y[`$extended_width-1`:1] ^ extended_y[`$extended_width-2`:0];
 
    
    //;   # If booth==3 we need to prepare a 3*x and ~(3*x) products

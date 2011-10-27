@@ -58,7 +58,7 @@
 
 module `mname` (
     input [`$width-1`:0]    x, x_b,
-    input [1:0] 	    y_edge_vector,  // y_edge_vector[i] = y[i]==y[i+1]
+    input [1:0] 	    y_edge_vector,  // y_edge_vector[i] = y[i]!=y[i+1]
     input 		    y_msb,          // y[2]
     output [`$width+1`:0]   pp,             //extend width by two: 1 bit for sign and second for shifting for 2X multiple
     output 		    S
