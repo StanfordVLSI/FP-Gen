@@ -58,6 +58,6 @@ module `mname` (
 //; } else {
    XOR2D1BWPLVT U1 (.A1(x[0]),.A2(y_msb),.Z(x_out[0]));
    XOR2D1BWPLVT U2 (.A1(x[1]),.A2(y_msb),.Z(x_out[1]));
-   MUX3D2BWPLVT U3 (.I0(y_msb),.I1(x_out[0]), .I2(x_out[1]), .S0(y_edge_vector[1]),.S1(y_edge_vector[0]),.Z(x_temp));
+   MUX3D2BWPLVT U3 (.I0(y_msb),.I1(x_out[0]), .I2(x_out[1]), .S0(y_edge_vector[1]),.S1(y_edge_vector[0]),.Z(out));
 //; }
 endmodule
