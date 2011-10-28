@@ -13,16 +13,19 @@
  * using a linear array architecture
  *
  * Parameters:
- * * PPCount
+ * * ColumnHight, ColumnPosition, MinRow, BoothType, CarryInWidth, LayoutShape
+ * 
+ * Exported Parameters:
+ * * CarryOutWidth
  *
  * Inputs:
- * * PPCount inputs                
- * * (PPCount-1) ci
- * 
+ * * ColumnHight pp                 
+ * * CarryInWidth ci
+ *  
  * Outputs:
  * * sum
  * * carry
- * * (PPCount-2) co
+ * * CarryOutWidth co
  *
  * Change bar:
  * -----------
@@ -35,7 +38,7 @@
  * PARAMETERIZATION
  * ****************************************************************************/
 //; # Perl Libraries
-//; use POSIX qw(floor); # For floor rounding math
+//; # use POSIX qw(floor ceil); # For floor and ceiling rounding math
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -43,8 +46,8 @@
 //;
 //; # module parameters
 
-//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
-//;                          Doc=>"Number of partial products to sum");
+//; my $col_ht = parameter(Name=>'ColumnHight', Val=>2, Min=>2, Step=>1,
+//;                          Doc=>"Number of partial products in relevant column to sum");
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
@@ -53,14 +56,26 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
+//; my $ci_w = parameter(Name=>'CarryInWidth', Val=>0, Min=>0, Step=>1,
+//;                      Doc=>"Number of carry in from previous column");
+//; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
+//;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
+//;
+//; # Also notify everyone how many carry out you will have
+//; my $co_w = ($min_row==0)? $col_ht-3 : $col_ht-2;
+//; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1, Min=>0, Step=>1,
+//;           Doc=>"Number of carry out to next column");
+
 
 module `mname()` (
-    input logic [`$pp_count-1`:0] pp,
-    output logic sum, carry,
-    input logic  [`$pp_count-2`:0] ci
-//;if($pp_count>2){
-    , output logic [`$pp_count-3`:0] co
+    input logic [`$col_ht-1`:0] pp,
+//; if($ci_w){
+    input logic  [`$ci_w-1`:0] ci,
+//; }
+//;if($co_w){
+    output logic [`$co_w-1`:0] co,
 //;}
+    output logic sum, carry
    );
 
   /* synopsys dc_tcl_script_begin
@@ -68,24 +83,84 @@ module `mname()` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-      logic  [`$pp_count-2`:0] inter_sum;
-      assign inter_sum[0] = pp[0];
+   //; my $inter_sum_w = ($min_row==0)? $col_ht-3 : $col_ht-2;
+   logic [`$inter_sum_w`:0] inter_sum;
+   logic [`$co_w`:0] 	      inter_co;
+   
+   //; # is num_pp here one less then in previous column?
+   //; my $going_down_col = ($min_row>0 && $col%$booth==1)? 1:0; 
+   //;
+   //; # local variables for index etc.
+   //; my $row = $min_row;
+   //; my $Y = $col;
+   //; my $pp_idx = 0; my $sum_idx = 0;
+   //; my $ci_idx = 0; my $co_idx = 0;
+   //;
+   //; while (($pp_idx < $col_ht) || ($ci_idx < $ci_w)){
+   //;
+   //;   # Determine the physical location for the CSA/HA cell
+   //;   $Y = $col - $row * $booth if $layout_shape =~ /Square/;
+   //;   $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;
+   //;   # Check if we need to stick an extra pp into the first csa of the column
+   //;   my $one_extra_pp = ($row==$min_row && $going_down_col)? 1:0;
+   //;   my $two_extra_pp = ($row==$min_row && !$going_down_col)? 1:0;
+   //;
+   //;   # Check if we need a full or half adder
+   //;   my $need_full = (($col_ht-$pp_idx) + ($ci_w-$ci_idx) + ($inter_sum_w-$sum_idx) >= 3)? 1:0;
+   //;   $self->error("How can I need tow extra pp and only hald adder?") if $two_extra_pp && !$need_full;
+   //; 
+   //;   if ($two_extra_pp && $need_full){
+   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   // No inter_sum or carry_in to the first CSA so use all inputs for pp
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), .ci(pp[`$pp_idx++`]), 
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   
+   //;   }
+   //;   elsif ($one_extra_pp && $need_full){
+   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   // No inter_sum to the first CSA so use a second input for pp
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), .ci(ci[`$ci_idx++`]), 
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   
+   //;   }
+   //;   elsif ($one_extra_pp && !$need_full){
+   //;     my $CSA_obj = generate('HA', "ha_${row}_${Y}");
+   // No inter_sum or carry_in to the first HA so use both inputs for pp
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), 
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   
+   //;   }
+   //;   elsif ($need_full){
+   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   // Regular case: pp, inter_sum and ci
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(inter_sum[`$sum_idx++`]), .ci(ci[`$ci_idx++`]), 
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   
+   //;   }
+   //;   else{
+   //;     my $CSA_obj = generate('HA', "ha_${row}_${Y}");
+   //;     if ($pp_idx < $col_ht){
+   // Just a half adder to add the last pp
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(inter_sum[`$sum_idx++`]),
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   
+   //;     }else{
+   // Just a half adder to add the last ci
+   `$CSA_obj->instantiate()` ( .a(inter_sum[`$sum_idx++`]), .b(ci[`$ci_idx++`]),
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   
+   //;     }
+   //;   }
+   //;   $row++;
+   //; } # End of "while (..."
 
-
-
-//; for (my $i=0; $i < $pp_count-2; $i++){
-//;   my $row = $min_row + $i;
-//;   my $Y = $col - $row * $booth; 
-//;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-      `$CSA_obj->instantiate()` ( .a(pp[`$i+1`]), .b(inter_sum[`$i`]), .ci(ci[`$i`]), .s(inter_sum[`$i+1`]), .co(co[`$i`]) );
-//; }
-
-//; my $row= $min_row + $pp_count-2;
-//; my $Y = $col - $row * $booth;
-//; my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-      `$CSA_obj->instantiate()` ( .a(pp[`$pp_count-1`]), .b(inter_sum[`$pp_count-2`]), .ci(ci[`$pp_count-2`]), .s(sum),.co(carry));
-
+   //; $self->error("How come ci_idx($ci_idx)!=ci_w($ci_w) or pp_idx($pp_idx)!=col_ht($col_ht)") unless $ci_idx==$ci_w && $pp_idx==$col_ht;
+   assign sum = inter_sum[`$sum_idx`];
+   assign carry = inter_co[`$co_w`];
+   //;if($co_w){
+   assign co = inter_co[`$co_w-1`:0];
+   //;}
 
 endmodule
-
 

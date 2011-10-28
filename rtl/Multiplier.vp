@@ -37,8 +37,8 @@
 //;                       Doc=>"Signal bit widths");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)");
-//; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array) (Soon:OS1Tree, OS2Tree, ZMTree, Array)");
+//; my $tree = parameter(Name=>'TreeType', Val=>'Array', List=>['Wallace','OS1','OS2','ZM','Array'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array) (Soon:OS1Tree, OS2Tree, ZMTree)");
 
 module `mname`(
    //; if ($verif_mode =~ /ON/){
