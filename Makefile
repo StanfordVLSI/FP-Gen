@@ -59,7 +59,7 @@ GENESIS_VLOG_LIST := genesis_vlog.vf
 
 # Input xml program
 ifndef GENESIS_CFG_XML
-  GENESIS_CFG_XML := 	config.xml
+  GENESIS_CFG_XML := 	empty.xml
   $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
 else
   $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
@@ -281,6 +281,7 @@ clean:
 	\rm -rf top.v
 	\rm -rf $(GENESIS_INTERMIDS)
 	\rm -rf $(GENESIS_INTERMIDS:.pm=_unq*.v)
+	\rm -rf $(GENESIS_INTERMIDS:.pm=_tmp*.v)
 	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY)
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
