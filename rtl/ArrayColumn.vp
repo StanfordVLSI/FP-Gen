@@ -88,7 +88,13 @@ module `mname()` (
    logic [`$co_w`:0] 	      inter_co;
    
    //; # is num_pp here one less then in previous column?
-   //; my $going_down_col = ($min_row>0 && $col%$booth==1)? 1:0; 
+   //; my $going_down_col = 0;
+   //; if ($booth==1){
+   //;   $going_down_col = ($min_row>0)? 1:0;
+   //; }else{
+   //;   $going_down_col  = ($min_row>0 && $col%$booth==1)? 1:0;
+   //; }
+   //; ## print STDERR "DEBUG: going_down_col=$going_down_col min_row=$min_row, col=$col, booth=$booth\n";
    //;
    //; # local variables for index etc.
    //; my $row = $min_row;
@@ -103,12 +109,12 @@ module `mname()` (
    //;   $Y = $col if $layout_shape =~ /Parallelogram/;
    //;
    //;   # Check if we need to stick an extra pp into the first csa of the column
-   //;   my $one_extra_pp = ($row==$min_row && $going_down_col)? 1:0;
-   //;   my $two_extra_pp = ($row==$min_row && !$going_down_col)? 1:0;
+   //;   my $one_extra_pp = ($row==$min_row)? 1:0;
+   //;   my $two_extra_pp = ($one_extra_pp && !$going_down_col && $col_ht>2)? 1:0;
    //;
    //;   # Check if we need a full or half adder
    //;   my $need_full = (($col_ht-$pp_idx) + ($ci_w-$ci_idx) + ($inter_sum_w-$sum_idx) >= 3)? 1:0;
-   //;   $self->error("How can I need tow extra pp and only hald adder?") if $two_extra_pp && !$need_full;
+   //;   $self->error("How can I need tow extra pp and only half adder?") if $two_extra_pp && !$need_full;
    //; 
    //;   if ($two_extra_pp && $need_full){
    //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");

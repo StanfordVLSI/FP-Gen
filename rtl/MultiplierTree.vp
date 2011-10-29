@@ -78,12 +78,14 @@ module `mname()` (
 
 //; my $ci_w = 0;
 //; my $co_w = 0;
-//; for (my $j = 2*$booth; $j < $width-$booth-1; $j++) {
+//; for (my $j = 2*$booth; $j < $width-$booth; $j++) {
 //;   my $first_row = ($j < $pp_width)?  0 : ceil(($j+1-$pp_width)/$booth);
 //;   my $last_row = min( floor($j/$booth), $pp_count-1);
 //;   my $col_ht = $last_row - $first_row + 1;
+//;   ## print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$col_ht\n";
+//;
+//; # comment to verilog file
    // Now working on column J=`$j` of hight `$col_ht`
-   //; print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$col_ht\n";
 //;
 //;   # first we generate the needed column
 //;   my $treecolumn_obj = generate("${tree_type}Column", "column_$j", 
@@ -98,9 +100,10 @@ module `mname()` (
 //;   $co_w = $treecolumn_obj->get_param('CarryOutWidth');
 //;   if($co_w){
       logic [`$co_w-1`:0] c_col`$j`; // carry out of column j=`$j` (to be driven as carry in to j+1)
-//;   }
 
-      // instantiate collumn `$j` summation tree: pp_width=`$pp_width` first_row=`$first_row` last_row=`$last_row` hight=`$col_ht`
+//;   }
+//;
+      // Instantiate collumn `$j` summation tree: pp_width=`$pp_width` first_row=`$first_row` last_row=`$last_row` hight=`$col_ht`
       `$treecolumn_obj->instantiate()`  (.pp( { pp[`$last_row`][`$j-$last_row*$booth`]
 						//;   for(my $row=$last_row-1; $row >= $first_row; $row--){
 						, pp[`$row`][`$j-$row*$booth`]
@@ -118,10 +121,13 @@ module `mname()` (
 //;   $ci_w = $co_w; 
 //; }
   
-   // Columns `$width-$booth-1` through `$width-1` -- only one pp again
-   assign out0[`$width-1`:`$width-$booth-1`] =   pp[`$pp_count-1`][`$booth-1`:0];
-   assign out1[`$width-1`:`$width-$booth`] = { (`$booth-1`){1'b0} };
-
+   // Columns `$width-$booth` through `$width-1` -- only one pp again 
+   // Note that out1[`$width-$booth`] was already assigned so only need `$width-$booth+1` through `$width-1`
+   assign out0[`$width-1`:`$width-$booth`] =   pp[`$pp_count-1`][`$pp_width-1`:`$pp_width-$booth`];
+//; if ($width-1 >= $width-$booth+1){
+   assign out1[`$width-1`:`$width-$booth+1`] = { (`$booth-1`){1'b0} };
+//; }
+   
 //; if ($verif_mode =~ /ON/){
 	// synopsys translate_off
 	always @(posedge dumptolog)
