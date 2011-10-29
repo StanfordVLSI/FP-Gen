@@ -58,6 +58,8 @@
 //;                            "paralleloid)");
 //; my $ci_w = parameter(Name=>'CarryInWidth', Val=>0, Min=>0, Step=>1,
 //;                      Doc=>"Number of carry in from previous column");
+//; my $going_down_col = parameter(Name=>'GoingDownColumn', Val=>0, Min=>0, Step=>1, Max=>1,
+//;                      Doc=>"Is this column shorter by one than the previous column?");
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
@@ -65,7 +67,8 @@
 //; my $co_w = ($min_row==0)? $col_ht-3 : $col_ht-2;
 //; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1, Min=>0, Step=>1,
 //;           Doc=>"Number of carry out to next column");
-
+//;
+//; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, going_down_col=$going_down_col, co_w=$co_w \n";
 
 module `mname()` (
     input logic [`$col_ht-1`:0] pp,
@@ -87,15 +90,6 @@ module `mname()` (
    logic [`$inter_sum_w`:0] inter_sum;
    logic [`$co_w`:0] 	      inter_co;
    
-   //; # is num_pp here one less then in previous column?
-   //; my $going_down_col = 0;
-   //; if ($booth==1){
-   //;   $going_down_col = ($min_row>0)? 1:0;
-   //; }else{
-   //;   $going_down_col  = ($min_row>0 && $col%$booth==1)? 1:0;
-   //; }
-   //; ## print STDERR "DEBUG: going_down_col=$going_down_col min_row=$min_row, col=$col, booth=$booth\n";
-   //;
    //; # local variables for index etc.
    //; my $row = $min_row;
    //; my $Y = $col;

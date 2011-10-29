@@ -28,7 +28,7 @@
  * ****************************************************************************/
 //; # Perl Libraries
 //; use POSIX qw(floor ceil); # For floor rounding math
-//; use List::Util qw[min max];
+//; # use List::Util qw[min max]; # this library adds 10sec to compile time
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -80,8 +80,10 @@ module `mname()` (
 //; my $co_w = 0;
 //; for (my $j = 2*$booth; $j < $width-$booth; $j++) {
 //;   my $first_row = ($j < $pp_width)?  0 : ceil(($j+1-$pp_width)/$booth);
-//;   my $last_row = min( floor($j/$booth), $pp_count-1);
+//;   my $last_row = ( floor($j/$booth) < $pp_count-1) ? floor($j/$booth) : $pp_count-1;  #min( floor($j/$booth), $pp_count-1);
 //;   my $col_ht = $last_row - $first_row + 1;
+//;   my $going_down_col  = ($first_row>0 && ($j-$pp_width)%$booth==0)? 1:0;
+//;
 //;   ## print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$col_ht\n";
 //;
 //; # comment to verilog file
@@ -94,7 +96,8 @@ module `mname()` (
 //;      			     ColumnPosition=> $j, 
 //;       			     MinRow=> $first_row, 
 //;       			     BoothType => $booth,
-//;        			     CarryInWidth => $ci_w);
+//;        			     CarryInWidth => $ci_w,
+//;         			     GoingDownColumn=> $going_down_col);
 //;
 //;   # after it was generated we can extract the carry out width to prepare the co signal
 //;   $co_w = $treecolumn_obj->get_param('CarryOutWidth');
