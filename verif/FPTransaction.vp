@@ -183,30 +183,30 @@ class `mname`;
    // IMPORTANT: This function was custom built for the CascadeFPMult format
    function ForceSignExpMan(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man);
 
-$write("DEBUG: Sign=%1b, Exp=0x%h, Man=0x%h -- My thoughts: ", Sign, Exp, Man);
+// $write("DEBUG: Sign=%1b, Exp=0x%h, Man=0x%h -- My thoughts: ", Sign, Exp, Man);
       
       if (Exp > `2**$exp_width-2`) begin // Exponent overflow case
 	 this.ForceSignExpFrac(Sign, {(`$exp_width+2`){1'b1}}, `$frac_width`'b0);
-$display("Exp>MaxExp (`2**$exp_width-2`)  ==> Assume Inf");
+// $display("Exp>MaxExp (`2**$exp_width-2`)  ==> Assume Inf");
       end else
       if (Exp == `$exp_width+2`'b0) begin // Zero cases
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], `$frac_width`'b0);
-$display("Exp==0  ==> Assume Zero");
+// $display("Exp==0  ==> Assume Zero");
       end
       else if (Exp == `$exp_width+2`'b1) begin // Denorm and Normal cases
 	 if (Man[`$frac_width`] == 1'b0) begin  // Denorm
 	    this.ForceSignExpFrac(Sign, `$exp_width+2`'b0, Man[`$frac_width - 1`:0]);
-$display("Exp==1, Man[msb]=0  ==> Assume Denorm");
+// $display("Exp==1, Man[msb]=0  ==> Assume Denorm");
 	 end else begin 			// Normals (with wxp=1)
 	    this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
-$display("Exp==1, Man[msb]=1  ==> Assume Normal");
+// $display("Exp==1, Man[msb]=1  ==> Assume Normal");
 	 end
       end else if (Exp == {(`$exp_width+2`){1'b1}}) begin // Inf and NaN cases
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
-$display("Exp==111..1 ==> Assuming Inf or NaN");
+// $display("Exp==111..1 ==> Assuming Inf or NaN");
       end
       else begin 					// Just normal cases
-$display("Normal Case!");
+// $display("Normal Case!");
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
       end
    endfunction // ForceSignExpMan
