@@ -49,41 +49,19 @@ class `mname`;
    `$expectedResult_obj->instantiate` = new();
    
 
-   function bit CheckMultResult(`$typeRes` transRes, 
-				logic NaNRes, logic InfRes, logic ZeroRes, logic RStickyRes);
-      $display("%t: RESULT: Type=%s Sign=%1b Exp=0x%h Frac=0x%h IsNaN=%1b IsInf=%1b IsZero=%1b RSticky=%1b", $time,
-	       transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction, NaNRes, InfRes, ZeroRes, RStickyRes );
+   function bit CheckMultResult(`$typeRes` transRes);
+      //$display("%t: RESULT: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+      //transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction);
 
       // First check flags:
-      if (NaNRes) begin
+      if (transRes.TransType == `$typeRes`::QuietNaN || transRes.TransType == `$typeRes`::SignalingNaN) begin
 	 if (Expected.TransType == `$typeRes`::QuietNaN || Expected.TransType == `$typeRes`::SignalingNaN)
 	   return 1'b1;
       end
-      if (InfRes) begin
+      if (transRes.TransType == `$typeRes`::Inf) begin
 	 if (Expected.TransType == `$typeRes`::Inf)
 	   return 1'b1;
       end
-      if (RStickyRes) begin
-	 //corner case alert: if FP==1.111111 or FP==0.111111 and rsticky we need exp+1
-	 if (transRes.Fraction == {(`$fracRes_width`){1'b1}}) begin
-	    if (transRes.Exponent < `2**$exp_width-2`) begin // from exp to exp+1 or from denorm to norm
-	       if (transRes.Sign == Expected.Sign &&
-		   transRes.Exponent+1 == Expected.Exponent &&
-		   transRes.Fraction+1 == Expected.Fraction ) begin
-		  return 1'b1;
-	       end
-	    end else begin // exp >= max_exp
-	       if (Expected.TransType == `$typeRes`::Inf)
-		 return 1'b1;
-	    end
-	 end else begin // if (transRes.Fraction == {(`$fracRes_width`){1'b1}})
-	    if (transRes.Sign == Expected.Sign &&
-		transRes.Exponent == Expected.Exponent &&
-		transRes.Fraction+1 == Expected.Fraction ) begin
-	       return 1'b1;
-	    end
-	 end
-      end // if (RStickyRes)
       
       // Normal case
       if (transRes.Sign == Expected.Sign &&

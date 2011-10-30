@@ -142,10 +142,10 @@ program automatic `mname` (
 	   
 	   // wait for it...
 	   #100;
-	   TransRes.ForceSignExpMan(SignRes, ExpRes, ManRes);
+	   TransRes.CascadeFPMultResult_to_FPTrans(SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes, RStickyRes);
 	   
 	   // now check results...
-	   if (! GoldRef.CheckMultResult(TransRes, NaNRes, InfRes, ZeroRes, RStickyRes) )
+	   if (! GoldRef.CheckMultResult(TransRes) )
 	     begin
 		dumptolog = 1'b1;
 		#1;
