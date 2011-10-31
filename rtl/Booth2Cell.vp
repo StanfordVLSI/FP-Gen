@@ -49,15 +49,15 @@ module `mname` (
    input          y_msb,          // y[2]
    output out );
    
-   logic [1:0] x_out;
+   logic x_temp;
 
-//; if ($verif_mode =~ /ON/){
-   assign x_out[0] = y_msb ^ x[0];
-   assign x_out[1] = y_msb ^ x[1];
-   assign out = y_edge_vector[0] ? x_out[1] : y_edge_vector[1]? x_out[0]  :  y_msb;
-//; } else {
-   XOR2D1BWPLVT U1 (.A1(x[0]),.A2(y_msb),.Z(x_out[0]));
-   XOR2D1BWPLVT U2 (.A1(x[1]),.A2(y_msb),.Z(x_out[1]));
-   MUX3D2BWPLVT U3 (.I0(y_msb),.I1(x_out[0]), .I2(x_out[1]), .S0(y_edge_vector[1]),.S1(y_edge_vector[0]),.Z(out));
-//; }
+   assign x_temp = (y_edge_vector[0] & x[1]) | (!y_edge_vector[0] & y_edge_vector[1] & x[0]);
+   assign out = x_temp ^ y_msb;
+
+// Example Synthesis Result
+//-------------------------
+//  INVD1BWPLVT U1 ( .I(y_edge_vector[0]), .ZN(n4) );
+//  AOI32D1BWPLVT U2 ( .A1(x[0]), .A2(n4), .A3(y_edge_vector[1]), .B1(x[1]), .B2(y_edge_vector[0]), .ZN(n5) );
+//  XNR2D2BWPLVT U3 ( .A1(n5), .A2(y_msb), .ZN(out) );
+
 endmodule
