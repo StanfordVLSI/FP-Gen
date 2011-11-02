@@ -73,7 +73,7 @@ module `mname()` (
    // From this column=`2*$booth` on, we need summation trees which will generate sum and carry
    // Since at column J, sum goes to out0[J] and carry to out1[J+1] we need to assign
    // a zero to out1[`2*$booth`]
-   assign out1[`2*$booth`] = 0'b0;
+   assign out1[`2*$booth`] = 1'b0;
    
 
 //; my $ci_w = 0;
@@ -81,47 +81,77 @@ module `mname()` (
 //; for (my $j = 2*$booth; $j < $width-$booth; $j++) {
 //;   my $first_row = ($j < $pp_width)?  0 : ceil(($j+1-$pp_width)/$booth);
 //;   my $last_row = ( floor($j/$booth) < $pp_count-1) ? floor($j/$booth) : $pp_count-1;  #min( floor($j/$booth), $pp_count-1);
-//;   my $col_ht = $last_row - $first_row + 1;
-//;   my $going_down_col  = ($first_row>0 && ($j-$pp_width)%$booth==0)? 1:0;
+//;   my $pp_col_ht = $last_row - $first_row + 1;
 //;
-//;   ## print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$col_ht\n";
+//;   # There are five distinct cases:
+//;   my $up = ($first_row==0 && $j%$booth==0)? 1:0; 	 		# this column has one more pp than prev column
+//;   my $up_even = ($first_row==0 && $up==0)? 1:0; 		 	# this coulmn has same hight as prev column but 
+//;								 	# we are still at the increasing side of the parallelogram
+//;   my $down  = ($first_row>0 && ($j-$pp_width)%$booth==0)? 1:0;	# this column has one less pp than prev column
+//;   my $down_first  = ($first_row==1 && $down==1)? 1:0;		# First time a column is shorter than its prev column
+//;   my $down_even = ($first_row>0 && $down==0)? 1:0;			# this coulmn has same hight as prev column but 
+//;								 	# we are at the decreasing side of the parallelogram
 //;
-//; # comment to verilog file
-   // Now working on column J=`$j` of hight `$col_ht`
+//;   my $tree_col_ht = $pp_col_ht;		# That's the actuall tree we are building (which may have an extra PP from ci)
+//;   $tree_col_ht += 1 if $first_row>0 && $co_w>0;	# At the 'going down' side of the parallelogram, 
+//;			 			 	# we always put ci[0] or ci[last] as first or last pp, but only if
+//;			 			 	# there is co from the previous column
 //;
-//;   # first we generate the needed column
+//;    print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$pp_col_ht\n";
+//;    print STDERR "DEBUG: up=$up up_even=$up_even down=$down down_first=$down_first down_even=$down_even\n";
+//;
+      // Now working on column J=`$j` of hight `$pp_col_ht`
+      logic [`$tree_col_ht-1`:0] pp_col`$j`;
+//;   my $pp_idx = 0;
+//;   if ($down){
+        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
+//;   }
+//;   for(my $row=$first_row; $row <= $last_row; $row++){
+        assign pp_col`$j`[`$pp_idx++`] = pp[`$row`][`$j-$row*$booth`];
+//;   }  
+//;   if ($down_even && $co_w){
+        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[`$co_w-1`]; // use MSB of co of previous column as a pp
+//;   }
+//;   $self->error("How come pp_idx($pp_idx) != tree_col_ht($tree_col_ht)?") if $pp_idx!=$tree_col_ht;
+
+//;   $ci_w = ($up || $down_even || $down_first) ? $tree_col_ht-4:$tree_col_ht-3;
+//;   $ci_w = 0 if ($ci_w < 0); # can't have negative width
+//;   if ($ci_w){
+        logic [`$ci_w-1`:0] ci_col`$j`; // carry in to column j=`$j` (to extracted from co of `$j-1`)
+//;     if ($down){
+          assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:1]; // since we used the LSB of co of previous column as a pp
+//;     }elsif ($down_even){
+          assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-2`:0]; // since we used the MSB of co of previous column as a pp
+//;     }else{
+          assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:0];
+//;     }
+//;   }
+
+//;   $co_w = ($tree_col_ht>3) ? $tree_col_ht-3:0;
+//;   if($co_w){
+      logic [`$co_w-1`:0] co_col`$j`; // carry out of column j=`$j` (to be driven as carry in to `$j+1`)
+//;   }
+   
+//;   # generate the needed column tree
 //;   my $treecolumn_obj = generate("${tree_type}Column", "column_$j", 
 //;     			     LayoutShape=> $layout_shape, 
-//;     			     ColumnHight=> $col_ht, 
+//;     			     ColumnHight=> $tree_col_ht, 
 //;      			     ColumnPosition=> $j, 
 //;       			     MinRow=> $first_row, 
 //;       			     BoothType => $booth,
-//;        			     CarryInWidth => $ci_w,
-//;         			     GoingDownColumn=> $going_down_col);
+//;        			     OneLessCarryIn => $up || $down_even || $down_first);
 //;
-//;   # after it was generated we can extract the carry out width to prepare the co signal
-//;   $co_w = $treecolumn_obj->get_param('CarryOutWidth');
-//;   if($co_w){
-      logic [`$co_w-1`:0] c_col`$j`; // carry out of column j=`$j` (to be driven as carry in to j+1)
-
-//;   }
-//;
-      // Instantiate collumn `$j` summation tree: pp_width=`$pp_width` first_row=`$first_row` last_row=`$last_row` hight=`$col_ht`
-      `$treecolumn_obj->instantiate()`  (.pp( { pp[`$last_row`][`$j-$last_row*$booth`]
-						//;   for(my $row=$last_row-1; $row >= $first_row; $row--){
-						, pp[`$row`][`$j-$row*$booth`]
-						//;   }
-						} ),
+      // Instantiate collumn `$j` summation tree: pp_width=`$pp_width` first_row=`$first_row` last_row=`$last_row` hight=`$pp_col_ht`
+      `$treecolumn_obj->instantiate()`  (.pp(pp_col`$j`),
 					 //;   if ($ci_w){
-                                         .ci(c_col`$j-1`),                                     
+                                         .ci(ci_col`$j`),                                     
 					 //;   }
 					 //;   if($co_w){
-                                         .co(c_col`$j`),
+                                         .co(co_col`$j`),
 					 //;   }
                                          .sum(out0[`$j`]), .carry(out1[`$j+1`]));
 
 //;   # Get ready for next iteration:
-//;   $ci_w = $co_w; 
 //; }
   
    // Columns `$width-$booth` through `$width-1` -- only one pp again 

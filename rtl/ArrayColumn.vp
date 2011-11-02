@@ -56,19 +56,17 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $ci_w = parameter(Name=>'CarryInWidth', Val=>0, Min=>0, Step=>1,
-//;                      Doc=>"Number of carry in from previous column");
-//; my $going_down_col = parameter(Name=>'GoingDownColumn', Val=>0, Min=>0, Step=>1, Max=>1,
-//;                      Doc=>"Is this column shorter by one than the previous column?");
+//; my $one_less_ci = parameter(Name=>'OneLessCarryIn', Val=>0, Min=>0, Step=>1, Max=>1,
+//;                      Doc=>"Is there one less carry in for this column?");
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
-//; # Also notify everyone how many carry out you will have
-//; my $co_w = ($min_row==0)? $col_ht-3 : $col_ht-2;
-//; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1, Min=>0, Step=>1,
-//;           Doc=>"Number of carry out to next column");
+//; my $ci_w = ($one_less_ci) ? $col_ht-4:$col_ht-3;
+//; $ci_w = 0 if ($ci_w < 0); # can't have negative width
+//; my $co_w = $col_ht-3;
+//; $co_w = 0 if ($co_w < 0); # can't have negative width
 //;
-//; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, going_down_col=$going_down_col, co_w=$co_w \n";
+//; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
 module `mname()` (
     input logic [`$col_ht-1`:0] pp,
@@ -86,77 +84,70 @@ module `mname()` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-   //; my $inter_sum_w = ($min_row==0)? $col_ht-3 : $col_ht-2;
-   logic [`$inter_sum_w`:0] inter_sum;
-   logic [`$co_w`:0] 	      inter_co;
-   
+   logic [`$co_w`:0] inter_sum;
+   logic [`$co_w`:0] inter_co;
+
    //; # local variables for index etc.
    //; my $row = $min_row;
    //; my $Y = $col;
    //; my $pp_idx = 0; my $sum_idx = 0;
    //; my $ci_idx = 0; my $co_idx = 0;
-   //;
-   //; while (($pp_idx < $col_ht) || ($ci_idx < $ci_w)){
-   //;
-   //;   # Determine the physical location for the CSA/HA cell
-   //;   $Y = $col - $row * $booth if $layout_shape =~ /Square/;
-   //;   $Y = $col if $layout_shape =~ /Parallelogram/;
-   //;
-   //;   # Check if we need to stick an extra pp into the first csa of the column
-   //;   my $one_extra_pp = ($row==$min_row)? 1:0;
-   //;   my $two_extra_pp = ($one_extra_pp && !$going_down_col && $col_ht>2)? 1:0;
-   //;
-   //;   # Check if we need a full or half adder
-   //;   my $need_full = (($col_ht-$pp_idx) + ($ci_w-$ci_idx) + ($inter_sum_w-$sum_idx) >= 3)? 1:0;
-   //;   $self->error("How can I need tow extra pp and only half adder?") if $two_extra_pp && !$need_full;
-   //; 
-   //;   if ($two_extra_pp && $need_full){
-   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+
+   //; ############## First Cell ##############
+   // First CSA (fully populated with PPs)
+   //; # Determine the physical location for the CSA/HA cell
+   //; $Y = $col - $row * $booth if $layout_shape =~ /Square/;
+   //; $Y = $col if $layout_shape =~ /Parallelogram/;
+   //; if ($col_ht==2){
+   //;   my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), 
+			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   //; } else {
+   //;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
    // No inter_sum or carry_in to the first CSA so use all inputs for pp
    `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), .ci(pp[`$pp_idx++`]), 
 			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
+   //; }
+   //; $row++;
+
    
-   //;   }
-   //;   elsif ($one_extra_pp && $need_full){
-   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-   // No inter_sum to the first CSA so use a second input for pp
-   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), .ci(ci[`$ci_idx++`]), 
-			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
-   
-   //;   }
-   //;   elsif ($one_extra_pp && !$need_full){
-   //;     my $CSA_obj = generate('HA', "ha_${row}_${Y}");
-   // No inter_sum or carry_in to the first HA so use both inputs for pp
-   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(pp[`$pp_idx++`]), 
-			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
-   
-   //;   }
-   //;   elsif ($need_full){
-   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //; ############## Column Body ##############
+   //; while ($pp_idx < $col_ht-1){
+   //;   # Determine the physical location for the CSA/HA cell
+   //;   $Y = $col - $row * $booth if $layout_shape =~ /Square/;
+   //;   $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
    // Regular case: pp, inter_sum and ci
    `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(inter_sum[`$sum_idx++`]), .ci(ci[`$ci_idx++`]), 
 			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
    
-   //;   }
-   //;   else{
-   //;     my $CSA_obj = generate('HA', "ha_${row}_${Y}");
-   //;     if ($pp_idx < $col_ht){
+   //;   $row++;
+   //; } # End of "while ($pp_idx < $col_ht-1){..."
+
+   //; ############## FINAL CELL ##############
+   //; # Determine the physical location for the CSA/HA cell
+   //; if ($pp_idx < $col_ht){
+   //;   $Y = $col - $row * $booth if $layout_shape =~ /Square/;
+   //;   $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;   if ($one_less_ci){
+   //;     my $CSA_obj = generate('HA', "csa_${row}_${Y}");
    // Just a half adder to add the last pp
    `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(inter_sum[`$sum_idx++`]),
 			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
-   
-   //;     }else{
-   // Just a half adder to add the last ci
-   `$CSA_obj->instantiate()` ( .a(inter_sum[`$sum_idx++`]), .b(ci[`$ci_idx++`]),
+   //;   }else{
+   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   // Final cell: Regular case: pp, inter_sum and ci
+   `$CSA_obj->instantiate()` ( .a(pp[`$pp_idx++`]), .b(inter_sum[`$sum_idx++`]), .ci(ci[`$ci_idx++`]), 
 			       .s(inter_sum[`$sum_idx`]), .co(inter_co[`$co_idx++`]) );
-   
-   //;     }
    //;   }
-   //;   $row++;
-   //; } # End of "while (..."
+   //; } # End of "if ($pp_idx < $col_ht){..."
+   
 
-   //; $self->error("How come ci_idx($ci_idx)!=ci_w($ci_w) or pp_idx($pp_idx)!=col_ht($col_ht)") unless $ci_idx==$ci_w && $pp_idx==$col_ht;
-   assign sum = inter_sum[`$sum_idx`];
+   //; $self->error("How come ci_idx($ci_idx)!=ci_w($ci_w) or pp_idx($pp_idx)!=col_ht($col_ht) ".
+   //;		    "or sum_idx($sum_idx)!=inter_sum_w($co_w) or co_idx($co_idx)!=co_w+1($co_w+1)??") 
+   //; 		   unless $ci_idx==$ci_w && $pp_idx==$col_ht && $sum_idx==$co_w && $co_idx==$co_w+1;
+   
+   assign sum = inter_sum[`$co_w`];
    assign carry = inter_co[`$co_w`];
    //;if($co_w){
    assign co = inter_co[`$co_w-1`:0];
