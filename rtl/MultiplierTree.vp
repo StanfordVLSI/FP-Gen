@@ -84,7 +84,7 @@ module `mname()` (
 //;   my $pp_col_ht = $last_row - $first_row + 1;
 //;
 //;   # There are five distinct cases:
-//;   my $up = ($first_row==0 && $j%$booth==0)? 1:0; 	 		# this column has one more pp than prev column
+//;   my $up = ($first_row==0 && $j%$booth==0 && floor($j/$booth)<=$pp_count-1)? 1:0; 	 # this column has one more pp than prev column
 //;   my $up_even = ($first_row==0 && $up==0)? 1:0; 		 	# this coulmn has same hight as prev column but 
 //;								 	# we are still at the increasing side of the parallelogram
 //;   my $down  = ($first_row>0 && ($j-$pp_width)%$booth==0)? 1:0;	# this column has one less pp than prev column
@@ -120,10 +120,13 @@ module `mname()` (
         logic [`$ci_w-1`:0] ci_col`$j`; // carry in to column j=`$j` (to extracted from co of `$j-1`)
 //;     if ($down){
           assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:1]; // since we used the LSB of co of previous column as a pp
+          //; $self->error("down col $j: ci_w($ci_w)!=co_w-1($co_w-1)") if $ci_w!=$co_w-1;
 //;     }elsif ($down_even){
           assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-2`:0]; // since we used the MSB of co of previous column as a pp
+          //; $self->error("down_even col $j: ci_w($ci_w)!=co_w-1($co_w-1)") if $ci_w!=$co_w-1;
 //;     }else{
           assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:0];
+          //; $self->error("else col $j: ci_w($ci_w)!=co_w($co_w)") if $ci_w!=$co_w;
 //;     }
 //;   }
 
