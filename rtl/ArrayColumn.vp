@@ -13,19 +13,18 @@
  * using a linear array architecture
  *
  * Parameters:
- * * ColumnHight, ColumnPosition, MinRow, BoothType, CarryInWidth, LayoutShape
+ * * ColumnHight, ColumnPosition, MinRow, BoothType, OneLessCarryIn, LayoutShape
  * 
- * Exported Parameters:
- * * CarryOutWidth
  *
  * Inputs:
- * * ColumnHight pp                 
- * * CarryInWidth ci
+ * * Given that N=ColumnHight
+ * * [N-1:0] pp                 
+ * * [(N-3)-1:0] ci   (Note: if OneLessCarryIn then we have one less ci)
  *  
  * Outputs:
  * * sum
  * * carry
- * * CarryOutWidth co
+ * * [(N-3)-1:0] co
  *
  * Change bar:
  * -----------

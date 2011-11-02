@@ -20,6 +20,8 @@
  * -----------
  * Date           Author    Description
  * Oct 21, 2011   Sameh     initial version
+ * Nov 01, 2011   shacham   Changed the column tree abstraction to  N*PPs, 
+ * 			    N-3 or N-4 CI and N-3 CO.
  * 
  * ****************************************************************************/
 
