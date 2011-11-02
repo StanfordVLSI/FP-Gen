@@ -9,25 +9,29 @@
 
 /* *****************************************************************************
  * Description:
- * This is a WallaceColumn that process a vertical slice in multiplication tree 
- * using a Wallace tree architecture
+ * This is a ArrayColumn that process a vertical slice in multiplication tree 
+ * using a linear array architecture
  *
  * Parameters:
- * * PPCount
+ * * ColumnHight, ColumnPosition, MinRow, BoothType, OneLessCarryIn, LayoutShape
+ * 
  *
  * Inputs:
- * * PPCount inputs                
- * * (PPCount-1) ci
- * 
+ * * Given that N=ColumnHight
+ * * [N-1:0] pp                 
+ * * [(N-3)-1:0] ci   (Note: if OneLessCarryIn then we have one less ci)
+ *  
  * Outputs:
  * * sum
  * * carry
- * * (PPCount-2) co
+ * * [(N-3)-1:0] co
  *
  * Change bar:
  * -----------
  * Date           Author    Description
- * Oct 23, 2011   Sameh     initial version ported from Ofer's Wallace
+ * Oct 21, 2011   Sameh     initial version
+ * Nov 01, 2011   shacham   Changed the abstraction to the N*PPs, N-3 or N-4 CI 
+ * 			    and N-3 CO.
  * 
  * ****************************************************************************/
 
@@ -35,7 +39,7 @@
  * PARAMETERIZATION
  * ****************************************************************************/
 //; # Perl Libraries
-//; use POSIX qw(floor); # For floor rounding math
+//; use POSIX qw(floor ceil); # For floor and ceiling rounding math
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -43,8 +47,8 @@
 //;
 //; # module parameters
 
-//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
-//;                          Doc=>"Number of partial products to sum");
+//; my $col_ht = parameter(Name=>'ColumnHight', Val=>2, Min=>2, Step=>1,
+//;                          Doc=>"Number of partial products in relevant column to sum");
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
@@ -53,14 +57,27 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
+//; my $one_less_ci = parameter(Name=>'OneLessCarryIn', Val=>0, Min=>0, Step=>1, Max=>1,
+//;                      Doc=>"Is there one less carry in for this column?");
+//; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
+//;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
+//;
+//; my $ci_w = ($one_less_ci) ? $col_ht-4:$col_ht-3;
+//; $ci_w = 0 if ($ci_w < 0); # can't have negative width
+//; my $co_w = $col_ht-3;
+//; $co_w = 0 if ($co_w < 0); # can't have negative width
+//;
+//; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
 module `mname()` (
-    input logic [`$pp_count-1`:0] pp,
-    output logic sum, carry,
-    input logic  [`$pp_count-2`:0] ci
-//;if($pp_count>2){
-    , output logic [`$pp_count-3`:0] co
+    input logic [`$col_ht-1`:0] pp,
+//; if($ci_w){
+    input logic  [`$ci_w-1`:0] ci,
+//; }
+//;if($co_w){
+    output logic [`$co_w-1`:0] co,
 //;}
+    output logic sum, carry
    );
 
   /* synopsys dc_tcl_script_begin
@@ -68,23 +85,28 @@ module `mname()` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-
+   //; # Initial key indices etc.
    //; my @occupied_idx =();
-   //; for  (my $i=0; $i < $pp_count-1 ; $i++){
+   //; for  (my $i=0; $i < $col_ht-1 ; $i++){
    //;   $occupied_idx[$i]=0;
-   //; } 
-
+   //; }
    //; my $step = 0;
-   //; my $hight = $pp_count + 1;
-       logic [`$hight-1`:0] pp_step`$step`;
-       assign pp_step`$step` = {pp,ci[0]};
-
-   //; if ($hight>3){
-       logic [`$hight-4`:0] wallace_ci;
-       assign wallace_ci= ci[`$pp_count-2`:1];
-   //;}
-
+   //; my $hight = $col_ht;
    //; my $csa_idx = 0;
+
+   
+   //; if ($col_ht>2){
+   // First, lets define some internal signal conventions:
+   logic [`$hight-1`:0] pp_step`$step`;
+   assign pp_step`$step` = pp;
+   
+   //;   if($ci_w){
+     logic [`$ci_w-1`:0] 	wallace_ci;
+     assign wallace_ci = ci;
+   //;   }
+   logic [`$co_w`:0] wallace_co;
+   //; } # End of "if ($col_ht>2..."
+
    //; while($hight > 2){
    //;   $step++;
    //;   my $next_hight = 2 * floor($hight/3) + $hight%3;
@@ -92,14 +114,15 @@ module `mname()` (
 
    //;   for (my $i=0; $i < floor($hight/3); $i++){
    //;
-   //;     my $row_candidate = floor($i/floor($hight/3) * ($pp_count-2));
+   //;     ######### Calculate Cell Location ##########
+   //;     my $row_candidate = floor($i/floor($hight/3) * ($col_ht-2));
    //;     my $row_candidate_up = $row_candidate;
    //;     my $row_candidate_down = $row_candidate;
-   //;     while ( $row_candidate_up < $pp_count-1 || $row_candidate_down>=0){
-   //;       if ($row_candidate_up<$pp_count-1){
+   //;     while ( $row_candidate_up < $col_ht-1 || $row_candidate_down>=0){
+   //;       if ($row_candidate_up<$col_ht-1){
    //;          if ($occupied_idx[$row_candidate_up]==0){
    //;            $row_candidate = $row_candidate_up;
-   //;            $row_candidate_up=$pp_count-1; $row_candidate_down=-1;
+   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
    //;          } else {
    //;            $row_candidate_up++;
    //;          }
@@ -107,7 +130,7 @@ module `mname()` (
    //;       if ($row_candidate_down>=0){
    //;          if ($occupied_idx[$row_candidate_down]==0){
    //;            $row_candidate = $row_candidate_down;
-   //;            $row_candidate_up=$pp_count-1; $row_candidate_down=-1;
+   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
    //;          } else {
    //;            $row_candidate_down--;
    //;          }
@@ -116,24 +139,45 @@ module `mname()` (
    //;     $occupied_idx[$row_candidate] = 1;
    //;     my $row = $min_row + $row_candidate;
    //;
-   //;     my $Y = $col - $row * $booth; 
+   //;     my $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;     $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;     ##########################################
+
+   //;     ########### Instantiate Cell #############
    //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
-   //;     if ($next_hight>2){
-                                  .s(pp_step`$step`[`2*$i`]), .co(co[`$csa_idx`]) );
+                                  .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
+   //;     if ($csa_idx < $ci_w){
        assign pp_step`$step`[`2*$i+1`] = wallace_ci[`$csa_idx`];
    //;     }else{
-                                  .s(sum), .co(carry) );
+       assign pp_step`$step`[`2*$i+1`] = 1'b0; // Last CI bit missing
    //;     }
-   //;     $csa_idx++;
-   //;   }
+   //;     $csa_idx++; 
+   //;   } # End of "for (my $i=0; $i < flo..."
 
    //;   for (my $i=3 * floor($hight/3); $i < $hight; $i++){
        assign pp_step`$step`[`$i-floor($hight/3)`] = pp_step`$step-1`[`$i`];
    //;   }
+   //;
    //;   $hight=$next_hight;
-   //; } 
+   //; } # End of "while($hight > 2){..."
 
+   
+   //; if ($col_ht>2){
+   assign carry = wallace_co[`$co_w`];
+   assign sum = pp_step`$step`[0];
+   //;   if ($co_w){
+   assign co = wallace_co[`$co_w-1`:0];
+   //;   }
+   //; }
+   //; ############# Corner Case: Tree of hight 2 (not really a tree, is it?) ##############
+   //; elsif ($col_ht==2){
+   //;   my $CSA_obj = generate('HA', "csa_${min_row}_${col}");
+   `$CSA_obj->instantiate()` ( .a(pp[0]), .b(pp[1]), 
+			       .s(sum), .co(carry) );
+   //; }else{
+   //;   $self->error("col_ht($col_ht)<2 -- how can that be??");
+   //; }
 
 endmodule
 

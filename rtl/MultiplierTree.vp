@@ -99,8 +99,8 @@ module `mname()` (
 //;			 			 	# we always put ci[0] or ci[last] as first or last pp, but only if
 //;			 			 	# there is co from the previous column
 //;
-//;    print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$pp_col_ht\n";
-//;    print STDERR "DEBUG: up=$up up_even=$up_even down=$down down_first=$down_first down_even=$down_even\n";
+//;    ## print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$pp_col_ht\n";
+//;    ## print STDERR "DEBUG: up=$up up_even=$up_even down=$down down_first=$down_first down_even=$down_even\n";
 //;
       // Now working on column J=`$j` of hight `$pp_col_ht`
       logic [`$tree_col_ht-1`:0] pp_col`$j`;
