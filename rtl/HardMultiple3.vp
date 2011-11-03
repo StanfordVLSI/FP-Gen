@@ -53,9 +53,10 @@ module `mname` (
     output logic [`$width+1`:0] 	x3
 		);
    
-/*
+
   assign x3 = {2'b0,x} + {1'b0,x,1'b0};
-*/
+
+//; if (0){
 
    logic [`$width`:0] 			H,K;  // odd values are not used!
    logic [`$prefix_tree_size-1`:0] 	gh_b, gk_b, GH, GK, GH_b, GK_b;
@@ -130,9 +131,12 @@ module `mname` (
    assign x3[`$width+1`] = K[`$width-1`];
    //; }
 
+
+
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
      begin
+	$display("\t`mname`: X=0x%h, Expected3X=0x%h, Result3X=0x%h", x, 3*x, x3);
 	$write ("\t`mname`: depth=`$prefix_tree_depth`, "); 
 	$write ("gh=%b ph=%b ", ~gh_b, ~ph_b);
 	$write ("gk=%b pk=%b ", ~gk_b, ~pk_b);
@@ -140,6 +144,7 @@ module `mname` (
 	$write ("GK=%b\n", GK);
      end
    //; }
+//; }
 
 endmodule : `mname`
 
