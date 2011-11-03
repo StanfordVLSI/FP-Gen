@@ -95,7 +95,7 @@ module `mname()` (
    //; my $csa_idx = 0;
 
    
-   //; if ($col_ht>2){
+
    // First, lets define some internal signal conventions:
    logic [`$hight-1`:0] pp_step`$step`;
    assign pp_step`$step` = pp;
@@ -105,17 +105,19 @@ module `mname()` (
      assign wallace_ci = ci;
    //;   }
    logic [`$co_w`:0] wallace_co;
-   //; } # End of "if ($col_ht>2..."
 
-   //; while($hight > 2){
+
+   //; while($hight > 1){
    //;   $step++;
-   //;   my $next_hight = 2 * floor($hight/3) + $hight%3;
+   //;   my $missing_last_ci=0;
+   //;   my $max_i = ($hight==2)? 1 : floor($hight/3);
+   //;   my $next_hight = ($hight==2)? 1 : 2 * floor($hight/3) + $hight%3;
        logic [`$next_hight-1`:0] pp_step`$step`;
 
-   //;   for (my $i=0; $i < floor($hight/3); $i++){
+   //;   for (my $i=0; $i < $max_i; $i++){
    //;
    //;     ######### Calculate Cell Location ##########
-   //;     my $row_candidate = floor($i/floor($hight/3) * ($col_ht-2));
+   //;     my $row_candidate = floor($i/$max_i * ($col_ht-2));
    //;     my $row_candidate_up = $row_candidate;
    //;     my $row_candidate_down = $row_candidate;
    //;     while ( $row_candidate_up < $col_ht-1 || $row_candidate_down>=0){
@@ -144,40 +146,36 @@ module `mname()` (
    //;     ##########################################
 
    //;     ########### Instantiate Cell #############
-   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;     if ($hight>2) {
+   //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
                                   .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
-   //;     if ($csa_idx < $ci_w){
+   //;     } else {
+   //;       my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]),
+                                  .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
+   //;     }
+   //;     $missing_last_ci = ($csa_idx >= $ci_w);
+   //;     if (!$missing_last_ci){
        assign pp_step`$step`[`2*$i+1`] = wallace_ci[`$csa_idx`];
-   //;     }else{
-       assign pp_step`$step`[`2*$i+1`] = 1'b0; // Last CI bit missing
    //;     }
    //;     $csa_idx++; 
    //;   } # End of "for (my $i=0; $i < flo..."
 
-   //;   for (my $i=3 * floor($hight/3); $i < $hight; $i++){
-       assign pp_step`$step`[`$i-floor($hight/3)`] = pp_step`$step-1`[`$i`];
+   //;   for (my $i=3 * $max_i; $i < $hight; $i++){
+       assign pp_step`$step`[`$i-floor($hight/3)-$missing_last_ci`] = pp_step`$step-1`[`$i`];
    //;   }
-   //;
-   //;   $hight=$next_hight;
+
+   //;   $hight=$next_hight-$missing_last_ci;
    //; } # End of "while($hight > 2){..."
 
    
-   //; if ($col_ht>2){
    assign carry = wallace_co[`$co_w`];
    assign sum = pp_step`$step`[0];
-   //;   if ($co_w){
+   //; if ($co_w){
    assign co = wallace_co[`$co_w-1`:0];
-   //;   }
    //; }
-   //; ############# Corner Case: Tree of hight 2 (not really a tree, is it?) ##############
-   //; elsif ($col_ht==2){
-   //;   my $CSA_obj = generate('HA', "csa_${min_row}_${col}");
-   `$CSA_obj->instantiate()` ( .a(pp[0]), .b(pp[1]), 
-			       .s(sum), .co(carry) );
-   //; }else{
-   //;   $self->error("col_ht($col_ht)<2 -- how can that be??");
-   //; }
+
 
 endmodule
 
