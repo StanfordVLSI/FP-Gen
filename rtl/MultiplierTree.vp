@@ -105,27 +105,22 @@ module `mname()` (
       // Now working on column J=`$j` of hight `$pp_col_ht`
       logic [`$tree_col_ht-1`:0] pp_col`$j`;
 //;   my $pp_idx = 0;
-//;   if ($down){
+//;   if ($down || ($down_even && $co_w)){
         assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
 //;   }
 //;   for(my $row=$first_row; $row <= $last_row; $row++){
         assign pp_col`$j`[`$pp_idx++`] = pp[`$row`][`$j-$row*$booth`];
 //;   }  
-//;   if ($down_even && $co_w){
-        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[`$co_w-1`]; // use MSB of co of previous column as a pp
-//;   }
+
 //;   $self->error("How come pp_idx($pp_idx) != tree_col_ht($tree_col_ht)?") if $pp_idx!=$tree_col_ht;
 
 //;   $ci_w = ($up || $down_even || $down_first) ? $tree_col_ht-4:$tree_col_ht-3;
 //;   $ci_w = 0 if ($ci_w < 0); # can't have negative width
 //;   if ($ci_w){
         logic [`$ci_w-1`:0] ci_col`$j`; // carry in to column j=`$j` (to extracted from co of `$j-1`)
-//;     if ($down){
+//;     if ($down || $down_even){
           assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:1]; // since we used the LSB of co of previous column as a pp
-          //; $self->error("down col $j: ci_w($ci_w)!=co_w-1($co_w-1)") if $ci_w!=$co_w-1;
-//;     }elsif ($down_even){
-          assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-2`:0]; // since we used the MSB of co of previous column as a pp
-          //; $self->error("down_even col $j: ci_w($ci_w)!=co_w-1($co_w-1)") if $ci_w!=$co_w-1;
+          //; $self->error("down/down_even col $j: ci_w($ci_w)!=co_w-1($co_w-1)") if $ci_w!=$co_w-1;
 //;     }else{
           assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:0];
           //; $self->error("else col $j: ci_w($ci_w)!=co_w($co_w)") if $ci_w!=$co_w;
