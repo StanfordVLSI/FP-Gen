@@ -2,7 +2,7 @@
 # one example is running this from command line
 # icc_shell -f multiplier_icc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1;" | tee -i multiplier_icc_optimized.log
 
-source header.tcl
+source ../header.tcl
 
 if {$target_delay==0} {
   set target_delay min
@@ -104,7 +104,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002]
-  create_rp_group rp_tree -columns [expr $max_row + 1] -rows  [expr 2*($max_compressed_column - $min_compressed_column + 1)] ;
+  create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column + 1)] -allow_non_rp_cells -x_offset 0 -y_offset 0 -placement_type compression;
 
 
   foreach_in_collection CSA_cell $CSA_cells {
@@ -120,7 +120,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     #set_dont_touch $CSA_child_cells;
     set CSA_children_count [sizeof_collection $CSA_child_cells];
     if {$CSA_children_count>1} {
-      create_rp_group rp_CSA_${row_index}_${column_index} -columns $CSA_children_count -rows 1 ;
+      create_rp_group rp_CSA_${row_index}_${column_index} -columns $CSA_children_count -rows 1;
       #echo "created rp group rp_CSA_${row_index}_${column_index}";
       set CSA_child_column 0;
       foreach_in_collection CSA_child_cell $CSA_child_cells {
@@ -152,7 +152,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       set booth_child_cells [get_cells "${booth_name}/*"];
       set booth_children_count [sizeof_collection $booth_child_cells];
       if {$booth_children_count>0} {
-         create_rp_group rp_booth_${row_index}_${column_index} -columns [expr $booth_children_count+1] -rows 1 ;
+         create_rp_group rp_booth_${row_index}_${column_index} -columns [expr $booth_children_count+1] -rows 1;
          #echo "created rp group rp_booth_${row_index}_${column_index}";
          set booth_child_column 0;
          foreach_in_collection booth_child_cell $booth_child_cells {
@@ -163,19 +163,11 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
            set booth_child_column [expr $booth_child_column + 1]
          }
          add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${column_index} \
-                    -keepout gap_${row_index}_${column_index} -type space -column $booth_children_count -row 0 
+                    -keepout gap_${row_index}_${column_index} -type space -column $booth_children_count -row 0 -width 4 -height 1;
          add_to_rp_group ${DESIGN_NAME}::rp_tree \
                     -hierarchy ${DESIGN_NAME}::rp_booth_${row_index}_${column_index} \
                     -column $row_index -row [expr 2*$column_index+1-$is_odd_row];
          #echo "added group  rp_booth_${row_index}_${column_index}  to rp group rp_tree";
-      } else {
-        foreach_in_collection booth_child_cell $booth_child_cells {
-          set booth_child_name [get_object_name $booth_child_cell];
-          add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -keepout gap_${row_index}_${column_index} -type space \
-                    -column $row_index -row [expr 2*$column_index+1-$is_odd_row];
-            #echo "added leaf  $booth_child_name to rp group rp_tree";
-        }
       }    
     }
   }
@@ -184,7 +176,9 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 #           -psynopt_option size_only \
 #           -route_opt_option in_place_size_only \
 #           -cts_option fixed_placement \
-#           -compress;
+#          -placement_type compression \
+#           -disable_buffering \
+#           -allow_non_rp_cells;
 }
 
 
@@ -192,7 +186,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 initialize_floorplan \
   	-control_type row_number \
-  	-number_rows [expr 2*$max_compressed_column] \
+  	-number_rows [expr 2*$max_compressed_column+4] \
   	-core_utilization 0.7 \
   	-row_core_ratio 1 \
   	-left_io2core 30 \
@@ -230,11 +224,28 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 route_opt -initial_route_only
 route_opt -skip_initial_route -effort medium -power
 
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_$Voltage.$target_delay.routed.timing.rpt
-report_area  -physical -hierarchy > reports/${DESIGN_NAME}.${APPENDIX}_$Voltage.$target_delay.routed.area.rpt
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_$Voltage.$target_delay.routed.power.rpt
-
 save_mw_cel -as ${DESIGN_NAME}_final
+
+file mkdir reports
+
+report_area  -physical -hierarchy > reports/${DESIGN_NAME}.${APPENDIX}.$target_delay.routed.area.rpt
+
+remove_attribute [current_design] local_link_library
+
+
+
+set link_library [set wc_0v8_lib_dbs]
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
+report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.power.rpt
+
+set link_library [set wc_0v9_lib_dbs]
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
+report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.power.rpt
+
+set link_library [set wc_1v0_lib_dbs]
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
+report_power  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.power.rpt
+
 
 exit
 

@@ -105,12 +105,16 @@ module `mname()` (
       // Now working on column J=`$j` of hight `$pp_col_ht`
       logic [`$tree_col_ht-1`:0] pp_col`$j`;
 //;   my $pp_idx = 0;
-//;   if ($down || ($down_even && $co_w)){
-        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
-//;   }
 //;   for(my $row=$first_row; $row <= $last_row; $row++){
         assign pp_col`$j`[`$pp_idx++`] = pp[`$row`][`$j-$row*$booth`];
-//;   }  
+//;     if (($down || ($down_even && $co_w)) && $pp_idx==3){
+        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
+//;     }
+//;   }
+
+//;     if (($down || ($down_even && $co_w)) && $pp_idx<$tree_col_ht){
+        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
+//;     }  
 
 //;   $self->error("How come pp_idx($pp_idx) != tree_col_ht($tree_col_ht)?") if $pp_idx!=$tree_col_ht;
 

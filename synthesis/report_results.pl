@@ -2,20 +2,19 @@
 
 
 #get a sorted list of all report files
-@files = <reports/*.mapped.timing.rpt>;
-
+@files = <*/reports/*.mapped.timing.rpt>;
 print "run, mapped delay, routed delay, optimized delay, mapped core area, routed core area, optimized core area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
 
 foreach $file (@files) {
-  $file =~ /reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
-  $design_name = $1;
-  $vt = $2;
-  $vdd = $3;
-  $target_delay = $4;
+  $file =~ /(.vt)_(\dv\d)_(.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
+  $vt = $1;
+  $vdd = $2;
+  $target_delay = $3;
+  $design_name = $4;
   $prefix = "$design_name.${vt}_$vdd.$target_delay";
   $optimized_prefix = "$design_name.optimized.${vt}_$vdd.$target_delay";
 
-  @report_files = <reports/$prefix.mapped.timing.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.mapped.timing.*>;
   $mapped_delay = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -28,7 +27,7 @@ foreach $file (@files) {
   }
 
   $mapped_core_area="";
-  @report_files = <reports/$prefix.mapped.area.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$design_name.${vt}.$target_delay.mapped.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -41,7 +40,7 @@ foreach $file (@files) {
 
   $mapped_dynamic_power="";
   $mapped_leakage_power="";
-  @report_files = <reports/$prefix.mapped.power.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.mapped.power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -57,7 +56,7 @@ foreach $file (@files) {
 
 
 
-  @report_files = <reports/$prefix.routed.timing.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.routed.timing.*>;
   $routed_delay = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -70,7 +69,7 @@ foreach $file (@files) {
   }
 
   $routed_core_area="";
-  @report_files = <reports/$prefix.routed.area.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$design_name.${vt}.$target_delay.routed.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -83,7 +82,7 @@ foreach $file (@files) {
 
   $routed_dynamic_power="";
   $routed_leakage_power="";
-  @report_files = <reports/$prefix.routed.power.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.routed.power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -97,7 +96,7 @@ foreach $file (@files) {
     close REPORTFILE;
   }
 
-  @report_files = <reports/$optimized_prefix.routed.timing.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$optimized_prefix.routed.timing.*>;
   $optimized_delay = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -111,7 +110,7 @@ foreach $file (@files) {
 
 
   $optimized_core_area="";
-  @report_files = <reports/$optimized_prefix.routed.area.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$design_name.optimized.${vt}.$target_delay.routed.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -124,7 +123,7 @@ foreach $file (@files) {
 
   $optimized_dynamic_power="";
   $optimized_leakage_power="";
-  @report_files = <reports/$optimized_prefix.routed.power.*>;
+  @report_files = <${vt}_${vdd}_$target_delay/reports/$optimized_prefix.routed.power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {

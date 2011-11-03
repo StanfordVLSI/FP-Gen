@@ -123,7 +123,8 @@ module `mname`(
    logic [`$extended_width-2`:0] y_edge_vector;
 
    //; for(my $i=0; $i < $extended_width-1; $i++) {
-   xor edge_`$i` (y_edge_vector[`$i`],extended_y[`$i+1`],extended_y[`$i`]);
+   //;     my $edge_obj = generate('Xor_gate', "edge_$i");
+   `$edge_obj->instantiate` (.a(extended_y[`$i`]),.b(extended_y[`$i+1`]),.out(y_edge_vector[`$i`]));
    //; }
 
 
