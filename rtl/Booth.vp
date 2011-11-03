@@ -122,7 +122,7 @@ module `mname`(
    
    logic [`$extended_width-2`:0] y_edge_vector;
 
-   //; for(my $i=0; $i < `$extended_width-1`; $i++) {
+   //; for(my $i=0; $i < $extended_width-1; $i++) {
    xor edge_`$i` (y_edge_vector[`$i`],extended_y[`$i+1`],extended_y[`$i`]);
    //; }
 
