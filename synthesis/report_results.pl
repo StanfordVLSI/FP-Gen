@@ -6,15 +6,16 @@
 print "run, mapped delay, routed delay, optimized delay, mapped core area, routed core area, optimized core area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
 
 foreach $file (@files) {
-  $file =~ /(.vt)_(\dv\d)_(.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
-  $vt = $1;
-  $vdd = $2;
-  $target_delay = $3;
-  $design_name = $4;
+  $file =~ /(.vt_\dv\d_.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
+  $folder_name=$1;
+  $design_name = $2;
+  $vt = $3;
+  $vdd = $4;
+  $target_delay = $5;
   $prefix = "$design_name.${vt}_$vdd.$target_delay";
   $optimized_prefix = "$design_name.optimized.${vt}_$vdd.$target_delay";
 
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.mapped.timing.*>;
+  @report_files = <$folder_name/reports/$prefix.mapped.timing.*>;
   $mapped_delay = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -27,7 +28,7 @@ foreach $file (@files) {
   }
 
   $mapped_core_area="";
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$design_name.${vt}.$target_delay.mapped.area.*>;
+  @report_files = <$folder_name/reports/$design_name.${vt}.$target_delay.mapped.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -40,7 +41,7 @@ foreach $file (@files) {
 
   $mapped_dynamic_power="";
   $mapped_leakage_power="";
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.mapped.power.*>;
+  @report_files = <$folder_name/reports/$prefix.mapped.power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -56,7 +57,7 @@ foreach $file (@files) {
 
 
 
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.routed.timing.*>;
+  @report_files = <$folder_name/reports/$prefix.routed.timing.*>;
   $routed_delay = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -69,7 +70,7 @@ foreach $file (@files) {
   }
 
   $routed_core_area="";
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$design_name.${vt}.$target_delay.routed.area.*>;
+  @report_files = <$folder_name/reports/$design_name.${vt}.$target_delay.routed.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -82,7 +83,7 @@ foreach $file (@files) {
 
   $routed_dynamic_power="";
   $routed_leakage_power="";
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$prefix.routed.power.*>;
+  @report_files = <$folder_name/reports/$prefix.routed.power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -96,7 +97,7 @@ foreach $file (@files) {
     close REPORTFILE;
   }
 
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$optimized_prefix.routed.timing.*>;
+  @report_files = <$folder_name/reports/$optimized_prefix.routed.timing.*>;
   $optimized_delay = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -110,7 +111,7 @@ foreach $file (@files) {
 
 
   $optimized_core_area="";
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$design_name.optimized.${vt}.$target_delay.routed.area.*>;
+  @report_files = <$folder_name/reports/$design_name.optimized.${vt}.$target_delay.routed.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -123,7 +124,7 @@ foreach $file (@files) {
 
   $optimized_dynamic_power="";
   $optimized_leakage_power="";
-  @report_files = <${vt}_${vdd}_$target_delay/reports/$optimized_prefix.routed.power.*>;
+  @report_files = <$folder_name/reports/$optimized_prefix.routed.power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {

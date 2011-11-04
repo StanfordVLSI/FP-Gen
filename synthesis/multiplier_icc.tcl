@@ -104,8 +104,58 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002]
-  create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column + 1)] -allow_non_rp_cells -x_offset 0 -y_offset 0 -placement_type compression;
+  create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column+1)] -allow_non_rp_cells -x_offset 0 -y_offset 0;
 
+  set edge_cells [get_cells -hierarchical "edge*"];
+  set max_edge 0;
+
+  foreach_in_collection edge_cell $edge_cells {
+
+    regexp {edge_([0-9]*)} [get_object_name $edge_cell] matched edge_index;
+
+    if { $edge_index > $max_edge} {
+      set max_edge $edge_index;
+    }
+  }
+
+  create_rp_group rp_edge -rows 1 -columns [expr $max_edge+1] -allow_non_rp_cells -placement_type compression;
+
+  foreach_in_collection edge_cell $edge_cells {
+
+    set edge_name [get_object_name $edge_cell];
+
+    regexp {edge_([0-9]*)} [get_object_name $edge_cell] matched edge_index;
+
+    set edge_child_cells [get_cells "${edge_name}/*"];
+    set edge_children_count [sizeof_collection $edge_child_cells];
+    if {$edge_children_count>1} {
+      create_rp_group rp_edge_${edge_index} -columns $edge_children_count -rows 1;
+      set edge_child_idx 0;
+      foreach_in_collection edge_child_cell $edge_child_cells {
+        set edge_child_name [get_object_name $edge_child_cell];
+        add_to_rp_group ${DESIGN_NAME}::rp_edge_${edge_index} \
+                           -leaf $edge_child_name -column $edge_child_idx -row 0;
+        set edge_child_idx [expr $edge_child_idx + 1]
+      }
+      add_to_rp_group ${DESIGN_NAME}::rp_edge \
+                    -hierarchy ${DESIGN_NAME}::rp_edge_${edge_index} \
+                    -column $edge_index -row 0;
+    } else {
+      foreach_in_collection edge_child_cell $edge_child_cells {
+        set edge_child_name [get_object_name $edge_child_cell];
+        add_to_rp_group ${DESIGN_NAME}::rp_edge \
+                    -leaf $edge_child_name -column $edge_index -row 0;
+      }
+    }
+  }
+
+
+  create_rp_group rp_root -rows 2 -columns 1 -allow_non_rp_cells -placement_type compression;
+  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_tree -row 0 -column 0;
+  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_edge -row 1 -column 0;
+  
+
+# handle the edge signal of Booth encoders
 
   foreach_in_collection CSA_cell $CSA_cells {
 
@@ -186,7 +236,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 initialize_floorplan \
   	-control_type row_number \
-  	-number_rows [expr 2*$max_compressed_column+4] \
+  	-number_rows [expr 2*$max_compressed_column+6] \
   	-core_utilization 0.7 \
   	-row_core_ratio 1 \
   	-left_io2core 30 \
