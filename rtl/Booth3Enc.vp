@@ -139,7 +139,7 @@ module `mname` (
    assign pp0124[`$i-2`] = (sel_x & x_padded[`$i`]) | (sel_x2 & x_padded[`$i-1`]) | (sel_x4 & x_padded[`$i-2`]);
  
    // Mux pp0124, 3x based on the edge vector
-   assign pp01234[`$i-2`] = (sel_x3 & x3[`$i-2`]) | (~sel_x3 & pp0124[`$i-2`]);
+   assign pp01234[`$i-2`] = (sel_x3 & x3[`$i-2`]) | pp0124[`$i-2`];
 
    // Select pp or pp_b based on sign
    assign pp[`$i-2`] = pp01234[`$i-2`] ^ S; // invert if S=1
