@@ -69,20 +69,18 @@ module `mname` (
    set_flatten true -effort high -phase true -design [current_design]
   */
    
-   logic [`$width-1`:0]     x_out;
+   logic [`$width+1`:0]     x_paded;
+   logic [`$width+1`:0]     x_paded_b;
+   assign x_paded = {1'b0, x, 1'b0};
+   assign x_paded_b = {1'b1, x_b, 1'b1};
+   
    assign S = y_msb;
 
-   //;   for(my $i=0; $i < $width+1; $i++){
+   //;   for(my $i=1; $i <= $width+1; $i++){
    //;     my $BoothCell_obj = generate('Booth2Cell', "cell_$i");
    `$BoothCell_obj->instantiate` (
-   //;     if ($i==0){
-       .x({x[0],1'b0}), .x_b({x_b[0],1'b1})
-   //;     }elsif ($i==$width){
-       .x({1'b0, x[`$width-1`]}), .x_b({1'b1, x_b[`$width-1`]})
-   //;     }else{
-       .x(x[`$i`:`$i-1`]), .x_b(x_b[`$i`:`$i-1`])
-   //;     }
-     , .y_edge_vector(y_edge_vector), .y_msb(y_msb) , .out(pp[`$i`]));
+       .x(x_paded[`$i`:`$i-1`]), .x_b(x_paded_b[`$i`:`$i-1`]),
+       .y_edge_vector(y_edge_vector), .y_msb(y_msb) , .out(pp[`$i-1`]));
    
    //;   }
    assign pp[`$width+1`] = ~S;
