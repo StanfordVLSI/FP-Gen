@@ -81,6 +81,10 @@ module `mname` (
     * it to pp0124) and then mux {pp0124, x3, x3_b}. Capiche?
     * */
 
+/*******************************************************************************
+ * Simpler implementation. However it does not give us control on placing of
+ * each booth3cell.
+ * *****************************************************************************
    // Mux x and x_b based on sign
    logic [`$width-1`:0] 	x_out;
    assign S = y_msb;
@@ -88,7 +92,8 @@ module `mname` (
 
    logic [`$width+2`:0]   pp0124;
    
-   always_comb
+
+    always_comb
      begin
 	// Mux 0, x_out, 2x_out, 4x_out based on the edge vector
 	unique case (y_edge_vector)
@@ -108,10 +113,38 @@ module `mname` (
 	  default: pp = pp0124;
 	endcase
      end
-  
+ *******************************************************************************/ 
 
-/*  assign pp = y_edge_vector[0] ?
-                    (y_edge_vector[2] ?  {~S,x3_out} : {~S,S,S,x_out})
-                   :(y_edge_vector[1] ?  {~S,S,x_out,S}: y_edge_vector[2]? {~S,x_out,S,S} : {~S,{(width+2){S}}} );*/
+   logic [`$width+3`:0] 	x_padded;
+   logic [`$width+1`:0] 	pp0124;
+   logic [`$width+1`:0] 	pp01234;
+   
+   assign x_padded = {2'b0, x, 2'b0};
+   assign S = y_msb;
+   
+   logic 			sel_x;
+   assign sel_x = (~y_edge_vector[2] & y_edge_vector[0]); // yedge = 0X1 ==> +/-X
+   
+   logic 			sel_x2;
+   assign sel_x2 = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = X10 ==> +/-2X 
+   
+   logic 			sel_x3;
+   assign sel_x3 = y_edge_vector[2] & y_edge_vector[0];
+
+   logic 			sel_x4;
+   assign sel_x4 = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 100 ==> +/-4X
+   
+   //; for (my $i=2; $i<$width+4; $i++){
+   // Mux 0, x, 2x, 4x based on the edge vector
+   assign pp0124[`$i-2`] = (sel_x & x_padded[`$i`]) | (sel_x2 & x_padded[`$i-1`]) | (sel_x4 & x_padded[`$i-2`]);
+ 
+   // Mux pp0124, 3x based on the edge vector
+   assign pp01234[`$i-2`] = (sel_x3 & x3[`$i-2`]) | (~sel_x3 & pp0124[`$i-2`]);
+
+   // Select pp or pp_b based on sign
+   assign pp[`$i-2`] = pp01234[`$i-2`] ^ S; // invert if S=1
+   //; }
+   assign pp[`$width+2`] = ~S;
+   
  
 endmodule : `mname`
