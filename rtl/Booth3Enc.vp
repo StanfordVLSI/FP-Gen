@@ -18,22 +18,22 @@
  * 
  * Y[3:0]     y_edge_vec    out  =  pp   +   S
  * 	                  
- * 0 0 0 0    -111          +0      100000   +0      
- * 0 0 0 1    -110          +X      (100X)   +0
- * 0 0 1 0    -100          +X      (100X)   +0
- * 0 0 1 1    -101          +2X     (10X0)   +0
- * 0 1 0 0    -001          +2X     100000   +0      
- * 0 1 0 1    -000          +3X     (1X3)    +0
- * 0 1 1 0    -010          +3X     (1X3)    +0
- * 0 1 1 1    -011          +4X     (1X00)   +0
- * 1 0 0 0    -011          -4X     (0~X11)  +1      
- * 1 0 0 1    -010          -3X     (0~X3)   +1
- * 1 0 1 0    -000          -3X     (0~X3)   +1
- * 1 0 1 1    -001          -2X     (01~X1)  +1
- * 1 1 0 0    -101          -2X     (01~X1)  +1
- * 1 1 0 1    -100          -X      (011~X)  +1
- * 1 1 1 0    -110          -X      (011~X)  +1
- * 1 1 1 1    -111          -0      011111   +1
+ * 0 0 0 0    -000          +0      100000   +0      
+ * 0 0 0 1    -001          +X      (100X)   +0
+ * 0 0 1 0    -011          +X      (100X)   +0
+ * 0 0 1 1    -010          +2X     (10X0)   +0
+ * 0 1 0 0    -110          +2X     100000   +0      
+ * 0 1 0 1    -111          +3X     (1X3)    +0
+ * 0 1 1 0    -101          +3X     (1X3)    +0
+ * 0 1 1 1    -100          +4X     (1X00)   +0
+ * 1 0 0 0    -100          -4X     (0~X11)  +1      
+ * 1 0 0 1    -101          -3X     (0~X3)   +1
+ * 1 0 1 0    -111          -3X     (0~X3)   +1
+ * 1 0 1 1    -110          -2X     (01~X1)  +1
+ * 1 1 0 0    -010          -2X     (01~X1)  +1
+ * 1 1 0 1    -011          -X      (011~X)  +1
+ * 1 1 1 0    -001          -X      (011~X)  +1
+ * 1 1 1 1    -000          -0      011111   +1
  * 
  * NOTE: there is 1 to be augmented to the left of the partial products 
  *       except for the first one
@@ -75,46 +75,37 @@ module `mname` (
     output logic 		S
 		);
    
+   /* TO ME:
+    * X3 and X3_b are late signals. Therefore, rather than muxing {0,x,2x,3x,4x,4x_b,3x_b,2x_b,x_b} 
+    * we will first mux x vs. x_b (assign it to x_out), then we'll mux {0,x_out, 2x_out, 4x_out} (assign 
+    * it to pp0124) and then mux {pp0124, x3, x3_b}. Capiche?
+    * */
 
-   logic [`$width-1`:0]   x_out;
-  
-
+   // Mux x and x_b based on sign
+   logic [`$width-1`:0] 	x_out;
    assign S = y_msb;
    assign x_out = S ? x_b: x;
 
-  /*
-  reg [width+2:0] softPP;
-  always @*
-  begin
-    case (y[3:0])
-       4'b0000,4'b1111: softPP = {~S,{(width+2){S}}};            // 0      (y[0]==y[1]==y[2]==y[3])    
-       4'b0001,4'b0010,4'b1101,4'b1110: softPP = {~S,S,S,x_out}; // +/-X   (y[0]!=y[1]) & (y[2]==y[3])
-       4'b0011,4'b1100,4'b0100,4'b1011: softPP = {~S,S,x_out,S}; // +/-2X  (y[0]==y[1]) & (y[1]!=y[2])
-       4'b0101,4'b0110,4'b1001,4'b1010: softPP = {~S,x3_out};    // +/-3X  (y[0]!=y[1]) & (y[2]!=y[3]) 
-       4'b1000,4'b0111: softPP = {~S,x_out,S,S};                 // +/-4X  (y[0]==y[1]==y[2]) & (y[2]!=y[3])
-    endcase
-  end
-
-  assign pp = softPP;
-  */
-   logic [`$width+2`:0] 	  pp0124;
-   logic [1:0] 		  mux_control;
-
-   assign mux_control = {(y_edge_vector[1] | y_edge_vector[0]) ,  ((y_edge_vector[2] & ~y_edge_vector[1]) | y_edge_vector[0]) };
+   logic [`$width+2`:0]   pp0124;
    
    always_comb
      begin
-	case (mux_control)
-	  2'b00:  pp0124 = {~S,{(`$width+2`){S}}};              // 0      (y[0]==y[1]==y[2]==y[3])           //yedge = 000
-  	  2'b01:  pp0124 = {~S,x_out,S,S};                      // +/-4X  (y[0]==y[1]==y[2]) & (y[2]!=y[3])  //yedge = 100
-  	  2'b10:  pp0124 = {~S,S,x_out,S};                      // +/-2X  (y[0]==y[1]) & (y[1]!=y[2])        //yedge = X10
-  	  2'b11:  pp0124 = {~S,S,S,x_out};                      // +/-X   (y[0]!=y[1]) & (y[2]==y[3])        //yedge = 0X1
-        endcase
-    
-	casex ({(y_edge_vector[0] | y_edge_vector[2]),S})
-	  2'b00:  pp = {~S,x3};                       
-	  2'b01:  pp = {~S,x3_b};
-	  2'b1x:  pp = pp0124;
+	// Mux 0, x_out, 2x_out, 4x_out based on the edge vector
+	unique case (y_edge_vector)
+	  // 3'b000:  	pp0124 = {~S,{(`$width+2`){S}}};	// yedge = 000 ==> 0 
+  	  3'b001,3'b011:pp0124 = {~S,S,S,x_out};		// yedge = 0X1 ==> +/-X     
+  	  3'b010,3'b110:pp0124 = {~S,S,x_out,S};		// yedge = X10 ==> +/-2X 
+  	  3'b100:	pp0124 = {~S,x_out,S,S};		// yedge = 100 ==> +/-4X
+	  default: pp0124 = {~S,{(`$width+2`){S}}};
+        endcase // case (y_edge_vector)
+  
+   
+	// Mux pp0124, 3x, 3x_b based on the edge vector and sign
+	unique case ({(y_edge_vector[2] & y_edge_vector[0]),S})
+	  2'b10:  pp = {~S,x3};                       
+	  2'b11:  pp = {~S,x3_b};
+	  //2'b00, 2'b01:  pp = pp0124;
+	  default: pp = pp0124;
 	endcase
      end
   
