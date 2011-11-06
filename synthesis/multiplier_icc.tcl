@@ -34,7 +34,7 @@ read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 
-save_mw_cel -as ${DESIGN_NAME}_before_floorplanning
+
 
 set CSA_cells [get_cells -hierarchical "*csa*"];
 set max_row 0;
@@ -104,7 +104,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002]
-  create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column+1)] -allow_non_rp_cells -x_offset 0 -y_offset 0;
+  create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column+1)] -allow_non_rp_cells ;
 
   set edge_cells [get_cells -hierarchical "edge*"];
   set max_edge 0;
@@ -182,13 +182,13 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       }
       add_to_rp_group ${DESIGN_NAME}::rp_tree \
                     -hierarchy ${DESIGN_NAME}::rp_CSA_${row_index}_${column_index} \
-                    -column $row_index -row [expr 2*$column_index+$is_odd_row];
+                    -column [expr $row_index+1-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
       #echo "added group  rp_CSA_${row_index}_${column_index}  to rp group rp_tree";
     } else {
       foreach_in_collection CSA_child_cell $CSA_child_cells {
         set CSA_child_name [get_object_name $CSA_child_cell];
         add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -leaf $CSA_child_name -column $row_index -row [expr 2*$column_index+$is_odd_row];
+                    -leaf $CSA_child_name -column [expr $row_index+1-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
             #echo "added leaf  $CSA_child_name to rp group rp_tree";
       }
     } 
@@ -216,22 +216,23 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
                     -keepout gap_${row_index}_${column_index} -type space -column $booth_children_count -row 0 -width 4 -height 1;
          add_to_rp_group ${DESIGN_NAME}::rp_tree \
                     -hierarchy ${DESIGN_NAME}::rp_booth_${row_index}_${column_index} \
-                    -column $row_index -row [expr 2*$column_index+1-$is_odd_row];
+                    -column [expr $row_index-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
          #echo "added group  rp_booth_${row_index}_${column_index}  to rp group rp_tree";
       }    
     }
   }
 
-#  set_rp_group_options [all_rp_groups] \
-#           -psynopt_option size_only \
-#           -route_opt_option in_place_size_only \
-#           -cts_option fixed_placement \
-#          -placement_type compression \
-#           -disable_buffering \
-#           -allow_non_rp_cells;
+  set_rp_group_options [all_rp_groups] \
+           -allow_non_rp_cells \
+           -placement_type compression;
+#          -disable_buffering \
+#          -psynopt_option size_only \
+#          -route_opt_option in_place_size_only \
+#          -cts_option fixed_placement;
+;
 }
 
-
+save_mw_cel -as ${DESIGN_NAME}_before_floorplanning
 
 
 initialize_floorplan \
@@ -261,7 +262,12 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -tie
 
 
-place_opt  -effort medium -power -area_recovery -num_cpus 2
+place_opt  -effort high -power -area_recovery -num_cpus 2
+
+save_mw_cel -as ${DESIGN_NAME}_before_rp_blowout
+
+remove_rp_groups -all
+place_opt -skip_initial_placement -effort high -power -area_recovery -num_cpus 2
 
 estimate_fp_area -sizing_type fixed_height
 

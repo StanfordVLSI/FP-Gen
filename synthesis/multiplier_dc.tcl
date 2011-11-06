@@ -8,7 +8,7 @@ analyze -format sverilog [glob ../../*.v]
 elaborate $DESIGN_NAME -architecture verilog -library DEFAULT
 
 if {$target_delay!=-1} {
-  set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
+  set_max_delay -from [all_inputs] -to [all_outputs] [expr 0.8*double($target_delay)/1000]
   if {$target_delay==0} {
     set target_delay min
   }  
@@ -17,6 +17,8 @@ if {$target_delay!=-1} {
 }
 
 compile_ultra -no_autoungroup
+
+set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
 
 write -format verilog -hierarchy -output $DESIGN_NAME.$VT.$target_delay.mapped.v
 write -format ddc -hierarchy -output $DESIGN_NAME.$VT.$target_delay.mapped.ddc

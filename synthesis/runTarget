@@ -3,7 +3,7 @@ while [ "$#" -gt "0" ]
 do
   echo "Running $1_$2_$3"
 
-  echo "cd \$PBS_O_WORKDIR; mkdir -p $1_$2_$3;cd $1_$2_$3; pwd;  dc_shell-xg-t -f ../multiplier_dc.tcl -x \"set VT $1; set Voltage $2; set target_delay $3\"; icc_shell -f ../multiplier_icc.tcl -x \"set ENABLE_MANUAL_PLACEMENT 1;set VT $1; set Voltage $2; set target_delay $3\"; icc_shell -f ../multiplier_icc.tcl -x \"set VT $1; set Voltage $2; set target_delay $3\"; rm -rf cache work command.log default.svf filenames.log icc_output.txt *_port_map* nfs* legalizer*" | qsub -q horowitz -p -1
+  echo "cd \$PBS_O_WORKDIR; pwd; make all VT=$1 Voltage=$2 target_delay=$3" | qsub -q horowitz -p -1
   shift
   shift
   shift
