@@ -10,11 +10,9 @@
 /* *****************************************************************************
  * Description:
  * ------------
- * Booth THREE encoding for a multiplier.
+ * Booth THREE, single cell encoding for a multiplier. Produce one bit of one
+ * partial product.
  * 
- * Booth encoder produce the partial products for computing (x+xinc)*(y+yinc)
- * 
- * Modified Booth 3 encoder
  * 
  * Y[3:0]     y_edge_vec    out  =  pp   +   S
  * 	                  
@@ -35,44 +33,36 @@
  * 1 1 1 0    -001          -X      (011~X)  +1
  * 1 1 1 1    -000          -0      011111   +1
  * 
- * NOTE: there is 1 to be augmented to the left of the partial products 
- *       except for the first one
- * 
  * 
  * Parameters:
  * -----------
- * * Width
+ * 
  * 
  * Change bar:
  * -----------
  * Date           Author    Description
- * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
- *                          genesis
+ * Nov 05, 2011   shacham   init version - 
+ *                          
  * ****************************************************************************/
 
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
 //; # Perl Libraries
-//; use POSIX qw(ceil); # For ceiling rounding math
 //;
-//; # get some values from the top
+//;
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
-//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
-//;
-//; # module parameters
-//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
-//;                       Doc=>"Signal bit widths");
+
 
 
 
 module `mname` (
-    input logic [`$width-1`:0] 	x, x_b,
-    input logic [`$width+1`:0] 	x3, 
-    input logic [2:0] 		y_edge_vector,		// y_edge_vector[i] = y[i]==y[i+1]
+    input logic 		sel_x, sel_x2, sel_x3, sel_x4,
+    input logic [2:0] 		x,
+    input logic 		x3, 
+//    input logic [2:0] 		y_edge_vector,		// y_edge_vector[i] = y[i]==y[i+1]
     input logic 		y_msb,                 	// y[3]
-    output logic [`$width+2`:0] pp,               	//extend width by two: 1 bit for sign and second for shifting for 2X multiple
-    output logic 		S
+    output logic 		pp               	// single bit of the relevant pp
 		);
    
    /* TO ME:
@@ -86,22 +76,22 @@ module `mname` (
  * each booth3cell.
  * *****************************************************************************
    // Mux x and x_b based on sign
-   logic [`$width-1`:0] 	x_out;
+   logic [$width-1:0] 	x_out;
    assign S = y_msb;
    assign x_out = S ? x_b: x;
 
-   logic [`$width+2`:0]   pp0124;
+   logic [$width+2:0]   pp0124;
    
 
     always_comb
      begin
 	// Mux 0, x_out, 2x_out, 4x_out based on the edge vector
 	unique case (y_edge_vector)
-	  // 3'b000:  	pp0124 = {~S,{(`$width+2`){S}}};	// yedge = 000 ==> 0 
+	  // 3'b000:  	pp0124 = {~S,{($width+2){S}}};	// yedge = 000 ==> 0 
   	  3'b001,3'b011:pp0124 = {~S,S,S,x_out};		// yedge = 0X1 ==> +/-X     
   	  3'b010,3'b110:pp0124 = {~S,S,x_out,S};		// yedge = X10 ==> +/-2X 
   	  3'b100:	pp0124 = {~S,x_out,S,S};		// yedge = 100 ==> +/-4X
-	  default: pp0124 = {~S,{(`$width+2`){S}}};
+	  default: pp0124 = {~S,{($width+2){S}}};
         endcase // case (y_edge_vector)
   
    
@@ -115,56 +105,19 @@ module `mname` (
      end
  *******************************************************************************/ 
 
-   logic [`$width+3`:0] 	x_padded;
-   logic [`$width+1`:0] 	pp0124;
-   logic [`$width+1`:0] 	pp01234;
+   logic 			pp0124;
+   logic 			pp01234;
    
-   assign x_padded = {2'b0, x, 2'b0};
    assign S = y_msb;
    
-   logic 			sel_x;
-   assign sel_x = (~y_edge_vector[2] & y_edge_vector[0]); // yedge = 0X1 ==> +/-X
-   
-   logic 			sel_x2;
-   assign sel_x2 = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = X10 ==> +/-2X 
-   
-   logic 			sel_x3;
-   assign sel_x3 = y_edge_vector[2] & y_edge_vector[0];
+   // Mux 0, x, 2x, 4x based on the edge vector
+   assign pp0124 = (sel_x & x[2]) | (sel_x2 & x[1]) | (sel_x4 & x[0]);
+ 
+   // Mux pp0124, 3x based on the edge vector
+   assign pp01234 = (sel_x3 & x3) | pp0124;
 
-   logic 			sel_x4;
-   assign sel_x4 = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 100 ==> +/-4X
+   // Select pp or pp_b based on sign
+   assign pp = pp01234 ^ S; // invert if S=1
+
    
-
-
-   /* *****
-    * Now, for each bit in the pp we need to do the muxing as folows:
-    * For $i in 2 to $width+4 (`$width+4`)
-    * Mux 0, x, 2x, 4x based on the edge vector
-    *   assign pp0124[$i-2] = (sel_x & x_padded[$i]) | (sel_x2 & x_padded[$i-1]) | (sel_x4 & x_padded[$i-2]);
-    * 
-    * Mux pp0124, 3x based on the edge vector
-    *   assign pp01234[$i-2] = (sel_x3 & x3[$i-2]) | pp0124[$i-2];
-    * 
-    * Select pp or pp_b based on sign
-    *   assign pp[$i-2] = pp01234[$i-2] ^ S; // invert if S=1
-    * ******/
-
-   //; for (my $i=2; $i<$width+4; $i++){
-   // Instantiate cell for pp bit `$i-2`
-   //;   my $BoothCell_obj = generate('Booth3Cell', "cell_$i");
-   `$BoothCell_obj->instantiate` 
-     	(.sel_x(sel_x),.sel_x2(sel_x2),.sel_x3(sel_x3),.sel_x4(sel_x4),
-	 .x(x_padded[`$i`:`$i-2`]), .x3(x3[`$i-2`]), .y_msb(y_msb),
-	 .pp(pp[`$i-2`]));
-   
-   //; }
-   assign pp[`$width+2`] = ~S;
-   
- //; if ($verif_mode =~ /ON/){
-   always_comb
-     assert ($onehot({sel_x,sel_x2,sel_x3,sel_x4}) || {sel_x,sel_x2,sel_x3,sel_x4} == 4'b0)else begin
-	$display("ERROR: Bad select signals for booth3 cell");
-     end
-//; }
-
 endmodule : `mname`
