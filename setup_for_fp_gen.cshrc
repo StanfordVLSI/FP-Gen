@@ -13,9 +13,35 @@ endif
 ######################################################
 ###### Control of all cad tools sourcing: ############
 ######################################################
-#if ( $MACHINE == "neva-2" ) then
-#   setenv LD_LIBRARY_PATH /nobackup/kkelley/cad/lib
-#endif
+####### SYNOPSYS DC, PT, ASTRO, APOLLO
+ 
+if ( $?SNPSLMD_LICENSE_FILE == 0 ) then
+    setenv SNPSLMD_LICENSE_FILE 27000@cadlic0
+endif
+     
+set unamer = `uname -r`
+set unamem = `uname -m`
+      
+if ( $unamer == "5.5.1" || $?USE32BIT ) then
+   setenv ARCH sparcOS5
+else if ( $unamer == "5.7" || $unamer == "5.8" ) then
+   setenv ARCH sparc64
+else if ( $unamem == "i686" ) then
+   setenv ARCH linux
+   setenv ARCH2 IA.32
+else if ( $unamem == "x86_64" ) then
+   setenv ARCH amd64
+   setenv ARCH2 AMD.64
+endif
+
+# SYNOPSYS is a standard variable that Synopsys tools use
+# to point to DC root area. So, don't change that
+if (! $?SYNOPSYS) then
+   setenv SYNOPSYS /cad/synopsys/dc_shell/latest/
+   set path = ( $path $SYNOPSYS/$ARCH/syn/bin )
+   set path = ( $path $SYNOPSYS/$ARCH/bin )
+endif
+
 source /cad/modules/init_modules.csh
 ######################################################
 
