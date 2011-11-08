@@ -2,7 +2,8 @@
 ################ Makefile Definitions
 ################################################################################
 # This little trick finds where the makefile exists
-DESIGN_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
+# DESIGN_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
+DESIGN_HOME := $(dir $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST)))
 $(warning WARNING: FPGEN home set to $(DESIGN_HOME)) 
 
 # this line enables a local Makefile to override values of the main makefile
