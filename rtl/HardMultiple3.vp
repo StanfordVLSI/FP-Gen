@@ -24,6 +24,7 @@
  * Date           Author    Description
  * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
+ * Nov 10, 2010   jingpu    add parameter for tree type
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -38,8 +39,11 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
+//; my $width = parameter(Name=>'Width', Val=>18, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
+//; my $treeType = parameter(Name=>'TreeType', Val=>'SklanskyAdderTree', 
+//;                          List=>['SklanskyAdderTree', 'SklanskyTree'],
+//;                          Doc=>"Tree type of Sklansky Tree");
 //;
 //; # Local Variables
 //; my $prefix_tree_size = floor(($width-3)/4) + 1;
@@ -52,29 +56,46 @@ module `mname` (
     input logic [`$width-1`:0] 		x,
     output logic [`$width+1`:0] 	x3
 		);
-   
-
-  assign x3 = {2'b0,x} + {1'b0,x,1'b0};
-
-//; if (0){
 
    logic [`$width`:0] 			H,K;  // odd values are not used!
    logic [`$prefix_tree_size-1`:0] 	gh_b, gk_b, GH, GK, GH_b, GK_b;
    logic [`$prefix_tree_size-1`:0] 	ph_b, pk_b, PH, PK;
 
+   //; if ($treeType =~ /SklanskyTree/){
    //; if ($prefix_tree_depth%2==1) { # output is not inverted
    //;   my $SklanskyTree_obj = generate('SklanskyTree', 'SklanskyTree', Width=>$prefix_tree_size);
    `$SklanskyTree_obj->instantiate` 
      (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
-      .GH(GH), .PH(PH), .GK(GK), .PK(PK), .dumptolog(dumptolog));
+      .GH(GH), .PH(PH), .GK(GK), .PK(PK)
+   //; if ($verif_mode =~ /ON/){
+    , .dumptolog(dumptolog)
+   //; } # end if ($verif_mode...
+     );
    //; } else { # output is inverted
    //;   my $SklanskyTree_obj = generate('SklanskyTree', 'SklanskyTree', Width=>$prefix_tree_size);
    `$SklanskyTree_obj->instantiate` 
      (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
-      .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK), .dumptolog(dumptolog));
-
+      .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK)
+   //; if ($verif_mode =~ /ON/){
+    , .dumptolog(dumptolog)
+   //; } # end if ($verif_mode...
+     );
    // output is inverted
    assign GH = ~ GH_b;
+   assign GK = ~ GK_b;
+   //; }
+   //; } else { # i.e. if $treeType = SklanskyAdderTree
+   //;   my $SklanskyAdderTree_H = generate('SklanskyAdderTree', 'SklanskyAdderTree_H', Width=>$prefix_tree_size);
+   logic [`$prefix_tree_size-1`:0]      gh, ph;
+   assign gh = ~gh_b;
+   assign ph = ~ph_b;
+   `$SklanskyAdderTree_H->instantiate`
+     (.g(gh), .p(ph), .G(GH), .P(PH));
+   //;   my $SklanskyAdderTree_K = generate('SklanskyAdderTree', 'SklanskyAdderTree_K', Width=>$prefix_tree_size);
+   `$SklanskyAdderTree_K->instantiate`
+     (.g(gk_b), .p(pk_b), .G(GK_b), .P(PK_b));
+   // output is inverted
+   assign PK = ~ PK_b;
    assign GK = ~ GK_b;
    //; }
 
@@ -132,7 +153,6 @@ module `mname` (
    //; }
 
 
-
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
      begin
@@ -144,7 +164,6 @@ module `mname` (
 	$write ("GK=%b\n", GK);
      end
    //; }
-//; }
 
 endmodule : `mname`
 
