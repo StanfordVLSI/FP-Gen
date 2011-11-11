@@ -1,0 +1,65 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * Given X of Width bits, produces the value 5*X
+ * 
+ * Refer to G.A. Ruiz1 and Mercedes Granda "Efficient hardware implementation 
+ * of 3X for radix-8 encoding" Microelectronics Journal, 2008
+ * 
+ * Parameters:
+ * -----------
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Nov 09, 2011   shacham   init version - Just a stub -- no actual implementation
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; #use POSIX qw(floor ceil log); # For ceiling rounding math
+//; #sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//;
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic 			dumptolog,
+   //; }
+    input logic [`$width-1`:0] 		x,
+    output logic [`$width+2`:0] 	x5
+		);
+   
+
+  assign x5 = {3'b0,x} + {1'b0,x,2'b0};
+
+
+
+   //; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+     begin
+	$display("\t`mname`: X=0x%h, Expected5X=0x%h, Result5X=0x%h", x, 5*x, x5);
+     end
+   //; }
+
+endmodule : `mname`
+

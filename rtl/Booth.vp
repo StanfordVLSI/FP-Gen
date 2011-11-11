@@ -58,6 +58,7 @@
  * Date           Author    Description
  * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis + a little restructuring
+ * Nov 09, 2011   shacham   Added basic functionality for booth 4
  * 
  * ****************************************************************************/
 
@@ -75,8 +76,8 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3,
-//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 is sometimes useful when Width is large)");
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
 //;
 //; # Declare some local variables
 //; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3 
@@ -107,7 +108,7 @@ module `mname`(
    //;   }
    //;
    //; } # End of "if ($booth==1)..." 
-   //; elsif ($booth==2 || $booth==3) {
+   //; elsif ($booth>=2) {
    //;   my $booth_module = "Booth".$booth."Enc";
 
    logic [`$extended_width`-1:0] extended_y;
@@ -122,16 +123,16 @@ module `mname`(
    
    logic [`$extended_width-2`:0] y_edge_vector;
 
-   //; for(my $i=0; $i < $extended_width-1; $i++) {
+   //;   for(my $i=0; $i < $extended_width-1; $i++) {
    //;     my $edge_obj = generate('Xor_gate', "edge_$i");
    `$edge_obj->instantiate` (.a(extended_y[`$i`]),.b(extended_y[`$i+1`]),.out(y_edge_vector[`$i`]));
-   //; }
+   //;   }
 
 
    
    //;   # If booth==3 we need to prepare a 3*x and ~(3*x) products
-   //;   if ($booth==3) {
-   // Prepare the 3*X and its inverse
+   //;   if ($booth>=3) {
+   // Prepare the 3*X 
    logic [`$width+1`:0] 	 x3;
    //;   my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
    `$HM3_obj->instantiate` (
@@ -140,6 +141,26 @@ module `mname`(
 			    //; }
 			    .x(x), .x3(x3));
    //;   }
+   
+   //;   if ($booth>=4) {
+   // Prepare the 5*X 
+   logic [`$width+2`:0] 	 x5;
+   //;   my $HM5_obj = generate('HardMultiple5', 'HM5', Width=>$width);
+   `$HM5_obj->instantiate` (
+			    //; if ($verif_mode =~ /ON/){
+			    .dumptolog(dumptolog),
+			    //; }
+			    .x(x), .x5(x5));
+
+   // Prepare the 7*X 
+   logic [`$width+2`:0] 	 x7;
+   //;   my $HM7_obj = generate('HardMultiple7', 'HM7', Width=>$width);
+   `$HM7_obj->instantiate` (
+			    //; if ($verif_mode =~ /ON/){
+			    .dumptolog(dumptolog),
+			    //; }
+			    .x(x), .x7(x7));
+   //;   }
 
    
    // Instantiate the booth `$booth` encoders
@@ -147,9 +168,12 @@ module `mname`(
    //;     my $BoothEnc_obj = generate($booth_module, "Booth".$booth."Enc_u$i", Width=>$width);
    `$BoothEnc_obj->instantiate`
      (.x(x), .x_b(x_b),
-      //;   if ($booth==3) {
+      //;   if ($booth>=3) {
       .x3(x3),
       //;   }
+      //;   if ($booth>=4) {
+      .x5(x5), .x7(x7),
+      //;   }			    
       .y_edge_vector(y_edge_vector[`$booth*($i+1)-1`:`$booth*$i`]), 
       .y_msb(extended_y[`$booth*($i+1)`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
    

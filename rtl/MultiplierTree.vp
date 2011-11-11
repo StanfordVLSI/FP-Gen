@@ -41,7 +41,7 @@
 //;                          Doc=>"Bit width of the partial products");
 //; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>2, Step=>1,
 //;                          Doc=>"Number of partial products to sum");
-//; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>3, Step=>1,
+//; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>4, Step=>1,
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
