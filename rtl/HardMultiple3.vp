@@ -24,8 +24,7 @@
  * Date           Author    Description
  * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
- * Nov 10, 2010   jingpu    use SklanskyAdderTree, the former SklanskyTree 
-                            module is broken.
+ * Nov 04, 2011   jingpu    bug fixed
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -40,12 +39,15 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $width = parameter(Name=>'Width', Val=>18, Min=>1, Step=>1,
+//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
 //;
 //; # Local Variables
 //; my $prefix_tree_size = floor(($width-3)/4) + 1;
-//; my $prefix_tree_depth = CeilOfLog2($prefix_tree_size);
+//; my $SklanskyTree_obj = generate('SklanskyTree', 'SklanskyTree', Width=>$prefix_tree_size);
+//; my $tree_radix = $SklanskyTree_obj->get_param('Radix');
+//; my $prefix_tree_depth = ceil(log($prefix_tree_size)/log($tree_radix));
+
 
 module `mname` (
    //; if ($verif_mode =~ /ON/){
@@ -54,25 +56,29 @@ module `mname` (
     input logic [`$width-1`:0] 		x,
     output logic [`$width+1`:0] 	x3
 		);
-
+   
    logic [`$width`:0] 			H,K;  // odd values are not used!
-   logic [`$prefix_tree_size-1`:0] 	gh, ph, GH, PH;
-   logic [`$prefix_tree_size-1`:0] 	gk_b, pk_b, GK, PK, GK_b, PK_b;
+   logic [`$prefix_tree_size-1`:0] 	gh_b, gk_b, GH, GK, GH_b, GK_b;
+   logic [`$prefix_tree_size-1`:0] 	ph_b, pk_b, PH, PK;
 
-   //;    my $SklanskyAdderTree_H = generate('SklanskyAdderTree', 'SklanskyAdderTree_H', Width=>$prefix_tree_size);
-   `$SklanskyAdderTree_H->instantiate`
-     (.g(gh), .p(ph), .G(GH), .P(PH));
-   //;    my $SklanskyAdderTree_K = generate('SklanskyAdderTree', 'SklanskyAdderTree_K', Width=>$prefix_tree_size);
-   `$SklanskyAdderTree_K->instantiate`
-     (.g(gk_b), .p(pk_b), .G(GK_b), .P(PK_b));
+   //; if ($prefix_tree_depth%2==1) { # output is not inverted
+   `$SklanskyTree_obj->instantiate` 
+     (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
+      .GH(GH), .PH(PH), .GK(GK), .PK(PK), .dumptolog(dumptolog));
+   //; } else { # output is inverted
+   `$SklanskyTree_obj->instantiate` 
+     (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
+      .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK), .dumptolog(dumptolog));
+
    // output is inverted
-   assign PK = ~ PK_b;
+   assign GH = ~ GH_b;
    assign GK = ~ GK_b;
+   //; }
 
-   assign gh[0] =  x[2] | (x[1] & x[0]);
+   assign gh_b[0] = ~( x[2] | (x[1] & x[0]));
    assign gk_b[0] = ~( x[2] & x[1] );
-   assign ph[0] = 1'b0;
-   assign pk_b[0] = 1'b1;
+   assign ph_b[0] = 1'b1; //need check
+   assign pk_b[0] = 1'b1; //need check
    
    assign H[0] = x[0];
    assign H[2] = GH[0];
@@ -81,9 +87,9 @@ module `mname` (
    assign K[2] = GK[0];
    
    //; for(my $j=1; $j < $prefix_tree_size; $j++) {
-   assign gh[`$j`] = ( x[`4*$j+2`] | (x[`4*$j+1`] & x[`4*$j`]) );
+   assign gh_b[`$j`] = ~( x[`4*$j+2`] | (x[`4*$j+1`] & x[`4*$j`]) );
    assign gk_b[`$j`] = ~( x[`4*$j+2`] & (x[`4*$j+1`] | x[`4*$j`]) );
-   assign ph[`$j`] = ( x[`4*$j+1`] &  x[`4*$j-1`] );
+   assign ph_b[`$j`] = ~( x[`4*$j+1`] &  x[`4*$j-1`] );
    assign pk_b[`$j`] = ~( x[`4*$j+1`] |  x[`4*$j-1`] );
    
    assign H[`4*$j`]   = x[`4*$j`] | ( x[`4*$j-1`] & H[`4*$j-2`] );
@@ -100,6 +106,7 @@ module `mname` (
    //;   }
    //; }
 
+   //need check
    //; if ($width%2==0) {
    assign H[`$width`] = x[`$width-1`] & H[`$width-2`];
    assign K[`$width`] = 1'b0;
@@ -114,6 +121,7 @@ module `mname` (
    //;   }
    //; }
   
+  //need check
    //; if ($width%2==0) {
    assign x3[`$width`]   = x[`$width-1`] & ~H[`$width-2`] | ~x[`$width-1`] & K[`$width-2`];
    assign x3[`$width+1`] = H[`$width`] & ~K[`$width`];
@@ -123,12 +131,13 @@ module `mname` (
    //; }
 
 
+
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
      begin
 	$display("\t`mname`: X=0x%h, Expected3X=0x%h, Result3X=0x%h", x, 3*x, x3);
 	$write ("\t`mname`: depth=`$prefix_tree_depth`, "); 
-	$write ("gh=%b ph=%b ", gh, ph);
+	$write ("gh=%b ph=%b ", ~gh_b, ~ph_b);
 	$write ("gk=%b pk=%b ", ~gk_b, ~pk_b);
 	$write ("GH=%b ", GH);
 	$write ("GK=%b\n", GK);
