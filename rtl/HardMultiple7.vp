@@ -50,8 +50,9 @@ module `mname` (
 		);
    
 
-  assign x7 = {3'b0,~x} + {x,3'b0} + `$width+3`'b1;
-
+   //assign x7 = {~x[`$width-1`],~x[`$width-1`],~x[`$width-1`],~x} + {x,3'b0} + `$width+3`'b1;
+   assign x7 = 7*x;
+   
 
 
    //; if ($verif_mode =~ /ON/){

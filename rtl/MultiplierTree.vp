@@ -45,8 +45,8 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $tree_type = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','Array'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array)");
+//; my $tree_type = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','Array', 'ZM'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM)");
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
@@ -61,7 +61,14 @@ module `mname()` (
     output logic [`$width-1`:0] 	out0,out1
    );
 
-
+//;# uncomment to debug #   assign out1 = `$width`'b0;
+//;# uncomment to debug #   assign out0 = 
+//;# uncomment to debug #   //; for (my $i=0; $i<$pp_count;$i++){
+//;# uncomment to debug #		 ({100'b0, pp[`$i`]} << `$booth*$i`)+
+//;# uncomment to debug #   //; }
+//;# uncomment to debug #		 `$width`'b0;
+   
+		 
 
    // Columns 0 through booth-1=`$booth-1` -- only one pp
    assign out0[`$booth-1`:0] =   pp[0][`$booth-1`:0];
@@ -164,7 +171,11 @@ module `mname()` (
 //; if ($width-1 >= $width-$booth+1){
    assign out1[`$width-1`:`$width-$booth+1`] = { (`$booth-1`){1'b0} };
 //; }
+
+
+
    
+    
 //; if ($verif_mode =~ /ON/){
 	// synopsys translate_off
 	always @(posedge dumptolog)

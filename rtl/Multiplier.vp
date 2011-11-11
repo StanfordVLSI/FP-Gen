@@ -39,7 +39,7 @@
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
 //;
 //; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array) (Soon:OS1Tree, OS2Tree, ZMTree)");
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)");
 
 module `mname`(
    //; if ($verif_mode =~ /ON/){

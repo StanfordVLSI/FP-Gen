@@ -161,7 +161,7 @@ module `mname` (
    
    //; if ($verif_mode =~ /ON/){
    always_comb begin
-      $display ("sel12345678=%8b", {sel_x,sel_x2,sel_x3,sel_x4,sel_x5,sel_x6,sel_x7,sel_x8});
+      // $display ("sel12345678=%8b", {sel_x,sel_x2,sel_x3,sel_x4,sel_x5,sel_x6,sel_x7,sel_x8});
       assert ($onehot({sel_x,sel_x2,sel_x3,sel_x4,sel_x5,sel_x6,sel_x7,sel_x8}) || 
 	      {sel_x,sel_x2,sel_x3,sel_x4,sel_x5,sel_x6,sel_x7,sel_x8} == 8'b0)else begin
 	 $display("ERROR: Bad select signals for booth4 cell");
