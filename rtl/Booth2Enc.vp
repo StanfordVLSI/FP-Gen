@@ -60,7 +60,7 @@ module `mname` (
     input [`$width-1`:0]    x, 
     input [1:0] 	    y_edge_vector,  // y_edge_vector[i] = y[i]!=y[i+1]
     input 		    y_msb,          // y[2]
-    output [`$width+1`:0]   pp,             //extend width by two: 1 bit for sign and second for shifting for 2X multiple
+    output [`$width+1`:0]   pp,             // extend width by two: 1 bit for sign and second for shifting for 2X multiple
     output 		    S
 		);
 
@@ -71,14 +71,20 @@ module `mname` (
    
    logic [`$width+1`:0]     x_padded;
    assign x_padded = {1'b0, x, 1'b0};
-   
    assign S = y_msb;
 
+   logic 			sel_x1;
+   assign sel_x1 = y_edge_vector[0]; // yedge = x1 ==> +/-X
+   
+   logic 			sel_x2;
+   assign sel_x2 = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 10 ==> +/-2X 
+
    //;   for(my $i=1; $i <= $width+1; $i++){
-   //;     my $BoothCell_obj = generate('Booth2Cell', "cell_$i");
-   `$BoothCell_obj->instantiate` (
-       .x(x_padded[`$i`:`$i-1`]), 
-       .y_edge_vector(y_edge_vector), .y_msb(y_msb) , .out(pp[`$i-1`]));
+   //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>2);
+   `$BoothCell_obj->instantiate` 
+     (.sel_x1(sel_x1),.sel_x2(sel_x2),
+      .x1(x_padded[`$i`]), .x2(x_padded[`$i-1`]), 
+      .y_msb(y_msb) , .pp(pp[`$i-1`]));
    
    //;   }
    assign pp[`$width+1`] = ~S;

@@ -71,7 +71,7 @@ module `mname` (
     input logic [`$width+1`:0] 	x3, 
     input logic [2:0] 		y_edge_vector,		// y_edge_vector[i] = y[i]==y[i+1]
     input logic 		y_msb,                 	// y[3]
-    output logic [`$width+2`:0] pp,               	//extend width by two: 1 bit for sign and second for shifting for 2X multiple
+    output logic [`$width+2`:0] pp,               	//extend width by three: 1 bit for sign and two for shifting for 2X and 4x multiple
     output logic 		S
 		);
    
