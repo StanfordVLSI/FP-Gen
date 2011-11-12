@@ -25,6 +25,7 @@
  * Date           Author    Description
  * Oct 11, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
+ * Nov 11, 2011   jingpu    major bug fixed
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -56,6 +57,7 @@
 //; } else {
 //;   $lower_tree_depth = 0;
 //; }
+//; my $upper_tree_depth = CeilOfLogRadix($width - ($radix - 1) * $width_by_radix);
 
 
 module `mname` (
@@ -105,6 +107,22 @@ module `mname` (
    //;   } # End of "if ($lower_tree_depth..."
    
    
+   //;   if ($upper_tree_depth==$tree_depth) {
+   logic [`$width-($radix-1)*$width_by_radix-1`:0]	GH_up_int_b , PH_up_int_b , GK_up_int_b , PK_up_int_b;  
+   //;   my $UpperTree_obj = generate('SklanskyTree', 'UpperTree', Width=>$width-($radix-1)*($width_by_radix), Radix=>$radix);
+   `$UpperTree_obj->instantiate`    
+(
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }       
+      .gh_b(gh_b[`$width-1`:`($radix-1)*($width_by_radix)`]), .ph_b(ph_b[`$width-1`:`($radix-1)*($width_by_radix)`]),
+      .gk_b(gk_b[`$width-1`:`($radix-1)*($width_by_radix)`]), .pk_b(pk_b[`$width-1`:`($radix-1)*($width_by_radix)`]),       
+      .GH(GH_up_int_b), .PH(PH_up_int_b), .GK(GK_up_int_b), .PK(PK_up_int_b));
+   assign GH_int[`$width-1`:`($radix-1)*($width_by_radix)`] = ~ GH_up_int_b;
+   assign PH_int[`$width-1`:`($radix-1)*($width_by_radix)`] = ~ PH_up_int_b;
+   assign GK_int[`$width-1`:`($radix-1)*($width_by_radix)`] = ~ GK_up_int_b;
+   assign PK_int[`$width-1`:`($radix-1)*($width_by_radix)`] = ~ PK_up_int_b;
+   //;   } else {
    //;   my $UpperTree_obj = generate('SklanskyTree', 'UpperTree', Width=>$width-($radix-1)*($width_by_radix), Radix=>$radix);
    `$UpperTree_obj->instantiate` 
      (
@@ -115,7 +133,10 @@ module `mname` (
        .gk_b(gk_b[`$width-1`:`($radix-1)*($width_by_radix)`]), .pk_b(pk_b[`$width-1`:`($radix-1)*($width_by_radix)`]), 
        .GH(GH_int[`$width-1`:`($radix-1)*($width_by_radix)`]), .PH(PH_int[`$width-1`:`($radix-1)*($width_by_radix)`]),
        .GK(GK_int[`$width-1`:`($radix-1)*($width_by_radix)`]), .PK(PK_int[`$width-1`:`($radix-1)*($width_by_radix)`]));
-   
+   //; }  
+
+
+
    //;   for (my $i=0; $i < $width_by_radix ; $i++) {
    assign GH[`$i`] = ~ GH_int[`$i`];
    assign PH[`$i`] = ~ PH_int[`$i`];
@@ -175,15 +196,15 @@ module `mname` (
    
    //;     for (my $i=3*($width_by_radix) ; $i < ( $radix<4? 0 : $radix==4 ? $width : 4*($width_by_radix) ) ; $i++) {
    assign GH[`$i`] = ~ ( GH_int[`$i`]
-			 | PH_int[`$i`] & GH_int[3*($width_by_radix)-1]
-			 | PH_int[`$i`] & PH_int[3*($width_by_radix)-1] & GH_int[2*($width_by_radix)-1]
-			 | PH_int[`$i`] & PH_int[3*($width_by_radix)-1] & PH_int[2*($width_by_radix)-1] & GH_int[$width_by_radix-1] );
-   assign PH[`$i`] = ~ ( PH_int[`$i`] & PH_int[3*($width_by_radix)-1] & PH_int[2*($width_by_radix)-1] & PH_int[$width_by_radix-1]);
+			 | PH_int[`$i`] & GH_int[`3*($width_by_radix)-1`]
+			 | PH_int[`$i`] & PH_int[`3*($width_by_radix)-1`] & GH_int[`2*($width_by_radix)-1`]
+			 | PH_int[`$i`] & PH_int[`3*($width_by_radix)-1`] & PH_int[`2*($width_by_radix)-1`] & GH_int[`$width_by_radix-1`] );
+   assign PH[`$i`] = ~ (   PH_int[`$i`] & PH_int[`3*($width_by_radix)-1`] & PH_int[`2*($width_by_radix)-1`] & PH_int[`$width_by_radix-1`]);
    assign GK[`$i`] = ~ ( GK_int[`$i`] & PK_int[`$i`]
-			 | GK_int[`$i`] & GK_int[3*($width_by_radix)-1] & PK_int[3*($width_by_radix)-1]
-			 | GK_int[`$i`] & GK_int[3*($width_by_radix)-1] & GK_int[2*($width_by_radix)-1] & PK_int[2*($width_by_radix)-1]
-			 | GK_int[`$i`] & GK_int[3*($width_by_radix)-1] & GK_int[2*($width_by_radix)-1] & GK_int[$width_by_radix-1] );
-   assign PK[`$i`] = ~ ( PK_int[`$i`] | PK_int[3*($width_by_radix)-1] | PK_int[2*($width_by_radix)-1] | PK_int[$width_by_radix-1]);        
+			 | GK_int[`$i`] & GK_int[`3*($width_by_radix)-1`] & PK_int[`3*($width_by_radix)-1`]
+			 | GK_int[`$i`] & GK_int[`3*($width_by_radix)-1`] & GK_int[`2*($width_by_radix)-1`] & PK_int[`2*($width_by_radix)-1`]
+			 | GK_int[`$i`] & GK_int[`3*($width_by_radix)-1`] & GK_int[`2*($width_by_radix)-1`] & GK_int[`$width_by_radix-1`] );
+   assign PK[`$i`] = ~ ( PK_int[`$i`] | PK_int[`3*($width_by_radix)-1`] | PK_int[`2*($width_by_radix)-1`] | PK_int[`$width_by_radix-1`]);        
    //;     }
    
    //;   } #End of "output is inverted"...
@@ -217,7 +238,7 @@ module `mname` (
    //;   }
    
    //;   if ($width > 3){
-   assign GH[3] = ~ ( gh_b[3] & gh_b[3]
+   assign GH[3] = ~ ( gh_b[3] & ph_b[3]
 		      | gh_b[3] & gh_b[2] & ph_b[2]
 		      | gh_b[3] & gh_b[2] & gh_b[1] & ph_b[1]
 		      | gh_b[3] & gh_b[2] & gh_b[1] & gh_b[0]);
