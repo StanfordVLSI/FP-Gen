@@ -122,14 +122,14 @@ module `mname` (
    assign x_padded = {2'b0, x, 2'b0};
    assign S = y_msb;
    
-   logic 			sel_x;
-   assign sel_x = (~y_edge_vector[2] & y_edge_vector[0]); // yedge = 0X1 ==> +/-X
+   logic 			sel_x1;
+   assign sel_x1 = (~y_edge_vector[2] & y_edge_vector[0]); // yedge = 0x1 ==> +/-X
    
    logic 			sel_x2;
-   assign sel_x2 = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = X10 ==> +/-2X 
+   assign sel_x2 = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = x10 ==> +/-2X 
    
    logic 			sel_x3;
-   assign sel_x3 = y_edge_vector[2] & y_edge_vector[0];
+   assign sel_x3 = y_edge_vector[2] & y_edge_vector[0]; // yedge = 1x0 ==> +/-2X 
 
    logic 			sel_x4;
    assign sel_x4 = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 100 ==> +/-4X
@@ -140,7 +140,7 @@ module `mname` (
     * Now, for each bit in the pp we need to do the muxing as folows:
     * For $i in 2 to $width+4 (`$width+4`)
     * Mux 0, x, 2x, 4x based on the edge vector
-    *   assign pp0124[$i-2] = (sel_x & x_padded[$i]) | (sel_x2 & x_padded[$i-1]) | (sel_x4 & x_padded[$i-2]);
+    *   assign pp0124[$i-2] = (sel_x1 & x_padded[$i]) | (sel_x2 & x_padded[$i-1]) | (sel_x4 & x_padded[$i-2]);
     * 
     * Mux pp0124, 3x based on the edge vector
     *   assign pp01234[$i-2] = (sel_x3 & x3[$i-2]) | pp0124[$i-2];
@@ -151,20 +151,23 @@ module `mname` (
 
    //; for (my $i=2; $i<$width+4; $i++){
    // Instantiate cell for pp bit `$i-2`
-   //;   my $BoothCell_obj = generate('Booth3Cell', "cell_$i");
+   //;   my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>3);
    `$BoothCell_obj->instantiate` 
-     	(.sel_x(sel_x),.sel_x2(sel_x2),.sel_x3(sel_x3),.sel_x4(sel_x4),
-	 .x(x_padded[`$i`:`$i-2`]), .x3(x3[`$i-2`]), .y_msb(y_msb),
-	 .pp(pp[`$i-2`]));
+     	(.sel_x1(sel_x1),.sel_x2(sel_x2),.sel_x3(sel_x3),.sel_x4(sel_x4),
+	 .x1(x_padded[`$i`]), .x2(x_padded[`$i-1`]), .x3(x3[`$i-2`]), .x4(x_padded[`$i-2`]), 
+	 .y_msb(y_msb), .pp(pp[`$i-2`]));
    
    //; }
    assign pp[`$width+2`] = ~S;
    
- //; if ($verif_mode =~ /ON/){
-   always_comb
-     assert ($onehot({sel_x,sel_x2,sel_x3,sel_x4}) || {sel_x,sel_x2,sel_x3,sel_x4} == 4'b0)else begin
-	$display("ERROR: Bad select signals for booth3 cell");
-     end
+//; if ($verif_mode =~ /ON/){
+   always @(*) begin
+      #1; // cause we don't want to check the signals while they are still changing...
+      assert ($onehot({sel_x1,sel_x2,sel_x3,sel_x4}) || {sel_x1,sel_x2,sel_x3,sel_x4} == 4'b0 || !$time)else begin
+	 $display("%t: ERROR: Bad select signals for booth3 cell: %4b",$time, {sel_x1,sel_x2,sel_x3,sel_x4});
+	 $finish;
+      end // UNMATCHED !!
+   end
 //; }
 
 endmodule : `mname`

@@ -1,0 +1,81 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * Single cell for Booth encoding for a multiplier. Produce one bit of one
+ * partial product.
+ * 
+ * 
+ * Parameters:
+ * -----------
+ * * BoothType -- for booth 3 and above
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Nov 11, 2011   shacham   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//;
+//;
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
+//;                       Doc=>"Booth type. Required parameter at instantiation.");
+//;
+//;
+//; my $num_inputs = 2**($booth-1);
+//; sub IsPowOfTwo {
+//;   my $num = shift or die;
+//;   return 1 if $num==0 || $num==1 || $num==2 || $num==4 || $num==8 || $num==16 || $num==32 || $num==64;
+//; }
+
+
+
+
+module `mname` (
+		//; for (my $i=1; $i<=$num_inputs; $i++){
+    input logic 		sel_x`$i`, x`$i`,
+		//; }
+    input logic 		y_msb,                 	// Out of the y[`$booth`+K:K], this is the msb bit 
+    output logic 		pp               	// single bit of the relevant pp
+		);
+
+   logic 			pp_pow2; // this is for early signals such as 0, x, 2*x, 4*x, 8*x
+   logic 			pp_all;  // this is for late signals such as x3 x5 and x7
+   
+   assign S = y_msb;
+   
+   // Mux 0, x1, x2, x4, x8 based on the edge vector
+   //; my $str = '';
+   //; for (my $i=1; $i<=$num_inputs; $i++){
+   //;   $str = $str." (sel_x${i} & x${i})" if IsPowOfTwo($i);
+   //;   $str = $str." |" if $i<$num_inputs && IsPowOfTwo($i);
+   //; }
+   assign pp_pow2 = `$str`;
+ 
+   // Mux pp_pow2 and other multiples of x
+   //; $str = '';
+   //; for (my $i=1; $i<=$num_inputs; $i++){
+   //;   $str = $str." (sel_x${i} & x${i}) |" if ! IsPowOfTwo($i);
+   //; }
+   assign pp_all = `$str` pp_pow2;
+
+   // Select pp or pp_b based on sign
+   assign pp = pp_all ^ S; // invert if S=1
+
+   
+endmodule : `mname`
