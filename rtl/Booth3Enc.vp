@@ -67,7 +67,7 @@
 
 
 module `mname` (
-    input logic [`$width-1`:0] 	x, x_b,
+    input logic [`$width-1`:0] 	x, 
     input logic [`$width+1`:0] 	x3, 
     input logic [2:0] 		y_edge_vector,		// y_edge_vector[i] = y[i]==y[i+1]
     input logic 		y_msb,                 	// y[3]
@@ -76,9 +76,9 @@ module `mname` (
 		);
    
    /* TO ME:
-    * X3 and X3_b are late signals. Therefore, rather than muxing {0,x,2x,3x,4x,4x_b,3x_b,2x_b,x_b} 
+    * X3 and X3_b are late signals. Therefore, rather than muxing {0,x,2x,3x,4x} 
     * we will first mux x vs. x_b (assign it to x_out), then we'll mux {0,x_out, 2x_out, 4x_out} (assign 
-    * it to pp0124) and then mux {pp0124, x3, x3_b}. Capiche?
+    * it to pp0124) and then mux {pp0124, x3}. Capiche?
     * */
 
 /*******************************************************************************
@@ -116,9 +116,6 @@ module `mname` (
  *******************************************************************************/ 
 
    logic [`$width+3`:0] 	x_padded;
-   logic [`$width+1`:0] 	pp0124;
-   logic [`$width+1`:0] 	pp01234;
-   
    assign x_padded = {2'b0, x, 2'b0};
    assign S = y_msb;
    

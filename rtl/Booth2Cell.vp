@@ -44,7 +44,7 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 
 module `mname` (
-   input [1:0]    x, x_b,
+   input [1:0]    x, 
    input [1:0]    y_edge_vector,  // y_edge_vector[i] = y[i]!=y[i+1]
    input          y_msb,          // y[2]
    output out );
