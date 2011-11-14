@@ -149,7 +149,7 @@ program automatic `mname` (
 	     begin
 		dumptolog = 1'b1;
 		#1;
-		$display("%t: ERROR Found", $time);
+		$display("%t: \033[0;31mERROR Found\033[0m", $time);
 		$finish(2);
 	     end
 
@@ -158,7 +158,7 @@ program automatic `mname` (
     	end // for (int i=0; i<num_trans; i++)
       
       #1000; // give the lines some time to settle
-      $display("%t: TESTBENCH IS DONE -- TEST PASS", $time);
+      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
    end // initial begin
    
    
