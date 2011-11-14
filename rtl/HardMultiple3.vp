@@ -25,6 +25,7 @@
  * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
  * Nov 04, 2011   jingpu    bug fixed
+ * Nov 13, 2011   jingpu    add treeType parameter
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -41,6 +42,9 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
+//; my $treeType = parameter(Name=>'TreeType', Val=>'SklanskyTree',
+//;                          List=>['SklanskyAdderTree', 'SklanskyTree'],
+//;                          Doc=>"Tree Type used to generate GH GK PH PK");
 //;
 //; # Local Variables
 //; my $prefix_tree_size = floor(($width-3)/4) + 1;
@@ -58,9 +62,10 @@ module `mname` (
 		);
    
    logic [`$width`:0] 			H,K;  // odd values are not used!
-   logic [`$prefix_tree_size-1`:0] 	gh_b, gk_b, GH, GK, GH_b, GK_b;
-   logic [`$prefix_tree_size-1`:0] 	ph_b, pk_b, PH, PK;
+   logic [`$prefix_tree_size-1`:0] 	gh, gk, gh_b, gk_b, GH, GK, GH_b, GK_b;
+   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK;
 
+   //; if ($treeType =~ /SklanskyTree/){
    //; if ($prefix_tree_depth%2==1) { # output is not inverted
    `$SklanskyTree_obj->instantiate` 
      (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
@@ -74,6 +79,20 @@ module `mname` (
    assign GH = ~ GH_b;
    assign GK = ~ GK_b;
    //; }
+   //; } else { # i.e. $treeType = 'SklanskyAdderTree'
+   assign gh = ~ gh_b;
+   assign gk = ~ gk_b;
+   assign ph = ~ ph_b;
+   assign pk = ~ pk_b;
+   //; my $SklanskyAdderTree_H = generate('SklanskyAdderTree', 'SklanskyAdderTree_H', Width=>$prefix_tree_size);
+   `$SklanskyAdderTree_H->instantiate` 
+     (.g(gh), .p(ph), .G(GH), .P(PH));
+   //; my $SklanskyAdderTree_K = generate('SklanskyAdderTree', 'SklanskyAdderTree_K', Width=>$prefix_tree_size);
+   `$SklanskyAdderTree_K->instantiate` 
+     (.g(gk_b), .p(pk_b), .G(GK_b), .P(PK_b));
+   assign GK = ~ GK_b;
+   //; }
+   
 
    assign gh_b[0] = ~( x[2] | (x[1] & x[0]));
    assign gk_b[0] = ~( x[2] & x[1] );
