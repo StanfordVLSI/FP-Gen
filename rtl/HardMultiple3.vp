@@ -42,7 +42,7 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $treeType = parameter(Name=>'TreeType', Val=>'SklanskyTree',
+//; my $treeType = parameter(Name=>'TreeType', Val=>'SklanskyAdderTree',
 //;                          List=>['SklanskyAdderTree', 'SklanskyTree'],
 //;                          Doc=>"Tree Type used to generate GH GK PH PK");
 //;
