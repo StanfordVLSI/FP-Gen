@@ -26,6 +26,7 @@
  *                          genesis
  * Nov 04, 2011   jingpu    bug fixed
  * Nov 13, 2011   jingpu    add treeType parameter
+ * Nov 22, 2011   jingpu    compile warning fixed
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -63,7 +64,7 @@ module `mname` (
    
    logic [`$width`:0] 			H,K;  // odd values are not used!
    logic [`$prefix_tree_size-1`:0] 	gh, gk, gh_b, gk_b, GH, GK, GH_b, GK_b;
-   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK;
+   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK, PH_b, PK_b;
 
    //; if ($treeType =~ /SklanskyTree/){
    //; if ($prefix_tree_depth%2==1) { # output is not inverted
