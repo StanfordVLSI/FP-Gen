@@ -62,8 +62,6 @@ module `mname` ();
    
    // Instantiate the dut here
    logic 				      IncA, IncB;
-   assign IncA = 0;
-   assign IncB = 0;
    `$FP_obj->instantiate()` (
 			     // inputs:
 			     //; if ($verif_mode =~ /ON/){
@@ -86,9 +84,9 @@ module `mname` ();
    `$TestBench_obj->instantiate` (
 				// outputs:
 				.dumptolog(dumptolog),
-				.SignA(SignA), .ExpA(ExpA), .FracA(FracA), 
-				.SignB(SignB), .ExpB(ExpB), .FracB(FracB), 
-				.SignC(SignC), .ExpC(ExpC), .FracC(FracC),
+				.SignA(SignA), .ExpA(ExpA), .FracA(FracA), .IncA(IncA), 
+				.SignB(SignB), .ExpB(ExpB), .FracB(FracB), .IncB(IncB), 
+				.SignC(SignC), .ExpC(ExpC), .FracC(FracC), .IncC(IncC), 
 				// inputs
 				.SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB),
 				.NaNRes(NANAB), .InfRes(InfAB), .ZeroRes(ZeroAB), .RStickyRes(RStickyAB) 

@@ -38,7 +38,7 @@
  * 
  * 
  * Parameters:
- * * FractionWidth, ExponentWidth
+ * * FractionWidth, ExponentWidth, Architecture
  * * TestDenormals -- generate denormal transactions? (YES/NO)
  * * Random -- Enables control of transaction distribution weights by parameters (YES/NO)
  *   * If Random == YES then the following are the parameters to control the weights:
@@ -47,6 +47,8 @@
  *     EzAndSml_DistWeight, Random_DistWeight
  *     If  TestDenormals == YES the following parameters also exists:
  *       Denorm100_DistWeight, DenormFFF_DistWeight, Denorm001_DistWeight, DenormRnd_DistWeight
+ *     If Architecture==Cascade
+ *       Inc_DistWeight
  * * NamedTransCtrl -- Enables per transaction module control of weights at runtime ('', 'A'..'Z')
  *  
  * 
@@ -68,6 +70,9 @@
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier ".
 //;                           "(default is IEEE Double, 11 bit)");
+//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
+//; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
+//; 			      "or Fused? (Pick:Cascade/Fused)");
 //; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
@@ -84,6 +89,7 @@
 //; my ($SignIsPos_w, $Zero_w, $QuietNaN_w, $SignalingNaN_w, $Min_w, $Max_w, $Inf_w);
 //; my $DenormRnd_w = 0; my $Denorm100_w = 0; my $DenormFFF_w = 0; my $Denorm001_w = 0;
 //; my ($One_w, $PointOneOneOne_w, $EzAndSml_w, $Random_w);
+//; my $Inc_w = 0;
 //;
 //; if ($rand_mode =~ /YES/){
 //;	# Parameter to enable per transaction control from command line
@@ -98,8 +104,12 @@
 //;	# Parameters to control constraints
 //;	$SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
 //;					Doc=>"Distribution weight for positive values (range is 0..100)");
+//;     if ($arch =~ /Cascade/){
+//;	  $Inc_w = parameter(Name=>'Inc_DistWeight', Val=>0, Min=>0, Step=>1, Max=>100,
+//;	  		     Doc=>"Distribution weight for an increment-by-one trailer (range is 0..100)");
+//;     }
 //;	$Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
-//;					Doc=>"Distribution weight for Zero pattern");
+//;			    Doc=>"Distribution weight for Zero pattern");
 //; 	if ($test_denormals =~ /NO/){
 //;	  $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
 //;	  				Doc=>"Distribution weight for Denorm with 100..0 pattern");
@@ -142,6 +152,8 @@ class `mname`;
    rand bit [`$frac_width - 1`:0] 	Fraction;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
+   rand bit 				Inc; // only used to test cascaded architecrures
+   
 
    // Some setters:
    // Kind of C'tor for a regular, NON-Random transaction
@@ -149,6 +161,8 @@ class `mname`;
       this.Fraction = Frac;
       this.Exponent = Exp;
       this.Sign = Sign;
+      this.Inc = 1'b0;
+      
       if(Exponent == `$exp_width`'b0) begin
 	 if (Fraction == `$frac_width`'b0)
 	   TransType = Zero;
@@ -296,7 +310,7 @@ class `mname`;
    }
        
    constraint order1 { 
-      solve TransType before Fraction, Exponent, Sign;
+      solve TransType before Fraction, Exponent, Sign, Inc;
    }
 
    
@@ -308,6 +322,7 @@ class `mname`;
     * using the "+Zero_w=newWeight" notation */
    static bit 	AllWeightsInitialized = 0;	
    static int 	SignIsPos_w = `$SignIsPos_w`;
+   static int 	Inc_w = `$Inc_w`;
    static int 	Zero_w = `$Zero_w`;
    static int 	Denorm100_w = `$Denorm100_w`; 
    static int 	DenormFFF_w = `$DenormFFF_w`; 
@@ -329,6 +344,10 @@ class `mname`;
       Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
    }
        
+   constraint pick_inc{ 
+      Inc dist { 1 := Inc_w, 0 := 100-Inc_w }; 
+   }
+     
    constraint pick_trans_type{
       TransType dist {Zero := Zero_w, 
 		      Denorm100 := Denorm100_w, 
@@ -356,6 +375,12 @@ class `mname`;
 	      $value$plusargs("SignIsPos_DistWeight`$NamedTransCtrl`=%d",  SignIsPos_w);
 	      $display("%t: `mname`: Runtime input +SignIsPos_DistWeight`$NamedTransCtrl`=%d found", $time, SignIsPos_w);
 	   end
+	   //;   if ($arch =~ /Cascade/){
+	   if ($test$plusargs("Inc_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Inc_DistWeight`$NamedTransCtrl`=%d",  Inc_w);
+	      $display("%t: `mname`: Runtime input +Inc_DistWeight`$NamedTransCtrl`=%d found", $time, Inc_w);
+	   end
+	   //;   }
 	   if ($test$plusargs("Zero_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("Zero_DistWeight`$NamedTransCtrl`=%d",  Zero_w);
 	      $display("%t: `mname`: Runtime input +Zero_DistWeight`$NamedTransCtrl`=%d found", $time, Zero_w);
