@@ -154,10 +154,12 @@ class `mname`;
    rand bit 				Sign;
    rand bit 				Inc; // only used to test cascaded architecrures
    
-
+   // --------------------------------------------------------------------------
    // Some setters:
+   // --------------------------------------------------------------------------
    // Kind of C'tor for a regular, NON-Random transaction
-   function ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, logic [`$frac_width - 1`:0] Frac);
+   function ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, 
+    			     logic [`$frac_width - 1`:0] Frac);
       this.Fraction = Frac;
       this.Exponent = Exp;
       this.Sign = Sign;
@@ -194,9 +196,9 @@ class `mname`;
 
    
    // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
-   // IMPORTANT: This function was custom built for the CascadeFPMult format
-   function void CascadeFPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
-    						logic NaN, logic Inf, logic Zero, logic RSticky);
+   // IMPORTANT: This function was custom built for the FPMult format
+   function void FPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
+    		 			 logic NaN, logic Inf, logic Zero, logic RSticky);
 
       $write("%t: RESULT: Sign=%1b, Exp=0x%h, Man=0x%h NaN=%b Inf=%b Zero=%b RSticky=%b -- My thoughts: ", 
 	     $time, Sign, Exp, Man, NaN, Inf, Zero, RSticky);
@@ -261,11 +263,63 @@ class `mname`;
 	 $display("Normal Case!");
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
       end
-   endfunction // ForceSignExpMan
+   endfunction // FPMultResult_to_FPTrans
+
+
+
+   // This function calculates the Inc value into the FP transaction
+   function void CalculateInc();
+      if (Inc==0) return;
+      else if (TransType==Zero) begin
+	 Fraction += 1;
+	 TransType = Denorm001;
+      end
+      else if (TransType==DenormFFF) begin
+	 Fraction = `$frac_width`'b0;
+	 Exponent = `$exp_width`'b1;
+	 TransType = Min;
+      end
+      else if (TransType==Denorm001 || TransType==Denorm100 || TransType==DenormRnd) begin
+	 Fraction += 1;
+	 if (Fraction == {(`$frac_width`){1'b1}})
+	   TransType = DenormFFF;
+	 else if (Fraction == {1'b1, `$frac_width-1`'b0})
+	   TransType = Denorm100;
+	 else
+	   TransType = DenormRnd;
+      end
+      else if (TransType==QuietNaN || TransType==SignalingNaN || TransType==Inf) begin
+      end
+      else if (TransType==Max) begin
+	 Fraction = `$frac_width`'b0;
+	 Exponent = {(`$exp_width`){1'b1}};
+	 TransType = Inf;
+      end
+      else if (TransType==PointOneOneOne) begin
+	 Fraction = 0;
+	 Exponent += 1;
+	 TransType = One;
+      end
+      else if (TransType==Min || TransType==One || TransType==EzAndSml || TransType==Random) begin
+	 Fraction += 1;
+	 if (Fraction == `$frac_width`'b0) begin
+	    Exponent += 1;
+	 end
+	 TransType = Random;
+	 if ((Fraction == {(`$frac_width`){1'b1}}) && Exponent == {1'b0, {(`$exp_width-2`){1'b1}}, 1'b0}) begin
+	    TransType = PointOneOneOne;
+	 end
+	 if ((Fraction == `$frac_width`'b0) && Exponent == {1'b0, {(`$exp_width-1`){1'b1}}}) begin
+	    TransType = One;
+	 end
+      end // if (TransType==Min || TransType==One || TransType==EzAndSml || TransType==Random)
+      Inc = 0;
+   endfunction // CalculateInc
    
 
-
+   // --------------------------------------------------------------------------
    // Some getters:
+   // --------------------------------------------------------------------------
    function bit IsPos();
       return Sign == 1'b0;
    endfunction // bit IsPos
@@ -274,6 +328,11 @@ class `mname`;
       return Sign == 1'b1;
    endfunction // bit IsPos
 
+
+   
+   // --------------------------------------------------------------------------
+   // Constraints for random generation
+   // --------------------------------------------------------------------------
    // To make auto generation of special cases easier:
    constraint pick_fraction_val{
       (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };

@@ -68,7 +68,10 @@ module `mname` ();
 			     //; if ($verif_mode =~ /ON/){
 			     .dumptolog(dumptolog),
 			     //; }
-			     .A({SignA, ExpA, FracA}), .B({SignB, ExpB, FracB}), .IncA(IncA), .IncB(IncB),
+			     .A({SignA, ExpA, FracA}), .B({SignB, ExpB, FracB}), 
+			     //; if ($arch =~ /Cascade/){
+			     .IncA(IncA), .IncB(IncB),
+			     //;}
 			     //outputs:
 			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
 			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
