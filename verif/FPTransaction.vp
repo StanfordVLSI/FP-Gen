@@ -105,12 +105,12 @@
 //;	$SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
 //;					Doc=>"Distribution weight for positive values (range is 0..100)");
 //;     if ($arch =~ /Cascade/){
-//;	  $Inc_w = parameter(Name=>'Inc_DistWeight', Val=>0, Min=>0, Step=>1, Max=>100,
+//;	  $Inc_w = parameter(Name=>'Inc_DistWeight', Val=>100, Min=>0, Step=>1, Max=>100,
 //;	  		     Doc=>"Distribution weight for an increment-by-one trailer (range is 0..100)");
 //;     }
 //;	$Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
 //;			    Doc=>"Distribution weight for Zero pattern");
-//; 	if ($test_denormals =~ /NO/){
+//; 	if ($test_denormals =~ /YES/){
 //;	  $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
 //;	  				Doc=>"Distribution weight for Denorm with 100..0 pattern");
 //;	  $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
@@ -444,7 +444,7 @@ class `mname`;
 	      $value$plusargs("Zero_DistWeight`$NamedTransCtrl`=%d",  Zero_w);
 	      $display("%t: `mname`: Runtime input +Zero_DistWeight`$NamedTransCtrl`=%d found", $time, Zero_w);
 	   end
-	   //;   if ($test_denormals =~ /NO/){
+	   //;   if ($test_denormals =~ /YES/){
 	   if ($test$plusargs("Denorm100_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("Denorm100_DistWeight`$NamedTransCtrl`=%d",  Denorm100_w);
 	      $display("%t: `mname`: Runtime input +Denorm100_DistWeight`$NamedTransCtrl`=%d found", $time, Denorm100_w);
