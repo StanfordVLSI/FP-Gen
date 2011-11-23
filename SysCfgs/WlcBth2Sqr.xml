@@ -11528,7 +11528,7 @@
                 <Min>0</Min>
                 <Step>1</Step>
               </Range>
-              <Val>0</Val>
+              <Val>50</Val>
             </ParameterItem>
             <ParameterItem>
               <Doc>Distribution weight for Zero pattern</Doc>
