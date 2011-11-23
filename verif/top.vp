@@ -36,11 +36,12 @@
 
 module `mname` ();   
    //; # Generate the DUT here
-   //; my $FP_obj = generate('CascadeFPMult', 'CascadeFPMult_u');
+   //; my $FP_obj = generate('FPMult', 'FPMult');
 
    //; # Read what kind of DUT the user wanted so you can test it
    //; my $frac_width = $FP_obj->get_param('FractionWidth');
    //; my $exp_width = $FP_obj->get_param('ExponentWidth');
+   //; my $arch = $FP_obj->get_param('Architecture');
    //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
    //; my $product_width = 2 * $frac_width + 2;
   
@@ -48,6 +49,7 @@ module `mname` ();
    logic [`$frac_width - 1`:0] 		      FracA, FracB, FracC;
    logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
    logic 				      SignA, SignB, SignC;
+   logic 				      IncA, IncB, IncC;
 
 
    
@@ -61,7 +63,6 @@ module `mname` ();
    //; }
    
    // Instantiate the dut here
-   logic 				      IncA, IncB;
    `$FP_obj->instantiate()` (
 			     // inputs:
 			     //; if ($verif_mode =~ /ON/){
@@ -79,7 +80,8 @@ module `mname` ();
    // Instantiate the TestGenerator here:
    //; my $TestBench_obj = generate('TestBench', 'TestBench', 
    //;                              FractionWidth=>$frac_width, 
-   //;                              ExponentWidth=>$exp_width, 
+   //;                              ExponentWidth=>$exp_width,
+   //; 				    Architecture=>$arch,
    //;                              TestDenormals=>$enable_denormals);
    `$TestBench_obj->instantiate` (
 				// outputs:

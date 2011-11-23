@@ -283,7 +283,7 @@ clean:
 	\rm -rf $(GENESIS_INTERMIDS)
 	\rm -rf $(GENESIS_INTERMIDS:.pm=_unq*.v)
 	\rm -rf $(GENESIS_INTERMIDS:.pm=_tmp*.v)
-	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY)
+	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY) small_$(GENESIS_HIERARCHY)
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
 endif
