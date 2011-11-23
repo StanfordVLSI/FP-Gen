@@ -179,7 +179,7 @@ class `mname`;
 	  * 
 	  * Also, for denorms, exp is saved as 00..0 but it actually represents 1'b1
 	  * */
-	 Exp_internal = transA.Exponent + transB.Exponent + denormA + denormA;
+	 Exp_internal = transA.Exponent + transB.Exponent + denormA + denormB;
 	 Exp_offset = `2**($exp_width-1)-1`;
 	 Exp_max = `2**$exp_width-2`;
 	 //$display("DEBUG: exp=%h", Exp_internal);
