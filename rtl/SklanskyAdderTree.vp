@@ -63,14 +63,14 @@ module `mname` (
      // Generate upper and lower trees
 
      //; for (my $i=0; $i < $radix-1; $i++) {
-     //; my $lowerTree_obj = generate('SklanskyAdderTree', "lowerTree_$i", Width=>$width_by_radix);
+     //; my $lowerTree_obj = generate('SklanskyAdderTree', "lowerTree_$i", Width=>$width_by_radix, Radix=>$radix);
      `$lowerTree_obj->instantiate()` (.g(g[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), 
                                       .p(p[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
 				      .G(G_sub[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), 
                                       .P(P_sub[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]) );
      //; }
 
-     //; my $UpperTree_obj = generate('SklanskyAdderTree', 'UpperTree', Width=>$width - $width_by_radix); 
+     //; my $UpperTree_obj = generate('SklanskyAdderTree', 'UpperTree', Width=>$width - $width_by_radix, Radix=>$radix); 
      `$UpperTree_obj->instantiate()` (.g(g[`$width-1`:`($radix-1)*($width_by_radix)`]),
                                       .p(p[`$width-1`:`($radix-1)*($width_by_radix)`]),
      				      .G(G_sub[`$width-1`:`($radix-1)*($width_by_radix)`]),
