@@ -23,6 +23,12 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 }
 
 set target_library [set ${VT}_${Voltage}_target_libs]
+
 set link_library [set wc_${Voltage}_lib_dbs]
+set synthetic_library [list dw_foundation.sldb]
+foreach L $synthetic_library {
+ lappend link_library $L
+}
+
 
 set DESIGN_NAME Multiplier_unq1
