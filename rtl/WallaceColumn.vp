@@ -1,30 +1,35 @@
 /*************************************************************************
  ** From Perforce:
  **
- ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/WallaceColumn.vp#1 $
- ** $DateTime: 2011/10/06 15:10:49 $
- ** $Change: 9561 $
- ** $Author: sameh $
+ ** $Id$
+ ** $DateTime$
+ ** $Change$
+ ** $Author$
  *************************************************************************/
 
 /* *****************************************************************************
  * Description:
  * This is a ArrayColumn that process a vertical slice in multiplication tree 
- * using a linear array architecture
+ * using a Wallace architecture
  *
  * Parameters:
- * * ColumnHight, ColumnPosition, MinRow, BoothType, OneLessCarryIn, LayoutShape
+ * * ColumnHight, ColumnPosition, MinRow, BoothType, CarryInFlag, LayoutShape
  * 
+ * Note that if:
+ * CarryInFlag == Normal ==> ci_w=N-3 , co_w=N-3
+ * CarryInFlag == OneMissing ==> ci_w=N-4 , co_w=N-3
+ * CarryInFlag == OneExtra ==> ci_w=N-2 , co_w=N-2
+ * CarryInFlag == TwoExtra ==> ci_w=N-1 , co_w=N-2
  *
  * Inputs:
  * * Given that N=ColumnHight
  * * [N-1:0] pp                 
- * * [(N-3)-1:0] ci   (Note: if OneLessCarryIn then we have one less ci)
+ * * [ci_w-1:0] ci
  *  
  * Outputs:
  * * sum
  * * carry
- * * [(N-3)-1:0] co
+ * * [co_w-1:0] co
  *
  * Change bar:
  * -----------
@@ -32,6 +37,8 @@
  * Oct 21, 2011   Sameh     initial version
  * Nov 01, 2011   shacham   Changed the abstraction to the N*PPs, N-3 or N-4 CI 
  * 			    and N-3 CO.
+ * Nov 23, 2011   shacham   new abstraction using CarryInFlag=OneMissing/Normal/
+ * 			    OneExtra/TwoExtra
  * 
  * ****************************************************************************/
 
@@ -46,7 +53,6 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-
 //; my $col_ht = parameter(Name=>'ColumnHight', Val=>2, Min=>2, Step=>1,
 //;                          Doc=>"Number of partial products in relevant column to sum");
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
@@ -57,14 +63,22 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $one_less_ci = parameter(Name=>'OneLessCarryIn', Val=>0, Min=>0, Step=>1, Max=>1,
-//;                      Doc=>"Is there one less carry in for this column?");
+//; my $ci_flag = parameter(Name=>'CarryInFlag', Val=>'Normal', List=>['Normal','OneMissing','OneExtra','TwoExtra'],
+//;                      Doc=>"Is there one less carry in for this column? or maybe one or two more? (Normal is ColumnHight-3)");
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
-//; my $ci_w = ($one_less_ci) ? $col_ht-4:$col_ht-3;
+//; my $ci_w = 0; my $co_w = 0; 
+//; $ci_w = $col_ht-4 if $ci_flag =~ /OneMissing/;
+//; $ci_w = $col_ht-3 if $ci_flag =~ /Normal/;
+//; $ci_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
+//; $ci_w = $col_ht-1 if $ci_flag =~ /TwoExtra/;
 //; $ci_w = 0 if ($ci_w < 0); # can't have negative width
-//; my $co_w = $col_ht-3;
+//;
+//; $co_w = $col_ht-3 if $ci_flag =~ /OneMissing/;
+//; $co_w = $col_ht-3 if $ci_flag =~ /Normal/;
+//; $co_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
+//; $co_w = $col_ht-2 if $ci_flag =~ /TwoExtra/;
 //; $co_w = 0 if ($co_w < 0); # can't have negative width
 //;
 //; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
@@ -90,15 +104,25 @@ module `mname()` (
    //; for  (my $i=0; $i < $col_ht-1 ; $i++){
    //;   $occupied_idx[$i]=0;
    //; }
+   //; my $row = 0; my $Y=0;
    //; my $step = 0;
    //; my $hight = $col_ht;
    //; my $csa_idx = 0;
+   //; my $typical_ci_w = $col_ht-3; # this is the max ci in a typical tree
 
    
-
+   
    // First, lets define some internal signal conventions:
+   //; if ($hight==2 && $ci_w==1){
+   //;   # This is a corner case where there is really nothing to do but
+   //;   # stick the ci to the first csa
+   logic [`$hight`:0] pp_step`$step`;
+   assign pp_step`$step` = {pp,ci};
+   //;   $hight+=1; $ci_w-=1; # updating the indices to complete the cheat :-\
+   //; }else{
    logic [`$hight-1`:0] pp_step`$step`;
    assign pp_step`$step` = pp;
+   //; }
    
    //;   if($ci_w){
      logic [`$ci_w-1`:0] 	wallace_ci;
@@ -112,7 +136,8 @@ module `mname()` (
    //;   my $missing_last_ci=0;
    //;   my $max_i = ($hight==2)? 1 : floor($hight/3);
    //;   my $next_hight = ($hight==2)? 1 : 2 * floor($hight/3) + $hight%3;
-       logic [`$next_hight-1`:0] pp_step`$step`;
+   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight`
+      logic [`$next_hight-1`:0] pp_step`$step`; // For holding results of level `$step`
 
    //;   for (my $i=0; $i < $max_i; $i++){
    //;
@@ -139,12 +164,12 @@ module `mname()` (
    //;       }
    //;     }
    //;     $occupied_idx[$row_candidate] = 1;
-   //;     my $row = $min_row + $row_candidate;
+   //;     $row = $min_row + $row_candidate;
    //;
-   //;     my $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;     $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
    //;     $Y = $col if $layout_shape =~ /Parallelogram/;
    //;     ##########################################
-
+   //;
    //;     ########### Instantiate Cell #############
    //;     if ($hight>2) {
    //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
@@ -155,20 +180,81 @@ module `mname()` (
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]),
                                   .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
    //;     }
-   //;     $missing_last_ci = ($csa_idx >= $ci_w);
+   //;     $missing_last_ci = ($csa_idx >= $ci_w || $csa_idx>=$typical_ci_w);
    //;     if (!$missing_last_ci){
-       assign pp_step`$step`[`2*$i+1`] = wallace_ci[`$csa_idx`];
+      assign pp_step`$step`[`2*$i+1`] = wallace_ci[`$csa_idx`];
    //;     }
    //;     $csa_idx++; 
    //;   } # End of "for (my $i=0; $i < flo..."
 
    //;   for (my $i=3 * $max_i; $i < $hight; $i++){
+       // copy the leftovers to the next level
        assign pp_step`$step`[`$i-floor($hight/3)-$missing_last_ci`] = pp_step`$step-1`[`$i`];
    //;   }
+   
 
    //;   $hight=$next_hight-$missing_last_ci;
    //; } # End of "while($hight > 2){..."
 
+
+   //; if($ci_w>=$col_ht-2 && $ci_w>0){
+   //;     ######### Calculate Final Cell Location ##########
+   //;     my $row_candidate = $col_ht-1;
+   //;     my $row_candidate_up = $row_candidate;
+   //;     my $row_candidate_down = $row_candidate;
+   //;     while ( $row_candidate_up < $col_ht-1 || $row_candidate_down>=0){
+   //;       if ($row_candidate_up<$col_ht-1){
+   //;          if ($occupied_idx[$row_candidate_up]==0){
+   //;            $row_candidate = $row_candidate_up;
+   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
+   //;          } else {
+   //;            $row_candidate_up++;
+   //;          }
+   //;       }
+   //;       if ($row_candidate_down>=0){
+   //;          if ($occupied_idx[$row_candidate_down]==0){
+   //;            $row_candidate = $row_candidate_down;
+   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
+   //;          } else {
+   //;            $row_candidate_down--;
+   //;          }
+   //;       }
+   //;     }
+   //;     $occupied_idx[$row_candidate] = 1;
+   //;     $row = $min_row + $row_candidate;
+   //;
+   //;     $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;     $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;     ##########################################
+   //; }
+   //;
+   //; if ($ci_w==$col_ht-2 && $ci_w>0){
+   /* We have one extra ci that we could not use until now... bummer. We'll add 
+    * it at the end using one last half adder. But don't feel too bad -- since 
+    * it means that this column is shorter than those before it, so one extra HA
+    * won't kill us... I think :-<>
+    * */
+   //;   $step++;
+   logic [0:0] 	 pp_step`$step`;
+   //;   my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[0]), .b(wallace_ci[`$ci_w-1`]),
+                               .s(pp_step`$step`[0]), .co(wallace_co[`$csa_idx`]) );
+   //;   $csa_idx++;
+   //; }
+   //;
+   //; if ($ci_w==$col_ht-1 && $ci_w>0){
+   /* We have two extra ci that we could not use until now... bummer. We'll add 
+    * it at the end using one last full adder. But don't feel too bad -- since 
+    * it means that this column is shorter than those before it, so one extra FA
+    * won't kill us... I think :-<>
+    * */
+   //;   $step++;
+   logic [0:0] 	 pp_step`$step`;
+   //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[0]), .b(wallace_ci[`$ci_w-1`]), .ci(wallace_ci[`$ci_w-2`]),
+                               .s(pp_step`$step`[0]), .co(wallace_co[`$csa_idx`]) );
+   //;   $csa_idx++; 
+   //; }
    
    assign carry = wallace_co[`$co_w`];
    assign sum = pp_step`$step`[0];
