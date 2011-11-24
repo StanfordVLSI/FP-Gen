@@ -4,6 +4,7 @@
 
 source ../header.tcl
 
+
 if {$target_delay==0} {
   set target_delay min
 }
@@ -36,40 +37,35 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 
 
 
-set CSA_cells [get_cells -hierarchical "*csa*"];
-set max_row 0;
-set max_column 0;
-set max_compressed_column 0;
-set min_compressed_column 100000;
+  set CSA_cells [get_cells -hierarchical "*csa*"];
+  set max_row 0;
+  set max_column 0;
+  set max_compressed_column 0;
+  set min_compressed_column 100000;
 
-foreach_in_collection CSA_cell $CSA_cells {
+  foreach_in_collection CSA_cell $CSA_cells {
 
-  regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_column row_index compressed_CSA_column;
+    regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_column row_index compressed_CSA_column;
 
-  if { $CSA_column > $max_column } {
-    set max_column $CSA_column
+    if { $CSA_column > $max_column } {
+      set max_column $CSA_column
+    }
+
+    if { $compressed_CSA_column > $max_compressed_column } {
+      set max_compressed_column $compressed_CSA_column
+    }
+
+    if { $compressed_CSA_column < $min_compressed_column } {
+      set min_compressed_column $compressed_CSA_column
+    }
+
+    if { $row_index > $max_row } {
+      set max_row $row_index
+    }
   }
-
-  if { $compressed_CSA_column > $max_compressed_column } {
-    set max_compressed_column $compressed_CSA_column
-  }
-
-  if { $compressed_CSA_column < $min_compressed_column } {
-    set min_compressed_column $compressed_CSA_column
-  }
-
-  if { $row_index > $max_row } {
-    set max_row $row_index
-  }
-}
-
-#get_ports -regexp {[ab][[.[.]].*[[.].]]
-#set_mpc_port_options -side t -order t pin_order
-
-
-
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
+
   # First: pin placement
   set a_ports [get_ports {a[*]}] 
   foreach_in_collection a_port $a_ports {
@@ -107,18 +103,8 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column+1)] -allow_non_rp_cells ;
 
   set edge_cells [get_cells -hierarchical "edge*"];
-  set max_edge 0;
 
-  foreach_in_collection edge_cell $edge_cells {
-
-    regexp {edge_([0-9]*)} [get_object_name $edge_cell] matched edge_index;
-
-    if { $edge_index > $max_edge} {
-      set max_edge $edge_index;
-    }
-  }
-
-  create_rp_group rp_edge -rows 1 -columns [expr $max_edge+1] -allow_non_rp_cells -placement_type compression;
+  create_rp_group rp_edge -rows 1 -columns [sizeof_collection $edge_cells] -allow_non_rp_cells -placement_type compression;
 
   foreach_in_collection edge_cell $edge_cells {
 
@@ -149,10 +135,44 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     }
   }
 
+  set boothSel_cells [get_cells -hierarchical "*Booth_sel"];
 
-  create_rp_group rp_root -rows 2 -columns 1 -allow_non_rp_cells -placement_type compression;
+  create_rp_group rp_boothSel -rows 1 -columns [sizeof_collection $boothSel_cells] -allow_non_rp_cells -placement_type compression;
+
+  foreach_in_collection boothSel_cell $boothSel_cells {
+
+    set boothSel_name [get_object_name $boothSel_cell];
+
+    regexp {BoothEnc_u([0-9]*)/Booth_sel} $boothSel_name matched boothSel_index;
+
+    set boothSel_child_cells [get_cells "${boothSel_name}/*"];
+    set boothSel_children_count [sizeof_collection $boothSel_child_cells];
+    if {$boothSel_children_count>1} {
+      create_rp_group rp_boothSel_${boothSel_index} -columns $boothSel_children_count -rows 1;
+      set boothSel_child_idx 0;
+      foreach_in_collection boothSel_child_cell $boothSel_child_cells {
+        set boothSel_child_name [get_object_name $boothSel_child_cell];
+        add_to_rp_group ${DESIGN_NAME}::rp_boothSel_${boothSel_index} \
+                           -leaf $boothSel_child_name -column $boothSel_child_idx -row 0;
+        set boothSel_child_idx [expr $boothSel_child_idx + 1]
+      }
+      add_to_rp_group ${DESIGN_NAME}::rp_boothSel \
+                    -hierarchy ${DESIGN_NAME}::rp_boothSel_${boothSel_index} \
+                    -column $boothSel_index -row 0;
+    } else {
+      foreach_in_collection boothSel_child_cell $boothSel_child_cells {
+        set boothSel_child_name [get_object_name $boothSel_child_cell];
+        add_to_rp_group ${DESIGN_NAME}::rp_boothSel \
+                    -leaf $boothSel_child_name -column $boothSel_index -row 0;
+      }
+    }
+  }
+
+
+  create_rp_group rp_root -rows 3 -columns 1 -allow_non_rp_cells -placement_type compression;
   add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_tree -row 0 -column 0;
-  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_edge -row 1 -column 0;
+  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_boothSel -row 1 -column 0;
+  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_edge -row 2 -column 0;
   
 
 # handle the edge signal of Booth encoders
@@ -194,7 +214,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     } 
 
     # Second: Booth cells
-    set booth_cells [get_cells -hierarchical -regexp  "Booth2Enc_u${row_index}.cell_${column_index}"];
+    set booth_cells [get_cells -hierarchical -regexp  "BoothEnc_u${row_index}.cell_${column_index}"];
     #set_dont_touch $booth_cells ;
     set booth_count [sizeof_collection $booth_cells];
     foreach_in_collection booth_cell $booth_cells {
@@ -229,13 +249,15 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 #          -psynopt_option size_only \
 #          -route_opt_option in_place_size_only \
 #          -cts_option fixed_placement;
-;
+
+
+
 }
 
-save_mw_cel -as ${DESIGN_NAME}_before_floorplanning
+  save_mw_cel -as ${DESIGN_NAME}_before_floorplanning
 
 
-initialize_floorplan \
+  initialize_floorplan \
   	-control_type row_number \
   	-number_rows [expr 2*$max_compressed_column+6] \
   	-core_utilization 0.7 \
@@ -245,6 +267,7 @@ initialize_floorplan \
   	-right_io2core 30 \
   	-top_io2core 30 \
   	-start_first_row
+
 
 
 
