@@ -1,0 +1,154 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/BoothSel.vp#1 $
+ ** $DateTime: 2011/11/11 21:07:01 $
+ ** $Change: 9724 $
+ ** $Author: shacham $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Booth TWO encoding for a multiplier.
+ * 
+ * Booth Select produce the the select signal for the partial products for computing (x+xinc)*(y+yinc)
+ * 
+ * Modified Booth 2 encoder
+ * ------------------------
+ * Y[2:0]     out  =  pp   +   S
+ * 
+ * 0 0 0      +0      100000  +0      
+ * 0 0 1      +X      (10X)   +0
+ * 0 1 0      +X      (10X)   +0
+ * 0 1 1      +2X     (1X0)   +0
+ * 1 0 0      -2X     (0~X1)  +1
+ * 1 0 1      -X      (01~X)  +1
+ * 1 1 0      -X      (01~X)  +1
+ * 1 1 1      -0      011111  +1
+ * ------------------------------
+ * Modified Booth 3 encoder
+ * ------------------------
+ * Y[3:0]     y_edge_vec    out  =  pp   +   S
+ * 	                  
+ * 0 0 0 0    -000          +0      100000   +0      
+ * 0 0 0 1    -001          +X      (100X)   +0
+ * 0 0 1 0    -011          +X      (100X)   +0
+ * 0 0 1 1    -010          +2X     (10X0)   +0
+ * 0 1 0 0    -110          +2X     100000   +0      
+ * 0 1 0 1    -111          +3X     (1X3)    +0
+ * 0 1 1 0    -101          +3X     (1X3)    +0
+ * 0 1 1 1    -100          +4X     (1X00)   +0
+ * 1 0 0 0    -100          -4X     (0~X11)  +1      
+ * 1 0 0 1    -101          -3X     (0~X3)   +1
+ * 1 0 1 0    -111          -3X     (0~X3)   +1
+ * 1 0 1 1    -110          -2X     (01~X1)  +1
+ * 1 1 0 0    -010          -2X     (01~X1)  +1
+ * 1 1 0 1    -011          -X      (011~X)  +1
+ * 1 1 1 0    -001          -X      (011~X)  +1
+ * 1 1 1 1    -000          -0      011111   +1
+ *---------------------------------------------
+ * Modified Booth 3 encoder
+ * ------------------------
+ * Y[4:0]       y_edge_vec     out  =  pp   +  S
+ * 	                  
+ * 0 0 0 0 0    -0000          +0      100..0  0      
+ * 0 0 0 0 1    -0001          +X      1000X   0      
+ * 0 0 0 1 0    -0011          +X      1000X   0
+ * 0 0 0 1 1    -0010          +2X     100X0   0
+ * 0 0 1 0 0    -0110          +2X     100X0   0
+ * 0 0 1 0 1    -0111          +3X     10X3    0
+ * 0 0 1 1 0    -0101          +3X     10X3    0
+ * 0 0 1 1 1    -0100          +4X     10X00   0
+ * 0 1 0 0 0    -1100          +4X     10X00   0      
+ * 0 1 0 0 1    -1101          +5X     1X5     0      
+ * 0 1 0 1 0    -1111          +5X     1X5     0
+ * 0 1 0 1 1    -1110          +6X     1X30    0
+ * 0 1 1 0 0    -1010          +6X     1X30    0
+ * 0 1 1 0 1    -1011          +7X     1X7     0
+ * 0 1 1 1 0    -1001          +7X     1X7     0
+ * 0 1 1 1 1    -1000          +8X     1X000   0
+ * 1 0 0 0 0    -1000          -8X     0~X111  1      
+ * 1 0 0 0 1    -1001          -7X     0~X7    1      
+ * 1 0 0 1 0    -1011          -7X     0~X7    1
+ * 1 0 0 1 1    -1010          -6X     0~X31   1
+ * 1 0 1 0 0    -1110          -6X     0~X31   1
+ * 1 0 1 0 1    -1111          -5X     0~X5    1
+ * 1 0 1 1 0    -1101          -5X     0~X5    1
+ * 1 0 1 1 1    -1100          -4X     01~X11  1
+ * 1 1 0 0 0    -0100          -4X     01~X11  1
+ * 1 1 0 0 1    -0101          -3X     01~X31  1
+ * 1 1 0 1 0    -0111          -3X     01~X31  1
+ * 1 1 0 1 1    -0110          -2X     011~X1  1
+ * 1 1 1 0 0    -0010          -2X     011~X1  1
+ * 1 1 1 0 1    -0011          -X      0111~X  1
+ * 1 1 1 1 0    -0001          -X      0111~X  1
+ * 1 1 1 1 1    -0000          -0      011..1  1
+ *----------------------------------------------
+
+ * NOTE: There is 1 to be augmented to the left of the partial products 
+ *       excepf for the first one
+ * 
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 05, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
+//;                       Doc=>"Booth type. Required parameter at instantiation.");
+//;
+//;
+//; my $num_outputs = 2**($booth-1);
+
+
+module `mname` (
+    input logic [`$booth-1`:0]  y_edge_vector,
+    output logic [`$num_outputs-1`:0] sel_x             
+		);
+
+   //;   if ($booth==2) {
+   assign sel_x[0] = y_edge_vector[0]; // yedge = x1 ==> +/-X
+   assign sel_x[1] = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 10 ==> +/-2X
+   //;   } elsif ($booth==3) {
+   assign sel_x[0] = (~y_edge_vector[2] & y_edge_vector[0]); // yedge = 0x1 ==> +/-X
+   assign sel_x[1] = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = x10 ==> +/-2X 
+   assign sel_x[2] = y_edge_vector[2] & y_edge_vector[0]; // yedge = 1x0 ==> +/-2X 
+   assign sel_x[3] = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 100 ==> +/-4X
+   //;   } elsif ($booth==4) {
+   assign sel_x[0] = (~y_edge_vector[3] & ~y_edge_vector[2] & y_edge_vector[0]); // yedge = 00x1 ==> +/-X
+   assign sel_x[1] = (~y_edge_vector[3] & y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 0x10 ==> +/-2X 
+   assign sel_x[2] = (~y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[0]); // yedge = 01x1
+   assign sel_x[3] = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = x100 ==> +/-4X
+   assign sel_x[4] = (y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[0]); // yedge = 11x1 ==> +/-5X
+   assign sel_x[5] = (y_edge_vector[3] & y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 1x10 ==> +/-6X
+   assign sel_x[6] = (y_edge_vector[3] & ~y_edge_vector[2] & y_edge_vector[0]); // yedge = 10x1 ==> +/-7X
+   assign sel_x[7] = (y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 1000 ==> +/-8X
+   //;   }
+
+   //; if ($verif_mode =~ /ON/){
+   always @(*) begin
+      #1;
+      assert ($onehot(sel_x) || 
+	      sel_x == `$num_outputs`'b0 || !$time)else begin
+	 $display("%t: ERROR: Bad select signals for booth`$booth` cell: select=`$num_outputs`b", $time, sel_x);
+	 $finish(2);
+      end
+   end
+   //; }
+endmodule
+

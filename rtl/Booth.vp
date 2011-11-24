@@ -109,7 +109,6 @@ module `mname`(
    //;
    //; } # End of "if ($booth==1)..." 
    //; elsif ($booth>=2) {
-   //;   my $booth_module = "Booth".$booth."Enc";
 
    logic [`$extended_width`-1:0] extended_y;
    // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
@@ -162,7 +161,7 @@ module `mname`(
    
    // Instantiate the booth `$booth` encoders
    //;   for(my $i=0; $i < $pp_count; $i++){
-   //;     my $BoothEnc_obj = generate($booth_module, "Booth".$booth."Enc_u$i", Width=>$width);
+   //;     my $BoothEnc_obj = generate('BoothEnc', "BoothEnc_u$i", BoothType=>$booth, Width=>$width);
    `$BoothEnc_obj->instantiate`
      (.x(x), 
       //;   if ($booth>=3) {
