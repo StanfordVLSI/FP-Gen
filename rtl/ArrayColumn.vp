@@ -35,6 +35,8 @@
  * -----------
  * Date           Author    Description
  * Oct 21, 2011   Sameh     initial version
+ * Nov 23, 2011   shacham   new abstraction using CarryInFlag=OneMissing/Normal/
+ * 			    OneExtra/TwoExtra
  * 
  * ****************************************************************************/
 
