@@ -32,6 +32,11 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; # Interface parameter
+//; my $useInc = parameter(Name=>'UseInc', Val=>'', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//; $useInc = ($useInc =~ /YES/);
+//;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
@@ -46,14 +51,17 @@ module `mname`(
     input logic dumptolog,
    //; }
     input logic [`$width-1`:0]    a,b,
+   //; if ($useInc){
     input logic 		  ainc, binc,
+   //; }	    
     output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 
 /* BOOTH ENCODING
 */
    //; # First we generate the Booth module
-   //; my $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth);
+   //; my $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
+   //;				 UseInc=>($useInc)?"YES":"NO");
    //;
    //; # Now we can extract some properties from it: How many partial products and of of what widths
    //; my $pp_count = $Booth_obj->get_param('PPCount');
@@ -67,7 +75,11 @@ module `mname`(
 			      //; if ($verif_mode =~ /ON/){
 			      .dumptolog(dumptolog),
 			      //; }
-			      .x(a),.xinc(ainc), .y(b), .yinc(binc), .pp(pp)
+			      .x(a), .y(b),
+			      //; if ($useInc){
+			      .xinc(ainc), .yinc(binc),
+			      //; }
+			      .pp(pp)
 			      );
 
 /* SUMMATION TREE
@@ -89,15 +101,18 @@ module `mname`(
 			  );
 
    /* Finally extract only the relevant bits:
-    * LSBs are typically padding to account for adding xinc and yinc at the same significance as pp0
-    * MSBs are typically sign extensions
+    * If UseInc was set to 'YES' then LSBs are just paddings to account 
+    *    for adding xinc and yinc at the same significance as pp0
+    *    --> shift left by 2*booth*useInc
+    * If BoothType>1 then MSBs are just sign extensions (in booth1 sign
+    *    extensions are not used thus we can ignore them completely)
     * */
    //; if ($booth==1){
-    assign out0 = RawOut0[`2*$width+1`:`2*$booth`];
-    assign out1 = RawOut1[`2*$width+1`:`2*$booth`];
+    assign out0 = RawOut0[`2*$width+1`:`2*$booth*$useInc`];
+    assign out1 = RawOut1[`2*$width+1`:`2*$booth*$useInc`];
    //; }else{ # booth==2 or booth==3
-    assign out0 = RawOut0[`2*$width+1+2*$booth`:`2*$booth`];
-    assign out1 = RawOut1[`2*$width+1+2*$booth`:`2*$booth`];
+    assign out0 = RawOut0[`2*$width+1+2*$booth*$useInc`:`2*$booth*$useInc`];
+    assign out1 = RawOut1[`2*$width+1+2*$booth*$useInc`:`2*$booth*$useInc`];
    //; }
 
 endmodule

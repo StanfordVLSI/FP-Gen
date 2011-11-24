@@ -46,6 +46,7 @@
 //; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
 //; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
 //; 			      "or Fused? (Pick:Cascade/Fused)");
+//; my $useInc = ($arch =~ /Cascade/)?1:0;
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
@@ -60,7 +61,9 @@ module `mname`(
     input logic dumptolog,
   //; }
     input logic [`$exp_width + $frac_width`:0] A, B,
-    input logic 			      IncA, IncB,	
+  //; if ($useInc){
+    input logic 			      IncA, IncB,
+  //; }	
     output logic 			      SignAB, NANAB, InfAB, ZeroAB, RStickyAB,
     output logic [`$exp_width + 1`:0] 	      ExpAB,
     output logic [`$product_width - 1`: 0]    ManAB
@@ -69,6 +72,12 @@ module `mname`(
    logic [`$frac_width - 1`:0] 		      SigA, SigB;
    logic [`$frac_width`:0] 		      ManA, ManB;
    logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
+   //; if ( ! $useInc){
+   logic 				      IncA, IncB;
+   assign IncA = 1'b0;
+   assign IncB = 1'b0;
+   //; }	
+
    logic [`$exp_width + 1`:0] 		      bias_offset, Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
    logic [`$product_width - 1`: 0] 	      ManAB_unnormalized, ManAB_normalized;
 
@@ -113,7 +122,7 @@ module `mname`(
 
   // Eab = Ea + Eb - BIAS - LZD_A - LZD_B
 
-   // sign extend the exponents by 2 bits since the maximum positive result is:
+   // If $useInc==1: sign extend the exponents by 2 bits since the maximum positive result is:
    //         2^($exp_width+1) - 2^($exp_width-1) - 1 = 2^(`$exp_width+1`) - 2^(`$exp_width-1`) - 1
    // and the minimum negative result is: 
    //         - 2^($exp_width-1) + 1 = - 2^(`$exp_width-1`) + 1
@@ -194,13 +203,17 @@ module `mname`(
 
 
   logic [`$product_width + 1`: 0] ManAB_pp0, ManAB_pp1;
-   //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$frac_width+1);
+   //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
    `$Mul_obj->instantiate()` 
      (
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
-      .a(ManA), .ainc(IncA), .b(ManB), .binc(IncB), .out0(ManAB_pp0), .out1(ManAB_pp1)
+      .a(ManA), .b(ManB), 
+      //; if ($useInc){
+      .ainc(IncA), .binc(IncB),
+      //; }
+      .out0(ManAB_pp0), .out1(ManAB_pp1)
       );
   assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
 

@@ -84,6 +84,13 @@ module `mname()` (
    // a zero to out1[`2*$booth`]
    assign out1[`2*$booth`] = 1'b0;
    
+   /* *
+    * Typically, every column tree should have N partial products, N-3 carry in and N-3 carry out. But...
+    * When this column is higher than the prev column (going up) ==> we are missing one ci
+    * When this column is the first column to be shorter than the prev column => we have one extra ci
+    * When this column is on the downward slope but the same height as the prev => we have one extra ci
+    * When this is the downward slope and this column is shorter than the prev column => we have two extra ci
+    * */
 
 //; my $ci_w = 0;
 //; my $co_w = 0;
@@ -96,49 +103,39 @@ module `mname()` (
 //;   my $up = ($first_row==0 && $j%$booth==0 && floor($j/$booth)<=$pp_count-1)? 1:0; 	 # this column has one more pp than prev column
 //;   my $up_even = ($first_row==0 && $up==0)? 1:0; 		 	# this coulmn has same hight as prev column but 
 //;								 	# we are still at the increasing side of the parallelogram
-//;   my $down  = ($first_row>0 && ($j-$pp_width)%$booth==0)? 1:0;	# this column has one less pp than prev column
-//;   my $down_first  = ($first_row==1 && $down==1)? 1:0;		# First time a column is shorter than its prev column
-//;   my $down_even = ($first_row>0 && $down==0)? 1:0;			# this coulmn has same hight as prev column but 
+//;   my $down_first  = ($first_row==1 && ($j-$pp_width)%$booth==0)? 1:0;# First time a column is shorter than its prev column 
+//;   my $down  = ($first_row>1 && ($j-$pp_width)%$booth==0)? 1:0;	# this column has one less pp than prev column
+//;   my $down_even = ($first_row>0 && ($j-$pp_width)%$booth!=0)? 1:0;	# this coulmn has same hight as prev column but 
 //;								 	# we are at the decreasing side of the parallelogram
 //;
-//;   my $tree_col_ht = $pp_col_ht;		# That's the actuall tree we are building (which may have an extra PP from ci)
-//;   $tree_col_ht += 1 if $first_row>0 && $co_w>0;	# At the 'going down' side of the parallelogram, 
-//;			 			 	# we always put ci[0] or ci[last] as first or last pp, but only if
-//;			 			 	# there is co from the previous column
+//;   print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$pp_col_ht\n";
+//;   print STDERR "DEBUG: up=$up up_even=$up_even down=$down down_first=$down_first down_even=$down_even\n";
+//;   $self->error("More than one flag at once: up=$up up_even=$up_even down_first=$down_first down=$down down_even=$down_even")
+//;		if ($up+$up_even+$down_first+$down+$down_even != 1);
 //;
-//;    ## print STDERR "DEBUG: booth=$booth col=$j first_row=$first_row last_row=$last_row hight=$pp_col_ht\n";
-//;    ## print STDERR "DEBUG: up=$up up_even=$up_even down=$down down_first=$down_first down_even=$down_even\n";
-//;
+   
       // Now working on column J=`$j` of hight `$pp_col_ht`
-      logic [`$tree_col_ht-1`:0] pp_col`$j`;
+      // For this column: up=`$up` up_even=`$up_even` down_first=`$down_first` down_even=`$down_even` down=`$down`
+      logic [`$pp_col_ht-1`:0] pp_col`$j`;
 //;   my $pp_idx = 0;
 //;   for(my $row=$first_row; $row <= $last_row; $row++){
         assign pp_col`$j`[`$pp_idx++`] = pp[`$row`][`$j-$row*$booth`];
-//;     if (($down || ($down_even && $co_w)) && $pp_idx==3){
-        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
-//;     }
 //;   }
 
-//;     if (($down || ($down_even && $co_w)) && $pp_idx<$tree_col_ht){
-        assign pp_col`$j`[`$pp_idx++`] = co_col`$j-1`[0]; // use LSB of co of previous column as a pp
-//;     }  
-
-//;   $self->error("How come pp_idx($pp_idx) != tree_col_ht($tree_col_ht)?") if $pp_idx!=$tree_col_ht;
-
-//;   $ci_w = ($up || $down_even || $down_first) ? $tree_col_ht-4:$tree_col_ht-3;
+//;   my $ci_flag = 'Normal';
+//;   $ci_flag = 'OneMissing' if $up && $pp_col_ht>3;		$ci_w = $pp_col_ht-4 if $up;
+//;   $ci_flag = 'Normal' if $up_even;    			$ci_w = $pp_col_ht-3 if $up_even;
+//;   $ci_flag = 'OneExtra' if $down_first || $down_even;	$ci_w = $pp_col_ht-2 if $down_first || $down_even;
+//;   $ci_flag = 'TwoExtra' if $down;  				$ci_w = $pp_col_ht-1 if $down;
 //;   $ci_w = 0 if ($ci_w < 0); # can't have negative width
 //;   if ($ci_w){
         logic [`$ci_w-1`:0] ci_col`$j`; // carry in to column j=`$j` (to extracted from co of `$j-1`)
-//;     if ($down || $down_even){
-          assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:1]; // since we used the LSB of co of previous column as a pp
-          //; $self->error("down/down_even col $j: ci_w($ci_w)!=co_w-1($co_w-1)") if $ci_w!=$co_w-1;
-//;     }else{
           assign ci_col`$j`[`$ci_w-1`:0] = co_col`$j-1`[`$co_w-1`:0];
-          //; $self->error("else col $j: ci_w($ci_w)!=co_w($co_w)") if $ci_w!=$co_w;
-//;     }
 //;   }
 
-//;   $co_w = ($tree_col_ht>3) ? $tree_col_ht-3:0;
+//;   $co_w = $pp_col_ht-3 if $up || $up_even;
+//;   $co_w = $pp_col_ht-2 if $down_first || $down || $down_even;
+//;   $co_w = 0 if ($co_w < 0); # can't have negative width
 //;   if($co_w){
       logic [`$co_w-1`:0] co_col`$j`; // carry out of column j=`$j` (to be driven as carry in to `$j+1`)
 //;   }
@@ -146,11 +143,11 @@ module `mname()` (
 //;   # generate the needed column tree
 //;   my $treecolumn_obj = generate("${tree_type}Column", "column_$j", 
 //;     			     LayoutShape=> $layout_shape, 
-//;     			     ColumnHight=> $tree_col_ht, 
+//;     			     ColumnHight=> $pp_col_ht, 
 //;      			     ColumnPosition=> $j, 
 //;       			     MinRow=> $first_row, 
 //;       			     BoothType => $booth,
-//;        			     OneLessCarryIn => $up || $down_even || $down_first);
+//;        			     CarryInFlag => $ci_flag);
 //;
       // Instantiate collumn `$j` summation tree: pp_width=`$pp_width` first_row=`$first_row` last_row=`$last_row` hight=`$pp_col_ht`
       `$treecolumn_obj->instantiate()`  (.pp(pp_col`$j`),
