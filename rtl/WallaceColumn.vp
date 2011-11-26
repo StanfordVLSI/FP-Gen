@@ -9,22 +9,16 @@
 
 /* *****************************************************************************
  * Description:
- * This is a ArrayColumn that process a vertical slice in multiplication tree 
+ * This is a WallaceColumn that process a vertical slice in multiplication tree 
  * using a Wallace architecture
  *
  * Parameters:
- * * ColumnHight, ColumnPosition, MinRow, BoothType, CarryInFlag, LayoutShape,
+ * * PPcount, ColumnPosition, MinRow, BoothType, , LayoutShape,
  * * PrevColumn (pointer to the previous column object)
  * 
- * Note that if:
- * CarryInFlag == Normal ==> ci_w=N-3 , co_w=N-3
- * CarryInFlag == OneMissing ==> ci_w=N-4 , co_w=N-3
- * CarryInFlag == OneExtra ==> ci_w=N-2 , co_w=N-2
- * CarryInFlag == TwoExtra ==> ci_w=N-1 , co_w=N-2
- *
  * Inputs:
  * * Given that N=ColumnHight
- * * [N-1:0] pp                 
+ * * [PPcount-1:0] pp                 
  * * [ci_w-1:0] ci
  *  
  * Outputs:
@@ -40,7 +34,7 @@
  * 			    and N-3 CO.
  * Nov 23, 2011   shacham   new abstraction using CarryInFlag=OneMissing/Normal/
  * 			    OneExtra/TwoExtra
- * 
+ * Nov 26, 2011   Sameh     new abstraction using pointer to previous column
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -54,8 +48,9 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $col_ht = parameter(Name=>'ColumnHight', Val=>2, Min=>2, Step=>1,
-//;                          Doc=>"Number of partial products in relevant column to sum");
+//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>0, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
+
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
@@ -64,13 +59,15 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $ci_flag = parameter(Name=>'CarryInFlag', Val=>'Normal', List=>['Normal','OneMissing','OneExtra','TwoExtra'],
-//;                      Doc=>"Is there one less carry in for this column? or maybe one or two more? (Normal is ColumnHight-3)");
 //; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
 //;			     Doc=>"Pointer to the previous column of the multiplier ".
 //;				  "(must be assigned or set to zero at instantiation!)");
 //; $self->error("Parameter PrevColumn must be assigned with a pointer to a Wallace column or 0 (zero)!")
 //;          unless $prev_col || $prev_col==0;
+//;
+//; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
+//;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
+//;
 //; my $prev_csa_arr_ptr = [];
 //; if ($prev_col){
 //;   $prev_csa_arr_ptr = $prev_col->get_param('CSAArr');
@@ -78,27 +75,28 @@
 //; my @prev_csa_arr = @{$prev_csa_arr_ptr}; # dereference the array pointer
 //; my @csa_arr = ();
 //;
-//; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
-//;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
-//;
-//;
-//; my $ci_w = 0; my $co_w = 0; 
-//; $ci_w = $col_ht-4 if $ci_flag =~ /OneMissing/;
-//; $ci_w = $col_ht-3 if $ci_flag =~ /Normal/;
-//; $ci_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
-//; $ci_w = $col_ht-1 if $ci_flag =~ /TwoExtra/;
-//; $ci_w = 0 if ($ci_w < 0); # can't have negative width
-//;
-//; $co_w = $col_ht-3 if $ci_flag =~ /OneMissing/;
-//; $co_w = $col_ht-3 if $ci_flag =~ /Normal/;
-//; $co_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
-//; $co_w = $col_ht-2 if $ci_flag =~ /TwoExtra/;
-//; $co_w = 0 if ($co_w < 0); # can't have negative width
-//;
-//; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
+//; my $ci_w = 0;
+//; $ci_w  += $_ foreach @prev_csa_arr;
+//; 
+//; my $co_w = -1;
+//; my $h = $pp_count;
+//; my $l = 0;
+//; while($h>1 || $l <= $#prev_csa_arr) {
+//;    $co_w += floor($h/3);
+//;    my $next_h = floor($h/3) + $h%3;
+//;    $next_h += $prev_csa_arr[$l] if $l <= $#prev_csa_arr;
+//;    if ( ($h>3 && $h%3==2 && $l <= $#prev_csa_arr && $prev_csa_arr[$l]> floor($h/3)) || ($h==2 && $next_h==2) ) {
+//;       $next_h--;
+//;       $co_w++;
+//;    }
+//;    $h = $next_h;    
+//;    $l++;
+//; }
+//; 
+//; # print STDERR "DEBUG: pp_count=$pp_count, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
 module `mname()` (
-    input logic [`$col_ht-1`:0] pp,
+    input logic [`$pp_count-1`:0] pp,
 //; if($ci_w){
     input logic  [`$ci_w-1`:0] ci,
 //; }
@@ -114,29 +112,21 @@ module `mname()` (
   */
 
    //; # Initial key indices etc.
+   //; my $col_ht = $co_w+1;
    //; my @occupied_idx =();
-   //; for  (my $i=0; $i < $col_ht-1 ; $i++){
+   //; for  (my $i=0; $i < $col_ht ; $i++){
    //;   $occupied_idx[$i]=0;
    //; }
    //; my $row = 0; my $Y=0;
    //; my $step = 0;
-   //; my $hight = $col_ht;
-   //; my $csa_idx = 0;
-   //; my $typical_ci_w = $col_ht-3; # this is the max ci in a typical tree
+   //; my $hight = $pp_count;
+   //; my $co_idx = 0;
+   //; my $ci_idx = 0;
 
    
    
-   // First, lets define some internal signal conventions:
-   //; if ($hight==2 && $ci_w==1){
-   //;   # This is a corner case where there is really nothing to do but
-   //;   # stick the ci to the first csa
-   logic [`$hight`:0] pp_step`$step`;
-   assign pp_step`$step` = {pp,ci};
-   //;   $hight+=1; $ci_w-=1; # updating the indices to complete the cheat :-\
-   //; }else{
    logic [`$hight-1`:0] pp_step`$step`;
    assign pp_step`$step` = pp;
-   //; }
    
    //;   if($ci_w){
      logic [`$ci_w-1`:0] 	wallace_ci;
@@ -145,26 +135,36 @@ module `mname()` (
    logic [`$co_w`:0] wallace_co;
 
 
-   //; while($hight > 1){
+   //; while($hight > 1 || $step <= $#prev_csa_arr){
    //;   $step++;
    //;   push(@csa_arr, 0);
-   //;   my $missing_last_ci=0;
-   //;   my $max_i = ($hight==2)? 1 : floor($hight/3);
-   //;   my $next_hight = ($hight==2)? 1 : 2 * floor($hight/3) + $hight%3;
-   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight`
+
+   //;   my $pp_idx =0;
+   //;   my $next_pp_idx = 0;
+   //;   my $local_ci_idx = 0;
+   //;   my $next_hight = floor($hight/3) + $hight%3;
+   //;   $next_hight += $prev_csa_arr[$step-1] if $step-1 <= $#prev_csa_arr;
+   //;   my $max_i = floor($hight/3);
+   //;   my $extra_HA = ( $hight>3 && $hight%3==2 && $step-1 <= $#prev_csa_arr && $prev_csa_arr[$step-1]> $max_i) || ($hight==2 && $next_hight==2);
+   //;   if ($extra_HA) {
+   //;      $max_i++;
+   //;      $next_hight--;
+   //;   }
+
+   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`$step-1 <= $#prev_csa_arr?$prev_csa_arr[$step-1]:0`
       logic [`$next_hight-1`:0] pp_step`$step`; // For holding results of level `$step`
 
    //;   for (my $i=0; $i < $max_i; $i++){
    //;
    //;     ######### Calculate Cell Location ##########
-   //;     my $row_candidate = floor($i/$max_i * ($col_ht-2));
+   //;     my $row_candidate = floor($i/$max_i * ($col_ht-1));
    //;     my $row_candidate_up = $row_candidate;
    //;     my $row_candidate_down = $row_candidate;
-   //;     while ( $row_candidate_up < $col_ht-1 || $row_candidate_down>=0){
-   //;       if ($row_candidate_up<$col_ht-1){
+   //;     while ( $row_candidate_up < $col_ht || $row_candidate_down>=0){
+   //;       if ($row_candidate_up<$col_ht){
    //;          if ($occupied_idx[$row_candidate_up]==0){
    //;            $row_candidate = $row_candidate_up;
-   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
+   //;            $row_candidate_up=$col_ht; $row_candidate_down=-1;
    //;          } else {
    //;            $row_candidate_up++;
    //;          }
@@ -172,7 +172,7 @@ module `mname()` (
    //;       if ($row_candidate_down>=0){
    //;          if ($occupied_idx[$row_candidate_down]==0){
    //;            $row_candidate = $row_candidate_down;
-   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
+   //;            $row_candidate_up=$col_ht; $row_candidate_down=-1;
    //;          } else {
    //;            $row_candidate_down--;
    //;          }
@@ -186,99 +186,46 @@ module `mname()` (
    //;     ##########################################
    //;
    //;     ########### Instantiate Cell #############
-   //;     if ($hight>2) {
-   //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-   //;       $csa_arr[$step-1]++;
-      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
-                                  .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
-   //;     } else {
-   //;       my $CSA_obj = generate('HA', "csa_${row}_${Y}");
-   //;       $csa_arr[$step-1]++;
+   //;     if ($extra_HA && $i==$max_i-1){
+   //;     my $CSA_obj = generate('HA', "csa_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]),
-                                  .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
+                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
+   //;     } else {
+   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
+                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
    //;     }
-   //;     $missing_last_ci = ($csa_idx >= $ci_w || $csa_idx>=$typical_ci_w);
-   //;     if (!$missing_last_ci){
-      assign pp_step`$step`[`2*$i+1`] = wallace_ci[`$csa_idx`];
+   //;     $csa_arr[$step-1]++;
+   //;     if ($ci_idx < $ci_w && $step-1 <= $#prev_csa_arr && $local_ci_idx<$prev_csa_arr[$step-1]){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;         $local_ci_idx++;
    //;     }
-   //;     $csa_idx++; 
+ 
    //;   } # End of "for (my $i=0; $i < flo..."
 
    //;   for (my $i=3 * $max_i; $i < $hight; $i++){
        // copy the leftovers to the next level
-       assign pp_step`$step`[`$i-floor($hight/3)-$missing_last_ci`] = pp_step`$step-1`[`$i`];
+      assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$i`];
+   //;     if ($ci_idx < $ci_w && $step-1 <= $#prev_csa_arr && $local_ci_idx<$prev_csa_arr[$step-1]){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;         $local_ci_idx++;
+   //;     }
+   //;   }
+
+   //;   while ($ci_idx < $ci_w && $step-1 <= $#prev_csa_arr && $local_ci_idx<$prev_csa_arr[$step-1]){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;         $local_ci_idx++;
    //;   }
    
 
-   //;   $hight=$next_hight-$missing_last_ci;
+   //;   $hight=$next_hight;
    //; } # End of "while($hight > 2){..."
 
 
-   //; if($ci_w>=$col_ht-2 && $ci_w>0){
-   //;     ######### Calculate Final Cell Location ##########
-   //;     my $row_candidate = $col_ht-1;
-   //;     my $row_candidate_up = $row_candidate;
-   //;     my $row_candidate_down = $row_candidate;
-   //;     while ( $row_candidate_up < $col_ht-1 || $row_candidate_down>=0){
-   //;       if ($row_candidate_up<$col_ht-1){
-   //;          if ($occupied_idx[$row_candidate_up]==0){
-   //;            $row_candidate = $row_candidate_up;
-   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
-   //;          } else {
-   //;            $row_candidate_up++;
-   //;          }
-   //;       }
-   //;       if ($row_candidate_down>=0){
-   //;          if ($occupied_idx[$row_candidate_down]==0){
-   //;            $row_candidate = $row_candidate_down;
-   //;            $row_candidate_up=$col_ht-1; $row_candidate_down=-1;
-   //;          } else {
-   //;            $row_candidate_down--;
-   //;          }
-   //;       }
-   //;     }
-   //;     $occupied_idx[$row_candidate] = 1;
-   //;     $row = $min_row + $row_candidate;
-   //;
-   //;     $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
-   //;     $Y = $col if $layout_shape =~ /Parallelogram/;
-   //;     ##########################################
-   //; }
-   //;
-   //; if ($ci_w==$col_ht-2 && $ci_w>0){
-   /* We have one extra ci that we could not use until now... bummer. We'll add 
-    * it at the end using one last half adder. But don't feel too bad -- since 
-    * it means that this column is shorter than those before it, so one extra HA
-    * won't kill us... I think :-<>
-    * */
-   //;   $step++;
-   //;   push(@csa_arr, 0);
-   logic [0:0] 	 pp_step`$step`;
-   //;   my $CSA_obj = generate('HA', "csa_${row}_${Y}");
-   //;   $csa_arr[$step-1]++;
-   `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[0]), .b(wallace_ci[`$ci_w-1`]),
-                               .s(pp_step`$step`[0]), .co(wallace_co[`$csa_idx`]) );
-   //;   $csa_idx++;
-   //; }
-   //;
-   //; if ($ci_w==$col_ht-1 && $ci_w>0){
-   /* We have two extra ci that we could not use until now... bummer. We'll add 
-    * it at the end using one last full adder. But don't feel too bad -- since 
-    * it means that this column is shorter than those before it, so one extra FA
-    * won't kill us... I think :-<>
-    * */
-   //;   $step++;
-   //;   push(@csa_arr, 0);
-   logic [0:0] 	 pp_step`$step`;
-   //;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-   //;   $csa_arr[$step-1]++;
-   `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[0]), .b(wallace_ci[`$ci_w-1`]), .ci(wallace_ci[`$ci_w-2`]),
-                               .s(pp_step`$step`[0]), .co(wallace_co[`$csa_idx`]) );
-   //;   $csa_idx++; 
-   //; }
-   
+   //; pop(@csa_arr); $co_idx--;
    assign carry = wallace_co[`$co_w`];
    assign sum = pp_step`$step`[0];
+
    //; if ($co_w){
    assign co = wallace_co[`$co_w-1`:0];
    //; }
@@ -289,3 +236,7 @@ endmodule
 //; # Declare the current csa_arr for other modules to use
 //; parameter(Name=>'CSAArr', Val=>\@csa_arr, Force=>1,
 //;	      Doc=>"Array of number of CSAs per level of the tree");
+//; parameter(Name=>'co_count', Val=>$co_w, Force=>1,
+//;           Doc=>"Number of column co signals");
+//; $self->error("The number of constructed co in Wallace does not match $co_idx != $co_w")
+//;          unless $co_idx == $co_w;
