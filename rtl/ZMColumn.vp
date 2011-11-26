@@ -30,7 +30,9 @@
  * -----------
  * Date           Author    Description
  * Nov 07, 2011   Artem     initial version
- * 
+ * Nov 25, 2011   Artem     Added new abstraction using CarryInFlag=OneMissing/Normal/
+ * 			    OneExtra/TwoExtra 
+ *
  * ****************************************************************************/
 
 /* Zuras-McAllister "Balanced Delay Trees and Combinatorial Division in VLSI" ISSJ '86
@@ -108,18 +110,31 @@ n_odd : 6, 11, 18, 27
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $one_less_ci = parameter(Name=>'OneLessCarryIn', Val=>0, Min=>0, Step=>1, Max=>1,
-//;                      Doc=>"Is there one less carry in for this column?");
+//; my $ci_flag = parameter(Name=>'CarryInFlag', Val=>'Normal', List=>['Normal','OneMissing','OneExtra','TwoExtra'],
+//;                      Doc=>"Is there one less carry in for this column? or maybe one or two more? (Normal is ColumnHight-3)");
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
 //;
 //;
 //;
-//; my $ci_w = ($one_less_ci) ? $col_ht-4:$col_ht-3;
+//; my $ci_w = 0;
+//; my $co_w = 0;
+ 
+//; $ci_w = $col_ht-4 if $ci_flag =~ /OneMissing/;
+//; $ci_w = $col_ht-3 if $ci_flag =~ /Normal/;
+//; $ci_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
+//; $ci_w = $col_ht-1 if $ci_flag =~ /TwoExtra/;
 //; $ci_w = 0 if ($ci_w < 0); # can't have negative width
-//; my $co_w = $col_ht-3;
+//;
+//; $co_w = $col_ht-3 if $ci_flag =~ /OneMissing/;
+//; $co_w = $col_ht-3 if $ci_flag =~ /Normal/;
+//; $co_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
+//; $co_w = $col_ht-2 if $ci_flag =~ /TwoExtra/;
 //; $co_w = 0 if ($co_w < 0); # can't have negative width
+
+
+
 //;
 //; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
@@ -134,7 +149,18 @@ module `mname()` (
     output logic sum, carry
    );
 
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+
+   //;if($ci_flag =~ /OneExtra/  ||  $ci_flag =~ /TwoExtra/) {
+   logic  sum_last;
+   //;}
+
    
+   //; my $row = $min_row;
+   //; my $Y = $col;
 
    //;
    //;my $array_count = ($col_ht>2) ? floor((sqrt(4*$col_ht-11)+1)/2) : 0; 
@@ -157,8 +183,8 @@ module `mname()` (
    //;	     for(my $nodes = 0; $nodes < $array_csa; $nodes++ ){
    //;           $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
    //;
-   //;           if($array_count==1 && $nodes==($array_csa-1) && $one_less_ci && (($array_csa > 1) || ($col_ht==2))) {
-   //;               my $CSA_obj = generate('HA', "csa_${array}_${nodes}");
+   //;           if($array_count==1 && $nodes==($array_csa-1) && ($ci_flag =~ /OneMissing/) && (($array_csa > 1) || ($col_ht==2))) {
+   //;               my $CSA_obj = generate('HA', "csa_${array}_${nodes}_${row}_${Y}");
    //;               if($col_ht==2) {
    //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
    //;                   $array_conn[1] = "pp[${pp_index}]";$pp_index++;
@@ -170,7 +196,7 @@ module `mname()` (
                                     .s(sum), .co(carry) );
    //;           } else {	   
   	    
-   //;               my $CSA_obj = generate('CSA', "csa_${array}_${nodes}");
+   //;               my $CSA_obj = generate('CSA', "csa_${array}_${nodes}_${row}_${Y}");
    //;		     if($nodes == 0){
    //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
    //;                   $array_conn[1] = "pp[${pp_index}]";$pp_index++;
@@ -184,7 +210,15 @@ module `mname()` (
 
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
    //;               if( $array_count == 1 && $nodes == ($array_csa-1)) {
+   //;                           if($ci_flag =~ /OneMissing/  ||  $ci_flag =~ /Normal/) {
                                   .s(sum), .co(carry) );
+   //;                           }else{
+                                  .s(sum_last), .co(co[`$co_index`]) );
+   //;                             $co_index++;
+   //;                           }#if($ci_flag =~ /OneMissing/ ...
+
+
+
    //;               } else {
                                   .s(pp_`$array`_`$nodes`_s), .co(co[`$co_index`]) );
    //; 	                 $co_index++;
@@ -197,7 +231,7 @@ module `mname()` (
    //Merge branche `$array-1` and `$array`
    //;
    //;           $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
-   //;       	 my $CSA_obj = generate('CSA', "csa_merge_${array}");
+   //;       	 my $CSA_obj = generate('CSA', "csa_merge_${array}_${row}_${Y}");
    //;
    //;           $array_conn[2]="pp_${array}_".($array_csa-1)."_s";
    //;
@@ -219,18 +253,23 @@ module `mname()` (
    //;           $array_conn[0]="ci[${ci_index}]";$ci_index++;
    //;           $array_conn[2]="pp_merge_".($array-1)."_s";
    //;
-   //;	                if($array==($array_count-1) && $one_less_ci){
-   //;       	             my $CSA_obj = generate('HA', "csa_merge1_${array}");
+   //;	                if($array==($array_count-1) && ($ci_flag =~ /OneMissing/)){
+   //;       	             my $CSA_obj = generate('HA', "csa_merge1_${array}_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`),
                                   .s(sum), .co(carry) );
    //;                  }
    //;                  else {
-   //;       	             my $CSA_obj = generate('CSA', "csa_merge1_${array}");
+   //;       	             my $CSA_obj = generate('CSA', "csa_merge1_${array}_${row}_${Y}");
    //;                       $array_conn[1]="ci[${ci_index}]";$ci_index++;
    //;
    //;                       if($array==($array_count-1)) {
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
+   //;                           if($ci_flag =~ /OneMissing/  ||  $ci_flag =~ /Normal/) {
                                   .s(sum), .co(carry) );
+   //;                           }else{
+                                  .s(sum_last), .co(co[`$co_index`]) );
+   //;                             $co_index++;
+   //;                           }#if($ci_flag =~ /OneMissing/ ...
    //;                       }
    //;                       else {
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
@@ -245,6 +284,31 @@ module `mname()` (
    //;       $array_csa_prev = $array_csa;
    //;}#for (my $array=0; $array 
 
+
+   //; ##### OneExtra Ci
+   //;$array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
+   //;
+   //;if ($ci_flag =~ /OneExtra/){
+   //;    $array_conn[0]="ci[${ci_index}]";$ci_index++;
+   //;    $array_conn[2]="sum_last";
+   //;
+   //;    my $CSA_obj = generate('HA', "csa_extra_${row}_${Y}");
+   // This column has one extra ci's
+   `$CSA_obj->instantiate()` ( .b(`$array_conn[0]`), .a(`$array_conn[2]`),
+			       .s(sum), .co(carry) );
+   //; }
+   //;
+   //; ##### TwoExtra Ci
+   //;if ($ci_flag =~ /TwoExtra/){
+   //;    $array_conn[0]="ci[${ci_index}]";$ci_index++;
+   //;    $array_conn[1]="sum_last";
+   //;    $array_conn[2]="ci[${ci_index}]";$ci_index++;
+   //;
+   //;    my $CSA_obj = generate('CSA', "csa_extra_${row}_${Y}");
+   // This column has two extra ci's
+   `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`), 
+			       .s(sum), .co(carry) );
+   //; }
 
 
 endmodule
