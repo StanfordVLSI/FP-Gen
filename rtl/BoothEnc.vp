@@ -66,8 +66,7 @@ module `mname` (
       //;   if ($booth>=4) {
     input logic [`$width+2`:0] 	x5,x7,
       //;   }
-    input logic [`$booth-1`:0]  y_edge_vector,  // y_edge_vector[i] = y[i]!=y[i+1]
-    input logic		    y_msb,          // y[`$booth-1`]
+    input logic	[`$booth`:0]	    y,          // y[`$booth-1`]
     output logic [`$width+$booth-1`:0]   pp,             // extend width by two: 1 bit for sign and ($booth-1) for shifting for 2^($booth-1) multiple
     output logic		    S
 		);
@@ -85,28 +84,29 @@ module `mname` (
    assign x3_padded = {1'b0, x3, 1'b0};
   //;   }
 
-   assign S = y_msb;
+   assign S = y[`$booth`];
 
    logic  [`(2**($booth-1))-1`:0] sel_x;
+   logic sel_S;
 
    //;  my $BoothSel_obj = generate('BoothSel', "Booth_sel", BoothType=>$booth);
-   `$BoothSel_obj->instantiate` ( .y_edge_vector(y_edge_vector), .sel_x(sel_x));
+   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x), .sel_S(sel_S));
 
 
-   //;   for(my $i=1; $i <= $width+1; $i++){
+   //;   for(my $i=$booth-1; $i <= $width+$booth-1; $i++){
    //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
    `$BoothCell_obj->instantiate` 
-     (.sel_x(sel_x),
+     (.sel_x(sel_x), .sel_S(sel_S),
 
       .x( {
    //;     if ($booth>=4) {
-           x_padded[`$i-3`], x7[`$i-3`], x3_padded[`$i-3`] , x5[`$i-3`])
+           x_padded[`$i-3`], x7[`$i-3`], x3_padded[`$i-3`] , x5[`$i-3`],
    //;     }
    //;     if ($booth>=3) {
            x_padded[`$i-2`], x3[`$i-2`],
    //;     }
            x_padded[`$i-1`] , x_padded[`$i`] } ),
-      .y_msb(y_msb) , .pp(pp[`$i-1`]));
+      .y(y) , .pp(pp[`$i-$booth+1`]));
    
    //;   }
    assign pp[`$width+1`] = ~S;

@@ -48,32 +48,41 @@
 
 module `mname` (
     input logic [`$num_inputs-1`:0]		sel_x, x,
-    input logic 		y_msb,                 	// Out of the y[`$booth`+K:K], this is the msb bit 
+    input logic sel_S,
+    input logic [`$booth`:0]		y,                 	//y[`$booth`+K:K] 
     output logic 		pp               	// single bit of the relevant pp
 		);
 
    logic 			pp_pow2; // this is for early signals such as 0, x, 2*x, 4*x, 8*x
    logic 			pp_all;  // this is for late signals such as x3 x5 and x7
    
-   assign S = y_msb;
-   
+   assign S = y[`$booth`];
+   //;if ($booth==2) {
+   logic xn[1:0];
+   assign xn[0] = ~S ^ x[0];
+   assign xn[1] = ~S ^ x[1];
+   assign pp = ~((sel_x[0] | xn[0]) & (sel_x[1] | xn[1]) & sel_S );
+
+   //;} else {
    // Mux 0, x1, x2, x4, x8 based on the edge vector
-   //; my $str = '';
-   //; for (my $i=0; $i<$num_inputs; $i++){
-   //;   $str = $str." (sel_x[${i}] & x[${i}])" if IsPowOfTwo($i+1);
-   //;   $str = $str." |" if $i+1<$num_inputs && IsPowOfTwo($i+1);
-   //; }
+   //;   my $str = '';
+   //;   for (my $i=0; $i<$num_inputs; $i++){
+   //;     $str = $str." (sel_x[${i}] | ~x[${i}])" if IsPowOfTwo($i+1);
+   //;     $str = $str." &" if $i+1<$num_inputs && IsPowOfTwo($i+1);
+   //;   }
    assign pp_pow2 = `$str`;
  
    // Mux pp_pow2 and other multiples of x
-   //; $str = '';
-   //; for (my $i=0; $i<$num_inputs; $i++){
-   //;   $str = $str." (sel_x[${i}] & x[${i}]) |" if ! IsPowOfTwo($i+1);
-   //; }
-   assign pp_all = `$str` pp_pow2;
-
+   //;   $str = '';
+   //;   for (my $i=0; $i<$num_inputs; $i++){
+   //;     $str = $str." (sel_x[${i}] | ~x[${i}]) &" if ! IsPowOfTwo($i+1);
+   //;   }
+   assign pp_all = ~( `$str` pp_pow2);
    // Select pp or pp_b based on sign
    assign pp = pp_all ^ S; // invert if S=1
+
+   //;}
+
 
    
 endmodule : `mname`

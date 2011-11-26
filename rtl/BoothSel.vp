@@ -117,34 +117,40 @@
 
 
 module `mname` (
-    input logic [`$booth-1`:0]  y_edge_vector,
-    output logic [`$num_outputs-1`:0] sel_x             
+    input logic [`$booth`:0]  y,
+    output logic [`$num_outputs-1`:0] sel_x,
+    output logic sel_S            
 		);
+
+   logic [`$booth-1`:0]  y_edge_vector;
+   assign y_edge_vector = y[`$booth`:1] ~^ y[`$booth-1`:0];
 
    //;   if ($booth==2) {
    assign sel_x[0] = y_edge_vector[0]; // yedge = x1 ==> +/-X
-   assign sel_x[1] = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 10 ==> +/-2X
+   assign sel_x[1] = ~ ( ~y_edge_vector[1]  & y_edge_vector[0]); // yedge = 10 ==> +/-2X
+   assign sel_S    = ~ ( y[2] & y_edge_vector[1] & y_edge_vector[0] );
    //;   } elsif ($booth==3) {
-   assign sel_x[0] = (~y_edge_vector[2] & y_edge_vector[0]); // yedge = 0x1 ==> +/-X
-   assign sel_x[1] = (y_edge_vector[1] & ~y_edge_vector[0]); // yedge = x10 ==> +/-2X 
-   assign sel_x[2] = y_edge_vector[2] & y_edge_vector[0]; // yedge = 1x0 ==> +/-2X 
-   assign sel_x[3] = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 100 ==> +/-4X
+   assign sel_x[0] = ~ (y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 0x1 ==> +/-X
+   assign sel_x[1] = ~ (~y_edge_vector[1] & y_edge_vector[0]); // yedge = x10 ==> +/-2X 
+   assign sel_x[2] = ~ (~y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 1x1 ==> +/-3X 
+   assign sel_x[3] = ~ (~y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]); // yedge = 100 ==> +/-4X
+   assign sel_S = ~ ( y[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]);
    //;   } elsif ($booth==4) {
-   assign sel_x[0] = (~y_edge_vector[3] & ~y_edge_vector[2] & y_edge_vector[0]); // yedge = 00x1 ==> +/-X
-   assign sel_x[1] = (~y_edge_vector[3] & y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 0x10 ==> +/-2X 
-   assign sel_x[2] = (~y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[0]); // yedge = 01x1
-   assign sel_x[3] = (y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = x100 ==> +/-4X
-   assign sel_x[4] = (y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[0]); // yedge = 11x1 ==> +/-5X
-   assign sel_x[5] = (y_edge_vector[3] & y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 1x10 ==> +/-6X
-   assign sel_x[6] = (y_edge_vector[3] & ~y_edge_vector[2] & y_edge_vector[0]); // yedge = 10x1 ==> +/-7X
-   assign sel_x[7] = (y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[1] & ~y_edge_vector[0]); // yedge = 1000 ==> +/-8X
+   assign sel_x[0] = ~ (y_edge_vector[3] & y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 00x1 ==> +/-X
+   assign sel_x[1] = ~ (y_edge_vector[3] & ~y_edge_vector[1] & y_edge_vector[0]); // yedge = 0x10 ==> +/-2X 
+   assign sel_x[2] = ~ (y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 01x1
+   assign sel_x[3] = ~ (y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]); // yedge = x100 ==> +/-4X
+   assign sel_x[4] = ~ (~y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 11x1 ==> +/-5X
+   assign sel_x[5] = ~ (~y_edge_vector[3] & ~y_edge_vector[1] & y_edge_vector[0]); // yedge = 1x10 ==> +/-6X
+   assign sel_x[6] = ~ (~y_edge_vector[3] & y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 10x1 ==> +/-7X
+   assign sel_x[7] = ~ (~y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]); // yedge = 1000 ==> +/-8X
+   assign sel_S = ~ ( y[4] & y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]);
    //;   }
 
    //; if ($verif_mode =~ /ON/){
    always @(*) begin
       #1;
-      assert ($onehot(sel_x) || 
-	      sel_x == `$num_outputs`'b0 || !$time)else begin
+      assert ($onehot(~sel_x) || ~sel_x == `$num_outputs`'b0 || !$time)else begin
 	 $display("%t: ERROR: Bad select signals for booth`$booth` cell: select=`$num_outputs`b", $time, sel_x);
 	 $finish(2);
       end
