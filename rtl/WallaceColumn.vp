@@ -13,7 +13,8 @@
  * using a Wallace architecture
  *
  * Parameters:
- * * ColumnHight, ColumnPosition, MinRow, BoothType, CarryInFlag, LayoutShape
+ * * ColumnHight, ColumnPosition, MinRow, BoothType, CarryInFlag, LayoutShape,
+ * * PrevColumn (pointer to the previous column object)
  * 
  * Note that if:
  * CarryInFlag == Normal ==> ci_w=N-3 , co_w=N-3
@@ -65,8 +66,21 @@
 //;                            "paralleloid)");
 //; my $ci_flag = parameter(Name=>'CarryInFlag', Val=>'Normal', List=>['Normal','OneMissing','OneExtra','TwoExtra'],
 //;                      Doc=>"Is there one less carry in for this column? or maybe one or two more? (Normal is ColumnHight-3)");
+//; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
+//;			     Doc=>"Pointer to the previous column of the multiplier ".
+//;				  "(must be assigned or set to zero at instantiation!)");
+//; $self->error("Parameter PrevColumn must be assigned with a pointer to a Wallace column or 0 (zero)!")
+//;          unless $prev_col || $prev_col==0;
+//; my $prev_csa_arr_ptr = [];
+//; if ($prev_col){
+//;   $prev_csa_arr_ptr = $prev_col->get_param('CSAArr');
+//; }
+//; my @prev_csa_arr = @{$prev_csa_arr_ptr}; # dereference the array pointer
+//; my @csa_arr = ();
+//;
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
+//;
 //;
 //; my $ci_w = 0; my $co_w = 0; 
 //; $ci_w = $col_ht-4 if $ci_flag =~ /OneMissing/;
@@ -133,6 +147,7 @@ module `mname()` (
 
    //; while($hight > 1){
    //;   $step++;
+   //;   push(@csa_arr, 0);
    //;   my $missing_last_ci=0;
    //;   my $max_i = ($hight==2)? 1 : floor($hight/3);
    //;   my $next_hight = ($hight==2)? 1 : 2 * floor($hight/3) + $hight%3;
@@ -173,10 +188,12 @@ module `mname()` (
    //;     ########### Instantiate Cell #############
    //;     if ($hight>2) {
    //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;       $csa_arr[$step-1]++;
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
                                   .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
    //;     } else {
    //;       my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   //;       $csa_arr[$step-1]++;
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]),
                                   .s(pp_step`$step`[`2*$i`]), .co(wallace_co[`$csa_idx`]) );
    //;     }
@@ -235,8 +252,10 @@ module `mname()` (
     * won't kill us... I think :-<>
     * */
    //;   $step++;
+   //;   push(@csa_arr, 0);
    logic [0:0] 	 pp_step`$step`;
    //;   my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   //;   $csa_arr[$step-1]++;
    `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[0]), .b(wallace_ci[`$ci_w-1`]),
                                .s(pp_step`$step`[0]), .co(wallace_co[`$csa_idx`]) );
    //;   $csa_idx++;
@@ -249,8 +268,10 @@ module `mname()` (
     * won't kill us... I think :-<>
     * */
    //;   $step++;
+   //;   push(@csa_arr, 0);
    logic [0:0] 	 pp_step`$step`;
-   //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;   $csa_arr[$step-1]++;
    `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[0]), .b(wallace_ci[`$ci_w-1`]), .ci(wallace_ci[`$ci_w-2`]),
                                .s(pp_step`$step`[0]), .co(wallace_co[`$csa_idx`]) );
    //;   $csa_idx++; 
@@ -265,4 +286,6 @@ module `mname()` (
 
 endmodule
 
-
+//; # Declare the current csa_arr for other modules to use
+//; parameter(Name=>'CSAArr', Val=>\@csa_arr, Force=>1,
+//;	      Doc=>"Array of number of CSAs per level of the tree");

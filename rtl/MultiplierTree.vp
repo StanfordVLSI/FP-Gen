@@ -94,6 +94,7 @@ module `mname()` (
 
 //; my $ci_w = 0;
 //; my $co_w = 0;
+//; my $prev_col_obj = 0; # pointer to previous column
 //; for (my $j = 2*$booth; $j < $width-$booth; $j++) {
 //;   my $first_row = ($j < $pp_width)?  0 : ceil(($j+1-$pp_width)/$booth);
 //;   my $last_row = ( floor($j/$booth) < $pp_count-1) ? floor($j/$booth) : $pp_count-1;  #min( floor($j/$booth), $pp_count-1);
@@ -147,7 +148,8 @@ module `mname()` (
 //;      			     ColumnPosition=> $j, 
 //;       			     MinRow=> $first_row, 
 //;       			     BoothType => $booth,
-//;        			     CarryInFlag => $ci_flag);
+//;        			     CarryInFlag => $ci_flag,
+//;        			     PrevColumn => $prev_col_obj );
 //;
       // Instantiate collumn `$j` summation tree: pp_width=`$pp_width` first_row=`$first_row` last_row=`$last_row` hight=`$pp_col_ht`
       `$treecolumn_obj->instantiate()`  (.pp(pp_col`$j`),
@@ -160,6 +162,7 @@ module `mname()` (
                                          .sum(out0[`$j`]), .carry(out1[`$j+1`]));
 
 //;   # Get ready for next iteration:
+//;   $prev_col_obj = $treecolumn_obj;
 //; }
   
    // Columns `$width-$booth` through `$width-1` -- only one pp again 
