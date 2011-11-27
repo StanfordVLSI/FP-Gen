@@ -117,13 +117,6 @@ module `mname`(
    logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
    logic [`$pp_count-1`:0] 	 S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended b
 
-   logic [`$extended_width-2`:0] y_edge_vector;
-
-   //;   for(my $i=0; $i < $extended_width-1; $i++) {
-   //;     my $edge_obj = generate('Xor_gate', "edge_$i");
-   `$edge_obj->instantiate` (.a(extended_y[`$i`]),.b(extended_y[`$i+1`]),.out(y_edge_vector[`$i`]));
-   //;   }
-
 
    
    //;   # If booth==3 we need to prepare a 3*x and ~(3*x) products
@@ -169,9 +162,8 @@ module `mname`(
       //;   }
       //;   if ($booth>=4) {
       .x5(x5), .x7(x7),
-      //;   }			    
-      .y_edge_vector(y_edge_vector[`$booth*($i+1)-1`:`$booth*$i`]), 
-      .y_msb(extended_y[`$booth*($i+1)`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
+      //;   }			     
+      .y(extended_y[`$booth*($i+1)`:`$booth*$i`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
    
    //;   } # End of "for(my $i=0..."
 

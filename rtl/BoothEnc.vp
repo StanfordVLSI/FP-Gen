@@ -79,7 +79,10 @@ module `mname` (
    logic [`$width+2*$booth-3`:0]     x_padded;
    assign x_padded = {`$booth-1`'b0, x, `$booth-1`'b0};
 
-  //;   if ($booth>=4) {
+  //;   if ($booth==3){
+   logic [`$width+1`:0] 	x3_padded;
+   assign x3_padded = x3; // yep, I know it's not really padded, but it's for the naming convention later   
+  //;   }elsif ($booth>=4) {
    logic [`$width+3`:0] 	x3_padded;
    assign x3_padded = {1'b0, x3, 1'b0};
   //;   }
@@ -93,7 +96,7 @@ module `mname` (
    `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x), .sel_S(sel_S));
 
 
-   //;   for(my $i=$booth-1; $i <= $width+$booth-1; $i++){
+   //;   for(my $i=$booth-1; $i < $width+2*($booth-1); $i++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1
    //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
    `$BoothCell_obj->instantiate` 
      (.sel_x(sel_x), .sel_S(sel_S),
@@ -103,12 +106,12 @@ module `mname` (
            x_padded[`$i-3`], x7[`$i-3`], x3_padded[`$i-3`] , x5[`$i-3`],
    //;     }
    //;     if ($booth>=3) {
-           x_padded[`$i-2`], x3[`$i-2`],
+           x_padded[`$i-2`], x3_padded[`$i-2`],
    //;     }
            x_padded[`$i-1`] , x_padded[`$i`] } ),
       .y(y) , .pp(pp[`$i-$booth+1`]));
    
    //;   }
-   assign pp[`$width+1`] = ~S;
+   assign pp[`$width+$booth-1`] = ~S;
 endmodule
 
