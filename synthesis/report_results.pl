@@ -3,7 +3,7 @@
 
 #get a sorted list of all report files
 @files = <*/reports/*.mapped.timing.rpt>;
-print "run, mapped delay, routed delay, optimized delay, mapped core area, routed core area, optimized core area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
+print "design, Vth, Vdd, mapped delay, routed delay, optimized delay, mapped core area, routed core area, optimized core area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
 
 foreach $file (@files) {
   $file =~ /(.vt_\dv\d_.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
@@ -137,8 +137,10 @@ foreach $file (@files) {
      }
     close REPORTFILE;
   }
+
+  $vdd =~ s/v/./;
   if ($mapped_delay != 1000)
   {
-     print "$prefix, $mapped_delay, $routed_delay, $optimized_delay, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power\n";
+     print "${vt}_$target_delay, $vt, $vdd, $mapped_delay, $routed_delay, $optimized_delay, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power\n";
   }
 }
