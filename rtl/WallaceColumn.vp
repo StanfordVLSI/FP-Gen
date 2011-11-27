@@ -236,7 +236,7 @@ endmodule
 //; # Declare the current csa_arr for other modules to use
 //; parameter(Name=>'CSAArr', Val=>\@csa_arr, Force=>1,
 //;	      Doc=>"Array of number of CSAs per level of the tree");
-//; parameter(Name=>'co_count', Val=>$co_w, Force=>1,
-//;           Doc=>"Number of column co signals");
+//; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1,
+//;           Doc=>"Number of column carry out signals");
 //; $self->error("The number of constructed co in Wallace does not match $co_idx != $co_w")
 //;          unless $co_idx == $co_w;

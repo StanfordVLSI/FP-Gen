@@ -108,7 +108,7 @@ module `mname()` (
 //;       			     BoothType => $booth,
 //;        			     PrevColumn => $prev_col_obj );
 //;   my $ci_w = $co_w;
-//;   $co_w = $treecolumn_obj->get_param('co_count');
+//;   $co_w = $treecolumn_obj->get_param('CarryOutWidth');
 //;   if($co_w){
       logic [`$co_w-1`:0] c_col`$j`; // carry out of column j=`$j` (to be driven as carry in to `$j+1`)
 //;   }
