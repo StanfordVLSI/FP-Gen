@@ -49,7 +49,11 @@
 module `mname` (
     input logic [`$num_inputs-1`:0]		sel_x, x,
     input logic sel_S,
-    input logic [`$booth`:0]		y,                 	//y[`$booth`+K:K] 
+    input logic [`$booth`:0]		y,                 	//y[`$booth`+K:K]
+   //;if ($booth==2) {
+    input logic xn1,
+    output logic xn0,
+   //;}
     output logic 		pp               	// single bit of the relevant pp
 		);
 
@@ -58,10 +62,8 @@ module `mname` (
    
    assign S = y[`$booth`];
    //;if ($booth==2) {
-   logic xn[1:0];
-   assign xn[0] = ~S ^ x[0];
-   assign xn[1] = ~S ^ x[1];
-   assign pp = ~((sel_x[0] | xn[0]) & (sel_x[1] | xn[1]) & sel_S );
+   assign xn0 = ~S ^ x[0];
+   assign pp = ~((sel_x[0] | xn0) & (sel_x[1] | xn1) & sel_S );
 
    //;} else {
    // Mux 0, x1, x2, x4, x8 based on the edge vector

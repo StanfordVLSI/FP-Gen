@@ -95,6 +95,10 @@ module `mname` (
    //;  my $BoothSel_obj = generate('BoothSel', "Booth_sel", BoothType=>$booth);
    `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x), .sel_S(sel_S));
 
+   //;if ($booth==2) {
+   logic [`$width+2*$booth-3`:0] xn;
+   assign xn[0] = ~x_padded[0] ^ S;
+   //;}
 
    //;   for(my $i=$booth-1; $i < $width+2*($booth-1); $i++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1
    //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
@@ -109,6 +113,9 @@ module `mname` (
            x_padded[`$i-2`], x3_padded[`$i-2`],
    //;     }
            x_padded[`$i-1`] , x_padded[`$i`] } ),
+   //;if ($booth==2) {
+           .xn1(xn[`$i-1`]), .xn0(xn[`$i`]),
+   //;}
       .y(y) , .pp(pp[`$i-$booth+1`]));
    
    //;   }
