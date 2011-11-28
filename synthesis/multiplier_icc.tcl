@@ -131,6 +131,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set boothSel_name [get_object_name $boothSel_cell];
 
     regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9])} $boothSel_name matched boothEnc_index boothSel_index;
+    set boothSel_row [expr 2*($column_count -1 - ($booth_sel_count-1-$boothSel_index)*$booth_select_cadence)]
 
     set boothSel_child_cells [get_cells "${boothSel_name}/*"];
     set boothSel_children_count [sizeof_collection $boothSel_child_cells];
@@ -145,12 +146,12 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       }
       add_to_rp_group ${DESIGN_NAME}::rp_tree \
                     -hierarchy ${DESIGN_NAME}::rp_boothSel_${boothEnc_index}_${boothSel_index} \
-                    -column $boothEnc_index -row [expr 2*($boothSel_index*$booth_select_cadence)];
+                    -column $boothEnc_index -row $boothSel_row;
     } else {
       foreach_in_collection boothSel_child_cell $boothSel_child_cells {
         set boothSel_child_name [get_object_name $boothSel_child_cell];
         add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -leaf $boothSel_child_name -column $boothEnc_index -row [expr 2*($boothSel_index*$booth_select_cadence)];
+                    -leaf $boothSel_child_name -column $boothEnc_index -row $boothSel_row;
       }
     }
   }
@@ -163,8 +164,8 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set CSA_name [get_object_name $CSA_cell];
 
     regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} $CSA_name matched CSA_column row_index compressed_CSA_column;
-    set column_offset [expr ($compressed_CSA_column - $min_compressed_column) / ($booth_select_cadence-1) + 1];
-    set column_offset [expr $column_offset>$booth_sel_count? $booth_sel_count:$column_offset];
+    set column_offset [expr $booth_sel_count - 1 - ($max_compressed_column - $compressed_CSA_column) / ($booth_select_cadence-1)];
+    set column_offset [expr $column_offset<0? 0:$column_offset];
     set column_index [expr $compressed_CSA_column-$min_compressed_column+$column_offset ]
     set is_odd_row [expr $row_index%2];
  
@@ -197,7 +198,8 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     } 
 
     # Second: Booth cells
-    set booth_cells [get_cells -hierarchical -regexp  "BoothEnc_u${row_index}.cell_${column_index}"];
+    set booth_column_index [expr $column_index - $column_offset];
+    set booth_cells [get_cells -hierarchical -regexp  "BoothEnc_u${row_index}.cell_${booth_column_index}"];
     #set_dont_touch $booth_cells ;
     set booth_count [sizeof_collection $booth_cells];
     foreach_in_collection booth_cell $booth_cells {
@@ -205,22 +207,22 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       set booth_child_cells [get_cells "${booth_name}/*"];
       set booth_children_count [sizeof_collection $booth_child_cells];
       if {$booth_children_count>0} {
-         create_rp_group rp_booth_${row_index}_${column_index} -columns [expr $booth_children_count+1] -rows 1;
-         #echo "created rp group rp_booth_${row_index}_${column_index}";
+         create_rp_group rp_booth_${row_index}_${booth_column_index} -columns [expr $booth_children_count+1] -rows 1;
+         #echo "created rp group rp_booth_${row_index}_${booth_column_index}";
          set booth_child_column 0;
          foreach_in_collection booth_child_cell $booth_child_cells {
            set booth_child_name [get_object_name $booth_child_cell];
-           add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${column_index} \
+           add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${booth_column_index} \
                            -leaf $booth_child_name -column $booth_child_column -row 0;
-           #echo "added leaf  $booth_child_name to rp group rp_booth_${row_index}_${column_index}";
+           #echo "added leaf  $booth_child_name to rp group rp_booth_${row_index}_${booth_column_index}";
            set booth_child_column [expr $booth_child_column + 1]
          }
-         add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${column_index} \
-                    -keepout gap_${row_index}_${column_index} -type space -column $booth_children_count -row 0 -width 4 -height 1;
+         add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${booth_column_index} \
+                    -keepout gap_${row_index}_${booth_column_index} -type space -column $booth_children_count -row 0 -width 4 -height 1;
          add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -hierarchy ${DESIGN_NAME}::rp_booth_${row_index}_${column_index} \
+                    -hierarchy ${DESIGN_NAME}::rp_booth_${row_index}_${booth_column_index} \
                     -column [expr $row_index-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
-         #echo "added group  rp_booth_${row_index}_${column_index}  to rp group rp_tree";
+         #echo "added group  rp_booth_${row_index}_${booth_column_index}  to rp group rp_tree";
       }    
     }
   }
