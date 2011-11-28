@@ -64,6 +64,23 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
     }
   }
 
+  set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
+  set booth_encoder_count 0;
+  set booth_sel_count 0;
+
+  foreach_in_collection booth_sel_cell $booth_sel_cells {
+
+    regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9]*)} [get_object_name $booth_sel_cell] matched booth_sel_row booth_sel_col;
+
+    if { $booth_sel_row >= $booth_encoder_count } {
+      set booth_encoder_count [expr $booth_sel_row+1]
+    }
+
+    if { $booth_sel_col >= $booth_sel_count } {
+      set booth_sel_count [expr $booth_sel_col+1]
+    }
+  }
+
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # First: pin placement
@@ -99,46 +116,44 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 
   # flip rows and columns to keep it more square
-  suppress_message [list SEL-004 PSYN-1002]
-  create_rp_group rp_tree -columns [expr $max_row + 2] -rows  [expr 2*($max_compressed_column - $min_compressed_column+1)] -allow_non_rp_cells ;
+  suppress_message [list SEL-004 PSYN-1002 RPGP-090]
+  set row_count [expr $max_row + 2 > $booth_encoder_count? $max_row + 2 : $booth_encoder_count];
+  set column_count [expr $max_compressed_column - $min_compressed_column + 1 + $booth_sel_count];
+  set booth_select_cadence [expr $column_count/$booth_sel_count]
+  
+  create_rp_group rp_tree -columns $row_count -rows [expr 2*$column_count] -allow_non_rp_cells ;
 
-  set boothSel_cells [get_cells -hierarchical "*Booth_sel"];
+  set boothSel_cells [get_cells -hierarchical "*Booth_sel_*"];
 
-  create_rp_group rp_boothSel -rows 1 -columns [sizeof_collection $boothSel_cells] -allow_non_rp_cells -placement_type compression;
 
   foreach_in_collection boothSel_cell $boothSel_cells {
 
     set boothSel_name [get_object_name $boothSel_cell];
 
-    regexp {BoothEnc_u([0-9]*)/Booth_sel} $boothSel_name matched boothSel_index;
+    regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9])} $boothSel_name matched boothEnc_index boothSel_index;
 
     set boothSel_child_cells [get_cells "${boothSel_name}/*"];
     set boothSel_children_count [sizeof_collection $boothSel_child_cells];
     if {$boothSel_children_count>1} {
-      create_rp_group rp_boothSel_${boothSel_index} -columns [expr int(floor($boothSel_children_count/4)+1)] -rows 4;
+      create_rp_group rp_boothSel_${boothEnc_index}_${boothSel_index} -columns [expr int(floor($boothSel_children_count/2)+1)] -rows 2;
       set boothSel_child_idx 0;
       foreach_in_collection boothSel_child_cell $boothSel_child_cells {
         set boothSel_child_name [get_object_name $boothSel_child_cell];
-        add_to_rp_group ${DESIGN_NAME}::rp_boothSel_${boothSel_index} \
-                           -leaf $boothSel_child_name -column [expr int(floor($boothSel_child_idx/4))] -row [expr $boothSel_child_idx%4];
+        add_to_rp_group ${DESIGN_NAME}::rp_boothSel_${boothEnc_index}_${boothSel_index} \
+                           -leaf $boothSel_child_name -column [expr int(floor($boothSel_child_idx/2))] -row [expr $boothSel_child_idx%2];
         set boothSel_child_idx [expr $boothSel_child_idx + 1]
       }
-      add_to_rp_group ${DESIGN_NAME}::rp_boothSel \
-                    -hierarchy ${DESIGN_NAME}::rp_boothSel_${boothSel_index} \
-                    -column $boothSel_index -row 0;
+      add_to_rp_group ${DESIGN_NAME}::rp_tree \
+                    -hierarchy ${DESIGN_NAME}::rp_boothSel_${boothEnc_index}_${boothSel_index} \
+                    -column $boothEnc_index -row [expr 2*($boothSel_index*$booth_select_cadence)];
     } else {
       foreach_in_collection boothSel_child_cell $boothSel_child_cells {
         set boothSel_child_name [get_object_name $boothSel_child_cell];
-        add_to_rp_group ${DESIGN_NAME}::rp_boothSel \
-                    -leaf $boothSel_child_name -column $boothSel_index -row 0;
+        add_to_rp_group ${DESIGN_NAME}::rp_tree \
+                    -leaf $boothSel_child_name -column $boothEnc_index -row [expr 2*($boothSel_index*$booth_select_cadence)];
       }
     }
   }
-
-
-  create_rp_group rp_root -rows 2 -columns 1 -allow_non_rp_cells -placement_type compression;
-  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_tree -row 0 -column 0;
-  add_to_rp_group ${DESIGN_NAME}::rp_root -hierarchy ${DESIGN_NAME}::rp_boothSel -row 1 -column 0;
   
 
 # handle the edge signal of Booth encoders
@@ -148,7 +163,9 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set CSA_name [get_object_name $CSA_cell];
 
     regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} $CSA_name matched CSA_column row_index compressed_CSA_column;
-    set column_index [expr $compressed_CSA_column-$min_compressed_column]
+    set column_offset [expr ($compressed_CSA_column - $min_compressed_column) / ($booth_select_cadence-1) + 1];
+    set column_offset [expr $column_offset>$booth_sel_count? $booth_sel_count:$column_offset];
+    set column_index [expr $compressed_CSA_column-$min_compressed_column+$column_offset ]
     set is_odd_row [expr $row_index%2];
  
     # Second: CSA cells 

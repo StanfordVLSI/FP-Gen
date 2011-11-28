@@ -56,6 +56,8 @@
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //; my $width = parameter(Name=>'Width', Val=>24, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
+//; my $encode_fanout = parameter(Name=>'EncFanout', Val=>18, Min=>1, Step=>1,
+//;                       Doc=>"Fanout of Booth select signals");
 
 
 module `mname` (
@@ -89,21 +91,28 @@ module `mname` (
 
    assign S = y[`$booth`];
 
-   logic  [`(2**($booth-1))-1`:0] sel_x;
-   logic sel_S;
 
-   //;  my $BoothSel_obj = generate('BoothSel', "Booth_sel", BoothType=>$booth);
-   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x), .sel_S(sel_S));
+
+
 
    //;if ($booth==2) {
    logic [`$width+2*$booth-3`:0] xn;
    assign xn[0] = ~x_padded[0] ^ S;
    //;}
 
+   //;   my $j=-1;
    //;   for(my $i=$booth-1; $i < $width+2*($booth-1); $i++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1
+   //;     if (($i-$booth+1)%$encode_fanout==0){
+   //;       $j++;
+   //;       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
+   logic  [`(2**($booth-1))-1`:0] sel_x`$j`;
+   logic sel_S`$j`;
+   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`), .sel_S(sel_S`$j`));      
+
+   //;     }
    //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
    `$BoothCell_obj->instantiate` 
-     (.sel_x(sel_x), .sel_S(sel_S),
+     (.sel_x(sel_x`$j`), .sel_S(sel_S`$j`),
 
       .x( {
    //;     if ($booth>=4) {
