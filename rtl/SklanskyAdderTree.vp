@@ -9,8 +9,9 @@
 
 /* *****************************************************************************
  * Description:
- * Sklansky tree module creates group propagate and generate signals P & G from bit proapagate and generate signals p, g
- * Note that G[i] & P[i] are group signals for bits from 0 to i, while g[i] & p[i] are individual signals. 
+ * Sameh: FIXME -- put module description here
+ * Note that G & P are group signals from 0 to i, while g & p are individual 
+ * signals.
  * 
  * 
  * Parameters:
@@ -21,7 +22,6 @@
  * Date           Author    Description
  * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
- * Nov 22, 2011   jingpu    add parameter for radix
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -37,11 +37,6 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>109, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $radix = parameter(Name=>'Radix', Val=>2, Min=>1, Step=>1, Max=>8,
-//;                       Doc=>"Tree radix");
-//;
-//; # Local Variables
-//; my $width_by_radix = floor($width/$radix);
 
 module `mname` (
     input logic [`$width-1`:0] g,p,
@@ -56,119 +51,36 @@ module `mname` (
     */
    //; }
 
-   //; if ($width > $radix) {
+   //; if ($width > 3) {
      // Use internal signals for upper part of the tree:
-     logic [`$width-1`:0] G_sub, P_sub;
+     logic [`$width-floor($width/2)-1`:0] G_Upper, P_Upper;
 
-     // Generate upper and lower trees
+     //;# Generate upper and lower trees
+     //; my $lowerTree_obj = generate('SklanskyAdderTree', 'lowerTree', Width=>floor($width/2));
+     //; my $UpperTree_obj = generate('SklanskyAdderTree', 'UpperTree', Width=>$width-floor($width/2)); 
 
-     //; for (my $i=0; $i < $radix-1; $i++) {
-     //; my $lowerTree_obj = generate('SklanskyAdderTree', "lowerTree_$i", Width=>$width_by_radix, Radix=>$radix);
-     `$lowerTree_obj->instantiate()` (.g(g[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), 
-                                      .p(p[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]),
-				      .G(G_sub[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]), 
-                                      .P(P_sub[`($i+1)*($width_by_radix)-1`:`$i*($width_by_radix)`]) );
-     //; }
+     // Instantiate upper and lower trees
+     `$lowerTree_obj->instantiate()` (.g(g[`floor($width/2)-1`:0]), .p(p[`floor($width/2)-1`:0]),
+				      .G(G[`floor($width/2)-1`:0]), .P(P[`floor($width/2)-1`:0])
+				      );
 
-     //; my $UpperTree_obj = generate('SklanskyAdderTree', 'UpperTree', Width=>$width - $width_by_radix, Radix=>$radix); 
-     `$UpperTree_obj->instantiate()` (.g(g[`$width-1`:`($radix-1)*($width_by_radix)`]),
-                                      .p(p[`$width-1`:`($radix-1)*($width_by_radix)`]),
-     				      .G(G_sub[`$width-1`:`($radix-1)*($width_by_radix)`]),
-                                      .P(P_sub[`$width-1`:`($radix-1)*($width_by_radix)`]) );
-     //; for (my $i=0; $i < $width_by_radix ; $i++) {
-   assign G[`$i`] = G_sub[`$i`];
-   assign P[`$i`] = P_sub[`$i`];
-     //; } 
-     //; for (my $i=$width_by_radix ; $i < ( $radix==2 ? $width : 2*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`$width_by_radix-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`$width_by_radix-1`];
-     //; }
-     //; for (my $i=2*($width_by_radix) ; $i < ( $radix<3? 0 : $radix==3 ? $width : 3*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`2*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`2*($width_by_radix)-1`] & G_sub[`$width_by_radix-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`2*($width_by_radix)-1`] & P_sub[`$width_by_radix-1`];
-     //; }
-     //; for (my $i=3*($width_by_radix) ; $i < ( $radix<4? 0 : $radix==4 ? $width : 4*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`3*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`3*($width_by_radix)-1`] & G_sub[`2*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & G_sub[`$width_by_radix-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & P_sub[`$width_by_radix-1`];
-     //; }
-     //; for (my $i=4*($width_by_radix) ; $i < ( $radix<5? 0 : $radix==5 ? $width : 5*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`4*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`4*($width_by_radix)-1`] & G_sub[`3*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & G_sub[`2*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & G_sub[`$width_by_radix-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & P_sub[`$width_by_radix-1`];
-     //; }
-     //; for (my $i=5*($width_by_radix) ; $i < ( $radix<6? 0 : $radix==6 ? $width : 6*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`5*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`5*($width_by_radix)-1`] & G_sub[`4*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & G_sub[`3*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & G_sub[`2*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & G_sub[`1*($width_by_radix)-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & P_sub[`$width_by_radix-1`];
-     //; }
-     //; for (my $i=6*($width_by_radix) ; $i < ( $radix<7? 0 : $radix==7 ? $width : 7*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`6*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`6*($width_by_radix)-1`] & G_sub[`5*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & G_sub[`4*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & G_sub[`3*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & G_sub[`2*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & G_sub[`1*($width_by_radix)-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & P_sub[`$width_by_radix-1`];
-     //; }
-     //; for (my $i=7*($width_by_radix) ; $i < ( $radix<8? 0 : $radix==8 ? $width : 8*($width_by_radix) ) ; $i++) {
-   assign G[`$i`] = G_sub[`$i`] | P_sub[`$i`] & G_sub[`7*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & G_sub[`6*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & P_sub[`6*($width_by_radix)-1`] & G_sub[`5*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & G_sub[`4*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & G_sub[`3*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & G_sub[`2*($width_by_radix)-1`]
-                                | P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & G_sub[`1*($width_by_radix)-1`];
-   assign P[`$i`] = P_sub[`$i`] & P_sub[`7*($width_by_radix)-1`] & P_sub[`6*($width_by_radix)-1`] & P_sub[`5*($width_by_radix)-1`] & P_sub[`4*($width_by_radix)-1`] & P_sub[`3*($width_by_radix)-1`] & P_sub[`2*($width_by_radix)-1`] & P_sub[`$width_by_radix-1`];
-     //; }
+     `$UpperTree_obj->instantiate()` (.g(g[`$width-1`:`floor($width/2)`]), .p(p[`$width-1`:`floor($width/2)`]),
+     				   .G(G_Upper[`$width-floor($width/2)-1`:0]),.P(P_Upper[`$width-floor($width/2)-1`:0])
+     				   );
+     
+     //; for (my $i=0 ; $i<$width-floor($width/2); $i++){
+       assign G[`$i+floor($width/2)`] = G_Upper[`$i`] | (P_Upper[`$i`] & G[`floor($width/2)-1`]);
+       assign P[`$i+floor($width/2)`] = P_Upper[`$i`] & P[`floor($width/2)-1`];
+     //; } # End of "for (my $i=0..."
+   
 
-
-
-   //; } else { # I.e., if NOT $width > $radix...
-   assign G[0] = g[0];
-   assign P[0] = p[0];
-     //;   if ($width > 1){
-   assign G[1] = g[1] | p[1] & g[0];
-   assign P[1] = p[1] & p[0];
-     //;   }
-     //;   if ($width > 2){
-   assign G[2] = g[2] | p[2] & g[1] | p[2] & p[1] & g[0];
-   assign P[2] = p[2] & p[1] & p[0];
-     //;   }
-     //;   if ($width > 3){
-   assign G[3] = g[3] | p[3] & g[2] | p[3] & p[2] & g[1] | p[3] & p[2] & p[1] & g[0];
-   assign P[3] = p[3] & p[2] & p[1] & p[0];
-     //;   }
-     //;   if ($width > 4){
-   assign G[4] = g[4] | p[4] & g[3] | p[4] & p[3] & g[2] | p[4] & p[3] & p[2] & g[1] 
-                      | p[4] & p[3] & p[2] & p[1] & g[0];
-   assign P[4] = p[4] & p[3] & p[2] & p[1] & p[0];
-     //;   } 
-     //;   if ($width > 5){
-   assign G[5] = g[5] | p[5] & g[4] | p[5] & p[4] & g[3] | p[5] & p[4] & p[3] & g[2] 
-                      | p[5] & p[4] & p[3] & p[2] & g[1] | p[5] & p[4] & p[3] & p[2] & p[1] & g[0];
-   assign P[5] = p[5] & p[4] & p[3] & p[2] & p[1] & p[0];
-     //;   } 
-     //;   if ($width > 6){
-   assign G[6] = g[6] | p[6] & g[5] | p[6] & p[5] & g[4] | p[6] & p[5] & p[4] & g[3] 
-                      | p[6] & p[5] & p[4] & p[3] & g[2] | p[6] & p[5] & p[4] & p[3] & p[2] & g[1]
-                      | p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0];
-   assign P[6] = p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0];
-     //;   } 
-     //;   if ($width > 7){
-   assign G[7] = g[7] | p[7] & g[6] | p[7] & p[6] & g[5] | p[7] & p[6] & p[5] & g[4] 
-                      | p[7] & p[6] & p[5] & p[4] & g[3] | p[7] & p[6] & p[5] & p[4] & p[3] & g[2] 
-                      | p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & g[1] 
-                      | p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0];
-   assign P[7] = p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0];
-     //;   }
+   //; } else { # I.e., if NOT $width > 3...
+     assign G[0] = g[0];
+     assign P[0] = p[0];
+     //; for (my $i=1 ; $i<$width ; $i++){
+       assign G[`$i`] = g[`$i`] | (p[`$i`] & G[`$i-1`]);
+       assign P[`$i`] = p[`$i`] & P[`$i-1`];
+     //; } # End of "for (my $i=0..."
    //; } 
    
 endmodule
