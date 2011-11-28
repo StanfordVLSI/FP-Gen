@@ -86,7 +86,8 @@
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
 //;
 //; # Declare some local variables
-//; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3 
+//; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
+//;
 //; my $pp_count = ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
 //; $pp_count -=1 if ((!$useInc) && ($booth==1));
 //; my $pp_width = ($booth==1)? $width+2 : $width+3*$booth;
@@ -127,9 +128,12 @@ module `mname`(
    //; elsif ($booth>=2) {
 
    logic [`$extended_width`-1:0] extended_y;
+   //;   if ($useInc) {
    // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
    assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
-   
+   //;   }else{
+   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,1'b0};  //sign extension guarantees positive last partial product
+   //;   }   
    logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
    logic [`$pp_count-1`:0] 	 S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended b
 
@@ -185,11 +189,20 @@ module `mname`(
 
    
    // Finally, append the sign extenssions to the partial products
+   //;   if ($useInc){
    assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
    assign pp[1] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
    assign pp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[1], {(`$booth-2`){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
-   //;   for(my $i=3; $i < $pp_count+1; $i++) {
+   //;     for(my $i=3; $i < $pp_count+1; $i++) {
    assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i-1`], {(`$booth-1`){1'b0}},S[`$i-2`]};
+   //;     }
+   //;   }
+   //;   else { # i.e., not $useInc
+   assign pp[0] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
+   //;     for(my $i=1; $i < $pp_count; $i++) {
+   assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i`], {(`$booth-1`){1'b0}},S[`$i-1`]};
+   //;     }
+   
    //;   }
    //; } # End of "elsif ($booth==2 || $booth==3)..."
 

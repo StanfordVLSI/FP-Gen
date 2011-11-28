@@ -102,9 +102,10 @@ module `mname`(
 			  );
 
    /* Finally extract only the relevant bits:
-    * If UseInc was set to 'YES' then LSBs are just paddings to account 
+    * We padded pp[0] with zeros on the right --> shift left by booth
+    * If UseInc was set to 'YES' then LSBs are just more paddings to account 
     *    for adding xinc and yinc at the same significance as pp0
-    *    --> shift left by 2*booth*useInc
+    *    --> shift left by another booth*useInc
     * If BoothType>1 then MSBs are just sign extensions (in booth1 sign
     *    extensions are not used thus we can ignore them completely)
     * */
@@ -112,8 +113,8 @@ module `mname`(
     assign out0 = RawOut0[`$raw_out_w-1`:`2*$useInc`];
     assign out1 = RawOut1[`$raw_out_w-1`:`2*$useInc`];
    //; }else{ # booth==2 or booth==3
-    assign out0 = RawOut0[`2*$width+1+2*$booth*$useInc`:`2*$booth*$useInc`];
-    assign out1 = RawOut1[`2*$width+1+2*$booth*$useInc`:`2*$booth*$useInc`];
+    assign out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    assign out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
    //; }
 
 endmodule

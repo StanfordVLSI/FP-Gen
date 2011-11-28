@@ -43,7 +43,7 @@
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
-//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
+//; my $arch = parameter(Name=>'Architecture', Val=>'Fused', List=>['Cascade', 'Fused'],
 //; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
 //; 			      "or Fused? (Pick:Cascade/Fused)");
 //; my $useInc = ($arch =~ /Cascade/)?1:0;
