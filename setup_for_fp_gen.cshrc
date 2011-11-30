@@ -61,4 +61,11 @@ module load vcs-mx
 #set path=($GENESIS_LIBS/Genesis2 $path)
 module load genesis2
 ######################################################
-	
+
+######################################################
+# Env definition for synthesis and place and route
+######################################################
+source $HOME/synopsys_startup/library_TSMC_45.csh
+module load dc_shell
+module load icc
+module load pts
