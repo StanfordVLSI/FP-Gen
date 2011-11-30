@@ -1,0 +1,37 @@
+/**************************************************************/
+/* adderGPTree.vp                                             */
+/*    John Brunhaver jbrunhaver@gmail.com                     */
+/**************************************************************/
+
+//;# Import Libs
+//; use POSIX ();
+//;
+//  PARAMETERS:
+//; my $TreeType = parameter( name=>'TreeType', val=>'Sklansky' ,
+//;                            doc=>'Type of Adder' ,
+//;                            list=>[ 'Sklansky' ] ) ;
+//; my $BW  = parameter( name=>'BitWidth', val=>16 , 
+//;                      doc=>'!functional! BitWidth of operands' , 
+//;                      min=>2 , max=>512, step=>1 );
+
+
+//  ... Wrapper for the Various Adder Designs ... //
+module `mname()` 
+  (
+    //Input Signals
+    input logic  [ `$BW-1` : 0] p,
+    input logic  [ `$BW-1` : 0] g,
+
+    //Output Signals
+    output logic [ `$BW-1` : 0] P ,
+    output logic [ `$BW-1` : 0] G 
+   );
+
+
+//; my $treeInst ;
+//; $TreeType eq 'Sklansky' and $treeInst = generate( 'adderSklanskyGPTree', 'SklanskyTreeInst' , BitWidth=>$BW );
+   
+`$treeInst->instantiate()` (.p(p),.g(g),.P(P),.G(G)); 
+
+      
+endmodule : `mname` 

@@ -1,0 +1,115 @@
+/**************************************************************/
+/* adderSklanskyGPTree.vp                                     */
+/*    John Brunhaver jbrunhaver@gmail.com                     */
+/**************************************************************/
+
+//;# Import Libs
+//; use POSIX ;
+//;
+//  PARAMETERS:
+//; my $BW  = parameter( name=>'BitWidth', val=>32 , 
+//;                      doc=>'!functional! BitWidth of operands' , 
+//;                      min=>2 , max=>512, step=>1 );
+
+//; my @placement ;
+
+module `mname()` 
+  (
+    //Input Signals
+    input logic  [ `$BW-1` : 0] p,
+    input logic  [ `$BW-1` : 0] g,
+
+    //Output Signals
+    output logic [ `$BW-1` : 0] P ,
+    output logic [ `$BW-1` : 0] G 
+   );
+  
+// Convert all input signals into individual wires of the form A_1 A_BW etc
+//; for( my $i=0 ; $i < $BW ; $i++ ){
+   logic   P_`$i`_to_`$i`_H ;
+   logic   G_`$i`_to_`$i`_H ;
+   assign  P_`$i`_to_`$i`_H = p[`$i`];
+   assign  G_`$i`_to_`$i`_H = g[`$i`];
+//;}
+   
+   logic  P_`$BW`_to_`$BW`_H;
+   logic  G_`$BW`_to_`$BW`_H;
+   assign P_`$BW`_to_`$BW`_H = 1'b0 ;
+   assign G_`$BW`_to_`$BW`_H = 1'b0 ;
+   
+   
+// Build Sklansky Tree: Figure 10.34b of Weste Harris 3rd Ed. pg 662
+//; my $height = ceil( log( $BW ) / log( 2 ) ); 
+//; for( my $j=0 ; $j < $height ; $j++ ){
+//;     my $runs = 2 ** ( $j ) ; #Number of grey cells in a row 1,2,4,8 ...
+//;
+//;     my $i = $runs ;    
+//;     #Place Grey Cells at right hand side of row   
+//;     for( ; ($i < (2*$runs)) && ($i <= $BW) ; $i++ ){
+//;           my $instName = sprintf( "adderBlackCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , $height - $j );
+//;           $placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
+//;           my $I = $i ;                
+//;           my $K = $runs;               
+//;           my $J = 0;        
+//;           my $adderCell = generate( 'adderBlackCell',
+//;                                     $instName, 
+//;                                     'I'=>$I,
+//;                                     'K'=>$K,
+//;                                     'J'=>$J );
+//;             my $PU  = $adderCell->get_param('P_UP');
+//;             my $GU  = $adderCell->get_param('G_UP');
+//;             my $PD  = $adderCell->get_param('P_DN');
+//;             my $GD  = $adderCell->get_param('G_DN');
+//;             my $PA  = $adderCell->get_param('P_ALL');
+//;             my $GA  = $adderCell->get_param('G_ALL');
+                logic `$PA` , `$GA` ; // looking for: `$PU`, `$GU`, `$PD`, `$GD`
+              `$adderCell->instantiate()` (.*); //Ports implied
+//;     }
+//;
+//;
+//;     #Place Black Cells Along Rest of Row
+//;     while( $i <= $BW ){
+//;          $i+=$runs ;
+//;          my $bottum = $i - 1 ; #Index for last empty slot before black cell
+//;          for( my $it = 0 ; $it < $runs && $i <= $BW ; $it++ , $i++ ){
+//;             my $instName = sprintf( "adderBlackCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , $height - $j );
+//;             $placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
+//;             my $I = $i ;                
+//;             my $K = $bottum+1;               
+//;             my $J = $bottum-$runs+1;        
+//;             my $adderCell = generate( 'adderBlackCell',
+//;                                        $instName, 
+//;                                       'I'=>$I,
+//;                                       'K'=>$K,
+//;                                       'J'=>$J );
+//;             my $PU  = $adderCell->get_param('P_UP');
+//;             my $GU  = $adderCell->get_param('G_UP');
+//;             my $PD  = $adderCell->get_param('P_DN');
+//;             my $GD  = $adderCell->get_param('G_DN');
+//;             my $PA  = $adderCell->get_param('P_ALL');
+//;             my $GA  = $adderCell->get_param('G_ALL');
+                logic `$PA` , `$GA` ; // looking for: `$PU`, `$GU`, `$PD`, `$GD`
+                `$adderCell->instantiate()` (.*); //Ports implied//;          
+//;          }
+//;     }    
+//; }
+ 
+//; for( my $i=0 ; $i < $BW ; $i++ ){
+   assign  P[`$i`] = P_`$i`_to_0_H ;
+   assign  G[`$i`] = G_`$i`_to_0_H ;
+//;}
+
+//;
+//; #Print Out Placement INFO
+//; open( MYP , ">SkTreePlacement.info" );   
+//; print MYP  "Placing Sklansky Tree\n" ;
+//; for( my $j = scalar( @{ $placement[0] } ) ; $j>=0 ; $j-- ){
+//;    for( my $i = 0 ; $i < scalar( @placement ) ; $i++ ){
+//;      $placement[$i][$j] and print MYP "$placement[$i][$j] ";
+//;      $placement[$i][$j] or print MYP "     ";
+//;    }
+//;    print MYP "\n" ;   
+//; }
+//;
+   
+endmodule : `mname` 

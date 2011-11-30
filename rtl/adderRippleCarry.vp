@@ -1,0 +1,97 @@
+/**************************************************************/
+/* adder.vp                                                   */
+/*    John Brunhaver jbrunhaver@gmail.com                     */
+/**************************************************************/
+
+//;# Import Libs
+//; use POSIX ();
+//;
+//  PARAMETERS:
+//; my $BW  = parameter( name=>'BitWidth', val=>32 , 
+//;                      doc=>'!functional! BitWidth of operands' , 
+//;                      min=>2 , max=>512, step=>1 );
+
+
+//  ... Wrapper for the Various Adder Designs ... //
+module `mname()` 
+  (
+    //Input Signals
+    input logic  [ `$BW-1` : 0] a,
+    input logic  [ `$BW-1` : 0] b,
+    input logic                 ci,
+
+    //Output Signals
+    output logic [ `$BW-1` : 0] s ,
+    output logic                co 
+   );
+
+// Set G0 and P0 
+   logic G_0_to_0_H;
+//   logic P_0_to_0_H;
+   assign G_0_to_0_H = ci ;
+//   assign P_0_to_0_H = 1'b0 ;
+   
+// Convert all input signals into individual wires of the form A_1 A_BW etc
+//; for( my $i=0 ; $i < $BW ; $i++ ){
+   logic  A_`$i+1` ;
+   assign A_`$i+1` = a[`$i`] ;
+   logic  B_`$i+1` ;
+   assign B_`$i+1` = b[`$i`] ;
+//;}
+   
+// Instantiate a row of half adders
+//; for( my $i=1 ; $i <= $BW ; $i++ ){
+//;    my $instName = sprintf( "adderHalfAdderCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , 2 );
+//;    my $adderCell = generate( 'adderHalfAdderCell',
+//;                              $instName , 
+//;                              'I'=>$i );
+//;    my $A  = $adderCell->get_param('A');
+//;    my $B  = $adderCell->get_param('B');
+//;    my $P  = $adderCell->get_param('P_ALL');
+//;    my $G  = $adderCell->get_param('G_ALL');
+       logic `$P` , `$G` ;
+       `$adderCell->instantiate()` (.*); //Ports implied
+//;}
+
+   logic P_1_to_0_H;
+   assign P_1_to_0_H = P_1_to_1_H ;
+   
+   
+// Instantiate a row of grey cells
+//; for( my $i=1 ; $i <= $BW ; $i++ ){
+//;    my $instName = sprintf( "adderGreyCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , 1 );
+//;    my $adderCell = generate( 'adderGreyCell',
+//;                              $instName, 
+//;                              'I'=>$i,
+//;                              'K'=>$i,
+//;                              'J'=>0  );
+//;    my $P_U  = $adderCell->get_param('P_UP');
+//;    my $G_U  = $adderCell->get_param('G_UP');
+//;    my $G_D  = $adderCell->get_param('G_DN');
+//;    my $G_A  = $adderCell->get_param('G_ALL');
+       logic `$G_A` ;
+       `$adderCell->instantiate()` (.*); //Ports implied
+//;}
+
+// Instantiate a row of xors
+//; for( my $i=1 ; $i <= $BW ; $i++ ){
+//;    my $instName = sprintf( "adderXorCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , 0 );
+//;    my $adderCell = generate( 'adderXorCell',
+//;                               $instName, 
+//;                               'I'=>$i );
+//;    my $P  = $adderCell->get_param('P_UP');
+//;    my $G  = $adderCell->get_param('G_DN');
+//;    my $S  = $adderCell->get_param('S');
+       logic `$S` ;
+       `$adderCell->instantiate()` (.*); //Ports implied
+//; }
+ 
+// Convert all S_1 S2 signals to sum
+//; for( my $i=0 ; $i < $BW ; $i++ ){
+   assign s[`$i`] = S_`$i+1` ;
+//;}
+   
+// Convert the generate slice from BW:1 to carry out
+   assign co = G_`$BW`_to_0_H ;
+      
+endmodule : `mname` 

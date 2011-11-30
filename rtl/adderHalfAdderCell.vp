@@ -1,0 +1,84 @@
+/**************************************************************/
+/* adderHalfAdderCell.vp                                      */
+/*    John Brunhaver jbrunhaver@gmail.com                     */
+/*                                                            */
+/*  HalfAdder:                                                */
+/*    Accepts   A_i B_i                                       */
+/*    Produces  G_i P_i                                       */
+/*                                                            */
+/*  Bit Index Convention: LSB=1 MSB>LSB                       */
+/*                                                            */
+/*  Use this to build adders...                               */
+/*    TODO->Reference Paper -JSB                              */
+/*                                                            */
+/**************************************************************/
+
+//;# Import Libs
+//; use POSIX ();
+//;
+//  PARAMETERS:
+//
+//
+///////// Inverting Output vs Inverting Input
+//
+//;
+//; my $INVERTED_OUTPUT = parameter( name=>'IO' , val=>0,
+//;                                  doc=>'inverted output',
+//;                                  list=>[ 0 , 1 ] );
+//; my $INVERTED_INPUT  = parameter( name=>'II' , val=>0,
+//;                                  doc=>'inverted input',
+//;                                  list=>[ 0 , 1 ] );
+//; #$INVERTED_OUTPUT == $INVERTED_INPUT and $self->warning("Unusual to want an inverting inverting or non-inverting non-inverting adder cell\n");
+//; #$INVERTED_OUTPUT == $INVERTED_INPUT and $self->error("Structural Verilog Error: must be inverting logic STRICT-JSB \n");
+//
+//; my $INPUT_SUFFIX = $INVERTED_INPUT ? "L" : "H" ; my $IS = $INPUT_SUFFIX ;
+//; my $OUTPUT_SUFFIX = $INVERTED_OUTPUT ? "L" : "H" ; my $OS = $OUTPUT_SUFFIX ;
+//
+//; #my $IOut = $INVERTED_OUTPUT ? '!' : ' ' ;
+//; #my $IInp = $INVERTED_INPUT  ? '!' : ' ' ;
+//
+//
+////////// Propogate and Generate Slice Indexes 
+//
+//;
+//; my $II               = parameter( name=>'I' , val=>0,
+//;                                   doc=>' index I in G_i:k etc ' ,
+//;                                   min=>0, max=>1024, step=>1 ) ;
+//
+///////////  Setup Wire Names
+// 
+//;  my $A                 =  parameter( name=>'A' , val=>( "A_" . $II ) ,
+//;                                      force=>1 , doc=>' Input A Name' );
+//;  my $B                 =  parameter( name=>'B' , val=>( "B_" . $II ) ,
+//;                                      force=>1 , doc=>' Input B Name' );
+//;  my $P_ALL             =  parameter( name=>'P_ALL' , val=>( "P_" . $II . "_to_" . $II . "_" . $OS ), 
+//;                                     force=>1 , doc=>' Output Name for Propogate '  );
+//;  my $G_ALL             =  parameter( name=>'G_ALL' , val=>( "G_" . $II . "_to_" . $II . "_" . $OS ), 
+//;                                     force=>1 , doc=>' Output Name for Combined Generate '  );
+//; my $in_list = "$A , $B  " ;
+//; my $out_list  = "$P_ALL , $G_ALL " ;
+//; #my $PORTS_I_PARAM       =  parameter( name=>'Inp'  , val=>$in_list  , force=>1 ) ;
+//; #my $PORTS_O_PARAM       =  parameter( name=>'Outp' , val=>$out_list , force=>1 ) ;
+//; sub inputPorts{ return $in_list } ;
+//; sub outputPorts{ return $out_list };
+
+module `mname()` 
+//halfAdderCell// 
+
+  (
+    //Input Signals
+    input logic  A_`$II`, //A
+    input logic  B_`$II`, //B
+
+    //Output Signals
+    output logic G_`$II`_to_`$II`_`$OS` ,  //G_Combined
+    output logic P_`$II`_to_`$II`_`$OS`   //P_Combined
+   );
+
+   //AND NAND NOR OR
+  assign `$G_ALL` = ( ( `$A` ) & ( `$B` ) ) ;
+   //XOR XNOR
+  assign `$P_ALL` = ( ( `$A` ) ^ ( `$B` ) ) ;
+      
+endmodule : `mname`
+ 

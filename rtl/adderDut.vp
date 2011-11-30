@@ -1,0 +1,64 @@
+/**************************************************************/
+/* adderDut.vp                                                   */
+/*    John Brunhaver jbrunhaver@gmail.com                     */
+/**************************************************************/
+
+//;# Import Libs
+//; use POSIX ();
+//;
+//  PARAMETERS:
+//; my $AdderType = parameter( name=>'AdderType', val=>'Sklansky' ,
+//;                            doc=>'Type of Adder' ,
+//;                            list=>[ 'Ripple' , 'Sklansky' ] ) ;
+//; my $dut       = parameter( name=>'DutType', val=>'PGTree' ,
+//;                            doc=>'Which Units to Test',
+//;                            list=>[ 'PGTree' , 'Adder' ] );
+//; my $BW  = parameter( name=>'BitWidth', val=>32 , 
+//;                      doc=>'!functional! BitWidth of operands' , 
+//;                      min=>2 , max=>512, step=>1 );
+//; my $PIPE_Stages  = parameter( name=>'pipe_stages' , val=>0 ,
+//;                               doc=>'!implementation! The number of pipe stages for this unit' ,
+//;                               min=>0 , max=>64 , step=>1 );
+//; my $PS = $PIPE_Stages ;
+
+
+//  ... Wrapper for the Various Adder Designs ... //
+module `mname()` 
+  (
+    //Input Signals
+    input logic  [ `$BW-1` : 0] a,
+    input logic  [ `$BW-1` : 0] b,
+    input logic                 ci,
+
+    input logic clk,
+    input logic rst,
+   
+    //Output Signals
+    output logic [ `$BW-1` : 0] s ,
+    output logic                co 
+   );
+
+//TODO add flops for retiming tests...
+   
+//; if( $dut eq 'Adder' ){
+//; my $adderInst ;
+//; $adderInst = generate( 'adder'  , 'AdderInst'   , BitWidth=>$BW , AdderType=>$AdderType );
+`$adderInst->instantiate()` (.*); //Ports implied
+//; }
+
+
+//; if( $dut eq 'PGTree' ){
+//; my $adderInst ;
+//; $adderInst = generate( 'adderGPTree'  , 'AdderInst'   , BitWidth=>($BW+1) , TreeType=>$AdderType );
+ 
+   logic [`$BW`:0] 		p , g , P , G ;
+   assign g[`$BW`:1] = a & b ;
+   assign p[`$BW`:1] = a ^ b ;
+   assign g[0] = ci ;
+   assign p[0] = 1'b0 ;	    
+   `$adderInst->instantiate()` (.p(p),.g(g),.P(P),.G(G)); //Ports implied
+   assign s  = p[`$BW`:1] ^ G[`$BW-1`:0];
+   assign co = G[`$BW`] ;   
+//; }
+      
+endmodule : `mname` 
