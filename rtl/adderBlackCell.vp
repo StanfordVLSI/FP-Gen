@@ -1,0 +1,129 @@
+/**************************************************************/
+/* adderCell.vp                                               */
+/*    John Brunhaver jbrunhaver@gmail.com                     */
+/*                                                            */
+/*  BlackCell:                                                */
+/*    Accepts   G_i:k , P_i:k , G_k-1:j P_k-1:j               */
+/*    Produces  G_i:j P_i:j                                   */
+/*                                                            */
+/*  GreyCell:                                                 */
+/*    Accepts   G_i:k , P_i:k , G_k-1:j                       */
+/*    Produces  G_i:j                                         */
+/*                                                            */
+/*  HalfAdder:                                                */
+/*    Accepts   A_i B_i                                       */
+/*    Produces  G_i P_i                                       */
+/*                                                            */
+/*  Xor:                                                      */
+/*    Accepts   P_i G_i:0                                     */                 
+/*    Produces  S_i                                           */
+/*                                                            */
+/*  CarryIn:                                                  */
+/*    Accepts   C_in                                          */
+/*    Produces  G_0 P_0                                       */
+/*                                                            */
+/*  CarryOut:                                                 */
+/*    Accepts   G_i P_i G_i-1:0                               */
+/*    Produces  C_out                                         */
+/*                                                            */
+/*  Buff:                                                     */
+/*    Accepts   A                                             */
+/*    Produces  ~A                                            */
+/*                                                            */
+/*  Bit Index Convention: LSB=1 MSB>LSB                       */
+/*                                                            */
+/*  Use this to build adders...                               */
+/*    TODO->Reference Paper -JSB                              */
+/*                                                            */
+/**************************************************************/
+
+//;# Import Libs
+//; use POSIX ();
+//;
+//  PARAMETERS:
+//
+//
+///////// Inverting Output vs Inverting Input
+//
+//;
+//; my $INVERTED_OUTPUT = parameter( name=>'IO' , val=>0,
+//;                                  doc=>'inverted output',
+//;                                  list=>[ 0 , 1 ] );
+//; my $INVERTED_INPUT  = parameter( name=>'II' , val=>0,
+//;                                  doc=>'inverted input',
+//;                                  list=>[ 0 , 1 ] );
+//; #$INVERTED_OUTPUT == $INVERTED_INPUT and $self->warning("Unusual to want an inverting inverting or non-inverting non-inverting adder cell\n");
+//; #$INVERTED_OUTPUT == $INVERTED_INPUT and $self->error("Structural Verilog Error: must be inverting logic STRICT-JSB \n");
+//
+//; my $INPUT_SUFFIX = $INVERTED_INPUT ? "L" : "H" ; my $IS = $INPUT_SUFFIX ;
+//; my $OUTPUT_SUFFIX = $INVERTED_OUTPUT ? "L" : "H" ; my $OS = $OUTPUT_SUFFIX ;
+//
+//; #my $IOut = $INVERTED_OUTPUT ? '!' : ' ' ;
+//; #my $IInp = $INVERTED_INPUT  ? '!' : ' ' ;
+//
+//
+////////// Propogate and Generate Slice Indexes 
+//
+//;
+//; my $II               = parameter( name=>'I' , val=>0,
+//;                                   doc=>' index I in G_i:k etc ' ,
+//;                                   min=>0, max=>1024, step=>1 ) ;
+//; my $KK               = parameter( name=>'K' , val=>0,
+//;                                   doc=>' index k in G_k:j etc ' ,
+//;                                   min=>0, max=>1024, step=>1 ) ;
+//; my $JJ               = parameter( name=>'J' , val=>0,
+//;                                   doc=>' index j in G_i:j etc ' ,
+//;                                   min=>0, max=>1024, step=>1 ) ;
+//; my $LL               = parameter( name=>'L' , val=>($KK-1), force=>1 ,
+//;                                   doc=>' L = K-1 '  );
+//; ($II >=  $KK) or $self->error("Index I in PG tree is less than index K\n");
+//; ($KK >=  $JJ) or $self->error("Index K in PG tree is less than index J\n");
+//; ($II != $JJ) or $self->error("Index I in PG tree is less than equal to index J\n");
+//;
+//
+///////////  Setup Wire Names
+// 
+//; my $P_UP              =  parameter( name=>'P_UP' , val=>( "P_" . $II . "_to_" . $KK . "_" . $IS ), 
+//;                                     force=>1 , doc=>' Input Name for Upper Propogate '  );
+//; my $G_UP              =  parameter( name=>'G_UP' , val=>( "G_" . $II . "_to_" . $KK . "_" . $IS ), 
+//;                                     force=>1 , doc=>' Input Name for Upper Generate '  );
+//; my $P_DN              =  parameter( name=>'P_DN' , val=>( "P_" . $LL . "_to_" . $JJ . "_" . $IS ), 
+//;                                     force=>1 , doc=>' Input Name for Lower Propogate '  );
+//; my $G_DN              =  parameter( name=>'G_DN' , val=>( "G_" . $LL . "_to_" . $JJ . "_" . $IS ), 
+//;                                     force=>1 , doc=>' Input Name for Lower Generate '  );
+//; my $P_ALL             =  parameter( name=>'P_ALL' , val=>( "P_" . $II . "_to_" . $JJ . "_" . $OS ), 
+//;                                     force=>1 , doc=>' Output Name for Combined Propogate '  );
+//; my $G_ALL             =  parameter( name=>'G_ALL' , val=>( "G_" . $II . "_to_" . $JJ . "_" . $OS ), 
+//;                                     force=>1 , doc=>' Output Name for Combined Generate '  );
+//; my $in_list = "$P_UP , $G_UP , $P_DN , $G_DN " ;
+//; my $out_list  = "$P_ALL , $G_ALL " ;
+//; #my $PORTS_I_PARAM       =  parameter( name=>'Inp'  , val=>$in_list  , force=>1 ) ;
+//; #my $PORTS_O_PARAM       =  parameter( name=>'Outp' , val=>$out_list , force=>1 ) ;
+//; sub inputPorts{ return $in_list } ;
+//; sub outputPorts{ return $out_list };
+
+
+module `mname()` 
+//blackCell// 
+
+  (
+    //Input Signals
+    input logic  P_`$II`_to_`$KK`_`$IS`, //P_Upper
+    input logic  G_`$II`_to_`$KK`_`$IS`, //G_Upper
+    input logic  P_`$LL`_to_`$JJ`_`$IS`, //P_Lower
+    input logic  G_`$LL`_to_`$JJ`_`$IS`, //G_Lower
+
+    //Output Signals
+    output logic P_`$II`_to_`$JJ`_`$OS` , //P_Combined
+    output logic G_`$II`_to_`$JJ`_`$OS`   //G_Combined
+   );
+
+   always_comb begin
+   //AOI or OAI or OA or AO   
+    `$G_ALL` = ( `$G_UP` | ( `$P_UP` & `$G_DN` ) );
+   //NAND or NOR or AND or OR
+    `$P_ALL` = ( `$P_UP` &  `$P_DN` ) ;
+   end
+   
+      
+endmodule : `mname`
