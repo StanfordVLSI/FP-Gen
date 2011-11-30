@@ -32,6 +32,7 @@
  * Nov 07, 2011   Artem     initial version
  * Nov 25, 2011   Artem     Added new abstraction using CarryInFlag=OneMissing/Normal/
  * 			    OneExtra/TwoExtra 
+ * Nov 28, 2011   Artem     New abstraction using refference
  *
  * ****************************************************************************/
 
@@ -99,9 +100,8 @@ n_odd : 6, 11, 18, 27
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-
-//; my $col_ht = parameter(Name=>'ColumnHight', Val=>2, Min=>2, Step=>1,
-//;                          Doc=>"Number of partial products in relevant column to sum");
+//; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>0, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
@@ -110,36 +110,39 @@ n_odd : 6, 11, 18, 27
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $ci_flag = parameter(Name=>'CarryInFlag', Val=>'Normal', List=>['Normal','OneMissing','OneExtra','TwoExtra'],
-//;                      Doc=>"Is there one less carry in for this column? or maybe one or two more? (Normal is ColumnHight-3)");
+//; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
+//;			     Doc=>"Pointer to the previous column of the multiplier ".
+//;				  "(must be assigned or set to zero at instantiation!)");
+//; $self->error("Parameter PrevColumn must be assigned with a pointer to a Wallace column or 0 (zero)!")
+//;          unless $prev_col || $prev_col==0;
+//;
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
 //;
 //;
-//;
 //; my $ci_w = 0;
-//; my $co_w = 0;
- 
-//; $ci_w = $col_ht-4 if $ci_flag =~ /OneMissing/;
-//; $ci_w = $col_ht-3 if $ci_flag =~ /Normal/;
-//; $ci_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
-//; $ci_w = $col_ht-1 if $ci_flag =~ /TwoExtra/;
-//; $ci_w = 0 if ($ci_w < 0); # can't have negative width
-//;
-//; $co_w = $col_ht-3 if $ci_flag =~ /OneMissing/;
-//; $co_w = $col_ht-3 if $ci_flag =~ /Normal/;
-//; $co_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
-//; $co_w = $col_ht-2 if $ci_flag =~ /TwoExtra/;
-//; $co_w = 0 if ($co_w < 0); # can't have negative width
+//; if ($prev_col){
+//;     $ci_w = $prev_col->get_param('CarryOutWidth');
+//; }
+//; 
+//
+//;     my $co_w = $pp_count-3;
+//; if($ci_w > ($pp_count-3)){
+//;     $co_w = $pp_count-3+ceil(($ci_w-($pp_count-3))/2);
+//; }
+//
+//co_w=`$co_w`
+//
+//;# $co_w=$co_w_1;
+//; 
+//; my $col_ht = $pp_count;
+//; # print STDERR "DEBUG: pp_count=$pp_count, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
+//DEBUG: pp_count=`$pp_count`, ci_w=`$ci_w`, co_w=`$co_w`
 
-
-
-//;
-//; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
 module `mname()` (
-    input logic [`$col_ht-1`:0] pp,
+    input logic [`$pp_count-1`:0] pp,
 //; if($ci_w){
     input logic  [`$ci_w-1`:0] ci,
 //; }
@@ -154,14 +157,15 @@ module `mname()` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-   //;if($ci_flag =~ /OneExtra/  ||  $ci_flag =~ /TwoExtra/) {
+   //;if($co_w > $pp_count) {
    logic  sum_last;
    //;}
 
    
    //; my $row = $min_row;
    //; my $Y = $col;
-
+   //;
+   //; my $put_csa = 1;
    //;
    //;my $array_count = ($col_ht>2) ? floor((sqrt(4*$col_ht-11)+1)/2) : 0; 
    //;$array_count = 1 if ($col_ht==5 || $col_ht==2);
@@ -183,55 +187,91 @@ module `mname()` (
    //;	     for(my $nodes = 0; $nodes < $array_csa; $nodes++ ){
    //;           $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
    //;
-   //;           if($array_count==1 && $nodes==($array_csa-1) && ($ci_flag =~ /OneMissing/) && (($array_csa > 1) || ($col_ht==2))) {
-   //;               my $CSA_obj = generate('HA', "csa_${array}_${nodes}_${row}_${Y}");
-   //;               if($col_ht==2) {
-   //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
-   //;                   $array_conn[1] = "pp[${pp_index}]";$pp_index++;
-   //;               } else {
-   //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
-   //;                   $array_conn[1] = "pp_${array}_".($nodes-1)."_s";
-   //;               } #if($col_ht==2)
-      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
-                                    .s(sum), .co(carry) );
-   //;           } else {	   
-  	    
-   //;               my $CSA_obj = generate('CSA', "csa_${array}_${nodes}_${row}_${Y}");
    //;		     if($nodes == 0){
    //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
    //;                   $array_conn[1] = "pp[${pp_index}]";$pp_index++;
    //;                   $array_conn[2] = "pp[${pp_index}]";$pp_index++;
+   //;                   $put_csa = ($pp_index <= $pp_count);
    //;		     } else{
-   //;                   $array_conn[0] = "ci[${ci_index}]";$ci_index++;
+   //;                   $array_conn[2] = "ci[${ci_index}]";$ci_index++;
    //;                   $array_conn[1] = "pp_${array}_".($nodes-1)."_s";
-   //;                   $array_conn[2] = "pp[${pp_index}]";$pp_index++;
+   //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
+   //;                   $put_csa = ($array_count==1)?($ci_index <= $ci_w):($ci_index < ($ci_w-1));
    //;		     }
+   //;               my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${array}_${nodes}_${row}_${Y}");
+   //;
+   //;     $row++;
+   //;     $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;     $Y = $col if $layout_shape =~ /Parallelogram/;
+ 
       logic pp_`$array`_`$nodes`_s;
-
+   //;               if($put_csa){
+   //;
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
-   //;               if( $array_count == 1 && $nodes == ($array_csa-1)) {
-   //;                           if($ci_flag =~ /OneMissing/  ||  $ci_flag =~ /Normal/) {
+   //;
+   //;               } else{
+   //;                   $ci_index--;
+      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
+   //;
+   //;               }
+   //;
+   //;               if( ($array_count == 1) && $nodes == ($array_csa-1) && ($ci_index==$ci_w)) {
                                   .s(sum), .co(carry) );
-   //;                           }else{
-                                  .s(sum_last), .co(co[`$co_index`]) );
-   //;                             $co_index++;
-   //;                           }#if($ci_flag =~ /OneMissing/ ...
-
-
-
+   //;
    //;               } else {
+   //;
                                   .s(pp_`$array`_`$nodes`_s), .co(co[`$co_index`]) );
+   //;
    //; 	                 $co_index++;
-   //;               } #if( $array_count == 1 && $nodes
-   //;           } #if($array_count==1 && $nodes==($array_csa-1) && $one_less_ci )
+   //;               } #if( $array_count == 1 && $nodes....
    //;       }# for(my $nodes = 0; $nodes
+
+   //;      my $ci_left = ($array_count == 1)?($ci_w-$ci_index):($ci_w-$ci_index-3);
+   //;
+   //;      if($array==($array_count-1) && ($ci_left>0)){
+   //########## We need to sum up `$ci_left` extra carry_in(s)
+   //;          for(my $extra_nodes = 0; $extra_nodes < ($ci_left); $extra_nodes+=2){
+      logic pp_`$array`_`$array_csa`_s;
+   //;              if(($ci_left-$extra_nodes)>1){
+   //;                   $array_conn[0] = "ci[${ci_index}]";$ci_index++;
+   //;                   $array_conn[1] = "pp_${array}_".($array_csa-1)."_s";
+   //;                   $array_conn[2] = "ci[${ci_index}]";$ci_index++;
+   //;                   my $CSA_obj = generate('CSA', "csa_extra_${extra_nodes}_${row}_${Y}");
+   //;
+   //;                   $row++;
+   //;                   $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;                   $Y = $col if $layout_shape =~ /Parallelogram/;
+       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
+   //;                   if(($array_count == 1) && (($ci_left-$extra_nodes)==2)){
+                                  .s(sum), .co(carry) );
+   //;                   }else{
+                                  .s(pp_`$array`_`$array_csa`_s), .co(co[`$co_index++`]) );
+   //;                   }
+   //;              } else {
+   //;                   $array_conn[0] = "ci[${ci_index}]";$ci_index++;
+   //;                   $array_conn[1] = "pp_${array}_".($array_csa-1)."_s";
+   //;                   my $CSA_obj = generate('HA', "csa_extra_${extra_nodes}_${row}_${Y}");
+   //;
+   //;                   $row++;
+   //;                   $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;                   $Y = $col if $layout_shape =~ /Parallelogram/;
+       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
+   //;                   if(($array_count == 1) && (($ci_left-$extra_nodes)==1)){
+                                  .s(sum), .co(carry) );
+   //;                   }else{
+                                  .s(pp_`$array`_`$array_csa`_s), .co(co[`$co_index++`]) );
+   //;                   }
+   //;              }# if(($ci_left-$extra_nodes)>1)
+   //;              $array_csa++;
+   //;          }#for(my $extra_nodes = 0;....
+   //;      }#if($array==($array_count-1)...
+
 
 
    //;	     if($array>0) {
-   //Merge branche `$array-1` and `$array`
+   //Merge branch `$array-1` and `$array`
    //;
    //;           $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
-   //;       	 my $CSA_obj = generate('CSA', "csa_merge_${array}_${row}_${Y}");
    //;
    //;           $array_conn[2]="pp_${array}_".($array_csa-1)."_s";
    //;
@@ -242,41 +282,63 @@ module `mname()` (
    //;           } #if($array==1) {
    //;
    //;           $array_conn[1]="ci[${ci_index}]";$ci_index++;
-   //;
+   //;           $put_csa = ($ci_index <= $ci_w);
       logic pp_merge_`$array-1`_s;
+   //;           if($put_csa){
+   //;       	     my $CSA_obj = generate('CSA', "csa_merge_${array}_${row}_${Y}");
+   //;
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;
 
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
                                   .s(pp_merge_`$array-1`_s), .co(co[`$co_index`]) );
-   //;           $co_index++;
+   //;               $co_index++;
+   //;           } else {
+   //;       	     my $CSA_obj = generate('HA', "csa_merge_${array}_${row}_${Y}");
+   //;
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;
+
+      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`),
+                                  .s(pp_merge_`$array-1`_s), .co(co[`$co_index`]) );
+   //;               $co_index++;
+   //;           }#if($put_csa){
    //;
    //;           $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
    //;           $array_conn[0]="ci[${ci_index}]";$ci_index++;
+   //;           $array_conn[1]="ci[${ci_index}]";$ci_index++;
    //;           $array_conn[2]="pp_merge_".($array-1)."_s";
+   //;           $put_csa = ($ci_index <= $ci_w);
    //;
-   //;	                if($array==($array_count-1) && ($ci_flag =~ /OneMissing/)){
-   //;       	             my $CSA_obj = generate('HA', "csa_merge1_${array}_${row}_${Y}");
+   //;	         if($array==($array_count-1) && ($put_csa==0)){
+   //;               $ci_index--;
+   //;       	     my $CSA_obj = generate('HA', "csa_merge1_${array}_${row}_${Y}");
+   //;
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`),
                                   .s(sum), .co(carry) );
-   //;                  }
-   //;                  else {
-   //;       	             my $CSA_obj = generate('CSA', "csa_merge1_${array}_${row}_${Y}");
-   //;                       $array_conn[1]="ci[${ci_index}]";$ci_index++;
+   //;           } else {
+   //;       	     my $CSA_obj = generate('CSA', "csa_merge1_${array}_${row}_${Y}");
+   //;
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
+      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
    //;
    //;                       if($array==($array_count-1)) {
-      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
-   //;                           if($ci_flag =~ /OneMissing/  ||  $ci_flag =~ /Normal/) {
                                   .s(sum), .co(carry) );
-   //;                           }else{
-                                  .s(sum_last), .co(co[`$co_index`]) );
-   //;                             $co_index++;
-   //;                           }#if($ci_flag =~ /OneMissing/ ...
    //;                       }
    //;                       else {
-      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
                                   .s(pp_merge1_`$array-1`_s), .co(co[`$co_index`]) );
    //;                             $co_index++;
    //;                       }# if($array==($array_count-1) 
-   //;                  }#if($array==($array_count-1) && $one_less_ci
+   //;            }#if($array==($array_count-1) && $co_w==....
    
    
    //;	     }#if($array>0)
@@ -285,32 +347,28 @@ module `mname()` (
    //;}#for (my $array=0; $array 
 
 
-   //; ##### OneExtra Ci
-   //;$array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
-   //;
-   //;if ($ci_flag =~ /OneExtra/){
-   //;    $array_conn[0]="ci[${ci_index}]";$ci_index++;
-   //;    $array_conn[2]="sum_last";
-   //;
-   //;    my $CSA_obj = generate('HA', "csa_extra_${row}_${Y}");
-   // This column has one extra ci's
-   `$CSA_obj->instantiate()` ( .b(`$array_conn[0]`), .a(`$array_conn[2]`),
-			       .s(sum), .co(carry) );
-   //; }
-   //;
-   //; ##### TwoExtra Ci
-   //;if ($ci_flag =~ /TwoExtra/){
-   //;    $array_conn[0]="ci[${ci_index}]";$ci_index++;
-   //;    $array_conn[1]="sum_last";
-   //;    $array_conn[2]="ci[${ci_index}]";$ci_index++;
-   //;
-   //;    my $CSA_obj = generate('CSA', "csa_extra_${row}_${Y}");
-   // This column has two extra ci's
-   `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`), 
-			       .s(sum), .co(carry) );
-   //; }
-
 
 endmodule
 
+//`$co_index` == `$co_w`
+//`$ci_index` == `$ci_w`
+//`$pp_index` == `$pp_count`
 
+//;if($pp_index ==$pp_count && $ci_index==$ci_w && $co_index==$co_w){
+//PASS
+//;}else{
+//FAIL
+//;}
+
+
+//; # Declare the current csa_arr for other modules to use
+
+//; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1,
+//;           Doc=>"Number of column carry out signals");
+
+//;# $self->error("The number of constructed co in ZM does not match  $co_index!= $co_w")
+//;#          unless $co_index == $co_w;
+//;# $self->error("The number of constructed ci in ZM does not match  $ci_index!= $ci_w")
+//;#          unless $ci_index == $ci_w;
+//;# $self->error("The number of constructed pp in ZM does not match  $pp_index!= $pp_count")
+//;#          unless $pp_index == $pp_count;
