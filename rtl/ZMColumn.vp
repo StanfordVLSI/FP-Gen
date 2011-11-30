@@ -134,7 +134,6 @@ n_odd : 6, 11, 18, 27
 //
 //co_w=`$co_w`
 //
-//;# $co_w=$co_w_1;
 //; 
 //; my $col_ht = $pp_count;
 //; # print STDERR "DEBUG: pp_count=$pp_count, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
@@ -167,8 +166,10 @@ module `mname()` (
    //;
    //; my $put_csa = 1;
    //;
-   //;my $array_count = ($col_ht>2) ? floor((sqrt(4*$col_ht-11)+1)/2) : 0; 
-   //;$array_count = 1 if ($col_ht==5 || $col_ht==2);
+   //;my $array_count = ($col_ht>2) ? floor((sqrt(4*$pp_count-11)+1)/2) : 0; 
+   //;$array_count = 1 if ($col_ht==2);
+   //;$array_count = 1 if ($col_ht==5 && $ci_w<3);
+   //;
    // array_count = `$array_count`;
    //;
    //;  my $pp_index = 0;
@@ -179,24 +180,35 @@ module `mname()` (
    //;  
    //;  for (my $array=0; $array < $array_count; $array++){
    //;	     my $array_length = ( ($col_ht > 2 + $array_count*$array_count)? ($array==0? 4 : $array==$array_count-1? $col_ht - $array*($array+1)- 2 : 2+2*$array) : ($array==0? 3 : $array==$array_count-1? $col_ht - $array*$array- 2 : 1+2*$array) );
-   //;       $array_length = 5 if ($col_ht==5);
+   //;       $array_length = 5 if ($col_ht==5 && $ci_w<3);
    //;       my $array_csa = $array_length - 2;
+   //;       $array_csa = 1 if ($array_length==2);
    
-   // array = `$array` , array_length = `$array_length`;
+   // array = `$array` , array_length = `$array_length`, array_csa = `$array_csa`;
    //;
    //;	     for(my $nodes = 0; $nodes < $array_csa; $nodes++ ){
    //;           $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
    //;
    //;		     if($nodes == 0){
+   //;                   $put_csa = 1;
    //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
    //;                   $array_conn[1] = "pp[${pp_index}]";$pp_index++;
-   //;                   $array_conn[2] = "pp[${pp_index}]";$pp_index++;
-   //;                   $put_csa = ($pp_index <= $pp_count);
+   //;                   if($pp_index==$pp_count && $ci_w>0) {
+   //;                      $array_conn[2] = "ci[${ci_index}]";$ci_index++;
+   //;                   }elsif($pp_index==$pp_count && $ci_w==0){
+   //;                      $put_csa = 0;
+   //;                   }else{
+   //;                      $array_conn[2] = "pp[${pp_index}]";$pp_index++;
+   //;                   }
    //;		     } else{
-   //;                   $array_conn[2] = "ci[${ci_index}]";$ci_index++;
-   //;                   $array_conn[1] = "pp_${array}_".($nodes-1)."_s";
+   //;                   $put_csa = 1;
    //;                   $array_conn[0] = "pp[${pp_index}]";$pp_index++;
-   //;                   $put_csa = ($array_count==1)?($ci_index <= $ci_w):($ci_index < ($ci_w-1));
+   //;                   if($ci_index<$ci_w) {
+   //;                      $array_conn[2] = "ci[${ci_index}]";$ci_index++;
+   //;                   }else{
+   //;                      $put_csa = 0;
+   //;                   }
+   //;                   $array_conn[1] = "pp_${array}_".($nodes-1)."_s";
    //;		     }
    //;               my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${array}_${nodes}_${row}_${Y}");
    //;
@@ -210,7 +222,6 @@ module `mname()` (
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
    //;
    //;               } else{
-   //;                   $ci_index--;
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
    //;
    //;               }
