@@ -1,0 +1,25 @@
+alias src "source -v -echo"
+
+set base_dir $env(HOME)
+
+src $base_dir/synopsys_startup/libselector.tcl
+
+set synthetic_library [list dw_foundation.sldb]
+
+#Output naming style 
+set verilogout_higher_designs_first              false
+set verilogout_no_tri                            true
+set verilogout_equation                          false
+set verilogout_single_bit                        false
+set write_name_nets_same_as_ports                true
+set verilogout_write_unmapped_design             false
+
+
+define_design_lib WORK -path ./work
+
+sh mkdir -p     ./cache
+set cache_read  ./cache
+set cache_write ./cache
+#set alib_library_analysis_path $env(TSMCHOME)
+
+set alib_library_analysis_path /nobackup/sameh06/ST_alib/
