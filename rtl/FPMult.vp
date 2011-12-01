@@ -201,8 +201,6 @@ module `mname`(
    //; }
 
 
-
-  logic [`$product_width + 1`: 0] ManAB_pp0, ManAB_pp1;
    //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
    `$Mul_obj->instantiate()` 
      (
@@ -213,17 +211,9 @@ module `mname`(
       //; if ($useInc){
       .ainc(IncA), .binc(IncB),
       //; }
-      .out0(ManAB_pp0), .out1(ManAB_pp1)
+      .out(ManAB_unnormalized)
       );
 
-  //assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
-  //; my $adderInst = generate( 'adder'  , 'PartialProductSum'   , BitWidth=>$product_width );
-   `$adderInst->instantiate()` (   
-				   .a(  ManAB_pp0[`$product_width - 1`:0]  ) , 
-				   .b(  ManAB_pp1[`$product_width - 1`:0]  ) , 
-				   .ci(1'b0) , 
-				   .s(  ManAB_unnormalized  ) 
-			       ); 
 
 
    
@@ -256,8 +246,6 @@ module `mname`(
 	$display ("`mname`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB);
 	$display ("`mname`: ExpAB =%h , ManAB =%h",ExpAB, ManAB);
 	$display ("`mname`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
-	$display ("`mname`: ManAB_pp0=0x%h", ManAB_pp0);
-	$display ("`mname`: ManAB_pp1=0x%h", ManAB_pp1);
 	$display ("`mname`: ManAB_unnormalized =%h ManAB_normalized =%h ",ManAB_unnormalized,ManAB_normalized);
 	$display ("`mname`: noShift =0x%h ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
 	$display ("`mname`: ZeroAB=0x%h InfAB=0x%h NANAB=0x%h RStickyAB=0x%h",ZeroAB, InfAB, NANAB, RStickyAB);

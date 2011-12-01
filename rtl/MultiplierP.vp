@@ -53,8 +53,8 @@ module `mname`(
     input logic [`$width-1`:0]    a,b,
    //; if ($useInc){
     input logic 		  ainc, binc,
-   //; }
-    output logic [`2*$width-1`:0] out		  
+   //; }	    
+    output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 
 /* BOOTH ENCODING
@@ -84,14 +84,12 @@ module `mname`(
 
 /* SUMMATION TREE
 */
-   logic [`2*$width+1`:0] 	  multp_out0,multp_out1; // sign extended by 2 because of booth encoding
-
    /* RawOut0/1 hold the raw result from the tree summation, which (depending on the booth)
     * have some unused bits. The width for RawOut is pp_width plus one booth width 
     * for every additional pp. The total is thus width = pp_width + booth*(pp_count-1).
     * (pp_width=`$pp_width`, pp_count=`$pp_count` and booth=`$booth`) */
    //; my $raw_out_w = $pp_width + $booth*($pp_count-1);
-   logic [`$raw_out_w-1`:0] 	  RawOut0,RawOut1; 
+    logic [`$raw_out_w-1`:0] RawOut0,RawOut1; 
 								  
    //; my $Tree_obj = generate("MultiplierTree", 'Tree', PPWidth=>$pp_width, 
    //;			        PPCount=>$pp_count, BoothType=>$booth,
@@ -112,23 +110,12 @@ module `mname`(
     *    extensions are not used thus we can ignore them completely)
     * */
    //; if ($booth==1){
-    assign multp_out0 = RawOut0[`$raw_out_w-1`:`2*$useInc`];
-    assign multp_out1 = RawOut1[`$raw_out_w-1`:`2*$useInc`];
+    assign out0 = RawOut0[`$raw_out_w-1`:`2*$useInc`];
+    assign out1 = RawOut1[`$raw_out_w-1`:`2*$useInc`];
    //; }else{ # booth==2 or booth==3
-    assign multp_out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
-    assign multp_out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    assign out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    assign out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
    //; }
-
-
-/* FINAL SUMMATION
-*/
-   //; my $adderInst = generate( 'adder'  , 'PartialProductSum'   , BitWidth=>2*$width );
-   `$adderInst->instantiate()` (   
-				   .a(  multp_out0[`2*$width-1`:0]  ) , 
-				   .b(  multp_out1[`2*$width-1`:0]  ) , 
-				   .ci(1'b0) , 
-				   .s(  out  ) 
-			       ); 
 
 endmodule
 
