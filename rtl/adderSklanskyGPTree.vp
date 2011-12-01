@@ -103,7 +103,7 @@ module `mname()`
 //; #Print Out Placement INFO
 //; open( MYP , ">SkTreePlacement.info" );   
 //; print MYP  "Placing Sklansky Tree\n" ;
-//; for( my $j = scalar( @{ $placement[0] } ) ; $j>=0 ; $j-- ){
+//; for( my $j = scalar( @{ $placement[1] } ) ; $j>=0 ; $j-- ){
 //;    for( my $i = 0 ; $i < scalar( @placement ) ; $i++ ){
 //;      $placement[$i][$j] and print MYP "$placement[$i][$j] ";
 //;      $placement[$i][$j] or print MYP "     ";

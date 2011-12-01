@@ -215,9 +215,18 @@ module `mname`(
       //; }
       .out0(ManAB_pp0), .out1(ManAB_pp1)
       );
-  assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
+
+  //assign ManAB_unnormalized = ManAB_pp0[`$product_width - 1`:0] + ManAB_pp1[`$product_width - 1`:0];
+  //; my $adderInst = generate( 'adder'  , 'PartialProductSum'   , BitWidth=>$product_width );
+   `$adderInst->instantiate()` (   
+				   .a(  ManAB_pp0[`$product_width - 1`:0]  ) , 
+				   .b(  ManAB_pp1[`$product_width - 1`:0]  ) , 
+				   .ci(1'b0) , 
+				   .s(  ManAB_unnormalized  ) 
+			       ); 
 
 
+   
 /*
   DW02_mult #(`$frac_width`+1, `$frac_width`+1 ) U1 ( .A(ManA),   .B(ManB),
                                                   .TC(1'b0), //Two's complement: 0 = unsigned, 1 = signed
