@@ -25,8 +25,7 @@
  * Oct 06, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
  * Nov 04, 2011   jingpu    bug fixed
- * Nov 13, 2011   jingpu    add treeType parameter
- * Nov 22, 2011   jingpu    compile warning fixed
+ * Nov 30, 2011   jingpu    change addertree to adderGPTree
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -41,17 +40,11 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $width = parameter(Name=>'Width', Val=>1, Min=>1, Step=>1,
+//; my $width = parameter(Name=>'Width', Val=>55, Min=>10, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $treeType = parameter(Name=>'TreeType', Val=>'SklanskyAdderTree',
-//;                          List=>['SklanskyAdderTree', 'SklanskyTree'],
-//;                          Doc=>"Tree Type used to generate GH GK PH PK");
 //;
 //; # Local Variables
 //; my $prefix_tree_size = floor(($width-3)/4) + 1;
-//; my $SklanskyTree_obj = generate('SklanskyTree', 'SklanskyTree', Width=>$prefix_tree_size);
-//; my $tree_radix = $SklanskyTree_obj->get_param('Radix');
-//; my $prefix_tree_depth = ceil(log($prefix_tree_size)/log($tree_radix));
 
 
 module `mname` (
@@ -64,41 +57,26 @@ module `mname` (
    
    logic [`$width`:0] 			H,K;  // odd values are not used!
    logic [`$prefix_tree_size-1`:0] 	gh, gk, gh_b, gk_b, GH, GK, GH_b, GK_b;
-   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK, PH_b, PK_b;
+   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK;
 
-   //; if ($treeType =~ /SklanskyTree/){
-   //; if ($prefix_tree_depth%2==1) { # output is not inverted
-   `$SklanskyTree_obj->instantiate` 
-     (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
-      .GH(GH), .PH(PH), .GK(GK), .PK(PK), .dumptolog(dumptolog));
-   //; } else { # output is inverted
-   `$SklanskyTree_obj->instantiate` 
-     (.gh_b(gh_b), .ph_b(ph_b), .gk_b(gk_b), .pk_b(pk_b),
-      .GH(GH_b), .PH(PH), .GK(GK_b), .PK(PK), .dumptolog(dumptolog));
-
-   // output is inverted
-   assign GH = ~ GH_b;
-   assign GK = ~ GK_b;
-   //; }
-   //; } else { # i.e. $treeType = 'SklanskyAdderTree'
    assign gh = ~ gh_b;
    assign gk = ~ gk_b;
    assign ph = ~ ph_b;
    assign pk = ~ pk_b;
-   //; my $SklanskyAdderTree_H = generate('SklanskyAdderTree', 'SklanskyAdderTree_H', Width=>$prefix_tree_size);
+
+   //; my $SklanskyAdderTree_H = generate('adderGPTree', 'SklanskyAdderTree_H', BitWidth=>$prefix_tree_size);
    `$SklanskyAdderTree_H->instantiate` 
      (.g(gh), .p(ph), .G(GH), .P(PH));
-   //; my $SklanskyAdderTree_K = generate('SklanskyAdderTree', 'SklanskyAdderTree_K', Width=>$prefix_tree_size);
+   //; my $SklanskyAdderTree_K = generate('adderGPTree', 'SklanskyAdderTree_K', BitWidth=>$prefix_tree_size);
    `$SklanskyAdderTree_K->instantiate` 
      (.g(gk_b), .p(pk_b), .G(GK_b), .P(PK_b));
    assign GK = ~ GK_b;
-   //; }
    
 
    assign gh_b[0] = ~( x[2] | (x[1] & x[0]));
    assign gk_b[0] = ~( x[2] & x[1] );
-   assign ph_b[0] = 1'b1; //need check
-   assign pk_b[0] = 1'b1; //need check
+   assign ph_b[0] = 1'b1; 
+   assign pk_b[0] = 1'b1;
    
    assign H[0] = x[0];
    assign H[2] = GH[0];
@@ -126,7 +104,6 @@ module `mname` (
    //;   }
    //; }
 
-   //need check
    //; if ($width%2==0) {
    assign H[`$width`] = x[`$width-1`] & H[`$width-2`];
    assign K[`$width`] = 1'b0;
@@ -141,7 +118,6 @@ module `mname` (
    //;   }
    //; }
   
-  //need check
    //; if ($width%2==0) {
    assign x3[`$width`]   = x[`$width-1`] & ~H[`$width-2`] | ~x[`$width-1`] & K[`$width-2`];
    assign x3[`$width+1`] = H[`$width`] & ~K[`$width`];
@@ -156,7 +132,6 @@ module `mname` (
    always @(posedge dumptolog)
      begin
 	$display("\t`mname`: X=0x%h, Expected3X=0x%h, Result3X=0x%h", x, 3*x, x3);
-	$write ("\t`mname`: depth=`$prefix_tree_depth`, "); 
 	$write ("gh=%b ph=%b ", ~gh_b, ~ph_b);
 	$write ("gk=%b pk=%b ", ~gk_b, ~pk_b);
 	$write ("GH=%b ", GH);
