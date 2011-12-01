@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 $id = 0 ;
-$tag = sprintf( "%03h" , int( rand( 4095 ) ) ) ;
+$tag = sprintf( "%03x" , int( rand( 4095 ) ) ) ;
 while( $#ARGV > 0 ){
     $id++ ;
     $batchName = "batch_" . $tag . "_n" . $id . ".sh" ;
@@ -19,7 +19,7 @@ while( $#ARGV > 0 ){
     $flow .= "   \n";
     $flow .= " echo \"$id $tag\" \n";
     $flow .= "   \n";
-    $flow .= "source ./synSetup/synopsys_startup/setup.sh";
+    $flow .= "source ./synSetup/synopsys_startup/setup.sh \n";
     $flow .= "echo $SYNOPSYS_RCXT_BIN \n";
     $flow .= "source ./synSetup/synopsys_startup/library_TSMC_45.sh\n";
     $flow .= "export VCS_ARCH_OVERRIDE=linux   \n";
