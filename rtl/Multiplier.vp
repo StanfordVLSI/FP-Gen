@@ -40,11 +40,6 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
-//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
-//;
-//; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)");
 
 module `mname`(
    //; if ($verif_mode =~ /ON/){
@@ -57,67 +52,22 @@ module `mname`(
     output logic [`2*$width-1`:0] out		  
 		    );
 
-/* BOOTH ENCODING
-*/
-   //; # First we generate the Booth module
-   //; my $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
-   //;				 UseInc=>($useInc)?"YES":"NO");
-   //;
-   //; # Now we can extract some properties from it: How many partial products and of of what widths
-   //; my $pp_count = $Booth_obj->get_param('PPCount');
-   //; my $pp_width = $Booth_obj->get_param('PPWidth');
-     
-   // Local signals for partial products
-   logic [`$pp_width-1`:0] 	  pp [0:`$pp_count-1`] ;
 
-   // Booth instance
-   `$Booth_obj->instantiate` (
-			      //; if ($verif_mode =~ /ON/){
-			      .dumptolog(dumptolog),
-			      //; }
-			      .x(a), .y(b),
-			      //; if ($useInc){
-			      .xinc(ainc), .yinc(binc),
-			      //; }
-			      .pp(pp)
-			      );
-
-/* SUMMATION TREE
+/* SUM/CARRY MULTIPLIER
 */
    logic [`2*$width+1`:0] 	  multp_out0,multp_out1; // sign extended by 2 because of booth encoding
-
-   /* RawOut0/1 hold the raw result from the tree summation, which (depending on the booth)
-    * have some unused bits. The width for RawOut is pp_width plus one booth width 
-    * for every additional pp. The total is thus width = pp_width + booth*(pp_count-1).
-    * (pp_width=`$pp_width`, pp_count=`$pp_count` and booth=`$booth`) */
-   //; my $raw_out_w = $pp_width + $booth*($pp_count-1);
-   logic [`$raw_out_w-1`:0] 	  RawOut0,RawOut1; 
-								  
-   //; my $Tree_obj = generate("MultiplierTree", 'Tree', PPWidth=>$pp_width, 
-   //;			        PPCount=>$pp_count, BoothType=>$booth,
-   //;			        TreeType=>$tree);
-   `$Tree_obj->instantiate()` (
- 			  //; if ($verif_mode =~ /ON/){
-			  .dumptolog(dumptolog),
-  			  //; }
-			  .pp(pp), .out0(RawOut0), .out1(RawOut1)
-			  );
-
-   /* Finally extract only the relevant bits:
-    * We padded pp[0] with zeros on the right --> shift left by booth
-    * If UseInc was set to 'YES' then LSBs are just more paddings to account 
-    *    for adding xinc and yinc at the same significance as pp0
-    *    --> shift left by another booth*useInc
-    * If BoothType>1 then MSBs are just sign extensions (in booth1 sign
-    *    extensions are not used thus we can ignore them completely)
-    * */
-   //; if ($booth==1){
-    assign multp_out0 = RawOut0[`$raw_out_w-1`:`2*$useInc`];
-    assign multp_out1 = RawOut1[`$raw_out_w-1`:`2*$useInc`];
-   //; }else{ # booth==2 or booth==3
-    assign multp_out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
-    assign multp_out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
-   //; }
+   //; my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>($useInc)?"YES":"NO");
+   `$Mul_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+      .a(a), .b(b), 
+      //; if ($useInc){
+      .ainc(ainc), .binc(binc),
+      //; }
+      .out0(multp_out0), .out1(multp_out1)
+      );
 
 
 /* FINAL SUMMATION

@@ -201,7 +201,7 @@ module `mname`(
    //; }
 
 
-   //; my $Mul_obj = generate('Multiplier', 'Mul', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
+   //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
    `$Mul_obj->instantiate()` 
      (
       //; if ($verif_mode =~ /ON/){
