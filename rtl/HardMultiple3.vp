@@ -57,7 +57,7 @@ module `mname` (
    
    logic [`$width`:0] 			H,K;  // odd values are not used!
    logic [`$prefix_tree_size-1`:0] 	gh, gk, gh_b, gk_b, GH, GK, GH_b, GK_b;
-   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK;
+   logic [`$prefix_tree_size-1`:0] 	ph, pk, ph_b, pk_b, PH, PK, PH_b, PK_b;
 
    assign gh = ~ gh_b;
    assign gk = ~ gk_b;
