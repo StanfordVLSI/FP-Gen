@@ -23,7 +23,12 @@ module `mname()`
     output logic [ `$BW-1` : 0] P ,
     output logic [ `$BW-1` : 0] G 
    );
-  
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+   
 // Convert all input signals into individual wires of the form A_1 A_BW etc
 //; for( my $i=0 ; $i < $BW ; $i++ ){
    logic   P_`$i`_to_`$i`_H ;
@@ -50,20 +55,18 @@ module `mname()`
 //;           $placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
 //;           my $I = $i ;                
 //;           my $K = $runs;               
+//;           my $L = $K-1;                
 //;           my $J = 0;        
-//;           my $adderCell = generate( 'adderBlackCell',
-//;                                     $instName, 
-//;                                     'I'=>$I,
-//;                                     'K'=>$K,
-//;                                     'J'=>$J );
-//;             my $PU  = $adderCell->get_param('P_UP');
-//;             my $GU  = $adderCell->get_param('G_UP');
-//;             my $PD  = $adderCell->get_param('P_DN');
-//;             my $GD  = $adderCell->get_param('G_DN');
-//;             my $PA  = $adderCell->get_param('P_ALL');
-//;             my $GA  = $adderCell->get_param('G_ALL');
-                logic `$PA` , `$GA` ; // looking for: `$PU`, `$GU`, `$PD`, `$GD`
-              `$adderCell->instantiate()` (.*); //Ports implied
+//;           my $adderCell = generate( 'adderBlackCell', $instName ) ;
+              logic  G_`$I`_to_`$J`_H ; 
+              logic  P_`$I`_to_`$J`_H ; 
+             `$adderCell->instantiate()` (
+					      .P_UP( P_`$I`_to_`$K`_H),
+					      .G_UP( G_`$I`_to_`$K`_H),
+					      .P_DN( P_`$L`_to_`$J`_H),
+					      .G_DN( G_`$L`_to_`$J`_H),
+					      .P_ALL(P_`$I`_to_`$J`_H),
+					      .G_ALL(G_`$I`_to_`$J`_H)  ); //Ports implied
 //;     }
 //;
 //;
@@ -76,20 +79,19 @@ module `mname()`
 //;             $placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
 //;             my $I = $i ;                
 //;             my $K = $bottum+1;               
+//;             my $L = $K-1 ;              
 //;             my $J = $bottum-$runs+1;        
-//;             my $adderCell = generate( 'adderBlackCell',
-//;                                        $instName, 
-//;                                       'I'=>$I,
-//;                                       'K'=>$K,
-//;                                       'J'=>$J );
-//;             my $PU  = $adderCell->get_param('P_UP');
-//;             my $GU  = $adderCell->get_param('G_UP');
-//;             my $PD  = $adderCell->get_param('P_DN');
-//;             my $GD  = $adderCell->get_param('G_DN');
-//;             my $PA  = $adderCell->get_param('P_ALL');
-//;             my $GA  = $adderCell->get_param('G_ALL');
-                logic `$PA` , `$GA` ; // looking for: `$PU`, `$GU`, `$PD`, `$GD`
-                `$adderCell->instantiate()` (.*); //Ports implied//;          
+//;             my $adderCell = generate( 'adderBlackCell' ,  $instName );
+                logic 	      P_`$I`_to_`$J`_H;
+                logic 	      G_`$I`_to_`$J`_H;
+                `$adderCell->instantiate()` ( 
+					      .P_UP( P_`$I`_to_`$K`_H),
+					      .G_UP( G_`$I`_to_`$K`_H),
+					      .P_DN( P_`$L`_to_`$J`_H),
+					      .G_DN( G_`$L`_to_`$J`_H),
+					      .P_ALL(P_`$I`_to_`$J`_H),
+					      .G_ALL(G_`$I`_to_`$J`_H)  );           
+  
 //;          }
 //;     }    
 //; }
@@ -103,7 +105,7 @@ module `mname()`
 //; #Print Out Placement INFO
 //; open( MYP , ">SkTreePlacement.info" );   
 //; print MYP  "Placing Sklansky Tree\n" ;
-//; for( my $j = scalar( @{ $placement[1] } ) ; $j>=0 ; $j-- ){
+//; for( my $j = scalar( @{ $placement[0] } ) ; $j>=0 ; $j-- ){
 //;    for( my $i = 0 ; $i < scalar( @placement ) ; $i++ ){
 //;      $placement[$i][$j] and print MYP "$placement[$i][$j] ";
 //;      $placement[$i][$j] or print MYP "     ";

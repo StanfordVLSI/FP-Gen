@@ -6,15 +6,137 @@
 //;# Import Libs
 //; use POSIX ;
 //;
-//  PARAMETERS:
+//;  #PARAMETERS:
 //; my $BW  = parameter( name=>'BitWidth', val=>32 , 
 //;                      doc=>'!functional! BitWidth of operands' , 
 //;                      min=>2 , max=>512, step=>1 );
 
-//; my @placement ;
+//; #SYNTH PARAMETERS
+//;
+//; my $ORIENTATION = parameter( name=>'Orientation', val=>'horizontal',
+//;                              doc=>'Orientation of Layout',
+//;                              list=>[ 'horizontal'  ] );  #, 'vertical' , 'L'
+//; my $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
+//;                                doc=>'Orientation of Inputs and Outputs',
+//;                                list=>[ 'NW_to_SE' ] ); # 'SE_to_NW' 
+//; my $GROUPNAME = parameter( name=>'GroupName', 
+//;                            val=>("Adder" . "_" . $ORIENTATION . "_" . $DATADIRECTION ),
+//;                            doc=>'Orientation of Layout' );
+//;
+//; my $GROUPNAME2 ;
+//;
+//; $ORIENTATION eq 'L' and   $GROUPNAME2 = param( name=>'GroupName2' , 
+//;                                                val=>( $GROUPNAME . "_2" ) ,
+//;                                                doc=>'GroupName in Layout'  );
+//;                                                       
+//; 
+
+
+//; #Synthesis SubRoutines
+//;
+//; my @placement ; # Array Holding Placement Info For ASCII figure
+//;
+//; my $id = sprintf( "%03x" , int( rand(4095) ) ) ; #id for instance names to help with id's
+//;
+//; my $groupName = $GROUPNAME ; # 
+//; my $groupName2 = $GROUPNAME2 ; # 
+//;
+//; my $groupNameLong = "\${DESIGN_NAME}::" . $groupName ; #DO NOT PLACE THIS IN EVAL CONTEXT!!!
+//; my $groupName2Long = "\${DESIGN_NAME}::" . $groupName2 ; #DO NOT PLACE THIS IN EVAL CONTEXT!!!
+//;
+//; my $placementFileName = "place_$GROUPNAME.tcl" ;
+//;
+//; my $height = ceil( log( $BW ) / log( 2 ) ); #Height of GP Tree
+//;
+//; my $cols  ;
+//; my $rows  ;
+//; my $cols2 ;
+//; my $rows2 ;
+//;
+//; $ORIENTATION eq 'horizontal' and $cols = $BW + 1 ;
+//; $ORIENTATION eq 'horizontal' and $rows = $height + 2 ;
+//;
+//; $ORIENTATION eq 'vertical' and  $cols = $height + 2 ;
+//; $ORIENTATION eq 'vertical' and  $rows = $BW + 1 ;
+//;
+//; $ORIENTATION eq 'L' and  $cols  = floor(( $height + 2.0 ) / 2.0 );
+//; $ORIENTATION eq 'L' and  $rows  = floor(( $BW + 1.0 ) / 2.0 ) ;
+//; $ORIENTATION eq 'L' and  $cols2 =  ceil(( $BW + 1.0 ) / 2.0 ) ; 
+//; $ORIENTATION eq 'L' and  $rows2 =  ceil(( $height + 2.0 ) / 2.0 ) ;
+//;
+//;
+//;
+//; open( PLACE , ">$placementFileName" ); 
+//;
+//;
+//;
+//; sub createGroup{
+//;     
+//;     print PLACE "create_rp_group $groupName -columns $cols -rows $rows -allow_non_rp_cells \n";
+//;
+//;     if( $ORIENTATION eq 'L' ){
+//;        print PLACE "create_rp_group $groupName2 -columns $cols2 -rows $rows2 -allow_non_rp_cells \n";
+//;     } 
+//; }
+//;
+//;
+//;    
+//; sub placeCell{
+//;    my $inst = shift      ;
+//;    my $x = shift         ;
+//;    my $y = shift         ;
+//;    my $cellType = shift or $self->error("Malformed Input to PlaceCell SubRoutine") ;
+//;
+//;    #Write to placement array
+//;
+//;    #Perform Coordinate Manipulation here...
+//;    # if horizontal leave it alone
+//;    # if vertical swap x an y ?
+//;    # if L pick different group for x>foo and swap x an y for x>foo
+//;
+//;    #Place Leaf Cell
+//;    print PLACE '                                                                   ' ."\n" ;
+//;    print PLACE '           set MCELLS  [ get_cells -hierarchical "*'.$inst.'"] ;   ' ."\n" ;
+//;    print PLACE '           set MC [ get_object_name [index_collection $MCELLS 0 ]] ' ."\n" ;
+//;    print PLACE '           set CHILD [get_cells "${MC}/*"];   ' ."\n" ;
+//;    print PLACE '           set CNT [sizeof_collection $CHILD];   ' ."\n" ;
+//;    print PLACE '           create_rp_group '.$inst.'GP -columns ${CNT} -rows 1   ' ."\n" ;
+//;    print PLACE '           set C_CNT 0 ;      ' ."\n" ;
+//;    print PLACE '           foreach_in_collection C $CHILD {   ' ."\n" ;
+//;    print PLACE '                add_to_rp_group ${DESIGN_NAME}::'.$inst.'GP -leaf [get_object_name $C] -column $C_CNT -row 0 ;   ' ."\n" ;
+//;    print PLACE '                set C_CNT [expr $C_CNT + 1 ]   ' ."\n" ;
+//;    print PLACE '            }   ' ."\n" ;
+//;    print PLACE '            ' ."\n" ;
+//;    print PLACE '            add_to_rp_group '.$groupNameLong.' -hierarchy ${DESIGN_NAME}::'.$inst.'GP -column '.$x.' -row '.$y.' ;   ' ."\n" ;
+//;    print PLACE '              '   ."\n" ;
+//;    print PLACE "\n get_cells -hierarchical \"\*$inst\"\n" ;  
+//; }
+//;
+//;
+//;
+//; sub printASCIIPlacement{
+//;
+//;   #FIXME -> array bounds are a function of colHeight and colWidth
+//;   #FIXME -> print L placement ....
+//;
+//;   #Print Out Placement INFO
+//;   open( MYP , ">SkPlacement.info" );   
+//;   print MYP  "Placing Sklansky Adder\n" ;
+//;   for( my $j = $height+1 ; $j>=0 ; $j-- ){
+//;      for( my $i = 0 ; $i < scalar( @placement ) ; $i++ ){
+//;        $placement[$i][$j] and print MYP "$placement[$i][$j] ";
+//;        $placement[$i][$j] or print MYP "     ";
+//;      }
+//;      print MYP "\n" ;   
+//;   }
+//; } 
+//;
+//;
+//;
+
 
 //  ... Wrapper for the Various Adder Designs ... //
-module `mname()` 
+module `mname()`
   (
     //Input Signals
     input logic  [ `$BW-1` : 0] a,
@@ -26,11 +148,21 @@ module `mname()`
     output logic                co 
    );
 
+  // synopsys dc_tcl_script_begin
+  // set_ungroup [current_design] true
+  // set_flatten true -effort high -phase true -design [current_design]
+  // synopsys dc_tcl_script_end 
+
+
+//; 
+//; createGroup();
+//;  
+   
 // Set G0 and P0 
    logic G_0_to_0_H;
-//   logic P_0_to_0_H;
+   logic P_0_to_0_H;
    assign G_0_to_0_H = ci ;
-//   assign P_0_to_0_H = 1'b0 ;
+   assign P_0_to_0_H = 1'b0 ;
    
 // Convert all input signals into individual wires of the form A_1 A_BW etc
 //; for( my $i=0 ; $i < $BW ; $i++ ){
@@ -46,24 +178,22 @@ module `mname()`
 //; for( my $i=1 ; $i <= $BW ; $i++ ){
 //;    my $instName = sprintf( "adderHalfAdderCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , ceil( log( $BW ) / log( 2 ) ) + 1 );
 //;    $placement[ $BW-$i ][ ceil( log( $BW ) / log( 2 ) ) + 1 ] = sprintf( "A%03d",$i);
-//;    my $adderCell = generate( 'adderHalfAdderCell',
-//;                              $instName , 
-//;                              'I'=>$i );
-//;    my $A  = $adderCell->get_param('A');
-//;    my $B  = $adderCell->get_param('B');
-//;    my $P  = $adderCell->get_param('P_ALL');
-//;    my $G  = $adderCell->get_param('G_ALL');
-       logic `$P` , `$G` ;
-       `$adderCell->instantiate()` (.*); //Ports implied
+//;    my $s = sprintf( "A%03d",$i);
+//;    my $adderCell = generate( 'adderHalfAdderCell', $instName );
+//;    placeCell( $instName , $BW-$i , $height + 1 , $s ) ;
+       logic P_`$i`_to_`$i`_H , G_`$i`_to_`$i`_H ;
+       `$adderCell->instantiate()` (
+				    .A(A_`$i`),
+				    .B(B_`$i`),
+				    .P(P_`$i`_to_`$i`_H),
+				    .G(G_`$i`_to_`$i`_H)
+				    ); 
 //;}
 
    logic  P_1_to_0_H;
    assign P_1_to_0_H = P_1_to_1_H ;
-   
-   
 
 // Build Sklansky Tree: Figure 10.34b of Weste Harris 3rd Ed. pg 662
-//; my $height = ceil( log( $BW ) / log( 2 ) ); 
 //; for( my $j=0 ; $j < $height ; $j++ ){
 //;     my $runs = 2 ** ( $j ) ; #Number of grey cells in a row 1,2,4,8 ...
 //;
@@ -73,19 +203,18 @@ module `mname()`
 //;           my $instName = sprintf( "adderGreyCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , $height - $j );
 //;           $placement[ $BW-$i ][ $height - $j ] = sprintf( "G%03d",$i);
 //;           my $I = $i ;                
-//;           my $K = $runs;               
+//;           my $K = $runs;
+//;           my $L = $K-1;                
 //;           my $J = 0;        
-//;           my $adderCell = generate( 'adderGreyCell',
-//;                                     $instName, 
-//;                                     'I'=>$I,
-//;                                     'K'=>$K,
-//;                                     'J'=>$J );
-//;           my $P_U  = $adderCell->get_param('P_UP');
-//;           my $G_U  = $adderCell->get_param('G_UP');
-//;           my $G_D  = $adderCell->get_param('G_DN');
-//;           my $G_A  = $adderCell->get_param('G_ALL');
-              logic  `$G_A`; // looking for: `$P_U`, `$G_U`, `$G_D`
-              `$adderCell->instantiate()` (.*); //Ports implied
+//;           my $adderCell = generate( 'adderGreyCell', $instName );
+//;           placeCell( $instName , $BW-$i , $height - $j ,  sprintf( "G%03d",$i) );
+              logic  G_`$I`_to_`$J`_H ; 
+              `$adderCell->instantiate()` ( 
+					    .P_UP(P_`$I`_to_`$K`_H),
+					    .G_UP(G_`$I`_to_`$K`_H),
+					    .G_DN(G_`$L`_to_`$J`_H),
+					    .G_ALL(G_`$I`_to_`$J`_H)
+					  ); 
 //;     }
 //;
 //;     #$i == (2*$runs) or $self->error( "Error in elaboration of sklansky tree 1\n" );
@@ -98,21 +227,20 @@ module `mname()`
 //;             my $instName = sprintf( "adderBlackCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , $height - $j );
 //;             $placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
 //;             my $I = $i ;                
-//;             my $K = $bottum+1;               
+//;             my $K = $bottum+1;  
+//;             my $L = $K-1 ;              
 //;             my $J = $bottum-$runs+1;        
-//;             my $adderCell = generate( 'adderBlackCell',
-//;                                        $instName, 
-//;                                       'I'=>$I,
-//;                                       'K'=>$K,
-//;                                       'J'=>$J );
-//;             my $PU  = $adderCell->get_param('P_UP');
-//;             my $GU  = $adderCell->get_param('G_UP');
-//;             my $PD  = $adderCell->get_param('P_DN');
-//;             my $GD  = $adderCell->get_param('G_DN');
-//;             my $PA  = $adderCell->get_param('P_ALL');
-//;             my $GA  = $adderCell->get_param('G_ALL');
-                logic `$PA` , `$GA` ; // looking for: `$PU`, `$GU`, `$PD`, `$GD`
-                `$adderCell->instantiate()` (.*); //Ports implied//;          
+//;             my $adderCell = generate( 'adderBlackCell', $instName );
+//;             placeCell( $instName , $BW-$i , $height - $j ,  sprintf( "B%03d",$i) );
+                logic 	      P_`$I`_to_`$J`_H;
+                logic 	      G_`$I`_to_`$J`_H;
+                `$adderCell->instantiate()` ( 
+					      .P_UP( P_`$I`_to_`$K`_H),
+					      .G_UP( G_`$I`_to_`$K`_H),
+					      .P_DN( P_`$L`_to_`$J`_H),
+					      .G_DN( G_`$L`_to_`$J`_H),
+					      .P_ALL(P_`$I`_to_`$J`_H),
+					      .G_ALL(G_`$I`_to_`$J`_H)  );           
 //;          }
 //;     }    
 //; }
@@ -121,32 +249,33 @@ module `mname()`
 //;           my $instName = sprintf( "adderGreyCell_inst_co_loc_%03d_%03d_loc", 0 , 1  );
 //;           $placement[ 0 ][ 1 ] = "Co  " ;
 //;           my $I = $BW ;                
-//;           my $K = $BW;               
+//;           my $K = $BW;       
+//;           my $L = $K-1;         
 //;           my $J = 0;        
-//;           my $adderCell = generate( 'adderGreyCell',
-//;                                     $instName, 
-//;                                     'I'=>$I,
-//;                                     'K'=>$K,
-//;                                     'J'=>$J );
-//;           my $P_U  = $adderCell->get_param('P_UP');
-//;           my $G_U  = $adderCell->get_param('G_UP');
-//;           my $G_D  = $adderCell->get_param('G_DN');
-//;           my $G_A  = $adderCell->get_param('G_ALL');
-              logic  `$G_A`; // looking for: `$P_U`, `$G_U`, `$G_D`
-              `$adderCell->instantiate()` (.*); //Ports implied
+//;           my $adderCell = generate( 'adderGreyCell',  $instName);
+//;           placeCell( $instName , 0 , 1 ,  sprintf( "G%03d",$BW) );
+              logic  G_`$I`_to_`$J`_H ; 
+              `$adderCell->instantiate()` (
+					    .P_UP(P_`$I`_to_`$K`_H),
+					    .G_UP(G_`$I`_to_`$K`_H),
+					    .G_DN(G_`$L`_to_`$J`_H),
+					    .G_ALL(G_`$I`_to_`$J`_H)
+					   );
 
+
+   
 // Instantiate a row of xors
 //; for( my $i=1 ; $i <= $BW ; $i++ ){
 //;    my $instName = sprintf( "adderXorCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , 0 );
 //;    $placement[ $BW-$i ][ 0 ] = sprintf( "X%03d",$i);
-//;    my $adderCell = generate( 'adderXorCell',
-//;                               $instName, 
-//;                               'I'=>$i );
-//;    my $P  = $adderCell->get_param('P_UP');
-//;    my $G  = $adderCell->get_param('G_DN');
-//;    my $S  = $adderCell->get_param('S');
-       logic `$S` ;
-       `$adderCell->instantiate()` (.*); //Ports implied
+//;    my $adderCell = generate( 'adderXorCell',$instName );
+//;    placeCell( $instName , $BW-$i , 0 ,  sprintf( "X%03d",$i) );
+       logic S_`$i` ;
+       `$adderCell->instantiate()` (
+				    .P(P_`$i`_to_`$i`_H),
+				    .G(G_`$i-1`_to_0_H),
+				    .S(S_`$i`)
+				    ); //Ports implied
 //; }
  
 // Convert all S_1 S2 signals to sum
@@ -154,20 +283,10 @@ module `mname()`
    assign s[`$i`] = S_`$i+1` ;
 //;}
    
-// Convert the generate slice from BW:1 to carry out
+// Convert the generate slice from BW:0 to carry out
    assign co = G_`$BW`_to_0_H ;
 
-//;
-//; #Print Out Placement INFO
-//; open( MYP , ">SkPlacement.info" );   
-//; print MYP  "Placing Sklansky Adder\n" ;
-//; for( my $j = scalar( @{ $placement[0] } ) ; $j>=0 ; $j-- ){
-//;    for( my $i = 0 ; $i < scalar( @placement ) ; $i++ ){
-//;      $placement[$i][$j] and print MYP "$placement[$i][$j] ";
-//;      $placement[$i][$j] or print MYP "     ";
-//;    }
-//;    print MYP "\n" ;   
-//; }
-//;
+//; printASCIIPlacement();
+
    
 endmodule : `mname` 

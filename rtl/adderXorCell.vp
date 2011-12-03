@@ -16,70 +16,19 @@
 //;# Import Libs
 //; use POSIX ();
 //;
-//  PARAMETERS:
-//
-//
-///////// Inverting Output vs Inverting Input
-//
-//;
-//; my $INVERTED_OUTPUT = parameter( name=>'IO' , val=>0,
-//;                                  doc=>'inverted output',
-//;                                  list=>[ 0 , 1 ] );
-//; my $INVERTED_INPUT  = parameter( name=>'II' , val=>0,
-//;                                  doc=>'inverted input',
-//;                                  list=>[ 0 , 1 ] );
-//; #$INVERTED_OUTPUT == $INVERTED_INPUT and $self->warning("Unusual to want an inverting inverting or non-inverting non-inverting adder cell\n");
-//; #$INVERTED_OUTPUT == $INVERTED_INPUT and $self->error("Structural Verilog Error: must be inverting logic STRICT-JSB \n");
-//
-//; my $INPUT_SUFFIX = $INVERTED_INPUT ? "L" : "H" ; my $IS = $INPUT_SUFFIX ;
-//; my $OUTPUT_SUFFIX = $INVERTED_OUTPUT ? "L" : "H" ; my $OS = $OUTPUT_SUFFIX ;
-//
-//; #my $IOut = $INVERTED_OUTPUT ? '!' : ' ' ;
-//; #my $IInp = $INVERTED_INPUT  ? '!' : ' ' ;
-//
-//
-////////// Propogate and Generate Slice Indexes 
-//
-//;
-//; my $II               = parameter( name=>'I' , val=>0,
-//;                                   doc=>' index I in G_i:k etc ' ,
-//;                                   min=>0, max=>1024, step=>1 ) ;
-//; my $LL               = parameter( name=>'L' , val=>($II-1), force=>1 ,
-//;                                   doc=>' L = I-1 '  );
-//;
-//
-///////////  Setup Wire Names
-// 
-//; my $P_UP              =  parameter( name=>'P_UP' , val=>( "P_" . $II . "_to_" . $II . "_" . $IS ), 
-//;                                     force=>1 , doc=>' Input Name for Upper Propogate '  );
-//; my $G_DN              =  parameter( name=>'G_DN' , val=>( "G_" . $LL . "_to_0_" . $IS ), 
-//;                                     force=>1 , doc=>' Input Name for Lower Generate '  );
-//; my $S                 =  parameter( name=>'S' , val=>( "S_" . $II ), 
-//;                                     force=>1 , doc=>' Output Name for Sum '  );
-//; my $in_list = "$P_UP , $G_DN " ;
-//; my $out_list  = " $S " ;
-//; #my $PORTS_I_PARAM       =  parameter( name=>'Inp'  , val=>$in_list  , force=>1 ) ;
-//; #my $PORTS_O_PARAM       =  parameter( name=>'Outp' , val=>$out_list , force=>1 ) ;
-//; sub inputPorts{ return $in_list } ;
-//; sub outputPorts{ return $out_list } ;
-
 
 module `mname()` 
 //xorCell// 
 
   (
     //Input Signals
-    input logic  P_`$II`_to_`$II`_`$IS`, //P_Upper
-    input logic  G_`$LL`_to_0_`$IS`,     //G_Lower
+    input logic  P, // P_II_to_II_IS, //P_Upper
+    input logic  G, // G_LL_to_0_IS,     //G_Lower
 
     //Output Signals
-    output logic S_`$II`                 //S
+    output logic S // S_II                 //S
    );
 
-   always_comb begin
-   //XOR or XNOR
-    `$S` = ( `$P_UP` ^ `$G_DN`  );
-   end
-   
-      
+   assign S = P ^ G ;
+  
 endmodule : `mname`

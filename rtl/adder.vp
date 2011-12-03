@@ -29,6 +29,12 @@ module `mname()`
    );
 
 
+  // synopsys dc_tcl_script_begin
+  // set_ungroup [current_design] true
+  // set_flatten true -effort high -phase true -design [current_design]
+  // synopsys dc_tcl_script_end 
+   
+   
 //; my $adderInst ;
 //; $AdderType eq 'Ripple'   and $adderInst = generate( 'adderRippleCarry'  , 'RippleInst'   , BitWidth=>$BW );
 //; $AdderType eq 'Sklansky' and $adderInst = generate( 'adderSklansky', 'SklanskyInst' , BitWidth=>$BW );

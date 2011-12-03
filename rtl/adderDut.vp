@@ -10,7 +10,7 @@
 //; my $AdderType = parameter( name=>'AdderType', val=>'Sklansky' ,
 //;                            doc=>'Type of Adder' ,
 //;                            list=>[ 'Ripple' , 'Sklansky' ] ) ;
-//; my $dut       = parameter( name=>'DutType', val=>'PGTree' ,
+//; my $dut       = parameter( name=>'DutType', val=>'Adder' ,
 //;                            doc=>'Which Units to Test',
 //;                            list=>[ 'PGTree' , 'Adder' ] );
 //; my $BW  = parameter( name=>'BitWidth', val=>32 , 
@@ -38,6 +38,11 @@ module `mname()`
     output logic                co 
    );
 
+  // synopsys dc_tcl_script_begin
+  // set_ungroup [current_design] true
+  // set_flatten true -effort high -phase true -design [current_design]
+  // synopsys dc_tcl_script_end 
+    
 //TODO add flops for retiming tests...
    
 //; if( $dut eq 'Adder' ){
