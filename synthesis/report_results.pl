@@ -45,11 +45,13 @@ foreach $file (@files) {
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)/ ) {    
-		$mapped_dynamic_power = $1;
+	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) { 
+		$mapped_dynamic_power = ($4 eq "uW")? $1 / 1000.0 : $1 ;
+		$mapped_dynamic_power = ($4 eq " W")? $1 * 1000.0 : $mapped_dynamic_power ; 
 	 }
 	 if ( $_ =~ /Cell Leakage Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {
            $mapped_leakage_power = ($4 eq "uW")? $1 / 1000.0: $1;
+           $mapped_leakage_power = ($4 eq " W")? $1 * 1000.0: $mapped_leakage_power;
 	 }
      }
     close REPORTFILE;
@@ -87,11 +89,13 @@ foreach $file (@files) {
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)/ ) {    
-		$routed_dynamic_power = $1;
+	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {    
+		$routed_dynamic_power = ($4 eq "uW")? $1 /1000.0 : $1 ;
+		$routed_dynamic_power = ($4 eq " W")? $1 * 1000.0 : $routed_dynamic_power ;
 	 }
 	 if ( $_ =~ /Cell Leakage Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {
            $routed_leakage_power = ($4 eq "uW")? $1 / 1000.0: $1;
+           $routed_leakage_power = ($4 eq " W")? $1 * 1000.0: $routed_leakage_power;
 	 }
      }
     close REPORTFILE;
@@ -128,11 +132,13 @@ foreach $file (@files) {
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)/ ) {    
-		$optimized_dynamic_power = $1;
+	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {    
+		$optimized_dynamic_power = ($4 eq "uW")? $1 / 1000.0: $1;
+		$optimized_dynamic_power = ($4 eq " W")? $1 * 1000.0: $optimized_dynamic_power;
 	 }
 	 if ( $_ =~ /Cell Leakage Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {
            $optimized_leakage_power = ($4 eq "uW")? $1 / 1000.0: $1;
+           $optimized_leakage_power = ($4 eq " W")? $1 * 1000.0: $optimized_leakage_power;
 	 }
      }
     close REPORTFILE;
