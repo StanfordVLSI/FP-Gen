@@ -16,6 +16,10 @@ if {![info exists target_delay]} {
   set target_delay 0
 }
 
+if {![info exists io2core]} {
+  set io2core 30
+}
+
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set APPENDIX optimized.$VT
 } else {

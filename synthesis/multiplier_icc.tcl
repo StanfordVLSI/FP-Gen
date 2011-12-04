@@ -247,10 +247,10 @@ if {$max_compressed_column > 0} {
   	-number_rows [expr 2*$max_compressed_column+6] \
   	-core_utilization 0.7 \
   	-row_core_ratio 1 \
-  	-left_io2core 30 \
-  	-bottom_io2core 30 \
-  	-right_io2core 30 \
-  	-top_io2core 30 \
+  	-left_io2core $io2core \
+  	-bottom_io2core $io2core \
+  	-right_io2core $io2core \
+  	-top_io2core $io2core \
   	-start_first_row      
 } else {
   initialize_floorplan \
@@ -258,10 +258,10 @@ if {$max_compressed_column > 0} {
   	-core_aspect_ratio 1 \
   	-core_utilization 0.7 \
   	-row_core_ratio 1 \
-  	-left_io2core 30 \
-  	-bottom_io2core 30 \
-  	-right_io2core 30 \
-  	-top_io2core 30 \
+  	-left_io2core $io2core \
+  	-bottom_io2core $io2core \
+  	-right_io2core $io2core \
+  	-top_io2core $io2core \
   	-start_first_row
 }
 

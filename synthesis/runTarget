@@ -3,7 +3,8 @@ while [ "$#" -gt "0" ]
 do
   echo "Running $1_$2_$3"
 
-  echo "cd \$PBS_O_WORKDIR; pwd; make all VT=$1 Voltage=$2 target_delay=$3" | qsub -q horowitz -p -1
+  echo "cd \$PBS_O_WORKDIR; pwd; make all VT=$1 Voltage=$2 target_delay=$3 io2core=$4" | qsub -q horowitz -p -1
+  shift
   shift
   shift
   shift

@@ -49,7 +49,7 @@
             <List>Cascade</List>
             <List>Fused</List>
           </Range>
-          <Val>Cascade</Val>
+          <Val>Fused</Val>
         </ParameterItem>
         <ParameterItem>
           <Doc>Enable denormals parameters to enable handling denormal values of inputs A and B correctly (YES/NO)</Doc>

@@ -8,6 +8,7 @@ while( $#ARGV > 0 ){
     $s1 = shift @ARGV ;
     $s2 = shift @ARGV ;
     $s3 = shift @ARGV ;
+    $s4 = shift @ARGV ;
 
     print "Running $id --> " . $s1 ."_". $s2 . "_" . $s3 . "\n" ;
 
@@ -35,7 +36,7 @@ while( $#ARGV > 0 ){
     $flow .= "PATH=:/hd/cad/synopsys/star-rcxt/2008.12/amd64_star-rcxt/bin:\$PATH   \n";
     $flow .= "export GENESIS_LIBS=\"/hd/cad/genesis2/r9648/PerlLibs\"   \n";
     $flow .= "PATH=\$GENESIS_LIBS/Genesis2:\$PATH   \n";
-    $flow .= "cd \$PBS_O_WORKDIR; pwd; make all VT=$s1 Voltage=$s2 target_delay=$s3";
+    $flow .= "cd \$PBS_O_WORKDIR; pwd; make all VT=$s1 Voltage=$s2 target_delay=$s3 io2core=$s4";
     open( BATCHFILE , ">$batchName") ;
     printf BATCHFILE $flow ;
     close( BATCHFILE ) ;
@@ -49,7 +50,8 @@ while( $#ARGV > 0 ){
 #do
 #  echo "Running $1_$2_$3"
 #
-#  echo "cd \$PBS_O_WORKDIR; pwd; make all VT=$1 Voltage=$2 target_delay=$3" | qsub -q horowitz -p -1
+#  echo "cd \$PBS_O_WORKDIR; pwd; make all VT=$1 Voltage=$2 target_delay=$3 io2core=$4" | qsub -q horowitz -p -1
+#  shift
 #  shift
 #  shift
 #  shift

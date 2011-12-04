@@ -2,8 +2,9 @@
 
 SRC_DIR = ..
 RUN_NAME = $(VT)_$(Voltage)_$(target_delay)
-COMMAND_STRING =  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay);"
-OPTIMIZED_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay);"
+io2core ?= 30
+COMMAND_STRING =  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
+OPTIMIZED_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
 
 all: $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log $(RUN_NAME)/log/icc_$(RUN_NAME).log
 

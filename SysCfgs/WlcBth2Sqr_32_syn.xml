@@ -31,7 +31,7 @@
             <Min>4</Min>
             <Step>1</Step>
           </Range>
-          <Val>24</Val>
+          <Val>23</Val>
         </ParameterItem>
         <ParameterItem>
           <Doc>Width of the exponent for the multiplier (default is IEEE Double, 11 bit)</Doc>
@@ -49,7 +49,7 @@
             <List>Cascade</List>
             <List>Fused</List>
           </Range>
-          <Val>Cascade</Val>
+          <Val>Fused</Val>
         </ParameterItem>
         <ParameterItem>
           <Doc>Enable denormals parameters to enable handling denormal values of inputs A and B correctly (YES/NO)</Doc>
