@@ -1,4 +1,4 @@
-./runTarget.pl hvt 0v8 2000  hvt 0v8 1500 hvt 0v8 1300 hvt 0v8 1200 hvt 0v8 1000\
-            svt 0v9 1200  svt 0v9 1000 svt 0v9  900 svt 0v9  700 svt 0v9  500\
-            lvt 1v0 700 lvt 1v0 600 lvt 1v0 500 lvt 1v0 400 lvt 1v0 300 lvt 1v0 250
+./runTarget.pl hvt 0v8 2000 8 hvt 0v8 1500 8 hvt 0v8 1300 8 hvt 0v8 1200 8 hvt 0v8 1100 8\
+            svt 0v9 1000 8 svt 0v9 800 8 svt 0v9  700 8 svt 0v9  600 8 svt 0v9  500 8\
+            lvt 1v0 600 8 lvt 1v0 500 8 lvt 1v0 450 8 lvt 1v0 400 8 lvt 1v0 350 8 lvt 1v0 300 8
 
