@@ -177,8 +177,13 @@ module `mname`(
     assign SHD_wide = SHD_ps0 + SHD_ps1;
 
     assign denormalAB = ExpAB_1[`$exp_width`+1];
+
+  //;if($exp_width < $shift_width+1){
+    assign shiftAmount = denormalAB? SHD_wide[`$shift_width+1`:0] : {1'b0,SHN};
+  //;}else{
     assign shiftAmount = denormalAB? (|SHD_wide[`$exp_width`+1:`$shift_width+2`] ? 
 				      {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) : {1'b0,SHN};
+  //;}
 
     assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>shiftAmount;
     assign ManAB_normalized = ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`];
