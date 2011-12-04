@@ -31,4 +31,4 @@ foreach L $synthetic_library {
 }
 
 
-set DESIGN_NAME Multiplier_unq1
+set DESIGN_NAME MultiplierP_unq1
