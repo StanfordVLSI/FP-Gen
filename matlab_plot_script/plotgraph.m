@@ -26,7 +26,7 @@ function plotgraph(bit, Vth, Vdd)
        routed_dd, routed_pd,'-bo',...
        'LineWidth',2,'MarkerSize',9);
    set(gca,'fontsize',12);
-   title([int2str(bit),'bit Flaoting Point Wallace Multiplier'],'fontsize',18);
+   title([int2str(bit),'bit Floating Point Wallace Multiplier'],'fontsize',18);
    
    xlabel('Delay (ns)','fontsize',18),grid
    ylabel('Dynamic Energy (pJ)','fontsize',18)
