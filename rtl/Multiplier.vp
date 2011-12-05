@@ -72,7 +72,13 @@ module `mname`(
 
 /* FINAL SUMMATION
 */
-   //; my $adderInst = generate( 'adder'  , 'PartialProductSum'   , BitWidth=>2*$width );
+   //; my $adderInst = generate( 
+   //;                            'adder'  ,  
+   //;                            'PartialProductSum'   , 
+   //;                            BitWidth=>2*$width  ,
+   //;                            Orientation=>'L' ,
+   //;                            GroupName=>'PartialProductSum' 
+   //;                          );
    `$adderInst->instantiate()` (   
 				   .a(  multp_out0[`2*$width-1`:0]  ) , 
 				   .b(  multp_out1[`2*$width-1`:0]  ) , 

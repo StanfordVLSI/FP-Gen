@@ -13,6 +13,19 @@
 //; my $BW  = parameter( name=>'BitWidth', val=>16 , 
 //;                      doc=>'!functional! BitWidth of operands' , 
 //;                      min=>2 , max=>512, step=>1 );
+//;
+//; #SYNTH Parameters
+//;
+//; my $ORIENTATION = parameter( name=>'Orientation', val=>'vertical',
+//;                              doc=>'Orientation of Layout',
+//;                              list=>[ 'horizontal' , 'vertical' , 'L' ] );  #, 
+//; my $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
+//;                                doc=>'Orientation of Inputs and Outputs',
+//;                                list=>[ 'NW_to_SE' ] ); # 'SE_to_NW' 
+//; my $GROUPNAME = parameter( name=>'GroupName', 
+//;                            val=>("GPTree" . "_" . $BW . "_" . $ORIENTATION . "_" . $DATADIRECTION ),
+//;                            doc=>'Orientation of Layout' );
+
 
 
 //  ... Wrapper for the Various Adder Designs ... //
@@ -27,9 +40,21 @@ module `mname()`
     output logic [ `$BW-1` : 0] G 
    );
 
+  // synopsys dc_tcl_script_begin
+  // set_ungroup [current_design] true
+  // set_flatten true -effort high -phase true -design [current_design]
+  // synopsys dc_tcl_script_end 
 
+   
 //; my $treeInst ;
-//; $TreeType eq 'Sklansky' and $treeInst = generate( 'adderSklanskyGPTree', 'SklanskyTreeInst' , BitWidth=>$BW );
+//; $TreeType eq 'Sklansky' and $treeInst = generate( 
+//;                                                      'adderSklanskyGPTree', 
+//;                                                      'SklanskyTreeInst' , 
+//;                                                      BitWidth=>$BW ,
+//;                                                      Orientation=>$ORIENTATION ,
+//;                                                      Direction=>$DATADIRECTION ,
+//;                                                      GroupName=>$GROUPNAME 
+//;                                                   );
    
 `$treeInst->instantiate()` (.p(p),.g(g),.P(P),.G(G)); 
 

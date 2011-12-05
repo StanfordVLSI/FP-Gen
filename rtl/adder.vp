@@ -13,6 +13,19 @@
 //; my $BW  = parameter( name=>'BitWidth', val=>16 , 
 //;                      doc=>'!functional! BitWidth of operands' , 
 //;                      min=>2 , max=>512, step=>1 );
+//;
+//; #SYNTH Parameters
+//;
+//; my $ORIENTATION = parameter( name=>'Orientation', val=>'L',
+//;                              doc=>'Orientation of Layout',
+//;                              list=>[ 'horizontal' , 'vertical' , 'L' ] );  #, 
+//; my $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
+//;                                doc=>'Orientation of Inputs and Outputs',
+//;                                list=>[ 'NW_to_SE' ] ); # 'SE_to_NW' 
+//; my $GROUPNAME = parameter( name=>'GroupName', 
+//;                            val=>("Adder" . "_" . $BW . "_" . $ORIENTATION . "_" . $DATADIRECTION ),
+//;                            doc=>'Orientation of Layout' );
+ 
 
 
 //  ... Wrapper for the Various Adder Designs ... //
@@ -37,7 +50,14 @@ module `mname()`
    
 //; my $adderInst ;
 //; $AdderType eq 'Ripple'   and $adderInst = generate( 'adderRippleCarry'  , 'RippleInst'   , BitWidth=>$BW );
-//; $AdderType eq 'Sklansky' and $adderInst = generate( 'adderSklansky', 'SklanskyInst' , BitWidth=>$BW );
+//; $AdderType eq 'Sklansky' and $adderInst = generate( 
+//;                                                      'adderSklansky', 
+//;                                                      'SklanskyInst' , 
+//;                                                      BitWidth=>$BW ,
+//;                                                      Orientation=>$ORIENTATION ,
+//;                                                      Direction=>$DATADIRECTION ,
+//;                                                      GroupName=>$GROUPNAME 
+//;                                                   );
    
 `$adderInst->instantiate()` (.*); //Ports implied
 

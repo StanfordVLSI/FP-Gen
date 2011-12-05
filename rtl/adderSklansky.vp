@@ -15,7 +15,7 @@
 //;
 //; my $ORIENTATION = parameter( name=>'Orientation', val=>'horizontal',
 //;                              doc=>'Orientation of Layout',
-//;                              list=>[ 'horizontal'  ] );  #, 'vertical' , 'L'
+//;                              list=>[ 'horizontal' , 'vertical' , 'L' ] );  #, 
 //; my $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
 //;                                doc=>'Orientation of Inputs and Outputs',
 //;                                list=>[ 'NW_to_SE' ] ); # 'SE_to_NW' 
@@ -25,16 +25,16 @@
 //;
 //; my $GROUPNAME2 ;
 //;
-//; $ORIENTATION eq 'L' and   $GROUPNAME2 = param( name=>'GroupName2' , 
-//;                                                val=>( $GROUPNAME . "_2" ) ,
-//;                                                doc=>'GroupName in Layout'  );
+//; $ORIENTATION eq 'L' and   $GROUPNAME2 = parameter( name=>'GroupName2' , 
+//;                                                    val=>( $GROUPNAME . "_2" ) ,
+//;                                                    doc=>'GroupName in Layout'  );
 //;                                                       
 //; 
 
 
 //; #Synthesis SubRoutines
 //;
-//; my @placement ; # Array Holding Placement Info For ASCII figure
+//; my %placement ; # Arrays Holding Placement Info For ASCII figure
 //;
 //; my $id = sprintf( "%03x" , int( rand(4095) ) ) ; #id for instance names to help with id's
 //;
@@ -59,15 +59,27 @@
 //; $ORIENTATION eq 'vertical' and  $cols = $height + 2 ;
 //; $ORIENTATION eq 'vertical' and  $rows = $BW + 1 ;
 //;
-//; $ORIENTATION eq 'L' and  $cols  = floor(( $height + 2.0 ) / 2.0 );
-//; $ORIENTATION eq 'L' and  $rows  = floor(( $BW + 1.0 ) / 2.0 ) ;
-//; $ORIENTATION eq 'L' and  $cols2 =  ceil(( $BW + 1.0 ) / 2.0 ) ; 
-//; $ORIENTATION eq 'L' and  $rows2 =  ceil(( $height + 2.0 ) / 2.0 ) ;
+//; #Right
+//; $ORIENTATION eq 'L' and  $cols2  = $height + 2.0 ;
+//; $ORIENTATION eq 'L' and  $rows2  = floor(( $BW + 1.0 ) / 2.0 ) ;
+//;
+//; #Bottom
+//; $ORIENTATION eq 'L' and  $cols =  ceil(( $BW + 1.0 ) / 2.0 ) ; 
+//; $ORIENTATION eq 'L' and  $rows =  $height + 2.0  ;
+//;
+//; $cols <= 0 and $self->error( "Must have cols greater than 0");
+//; $rows <= 0 and $self->error( "Must have rows greater than 0");
+//; $ORIENTATION eq 'L' and  $cols2 <= 0 and $self->error( "Must have cols greater than 0");
+//; $ORIENTATION eq 'L' and  $rows2 <= 0 and $self->error( "Must have rows greater than 0");
 //;
 //;
+//; $placement{$groupName}{'col'} = $cols ;
+//; $placement{$groupName}{'row'} = $rows ;
+//; $placement{$groupName2}{'col'} = $cols2 ;
+//; $placement{$groupName2}{'row'} = $rows2 ;
+//;  
 //;
 //; open( PLACE , ">$placementFileName" ); 
-//;
 //;
 //;
 //; sub createGroup{
@@ -83,16 +95,62 @@
 //;    
 //; sub placeCell{
 //;    my $inst = shift      ;
-//;    my $x = shift         ;
-//;    my $y = shift         ;
+//;    my $x_in = shift         ;
+//;    my $y_in = shift         ;
 //;    my $cellType = shift or $self->error("Malformed Input to PlaceCell SubRoutine") ;
-//;
-//;    #Write to placement array
 //;
 //;    #Perform Coordinate Manipulation here...
 //;    # if horizontal leave it alone
 //;    # if vertical swap x an y ?
 //;    # if L pick different group for x>foo and swap x an y for x>foo
+//;
+//;    my $x ;
+//;    my $y ;
+//;    my $g ;
+//;    my $gL ;
+//;    my $lsplit = $cols ;
+//;
+//;    #Flip X so LSB is at lower left
+//;    $ORIENTATION eq 'horizontal' and  $x_in = $BW - $x_in - 1 ;
+//;
+//;    $ORIENTATION eq 'horizontal' and $g  = $groupName ;
+//;    $ORIENTATION eq 'horizontal' and $gL = $groupNameLong;
+//;    $ORIENTATION eq 'horizontal' and $x  = $x_in ;
+//;    $ORIENTATION eq 'horizontal' and $y  = $y_in ;
+//;    $ORIENTATION eq 'horizontal' and $x  >= $cols and $self->error( "Exceeded Col Count" );
+//;    $ORIENTATION eq 'horizontal' and $y  >= $rows and $self->error( "Exceeded Row Count" );
+//;
+//;    #Flip X so LSB is at lower left
+//;    $ORIENTATION eq 'vertical' and  $x_in = $BW - $x_in - 1 ;
+//;    
+//;    $ORIENTATION eq 'vertical' and $g  = $groupName ;
+//;    $ORIENTATION eq 'vertical' and $gL = $groupNameLong ;
+//;    $ORIENTATION eq 'vertical' and $x  = $height+2 -$y_in-1 ;
+//;    $ORIENTATION eq 'vertical' and $y  = $x_in ;
+//;    $ORIENTATION eq 'vertical' and $x  >= $cols and $self->error( "Exceeded Col Count" );
+//;    $ORIENTATION eq 'vertical' and $y  >= $rows and $self->error( "Exceeded Row Count" );
+//;
+//;    #Flip X so LSB is at lower left
+//;    $ORIENTATION eq 'L' and  $x_in = $BW - $x_in - 1 ;
+//;
+//;    #Bottom 0 to lsplit
+//;    $ORIENTATION eq 'L' and  $x_in <  $lsplit and $g  = $groupName ;
+//;    $ORIENTATION eq 'L' and  $x_in <  $lsplit and $gL = $groupNameLong ;
+//;    $ORIENTATION eq 'L' and  $x_in <  $lsplit and $x  = $x_in;
+//;    $ORIENTATION eq 'L' and  $x_in <  $lsplit and $y  = $y_in;
+//;    $ORIENTATION eq 'L' and  $x_in <  $lsplit and  $x >= $cols and $self->error( "Exceeded Col Count at 141" );
+//;    $ORIENTATION eq 'L' and  $x_in <  $lsplit and  $y >= $rows and $self->error( "Exceeded Row Count at 142" );
+//;
+//;    #Right lsplit to BW
+//;    $ORIENTATION eq 'L' and  $x_in >= $lsplit and $g  = $groupName2 ;
+//;    $ORIENTATION eq 'L' and  $x_in >= $lsplit and $gL = $groupName2Long ;
+//;    $ORIENTATION eq 'L' and  $x_in >= $lsplit and $x  = $height+2 - $y_in -1   ;
+//;    $ORIENTATION eq 'L' and  $x_in >= $lsplit and $y  = $rows2 - ($BW - $x_in)-1  ;
+//;    $ORIENTATION eq 'L' and  $x_in >= $lsplit and $x >= $cols2 and $self->error( "Exceeded Col Count at $inst $x $cols2 149" );
+//;    $ORIENTATION eq 'L' and  $x_in >= $lsplit and $y >= $rows2 and $self->error( "Exceeded Row Count at 150" );
+//;
+//;    #Write to placement array
+//;    $placement{$g}{'p'}[$x][$y] = $cellType ;
 //;
 //;    #Place Leaf Cell
 //;    print PLACE '                                                                   ' ."\n" ;
@@ -100,14 +158,15 @@
 //;    print PLACE '           set MC [ get_object_name [index_collection $MCELLS 0 ]] ' ."\n" ;
 //;    print PLACE '           set CHILD [get_cells "${MC}/*"];   ' ."\n" ;
 //;    print PLACE '           set CNT [sizeof_collection $CHILD];   ' ."\n" ;
-//;    print PLACE '           create_rp_group '.$inst.'GP -columns ${CNT} -rows 1   ' ."\n" ;
-//;    print PLACE '           set C_CNT 0 ;      ' ."\n" ;
-//;    print PLACE '           foreach_in_collection C $CHILD {   ' ."\n" ;
+//;    print PLACE '           if { ${CNT} > 0 } {   ' ."\n" ;
+//;    print PLACE '             create_rp_group '.$inst.'GP -columns ${CNT} -rows 1   ' ."\n" ;
+//;    print PLACE '             set C_CNT 0 ;      ' ."\n" ;
+//;    print PLACE '             foreach_in_collection C $CHILD {   ' ."\n" ;
 //;    print PLACE '                add_to_rp_group ${DESIGN_NAME}::'.$inst.'GP -leaf [get_object_name $C] -column $C_CNT -row 0 ;   ' ."\n" ;
 //;    print PLACE '                set C_CNT [expr $C_CNT + 1 ]   ' ."\n" ;
-//;    print PLACE '            }   ' ."\n" ;
-//;    print PLACE '            ' ."\n" ;
-//;    print PLACE '            add_to_rp_group '.$groupNameLong.' -hierarchy ${DESIGN_NAME}::'.$inst.'GP -column '.$x.' -row '.$y.' ;   ' ."\n" ;
+//;    print PLACE '              }   ' ."\n" ;
+//;    print PLACE '            }' ."\n" ;
+//;    print PLACE '            add_to_rp_group '.$gL.' -hierarchy ${DESIGN_NAME}::'.$inst.'GP -column '.$x.' -row '.$y.' ;   ' ."\n" ;
 //;    print PLACE '              '   ."\n" ;
 //;    print PLACE "\n get_cells -hierarchical \"\*$inst\"\n" ;  
 //; }
@@ -116,21 +175,21 @@
 //;
 //; sub printASCIIPlacement{
 //;
-//;   #FIXME -> array bounds are a function of colHeight and colWidth
-//;   #FIXME -> print L placement ....
-//;
 //;   #Print Out Placement INFO
-//;   open( MYP , ">SkPlacement.info" );   
-//;   print MYP  "Placing Sklansky Adder\n" ;
-//;   for( my $j = $height+1 ; $j>=0 ; $j-- ){
-//;      for( my $i = 0 ; $i < scalar( @placement ) ; $i++ ){
-//;        $placement[$i][$j] and print MYP "$placement[$i][$j] ";
-//;        $placement[$i][$j] or print MYP "     ";
-//;      }
-//;      print MYP "\n" ;   
-//;   }
-//; } 
+//;   foreach my $g ( sort keys %placement ){
+//;     open( MYP , ">$g.info" );   
+//;     print MYP  "Placing Sklansky Adder for group $g " .  ($placement{$g}{'row'}+1) . " " . $placement{$g}{'col'} . "\n" ;
+//;     for( my $j = $placement{$g}{'row'}+1 ; $j>=0 ; $j-- ){
+//;        for( my $i = 0 ; $i < $placement{$g}{'col'} ; $i++ ){
+//;          $placement{$g}{'p'}[$i][$j] and print MYP "$placement{$g}{'p'}[$i][$j] ";
+//;          $placement{$g}{'p'}[$i][$j] or print MYP "     ";
+//;        }
+//;        print MYP "\n" ;   
+//;     }
 //;
+//;     close( MYP )
+//;   } 
+//; }
 //;
 //;
 
@@ -176,8 +235,8 @@ module `mname()`
    
 // Instantiate a row of half adders
 //; for( my $i=1 ; $i <= $BW ; $i++ ){
-//;    my $instName = sprintf( "adderHalfAdderCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , ceil( log( $BW ) / log( 2 ) ) + 1 );
-//;    $placement[ $BW-$i ][ ceil( log( $BW ) / log( 2 ) ) + 1 ] = sprintf( "A%03d",$i);
+//;    my $instName = sprintf( "HA_%s_loc_%03d_%03d_loc", $id , $BW-$i , ceil( log( $BW ) / log( 2 ) ) + 1 );
+//;    #$placement[ $BW-$i ][ ceil( log( $BW ) / log( 2 ) ) + 1 ] = sprintf( "A%03d",$i);
 //;    my $s = sprintf( "A%03d",$i);
 //;    my $adderCell = generate( 'adderHalfAdderCell', $instName );
 //;    placeCell( $instName , $BW-$i , $height + 1 , $s ) ;
@@ -200,8 +259,8 @@ module `mname()`
 //;     my $i = $runs ;    
 //;     #Place Grey Cells at right hand side of row   
 //;     for( ; ($i < (2*$runs)) && ($i < $BW) ; $i++ ){
-//;           my $instName = sprintf( "adderGreyCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , $height - $j );
-//;           $placement[ $BW-$i ][ $height - $j ] = sprintf( "G%03d",$i);
+//;           my $instName = sprintf( "G_%s_loc_%03d_%03d_loc", $id , $BW-$i , $height - $j );
+//;           #$placement[ $BW-$i ][ $height - $j ] = sprintf( "G%03d",$i);
 //;           my $I = $i ;                
 //;           my $K = $runs;
 //;           my $L = $K-1;                
@@ -224,8 +283,8 @@ module `mname()`
 //;          $i+=$runs ;
 //;          my $bottum = $i - 1 ; #Index for last empty slot before black cell
 //;          for( my $it = 0 ; $it < $runs && $i <= $BW ; $it++ , $i++ ){
-//;             my $instName = sprintf( "adderBlackCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , $height - $j );
-//;             $placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
+//;             my $instName = sprintf( "B_%s_loc_%03d_%03d_loc", $id , $BW-$i , $height - $j );
+//;             #$placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
 //;             my $I = $i ;                
 //;             my $K = $bottum+1;  
 //;             my $L = $K-1 ;              
@@ -246,8 +305,8 @@ module `mname()`
 //; }
 
 // Calc Carry Out
-//;           my $instName = sprintf( "adderGreyCell_inst_co_loc_%03d_%03d_loc", 0 , 1  );
-//;           $placement[ 0 ][ 1 ] = "Co  " ;
+//;           my $instName = sprintf( "G_%s_co_loc_%03d_%03d_loc", $id , 0 , 1  );
+//;           #$placement[ 0 ][ 1 ] = "Co  " ;
 //;           my $I = $BW ;                
 //;           my $K = $BW;       
 //;           my $L = $K-1;         
@@ -266,8 +325,8 @@ module `mname()`
    
 // Instantiate a row of xors
 //; for( my $i=1 ; $i <= $BW ; $i++ ){
-//;    my $instName = sprintf( "adderXorCell_inst_%03d_loc_%03d_%03d_loc", $i , $BW-$i , 0 );
-//;    $placement[ $BW-$i ][ 0 ] = sprintf( "X%03d",$i);
+//;    my $instName = sprintf( "X_%s_loc_%03d_%03d_loc" , $id , $BW-$i , 0 );
+//;    #$placement[ $BW-$i ][ 0 ] = sprintf( "X%03d",$i);
 //;    my $adderCell = generate( 'adderXorCell',$instName );
 //;    placeCell( $instName , $BW-$i , 0 ,  sprintf( "X%03d",$i) );
        logic S_`$i` ;

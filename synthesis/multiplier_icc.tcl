@@ -227,6 +227,32 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     }
   }
 
+#ADDER PLACEMENT SCRIPTS HERE:
+#if {[file exists ../place_SklanskyAdderTree_H.tcl]} {
+#  source -echo ../place_SklanskyAdderTree_H.tcl
+#  check_rp_groups -verbose ${DESIGN_NAME}::SklanskyAdderTree_H
+#}
+
+#if {[file exists ../place_SklanskyAdderTree_K.tcl]} {
+#  source -echo ../place_SklanskyAdderTree_K.tcl
+#  check_rp_groups -verbose ${DESIGN_NAME}::SklanskyAdderTree_K
+#}
+
+if {[file exists ../../place_PartialProductSum.tcl]} {
+  source -echo ../../place_PartialProductSum.tcl
+  check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum
+  check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum_2
+}
+
+check_rp_groups -all -verbose
+create_rp_group RP_MULT -columns 2 -rows 2 -allow_non_rp_cells
+add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::rp_tree            -column 0 -row 1 ;
+add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum  -column 0 -row 0 ;
+add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum_2  -column 1 -row 1 ;
+check_rp_groups -verbose ${DESIGN_NAME}::RP_MULT
+
+
+
   set_rp_group_options [all_rp_groups] \
            -allow_non_rp_cells \
            -placement_type compression;
@@ -235,6 +261,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 #          -route_opt_option in_place_size_only \
 #          -cts_option fixed_placement;
 
+check_rp_groups -all -verbose
 
 
 }

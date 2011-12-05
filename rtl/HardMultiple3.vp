@@ -64,10 +64,23 @@ module `mname` (
    assign ph = ~ ph_b;
    assign pk = ~ pk_b;
 
-   //; my $SklanskyAdderTree_H = generate('adderGPTree', 'SklanskyAdderTree_H', BitWidth=>$prefix_tree_size);
+   //; my $SklanskyAdderTree_H = generate(
+   //;                                       'adderGPTree', 
+   //;                                       'SklanskyAdderTree_H', 
+   //;                                        BitWidth=>$prefix_tree_size ,
+   //;                                        Orientation=>'vertical' ,
+   //;                                        GroupName=>'SklanskyAdderTreeH'
+   //;                                     );
    `$SklanskyAdderTree_H->instantiate` 
      (.g(gh), .p(ph), .G(GH), .P(PH));
-   //; my $SklanskyAdderTree_K = generate('adderGPTree', 'SklanskyAdderTree_K', BitWidth=>$prefix_tree_size);
+   
+   //; my $SklanskyAdderTree_K = generate(
+   //;                                       'adderGPTree', 
+   //;                                       'SklanskyAdderTree_K', 
+   //;                                       BitWidth=>$prefix_tree_size,
+   //;                                       Orientation=>'vertical' ,
+   //;                                       GroupName=>'SklanskyAdderTreeK'
+   //;                                    );
    `$SklanskyAdderTree_K->instantiate` 
      (.g(gk_b), .p(pk_b), .G(GK_b), .P(PK_b));
    assign GK = ~ GK_b;

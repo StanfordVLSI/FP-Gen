@@ -10,7 +10,7 @@
 //; my $AdderType = parameter( name=>'AdderType', val=>'Sklansky' ,
 //;                            doc=>'Type of Adder' ,
 //;                            list=>[ 'Ripple' , 'Sklansky' ] ) ;
-//; my $dut       = parameter( name=>'DutType', val=>'Adder' ,
+//; my $dut       = parameter( name=>'DutType', val=>'PGTree' ,
 //;                            doc=>'Which Units to Test',
 //;                            list=>[ 'PGTree' , 'Adder' ] );
 //; my $BW  = parameter( name=>'BitWidth', val=>32 , 
