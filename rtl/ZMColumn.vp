@@ -210,7 +210,8 @@ module `mname()` (
    //;                   }
    //;                   $array_conn[1] = "pp_${array}_".($nodes-1)."_s";
    //;		     }
-   //;               my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${array}_${nodes}_${row}_${Y}");
+   //;#               "csa_`${array}`_`${nodes}`_`${row}`_`${Y}`"
+   //;               my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${row}_${Y}");
    //;
    //;     $row++;
    //;     $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
@@ -247,7 +248,8 @@ module `mname()` (
    //;                   $array_conn[0] = "ci[${ci_index}]";$ci_index++;
    //;                   $array_conn[1] = "pp_${array}_".($array_csa-1)."_s";
    //;                   $array_conn[2] = "ci[${ci_index}]";$ci_index++;
-   //;                   my $CSA_obj = generate('CSA', "csa_extra_${extra_nodes}_${row}_${Y}");
+   //                  "csa_extra_`${extra_nodes}`_`${row}`_`${Y}`"
+   //;                   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
    //;
    //;                   $row++;
    //;                   $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
@@ -261,7 +263,8 @@ module `mname()` (
    //;              } else {
    //;                   $array_conn[0] = "ci[${ci_index}]";$ci_index++;
    //;                   $array_conn[1] = "pp_${array}_".($array_csa-1)."_s";
-   //;                   my $CSA_obj = generate('HA', "csa_extra_${extra_nodes}_${row}_${Y}");
+   //                  "csa_extra_`${extra_nodes}`_`${row}`_`${Y}`"
+   //;                   my $CSA_obj = generate('HA', "csa_${row}_${Y}");
    //;
    //;                   $row++;
    //;                   $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
@@ -296,7 +299,8 @@ module `mname()` (
    //;           $put_csa = ($ci_index <= $ci_w);
       logic pp_merge_`$array-1`_s;
    //;           if($put_csa){
-   //;       	     my $CSA_obj = generate('CSA', "csa_merge_${array}_${row}_${Y}");
+   //       	     "csa_merge_`${array}`_`${row}`_`${Y}`"
+   //;       	     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
    //;
    //;               $row++;
    //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
@@ -307,7 +311,8 @@ module `mname()` (
                                   .s(pp_merge_`$array-1`_s), .co(co[`$co_index`]) );
    //;               $co_index++;
    //;           } else {
-   //;       	     my $CSA_obj = generate('HA', "csa_merge_${array}_${row}_${Y}");
+   //       	     "csa_merge_`${array}`_`${row}`_`${Y}`"
+   //;       	     my $CSA_obj = generate('HA', "csa_${row}_${Y}");
    //;
    //;               $row++;
    //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
@@ -327,7 +332,8 @@ module `mname()` (
    //;
    //;	         if($array==($array_count-1) && ($put_csa==0)){
    //;               $ci_index--;
-   //;       	     my $CSA_obj = generate('HA', "csa_merge1_${array}_${row}_${Y}");
+   //       	     "csa_merge1_`${array}`_`${row}`_`${Y}`"
+   //;       	     my $CSA_obj = generate('HA', "csa_${row}_${Y}");
    //;
    //;               $row++;
    //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
@@ -335,7 +341,8 @@ module `mname()` (
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`),
                                   .s(sum), .co(carry) );
    //;           } else {
-   //;       	     my $CSA_obj = generate('CSA', "csa_merge1_${array}_${row}_${Y}");
+   //       	     "csa_merge1_`${array}`_`${row}`_`${Y}`"
+   //;       	     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
    //;
    //;               $row++;
    //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
