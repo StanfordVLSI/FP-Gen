@@ -93,7 +93,9 @@
 //;    $co_w += floor($h/3);
 //;    my $next_h = floor($h/3) + $h%3;
 //;    $next_h += $prev_co_arr[$l] if $l <= $#prev_co_arr;
-//;    if ( $h%3==2 && ($next_h%3==1 || $next_h==2) ) {
+//;    if ( $h%3==2 && (   ($l==$max_level-3? ($next_h%3==2 && $l < $#prev_co_arr && $prev_co_arr[$l+1]==1)
+//;                                         :  $next_h%3==1)
+//;                                    ||  $next_h==2) ) {
 //;       $next_h--;
 //;       $co_w++;
 //;    }
@@ -154,7 +156,9 @@ module `mname()` (
    //;   my $next_hight = floor($hight/3) + $hight%3;
    //;   $next_hight += $prev_co_arr[$step-1] if $step-1 <= $#prev_co_arr;
    //;   my $max_i = floor($hight/3);
-   //;   my $extra_HA = ( $hight%3==2 && ($next_hight%3==1 || $next_hight==2) );
+   //;   my $extra_HA = ( $hight%3==2 && (   ($step==$max_level-2? ($next_hight%3==2 && $step <= $#prev_co_arr && $prev_co_arr[$step]==1)
+   //;                                                           :  $next_hight%3==1)
+   //;                                    ||  $next_hight==2) );
    //;   if ($extra_HA) {
    //;      $max_i++;
    //;      $next_hight--;
