@@ -153,6 +153,7 @@ module `mname()` (
    //;   my $pp_idx =0;
    //;   my $next_pp_idx = 0;
    //;   my $local_ci_idx = 0;
+   //;   my $local_ci_count = ($step-1 <= $#prev_co_arr) ? $prev_co_arr[$step-1] : 0;
    //;   my $next_hight = floor($hight/3) + $hight%3;
    //;   $next_hight += $prev_co_arr[$step-1] if $step-1 <= $#prev_co_arr;
    //;   my $max_i = floor($hight/3);
@@ -167,6 +168,7 @@ module `mname()` (
    // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`($step-1 <= $#prev_co_arr)?$prev_co_arr[$step-1]:0`
       logic [`$next_hight-1`:0] pp_step`$step`; // For holding results of level `$step`
 
+   //;   my $offset=0;
    //;   for (my $i=0; $i < $max_i; $i++){
    //;
    //;     ######### Calculate Cell Location ##########
@@ -200,49 +202,71 @@ module `mname()` (
    //;
    //;     ########### Instantiate Cell #############
    //;     if ( $use_compressor_4_2_part2 ){
+   //;
    //;       my $CSA_obj = generate('Compressor_4_2_p2', "csa_${row}_${Y}", ENABLE_CI=> ($hight==3) );
-      `$CSA_obj->instantiate()` ( .s_abcd(pp_step`$step-1`[`3*$i`]),   .d(pp_step`$step-1`[`3*$i+1`]),
+      `$CSA_obj->instantiate()` ( .s_abcd(pp_step`$step-1`[`3*$i+$offset`]),   .d(pp_step`$step-1`[`3*$i+$offset+1`]),
    //;       if ($hight==3){
-                                  .ci(pp_step`$step-1`[`3*$i+2`]), .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));
+                                  .ci(pp_step`$step-1`[`3*$i+$offset+2`]), .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));
    //;       } else  {
                                   .co(wallace_co[`$co_idx++`]));
-       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`3*$i`];
-   //;       }
-                                  
+       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`3*$i+$offset`];
+   //;       }                                 
    //;        $use_compressor_4_2_part2 =0;
-   //;     }elsif ($extra_HA && $i==$max_i-1){
-   //;       my $CSA_obj = generate('HA', "csa_${row}_${Y}");
-
-      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]),
-                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
-
-   //;     } elsif ( $step==$max_level-1  && $hight>3 ) {
+   //;
+   //;     }elsif ( $step==$max_level-1  && $hight>3 ) {
+   //;
    //;       my $CSA_obj = generate('Compressor_4_2_p1', "csa_${row}_${Y}");
-      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]),   .b(pp_step`$step-1`[`3*$i+1`]),
-                                  .c(pp_step`$step-1`[`3*$i+2`]), .d(pp_step`$step-1`[`3*$i+3`]),
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i+$offset`]),   .b(pp_step`$step-1`[`3*$i+$offset+1`]),
+                                  .c(pp_step`$step-1`[`3*$i+$offset+2`]), .d(pp_step`$step-1`[`3*$i+$offset+3`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));
    //;        $use_compressor_4_2_part2 =1;
+   //;
    //;     } else {
-   //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
-                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
-   //;       if ($ci_idx < $ci_w && $step-1 <= $#prev_co_arr && $local_ci_idx<$prev_co_arr[$step-1]){
-      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
-   //;         $local_ci_idx++;
+   //;
+   //;       my $c_first = $step%2==1? ($next_pp_idx==0? 2-$extra_HA : ($next_pp_idx%6==5? 3 : 0) ) : 0; 
+   //;       my $c_last  = ($step%2==0 && $next_pp_idx%6==1)? 3 : 0;
+   //;       while (!$extra_HA && $next_pp_idx<2 && $hight>3 && $offset < ($hight%3) && $c_first-- > 0){
+      assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$offset++`];
    //;       }
+   //;       while ($local_ci_idx< $local_ci_count && $c_first-- > 0){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;           $local_ci_idx++;
+   //;       }
+
+   //;       if ($extra_HA && ( $step%2==1 ? $i==0 : $i==$max_i-1 ) ){
+   //;
+   //;         my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i+$offset`]), .b(pp_step`$step-1`[`3*$i+$offset+1`]),
+                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
+   //;         $offset=-1;
+   //;       } else {
+   //;         my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i+$offset`]), .b(pp_step`$step-1`[`3*$i+$offset+1`]), .ci(pp_step`$step-1`[`3*$i+$offset+2`]),
+                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
+   //;       }
+   //;       while ($local_ci_idx< $local_ci_count && $c_last-- > 0){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;           $local_ci_idx++;
+   //;       }
+   //;
    //;     }
    //;
    //;     $co_arr[$step-1]++;     
    //;   } # End of "for (my $i=0; $i < flo..."
 
-   //;   for (my $i=3 * $max_i; $i < $hight; $i++){
+
+   //;   for (my $i=3 * $max_i + $offset; $i < $hight; $i++){
+   //;     if ($next_pp_idx<$next_hight-$local_ci_count+$local_ci_idx){
       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$i`];
+   //;     }
    //;   }
 
-   //;   while ($ci_idx < $ci_w && $step-1 <= $#prev_co_arr && $local_ci_idx<$prev_co_arr[$step-1]){
+   //;   while ($local_ci_idx< $local_ci_count){
       assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
    //;         $local_ci_idx++;
    //;   }
+
+
    
    //;   $hight=$next_hight;
    //; } # End of "while($hight > 2){..."
