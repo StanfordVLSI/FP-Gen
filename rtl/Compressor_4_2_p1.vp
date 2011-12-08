@@ -1,0 +1,19 @@
+
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+
+module `mname()` (input logic a,b,c,d,
+                  output logic s, co);
+
+  //max time in  ( a,b,c,d ) = 0
+  //min time out ( ico )     = 1
+  //min time out ( s, )   = 1.5
+
+  logic s_ab, s_cd;
+  assign s_ab = a ^ b ;
+  assign s_cd = c ^ d ;
+
+  assign s = s_ab ^ s_cd;
+  assign co = (a & b) | (s_ab & c) ;
+
+endmodule
+

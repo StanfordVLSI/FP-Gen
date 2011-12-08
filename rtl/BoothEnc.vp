@@ -45,7 +45,7 @@
  * PARAMETERIZATION
  * ****************************************************************************/
 //; # Perl Libraries
-//; use POSIX qw(ceil); # For ceiling rounding math
+//; use POSIX qw(floor ceil); # For floor and ceiling rounding math
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -58,6 +58,9 @@
 //;                       Doc=>"Signal bit widths");
 //; my $encode_fanout = parameter(Name=>'EncFanout', Val=>18, Min=>1, Step=>1,
 //;                       Doc=>"Fanout of Booth select signals");
+//; $encode_fanout = ceil( ($width+$booth-1) / ceil( ($width+$booth-1) / $encode_fanout ) );
+
+//$encode_fanout = `$encode_fanout`
 
 
 module `mname` (

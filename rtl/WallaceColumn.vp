@@ -50,6 +50,8 @@
 //; # module parameters
 //; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>0, Step=>1,
 //;                          Doc=>"Number of partial products to sum");
+//; my $max_pp_count = parameter(Name=>'MaxPPCount', Val=>4, Min=>0, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
 
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
@@ -68,24 +70,30 @@
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
-//; my $prev_csa_arr_ptr = [];
+//; my $prev_co_arr_ptr = [];
 //; if ($prev_col){
-//;   $prev_csa_arr_ptr = $prev_col->get_param('CSAArr');
+//;   $prev_co_arr_ptr = $prev_col->get_param('COArr');
 //; }
-//; my @prev_csa_arr = @{$prev_csa_arr_ptr}; # dereference the array pointer
-//; my @csa_arr = ();
+//; my @prev_co_arr = @{$prev_co_arr_ptr}; # dereference the array pointer
+//; my @co_arr = ();
 //;
+//; my $max_level=0;
+//; my $p=$max_pp_count;
+//; while($p>2){
+//;   $p = 2*floor($p/3) + $p%3;
+//;   $max_level++;
+//; }
 //; my $ci_w = 0;
-//; $ci_w  += $_ foreach @prev_csa_arr;
+//; $ci_w  += $_ foreach @prev_co_arr;
 //; 
 //; my $co_w = -1;
 //; my $h = $pp_count;
 //; my $l = 0;
-//; while($h>1 || $l <= $#prev_csa_arr) {
+//; while($h>1 || $l <= $#prev_co_arr) {
 //;    $co_w += floor($h/3);
 //;    my $next_h = floor($h/3) + $h%3;
-//;    $next_h += $prev_csa_arr[$l] if $l <= $#prev_csa_arr;
-//;    if ( ($h>3 && $h%3==2 && $l <= $#prev_csa_arr && $prev_csa_arr[$l]> floor($h/3)) || ($h==2 && $next_h==2) ) {
+//;    $next_h += $prev_co_arr[$l] if $l <= $#prev_co_arr;
+//;    if ( ($h>3 && $h%3==2 &&  $l <= $#prev_co_arr && $prev_co_arr[$l] > floor($h/3)) || ($h==2 && $next_h==2) ) {
 //;       $next_h--;
 //;       $co_w++;
 //;    }
@@ -93,7 +101,8 @@
 //;    $l++;
 //; }
 //; 
-//; # print STDERR "DEBUG: pp_count=$pp_count, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
+//; # print STDERR "DEBUG: pp_count=$pp_count, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w\n";
+
 
 module `mname()` (
     input logic [`$pp_count-1`:0] pp,
@@ -122,7 +131,7 @@ module `mname()` (
    //; my $hight = $pp_count;
    //; my $co_idx = 0;
    //; my $ci_idx = 0;
-
+   //; my $use_compressor_4_2_part2=0 ;
    
    
    logic [`$hight-1`:0] pp_step`$step`;
@@ -135,23 +144,23 @@ module `mname()` (
    logic [`$co_w`:0] wallace_co;
 
 
-   //; while($hight > 1 || $step <= $#prev_csa_arr){
+   //; while($hight > 1 || $step <= $#prev_co_arr){
    //;   $step++;
-   //;   push(@csa_arr, 0);
+   //;   push(@co_arr, 0);
 
    //;   my $pp_idx =0;
    //;   my $next_pp_idx = 0;
    //;   my $local_ci_idx = 0;
    //;   my $next_hight = floor($hight/3) + $hight%3;
-   //;   $next_hight += $prev_csa_arr[$step-1] if $step-1 <= $#prev_csa_arr;
+   //;   $next_hight += $prev_co_arr[$step-1] if $step-1 <= $#prev_co_arr;
    //;   my $max_i = floor($hight/3);
-   //;   my $extra_HA = ( $hight>3 && $hight%3==2 && $step-1 <= $#prev_csa_arr && $prev_csa_arr[$step-1]> $max_i) || ($hight==2 && $next_hight==2);
+   //;   my $extra_HA = ( $hight>3 &&  $hight%3==2 && $step-1 <= $#prev_co_arr && $prev_co_arr[$step-1] > floor($hight/3)) || ($hight==2 && $next_hight==2);
    //;   if ($extra_HA) {
    //;      $max_i++;
    //;      $next_hight--;
    //;   }
 
-   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`$step-1 <= $#prev_csa_arr?$prev_csa_arr[$step-1]:0`
+   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`($step-1 <= $#prev_co_arr)?$prev_co_arr[$step-1]:0`
       logic [`$next_hight-1`:0] pp_step`$step`; // For holding results of level `$step`
 
    //;   for (my $i=0; $i < $max_i; $i++){
@@ -186,43 +195,59 @@ module `mname()` (
    //;     ##########################################
    //;
    //;     ########### Instantiate Cell #############
-   //;     if ($extra_HA && $i==$max_i-1){
-   //;     my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   //;     if ( $use_compressor_4_2_part2 ){
+   //;       my $CSA_obj = generate('Compressor_4_2_p2', "csa_${row}_${Y}", ENABLE_CI=> ($hight==3) );
+      `$CSA_obj->instantiate()` ( .s_abcd(pp_step`$step-1`[`3*$i`]),   .d(pp_step`$step-1`[`3*$i+1`]),
+   //;       if ($hight==3){
+                                  .ci(pp_step`$step-1`[`3*$i+2`]), .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));
+   //;       } else  {
+                                  .co(wallace_co[`$co_idx++`]));
+       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`3*$i`];
+   //;       }
+                                  
+   //;        $use_compressor_4_2_part2 =0;
+   //;     }elsif ($extra_HA && $i==$max_i-1){
+   //;       my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
+
+   //;     } elsif ( $step==$max_level-1  && $hight>3 ) {
+   //;       my $CSA_obj = generate('Compressor_4_2_p1', "csa_${row}_${Y}");
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]),   .b(pp_step`$step-1`[`3*$i+1`]),
+                                  .c(pp_step`$step-1`[`3*$i+2`]), .d(pp_step`$step-1`[`3*$i+3`]),
+                                  .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));
+   //;        $use_compressor_4_2_part2 =1;
    //;     } else {
-   //;     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`3*$i`]), .b(pp_step`$step-1`[`3*$i+1`]), .ci(pp_step`$step-1`[`3*$i+2`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
-   //;     }
-   //;     $csa_arr[$step-1]++;
-   //;     if ($ci_idx < $ci_w && $step-1 <= $#prev_csa_arr && $local_ci_idx<$prev_csa_arr[$step-1]){
+   //;       if ($ci_idx < $ci_w && $step-1 <= $#prev_co_arr && $local_ci_idx<$prev_co_arr[$step-1]){
       assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
    //;         $local_ci_idx++;
+   //;       }
    //;     }
- 
+   //;
+   //;     $co_arr[$step-1]++;     
    //;   } # End of "for (my $i=0; $i < flo..."
 
    //;   for (my $i=3 * $max_i; $i < $hight; $i++){
-       // copy the leftovers to the next level
       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$i`];
-   //;     if ($ci_idx < $ci_w && $step-1 <= $#prev_csa_arr && $local_ci_idx<$prev_csa_arr[$step-1]){
-      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
-   //;         $local_ci_idx++;
-   //;     }
    //;   }
 
-   //;   while ($ci_idx < $ci_w && $step-1 <= $#prev_csa_arr && $local_ci_idx<$prev_csa_arr[$step-1]){
+   //;   while ($ci_idx < $ci_w && $step-1 <= $#prev_co_arr && $local_ci_idx<$prev_co_arr[$step-1]){
       assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
    //;         $local_ci_idx++;
    //;   }
    
-
    //;   $hight=$next_hight;
    //; } # End of "while($hight > 2){..."
 
 
-   //; pop(@csa_arr); $co_idx--;
+   //; $self->error("There can be only one carry at end of co_arr") unless pop(@co_arr)==1;
+
+   //; $co_idx--;
+   //; pop(@co_arr) while ($#co_arr+1 > 0 && !$co_arr[$#co_arr]); 
    assign carry = wallace_co[`$co_w`];
    assign sum = pp_step`$step`[0];
 
@@ -233,10 +258,12 @@ module `mname()` (
 
 endmodule
 
-//; # Declare the current csa_arr for other modules to use
-//; parameter(Name=>'CSAArr', Val=>\@csa_arr, Force=>1,
-//;	      Doc=>"Array of number of CSAs per level of the tree");
+//; # Declare the current co_arr for other modules to use
+//; parameter(Name=>'COArr', Val=>\@co_arr, Force=>1,
+//;	      Doc=>"Array of number of co's per level of the tree");
 //; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1,
 //;           Doc=>"Number of column carry out signals");
+//; parameter(Name=>'CarryOut2Width', Val=>0, Force=>1,
+//;           Doc=>"Number of column carry out 2 signals");
 //; $self->error("The number of constructed co in Wallace does not match $co_idx != $co_w")
 //;          unless $co_idx == $co_w;
