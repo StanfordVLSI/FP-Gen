@@ -6,8 +6,8 @@
 module `mname()` (input logic s_abcd,d,
 //; if($enable_ci){
                   input logic ci,
-                  output logic s,
 //; }
+                  output logic s,
                   output logic co);
 
   //max time in  ( a,b,c,d ) = 0
@@ -20,6 +20,7 @@ module `mname()` (input logic s_abcd,d,
   assign s   = s_abcd ^ ci;
   assign co  = s_abcd ? ci : d;
 //; }else{
+  assign s   = s_abcd ;
   assign co  = ~s_abcd & d;
 //; }
 
