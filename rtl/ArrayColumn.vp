@@ -37,6 +37,7 @@
  * Oct 21, 2011   Sameh     initial version
  * Nov 23, 2011   shacham   new abstraction using CarryInFlag=OneMissing/Normal/
  * 			    OneExtra/TwoExtra
+ * Dec 08, 2011   shacham   new abstraction using pointer to previous column
  * 
  * ****************************************************************************/
 
@@ -50,10 +51,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//;
 //; # module parameters
-
-//; my $col_ht = parameter(Name=>'ColumnHight', Val=>2, Min=>2, Step=>1,
-//;                          Doc=>"Number of partial products in relevant column to sum");
+//; my $col_ht = parameter(Name=>'PPCount', Val=>4, Min=>0, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
+//; my $max_col_ht = parameter(Name=>'MaxPPCount', Val=>4, Min=>0, Step=>1,
+//;                          Doc=>"Number of partial products to sum");
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
@@ -62,23 +65,29 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $ci_flag = parameter(Name=>'CarryInFlag', Val=>'Normal', List=>['Normal','OneMissing','OneExtra','TwoExtra'],
-//;                      Doc=>"Is there one less carry in for this column? or maybe one or two more? (Normal is ColumnHight-3)");
+//; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
+//;			     Doc=>"Pointer to the previous column of the multiplier ".
+//;				  "(must be assigned or set to zero at instantiation!)");
+//; $self->error("Parameter PrevColumn must be assigned with a pointer to a Wallace column or 0 (zero)!")
+//;          unless $prev_col || $prev_col==0;
+//;
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
-//; my $ci_w = 0; my $co_w = 0; 
-//; $ci_w = $col_ht-4 if $ci_flag =~ /OneMissing/;
-//; $ci_w = $col_ht-3 if $ci_flag =~ /Normal/;
-//; $ci_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
-//; $ci_w = $col_ht-1 if $ci_flag =~ /TwoExtra/;
-//; $ci_w = 0 if ($ci_w < 0); # can't have negative width
+//; # Find how many carry in we have
+//; my $ci_w = 0;
+//; if ($prev_col){
+//;   $ci_w = $prev_col->get_param('CarryOutWidth');
+//; }
 //;
-//; $co_w = $col_ht-3 if $ci_flag =~ /OneMissing/;
-//; $co_w = $col_ht-3 if $ci_flag =~ /Normal/;
-//; $co_w = $col_ht-2 if $ci_flag =~ /OneExtra/;
-//; $co_w = $col_ht-2 if $ci_flag =~ /TwoExtra/;
-//; $co_w = 0 if ($co_w < 0); # can't have negative width
+//; # Calculate how many carry out we'll have, and declare it to the world
+//; my $co_w = 0;
+//; $co_w = $col_ht-3 if ($ci_w==$col_ht-3 || $ci_w==$col_ht-4); #going up the parallelogram
+//; $co_w = $col_ht-2 if ($ci_w==$col_ht-2 || $ci_w==$col_ht-1); #going down the parallelogram
+//; $co_w = 0 if $co_w<0;
+//;
+//; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1,
+//;           Doc=>"Number of column carry out signals (exported parameter)");
 //;
 //; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
@@ -136,7 +145,7 @@ module `mname()` (
    
    //; ############## Column Body ##############
    //; while ($pp_idx<$col_ht && $ci_idx<$ci_w){
-   //;   # Determine the physical location for the CSA/HA cell
+   //;   # Determine the physical location for the CSA cell
    //;   $Y = $col - $row * $booth if $layout_shape =~ /Square/;
    //;   $Y = $col if $layout_shape =~ /Parallelogram/;
    //;   my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
