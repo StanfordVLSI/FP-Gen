@@ -224,23 +224,17 @@ module `mname()` (
    //;
    //;     } else {
    //;
-   //; #      my $c_first = $step%2==1? 2-$next_pp_idx%3
-   //; #                              : ( 2*(floor($hight/3)-$next_pp_idx) > ($next_hight-floor($hight/3)) ) ? 0 : 2-$next_pp_idx%3;
-   //;       my $c_first = 2-$next_pp_idx%3;
-
-   //;       while ($local_ci_idx< $local_ci_count && $c_first > 0){
-      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
-   //;           $local_ci_idx++;
-   //;           $c_first--;
-   //;       }
-
-   //;       while ($extra_pp_count>0 && $c_first > 0){
+   //;       while ($i==$local_csa_count-1 && $extra_pp_count>0){
       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`--$hight`];
    //;         $extra_pp_count--;
-   //;         $c_first--;
    //;       }
 
-   //;       if ($extra_HA && ($c_first > 0 || $i==$local_csa_count-1 ) ){
+   //;       if ($step%2==1 && $local_ci_idx< $local_ci_count ){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;           $local_ci_idx++;
+   //;       }
+
+   //;       if ($extra_HA && $i==$local_csa_count-1 ){
    //;
    //;         my $CSA_obj = generate('HA', "csa_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]),
@@ -248,10 +242,14 @@ module `mname()` (
    //;         $extra_HA=0;
    //;       } else {
    //;         my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]), .ci(pp_step`$step-1`[`$pp_idx++`]),
+      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]), .ci(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
    //;       }
    //;
+   //;       if ($step%2==0 && $local_ci_idx< $local_ci_count ){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;           $local_ci_idx++;
+   //;       }
    //;     }
    //;
    //;     $co_arr[$step-1]++;     
