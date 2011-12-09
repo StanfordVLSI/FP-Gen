@@ -235,7 +235,7 @@ module `mname()` (
    //;       }
 
    //;       while ($extra_pp_count>0 && $c_first > 0){
-      assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$pp_idx++`];
+      assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`--$hight`];
    //;         $extra_pp_count--;
    //;         $c_first--;
    //;       }
