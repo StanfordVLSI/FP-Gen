@@ -150,14 +150,14 @@ module `mname()` (
    //;   $step++;
    //;   push(@co_arr, 0);
 
-   //;   my $pp_idx =0;
-   //;   my $next_pp_idx = 0;
-   //;   my $local_ci_idx = 0;
+
    //;   my $local_ci_count = ($step-1 <= $#prev_co_arr) ? $prev_co_arr[$step-1] : 0;
+   //;   my $local_ci_idx = 0;
    //;   my $extra_pp_count = $hight%3;
    //;   my $local_csa_count = floor($hight/3);
    //;   my $next_hight = $local_csa_count + $local_ci_count + $extra_pp_count;
    //;   my $local_csa_count = floor($hight/3);
+   //;   my $ci_count=2;
    //;   my $extra_HA = ( $hight%3==2 && (   ($step==$max_level-2? ($next_hight%3==2 && $step <= $#prev_co_arr && $prev_co_arr[$step]==1)
    //;                                                           :  $next_hight%3==1)
    //;                                    ||  $next_hight==2) );
@@ -168,6 +168,12 @@ module `mname()` (
    //;      $next_hight--;
    //;   }
 
+   //;   my $count_upward = $step%2==1 || $use_compressor_4_2_part2 ||  ($step==$max_level-1  && $hight>3); 
+   //;   my $pp_idx = $count_upward?0:$hight;
+   //;   $ci_idx = $count_upward?$ci_idx:$ci_idx+$local_ci_count;
+   //;   my $next_pp_idx = $count_upward?0:$next_hight;
+   //;   $co_idx = $count_upward?$co_idx:$co_idx+$local_csa_count;
+
    // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`$local_ci_count` $extra_HA=`$extra_HA`
       logic [`$next_hight-1`:0] pp_step`$step`; // For holding results of level `$step`
 
@@ -175,7 +181,7 @@ module `mname()` (
    //;   for (my $i=0; $i < $local_csa_count; $i++){
    //;
    //;     ######### Calculate Cell Location ##########
-   //;     my $row_candidate = floor($i/$local_csa_count * ($col_ht-1));
+   //;     my $row_candidate = floor(($count_upward?$i:$local_csa_count-$i-1)/$local_csa_count * ($col_ht-1));
    //;     my $row_candidate_up = $row_candidate;
    //;     my $row_candidate_down = $row_candidate;
    //;     while ( $row_candidate_up < $col_ht || $row_candidate_down>=0){
@@ -224,55 +230,83 @@ module `mname()` (
    //;
    //;     } else {
    //;
-   //;       while ($i==$local_csa_count-1 && $extra_pp_count>0){
-      assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`--$hight`];
+   //;       while ( $ci_count>0 && $extra_pp_count>0){
+   //;         if ($count_upward){
+      assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$pp_idx++`];
+   //;         }else{
+      assign pp_step`$step`[`--$next_pp_idx`] = pp_step`$step-1`[`--$pp_idx`];
+   //;         }
    //;         $extra_pp_count--;
+   //;         $ci_count--;
    //;       }
-
-   //;       if ($step%2==1 && $local_ci_idx< $local_ci_count ){
-      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
-   //;           $local_ci_idx++;
-   //;       }
-
-   //;       if ($extra_HA && $i==$local_csa_count-1 ){
+   //;
+   //;       if ($extra_HA && ($ci_count>0 || $i==$local_csa_count-1) ){
    //;
    //;         my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   //;         if ($count_upward){
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
+   //;         }else{
+      `$CSA_obj->instantiate()` ( .b(pp_step`$step-1`[`--$pp_idx`]), .a(pp_step`$step-1`[`--$pp_idx`]),
+                                  .s(pp_step`$step`[`--$next_pp_idx`]), .co(wallace_co[`--$co_idx`]) );
+
+   //;         }
    //;         $extra_HA=0;
+   //;         $ci_count--;
    //;       } else {
+   //;
+   //;         while ( $ci_count>0 && $local_ci_idx< $local_ci_count ){
+   //;           if ($count_upward){
+      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
+   //;           }else{
+      assign pp_step`$step`[`--$next_pp_idx`] = wallace_ci[`--$ci_idx`];
+   //;           }
+   //;           $local_ci_idx++;
+   //;           $ci_count--;
+   //;         }
    //;         my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-      `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]), .ci(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]),
+   //;         if ($count_upward){
+      `$CSA_obj->instantiate()` ( .ci(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]), .a(pp_step`$step-1`[`$pp_idx++`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
+   //;         }else{
+      `$CSA_obj->instantiate()` ( .ci(pp_step`$step-1`[`--$pp_idx`]), .b(pp_step`$step-1`[`--$pp_idx`]), .a(pp_step`$step-1`[`--$pp_idx`]),
+                                  .s(pp_step`$step`[`--$next_pp_idx`]), .co(wallace_co[`--$co_idx`]) );
+   //;         }
+
+   //;         $ci_count=2;
    //;       }
    //;
-   //;       if ($step%2==0 && $local_ci_idx< $local_ci_count ){
-      assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
-   //;           $local_ci_idx++;
-   //;       }
    //;     }
    //;
-   //;     $co_arr[$step-1]++;     
+   //;     $co_arr[$step-1]++;
+    
    //;   } # End of "for (my $i=0; $i < flo..."
 
-
-   //;   while ( $pp_idx<$hight ){
+   //;   while ( $extra_pp_count>0){
+   //;         if ($count_upward){
       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$pp_idx++`];
+   //;         }else{
+      assign pp_step`$step`[`--$next_pp_idx`] = pp_step`$step-1`[`--$pp_idx`];
+   //;         }
+   //;         $extra_pp_count--;
    //;   }
 
    //;   while ($local_ci_idx< $local_ci_count){
+   //;     if ($count_upward){
       assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
-   //;         $local_ci_idx++;
+   //;     }else{
+      assign pp_step`$step`[`--$next_pp_idx`] = wallace_ci[`--$ci_idx`];
+   //;     }
+   //;     $local_ci_idx++;
    //;   }
 
-
-   
+   //;   $ci_idx = $count_upward?$ci_idx:$ci_idx+$local_ci_count;
+   //;   $co_idx = $count_upward?$co_idx:$co_idx+$local_csa_count;
    //;   $hight=$next_hight;
    //; } # End of "while($hight > 2){..."
 
 
    //; $self->error("There can be only one carry at end of co_arr") unless pop(@co_arr)==1;
-
    //; $co_idx--;
    //; pop(@co_arr) while ($#co_arr+1 > 0 && !$co_arr[$#co_arr]); 
    assign carry = wallace_co[`$co_w`];
