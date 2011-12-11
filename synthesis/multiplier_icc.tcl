@@ -67,6 +67,7 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
   set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
   set booth_encoder_count 0;
   set booth_sel_count 0;
+  set boothSel_aspect_ratio 3;
 
   foreach_in_collection booth_sel_cell $booth_sel_cells {
 
@@ -80,6 +81,10 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
       set booth_sel_count [expr $booth_sel_col+1]
     }
   }
+
+  set row_count [expr $max_row + 2 > $booth_encoder_count? $max_row + 2 : $booth_encoder_count];
+  set column_count [expr $max_compressed_column - $min_compressed_column + 1 + $booth_sel_count];
+  set booth_select_cadence [expr $column_count/$booth_sel_count];
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
@@ -117,9 +122,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002 RPGP-090]
-  set row_count [expr $max_row + 2 > $booth_encoder_count? $max_row + 2 : $booth_encoder_count];
-  set column_count [expr $max_compressed_column - $min_compressed_column + 1 + $booth_sel_count];
-  set booth_select_cadence [expr $column_count/$booth_sel_count]
+
   
   create_rp_group rp_tree -columns $row_count -rows [expr 2*$column_count] -allow_non_rp_cells ;
 
@@ -136,12 +139,12 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set boothSel_child_cells [get_cells "${boothSel_name}/*"];
     set boothSel_children_count [sizeof_collection $boothSel_child_cells];
     if {$boothSel_children_count>1} {
-      create_rp_group rp_boothSel_${boothEnc_index}_${boothSel_index} -columns [expr int(floor($boothSel_children_count/2)+1)] -rows 2;
+      create_rp_group rp_boothSel_${boothEnc_index}_${boothSel_index} -columns [expr int(floor($boothSel_children_count/$boothSel_aspect_ratio)+1)] -rows $boothSel_aspect_ratio;
       set boothSel_child_idx 0;
       foreach_in_collection boothSel_child_cell $boothSel_child_cells {
         set boothSel_child_name [get_object_name $boothSel_child_cell];
         add_to_rp_group ${DESIGN_NAME}::rp_boothSel_${boothEnc_index}_${boothSel_index} \
-                           -leaf $boothSel_child_name -column [expr int(floor($boothSel_child_idx/2))] -row [expr $boothSel_child_idx%2];
+                           -leaf $boothSel_child_name -column [expr int(floor($boothSel_child_idx/$boothSel_aspect_ratio))] -row [expr $boothSel_child_idx%$boothSel_aspect_ratio];
         set boothSel_child_idx [expr $boothSel_child_idx + 1]
       }
       add_to_rp_group ${DESIGN_NAME}::rp_tree \
@@ -271,7 +274,7 @@ check_rp_groups -all -verbose
 if {$max_compressed_column > 0} {
   initialize_floorplan \
   	-control_type row_number \
-  	-number_rows [expr 2*$max_compressed_column+6] \
+  	-number_rows [expr 2*$column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
   	-core_utilization 0.7 \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
