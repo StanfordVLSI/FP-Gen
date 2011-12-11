@@ -269,6 +269,8 @@ clean:
 	@echo Cleanning old files, objects, logs and garbage
 	@echo ==================================================
 	\rm -rf $(EXECUTABLE) 
+	\rm -f *.tcl
+	\rm -f *.info
 	\rm -rf csrc
 	\rm -rf *.daidir
 	\rm -rf *.log

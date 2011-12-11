@@ -8,7 +8,7 @@
 //;
 //  PARAMETERS:
 //; my $BW  = parameter( name=>'BitWidth', val=>32 , 
-//;                      doc=>'!functional! BitWidth of operands' , 
+//;                      doc=>'!functional! BitWidth of input and output values.  32 corresponds to a 32 bit signal A added to a 32 bit signal B  resulting in a 32 bit output S. Legal Values: Integers from 2 to 512' , 
 //;                      min=>2 , max=>512, step=>1 );
 
 
