@@ -78,7 +78,6 @@ d = (1+sqrt(8*n-23))/2 = (1+(8*n-23)**0.5)/2
 array_count = d-1 = ((8*n-23)**0.5-1)/2
 
 d - tree height
-W = [d/3] - tree width
 */
 
 
@@ -127,7 +126,7 @@ W = [d/3] - tree width
 //; }
 //;
 //;#if 5 pp is implemented as tree (2 branches) it takes 3CSA+HA, thus 1 extra co
-//;$co_w = ($co_w+1) if($co_w==$pp_count-3) && ($pp_count==5 || $pp_count==8 ||$pp_count==11 ||$pp_count==15 ||$pp_count==20 ||$pp_count==26 ||$pp_count==34); 
+//;$co_w = ($co_w+1) if($co_w==$pp_count-3) && ($pp_count==5 || $pp_count==8 ||$pp_count==11 ||$pp_count==15 ||$pp_count==20 ||$pp_count==26 ||$pp_count==34 ||$pp_count==42 ||$pp_count==51); 
 //
 //co_w=`$co_w`
 //
@@ -151,12 +150,12 @@ module `mname()` (
 
    //;
    //;#my $array_count = ($pp_count>2) ? floor((sqrt(8*$pp_count-23)-1)/2) : 0; 
-   //; my $array_count = ($pp_count>2) ? ceil((sqrt(8*$pp_count-23)-1)/2) : 0; 
-   //; my $array_count2 = ($pp_count>2) ? ceil((1+sqrt(8*$pp_count-23))/6) : 0; 
+   //; my $array_count = ($pp_count>2) ? ceil((sqrt(8*$pp_count-23)-1)/2) : 0;
+   //; 
    //; $array_count = ($array_count - 1) if ($pp_count==(3+($array_count)*($array_count - 1)/2 + 1) && $pp_count > 5);
    //; $array_count = 1 if ($pp_count==3 || $pp_count==2);
    //
-   // array_count = `$array_count`/`$array_count2`;
+   // array_count = `$array_count`;
    //
    //;
    //;  my $pp_index = 0;
@@ -325,7 +324,7 @@ module `mname()` (
    //;               $put_csa = 1;
    //;               $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
    //;               $array_conn[0]="ci[${ci_index}]";$ci_index++;
-   //;               $array_conn[1]="pp_merge1_".($array-1)."_s";
+   //;               $array_conn[1]="pp_merge_".($array-1)."_s";
    //;               if($ci_index<$ci_w) {
    //;                   $array_conn[2]="ci[${ci_index}]";$ci_index++;
    //;               }else{
