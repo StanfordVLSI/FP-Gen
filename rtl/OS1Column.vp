@@ -186,7 +186,11 @@ module `mname()` (
    //;       if($array_length==2 && $array_count==1 && $ci_w==0){
    //;           $array_conn[0] = "pp[${pp_index}]";$pp_index++;
    //;           $array_conn[1] = "pp[${pp_index}]";$pp_index++;
-   //;           my $CSA_obj = generate('HA', "csa_${array}_0_${row}_${Y}");
+   //            csa_${array}_0_${row}_${Y}
+   //;           my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   //;           $row++;
+   //;           $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;           $Y = $col if $layout_shape =~ /Parallelogram/;
    //;
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
                                     .s(sum), .co(carry) );
@@ -220,8 +224,12 @@ module `mname()` (
    //;
 
        logic pp_`$array`_`$nodes`_s;
-  //;                my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${array}_${nodes}_${row}_${Y}");
-  //;               if($put_csa){
+   //                csa_${array}_${nodes}_${row}_${Y}
+   //;               my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${row}_${Y}");
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;               if($put_csa){
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
    //;               }else{
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`),
@@ -241,7 +249,7 @@ module `mname()` (
    //;      my $ci_left = ($array_count == 1)?($ci_w-$ci_index):
    //;                     ($array_count == 2)?($ci_w-$ci_index-3):($ci_w-$ci_index-4);
    //;          if($array==$array_count-1) {
-   //########## We need to sum up `$ci_left` extra carry_in(s)
+   //;########## We need to sum up `$ci_left` extra carry_in(s)
    //;              for(my $extra_nodes = 0; $extra_nodes < ($ci_left); $extra_nodes+=2){
       logic pp_`$array`_`$array_csa`_s;
    //;                   if(($ci_left-$extra_nodes)>1){
@@ -250,11 +258,13 @@ module `mname()` (
    //;                       $array_conn[2] = "ci[${ci_index}]";$ci_index++;
    //                  "csa_extra_`${extra_nodes}`_`${row}`_`${Y}`"
    //;                       my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
-   //;
    //;                       $row++;
    //;                       $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
    //;                       $Y = $col if $layout_shape =~ /Parallelogram/;
        `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
+   //;                           $row++;
+   //;                           $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;                           $Y = $col if $layout_shape =~ /Parallelogram/;
    //;                       if(($array_count == 1) && (($ci_left-$extra_nodes)==2)){
                                   .s(sum), .co(carry) );
    //;                       }else{
@@ -263,13 +273,16 @@ module `mname()` (
    //;                   } else {
    //;                       $array_conn[0] = "ci[${ci_index}]";$ci_index++;
    //;                       $array_conn[1] = "pp_${array}_".($array_csa-1)."_s";
+   //;
    //                  "csa_extra_`${extra_nodes}`_`${row}`_`${Y}`"
    //;                       my $CSA_obj = generate('HA', "csa_${row}_${Y}");
-   //;
    //;                       $row++;
    //;                       $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
    //;                       $Y = $col if $layout_shape =~ /Parallelogram/;
        `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
+   //;                           $row++;
+   //;                           $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;                           $Y = $col if $layout_shape =~ /Parallelogram/;
    //;                       if(($array_count == 1) && (($ci_left-$extra_nodes)==1)){
                                   .s(sum), .co(carry) );
    //;                       }else{
@@ -296,7 +309,11 @@ module `mname()` (
    //;                   $put_csa = 0;
    //;               }
    //;
-   //;       	     my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_merge_${array}_${row}_${Y}");
+   //                csa_merge_${array}_${row}_${Y}
+   //;       	     my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${row}_${Y}");
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
    //;
       logic pp_merge1_`$array-1`_s;
    //;              if($put_csa){
@@ -305,12 +322,25 @@ module `mname()` (
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
    //;              }
                                   .s(pp_merge1_`$array-1`_s), .co(co[`$co_index`]) );
+
+
+
    //;               $co_index++;
    //;           } elsif($array!=0) {
    //####################Merge branch `$array-1` and `$array`
    //;               $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
-   //;       	     my $CSA_obj = generate('CSA', "csa_merge_${array}_${row}_${Y}");
-   //;               $array_conn[0]="pp_".($array-1)."_".($array_csa_prev-1)."_s";
+   //                csa_merge_${array}_${row}_${Y}
+   //;       	     my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
+   //;               if($array < 3) {
+   //;                   $array_conn[0]="pp_".($array-1)."_".($array_csa_prev-1)."_s";
+   //;               }else{
+   //;                   $array_conn[0]="pp_merge_".($array-2)."_s";
+   //;               }
+
+
    //;               $array_conn[1]="ci[${ci_index}]";$ci_index++;
    //;               $array_conn[2]="pp_${array}_".($array_csa-1)."_s";
    //;
@@ -324,13 +354,17 @@ module `mname()` (
    //;               $put_csa = 1;
    //;               $array_conn[0]="";$array_conn[1]="";$array_conn[2]="";
    //;               $array_conn[0]="ci[${ci_index}]";$ci_index++;
-   //;               $array_conn[1]="pp_merge_".($array-1)."_s";
+   //;               $array_conn[1]="pp_merge1_".($array-2)."_s";
    //;               if($ci_index<$ci_w) {
    //;                   $array_conn[2]="ci[${ci_index}]";$ci_index++;
    //;               }else{
    //;                   $put_csa = 0;
    //;               }
-   //;       	     my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_merge1_${array}_${row}_${Y}");
+   //                csa_merge1_${array}_${row}_${Y}
+   //;       	     my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${row}_${Y}");
+   //;               $row++;
+   //;               $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;               $Y = $col if $layout_shape =~ /Parallelogram/;
    //;               if($put_csa) {
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
    //;                }else{
@@ -361,7 +395,11 @@ module `mname()` (
    //;    }else{
    //;        $put_csa = 0;
    //;    }
-   //;    my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_root_${row}_${Y}");
+   //     csa_root_${row}_${Y}
+   //;    my $CSA_obj = generate($put_csa?'CSA':'HA', "csa_${row}_${Y}");
+   //;    $row++;
+   //;    $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;    $Y = $col if $layout_shape =~ /Parallelogram/;
    //;
    //;    if($put_csa) {
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
