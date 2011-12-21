@@ -45,8 +45,8 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
-//; my $tree_type = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','Array', 'ZM'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM)");
+//; my $tree_type = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','Array', 'ZM', 'OS1'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM, OS1)");
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
