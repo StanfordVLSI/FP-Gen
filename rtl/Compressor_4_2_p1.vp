@@ -8,12 +8,8 @@ module `mname()` (input logic a,b,c,d,
   //min time out ( ico )     = 1
   //min time out ( s, )   = 1.5
 
-  logic s_ab, s_cd;
-  assign s_ab = a ^ b ;
-  assign s_cd = c ^ d ;
-
-  assign s = s_ab ^ s_cd;
-  assign co = (a & b) | (s_ab & c) ;
+  assign s = a ^ b ^ c ^ d;
+  assign co = (a & b) | (b & c) | (c & a);
 
 endmodule
 
