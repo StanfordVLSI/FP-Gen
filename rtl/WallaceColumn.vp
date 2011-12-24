@@ -61,6 +61,8 @@
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
 //;                            "paralleloid)");
+//; my $enable_compressors = parameter(Name=>'EnableCompressors', Val=>0, Min=>0, Max=>1, Step=>1,
+//;                       Doc=>"flag for using 4-2 compressors in last stage ");
 //; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
 //;			     Doc=>"Pointer to the previous column of the multiplier ".
 //;				  "(must be assigned or set to zero at instantiation!)");
@@ -168,7 +170,8 @@ module `mname()` (
    //;      $next_hight--;
    //;   }
 
-   //;   my $count_upward = $step%2==1 || $use_compressor_4_2_part2 ||  ($step==$max_level-1  && $hight>3); 
+   //;   my $count_upward = $step%2==1 || $use_compressor_4_2_part2
+   //;                      || ($enable_compressors && $step==$max_level-1  && $hight>3); 
    //;   my $pp_idx = $count_upward?0:$hight;
    //;   $ci_idx = $count_upward?$ci_idx:$ci_idx+$local_ci_count;
    //;   my $next_pp_idx = $count_upward?0:$next_hight;
@@ -220,7 +223,7 @@ module `mname()` (
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));                                
    //;        $use_compressor_4_2_part2 =0;
    //;
-   //;     }elsif ( $step==$max_level-1  && $hight>3 ) {
+   //;     }elsif ( $enable_compressors && $step==$max_level-1  && $hight>3 ) {
    //;
    //;       my $CSA_obj = generate('Compressor_4_2_p1', "csa_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]),   .b(pp_step`$step-1`[`$pp_idx++`]),
