@@ -57,15 +57,17 @@ module `mname` (
     output logic 		pp               	// single bit of the relevant pp
 		);
 
-   logic 			pp_pow2; // this is for early signals such as 0, x, 2*x, 4*x, 8*x
-   logic 			pp_all;  // this is for late signals such as x3 x5 and x7
-   
+   logic S;
    assign S = y[`$booth`];
    //;if ($booth==2) {
    assign xn0 = ~S ^ x[0];
-   assign pp = ~((sel_x[0] | xn0) & (sel_x[1] | xn1) & sel_S );
+   assign pp = ~((sel_x[0] | xn0) & (sel_x[1] | xn1));
 
    //;} else {
+
+   logic pp_pow2; // this is for early signals such as 0, x, 2*x, 4*x, 8*x
+   logic pp_all;  // this is for late signals such as x3 x5 and x7
+
    // Mux 0, x1, x2, x4, x8 based on the edge vector
    //;   my $str = '';
    //;   for (my $i=0; $i<$num_inputs; $i++){

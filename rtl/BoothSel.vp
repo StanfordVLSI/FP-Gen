@@ -122,20 +122,22 @@ module `mname` (
     output logic sel_S            
 		);
 
-   logic [`$booth-1`:0]  y_edge_vector;
-   assign y_edge_vector = y[`$booth`:1] ~^ y[`$booth-1`:0];
+
 
    //;   if ($booth==2) {
-   assign sel_x[0] = y_edge_vector[0]; // yedge = x1 ==> +/-X
-   assign sel_x[1] = ~ ( ~y_edge_vector[1]  & y_edge_vector[0]); // yedge = 10 ==> +/-2X
-   assign sel_S    = ~ ( y[2] & y_edge_vector[1] & y_edge_vector[0] );
-   //;   } elsif ($booth==3) {
+   assign sel_x[0] = y[1] ~^ y[0];
+   assign sel_x[1] = (~y[2] & (~y[1]|~y[0])) | (y[2] & (y[1]|y[0]));
+   assign sel_S = 1'b0;
+   //;   } else{
+   logic [`$booth-1`:0]  y_edge_vector;
+   assign y_edge_vector = y[`$booth`:1] ~^ y[`$booth-1`:0];
+   //;     if ($booth==3) {
    assign sel_x[0] = ~ (y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 0x1 ==> +/-X
    assign sel_x[1] = ~ (~y_edge_vector[1] & y_edge_vector[0]); // yedge = x10 ==> +/-2X 
    assign sel_x[2] = ~ (~y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 1x1 ==> +/-3X 
    assign sel_x[3] = ~ (~y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]); // yedge = 100 ==> +/-4X
    assign sel_S = ~ ( y[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]);
-   //;   } elsif ($booth==4) {
+   //;     } elsif ($booth==4) {
    assign sel_x[0] = ~ (y_edge_vector[3] & y_edge_vector[2] & ~y_edge_vector[0]);  // yedge = 00x1 ==> +/-X
    assign sel_x[1] = ~ (y_edge_vector[3] & ~y_edge_vector[1] & y_edge_vector[0]);  // yedge = 0x10 ==> +/-2X 
    assign sel_x[2] = ~ (y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 01x1
@@ -145,6 +147,7 @@ module `mname` (
    assign sel_x[6] = ~ (~y_edge_vector[3] & y_edge_vector[2] & ~y_edge_vector[0]); // yedge = 10x1 ==> +/-7X
    assign sel_x[7] = ~ (~y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]); // yedge = 1000 ==> +/-8X
    assign sel_S = ~ ( y[4] & y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]);
+   //;     }
    //;   }
 
    //; if ($verif_mode =~ /ON/){
