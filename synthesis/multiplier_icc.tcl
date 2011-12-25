@@ -67,7 +67,7 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
   set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
   set booth_encoder_count 0;
   set booth_sel_count 0;
-  set boothSel_aspect_ratio 3;
+  set boothSel_aspect_ratio 4;
 
   foreach_in_collection booth_sel_cell $booth_sel_cells {
 
@@ -275,7 +275,7 @@ if {$max_compressed_column > 0} {
   initialize_floorplan \
   	-control_type row_number \
   	-number_rows [expr 2*$column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
-  	-core_utilization 0.7 \
+  	-core_utilization 0.6 \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
   	-bottom_io2core $io2core \
@@ -286,7 +286,7 @@ if {$max_compressed_column > 0} {
   initialize_floorplan \
   	-control_type aspect_ratio \
   	-core_aspect_ratio 1 \
-  	-core_utilization 0.7 \
+  	-core_utilization 0.6 \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
   	-bottom_io2core $io2core \
@@ -320,7 +320,11 @@ save_mw_cel -as ${DESIGN_NAME}_before_rp_blowout
 remove_rp_groups -all
 place_opt -skip_initial_placement -effort high -power -area_recovery -num_cpus 2
 
-estimate_fp_area -sizing_type fixed_height
+if {$max_compressed_column > 0} {
+  estimate_fp_area -sizing_type fixed_height
+} else {
+  estimate_fp_area -sizing_type fixed_aspect_ratio
+}
 
 save_mw_cel -as ${DESIGN_NAME}_before_routing
 
