@@ -48,7 +48,6 @@
 
 module `mname` (
     input logic [`$num_inputs-1`:0]		sel_x, x,
-    input logic sel_S,
     input logic [`$booth`:0]		y,                 	//y[`$booth`+K:K]
    //;if ($booth==2) {
     input logic xn1,

@@ -112,13 +112,12 @@ module `mname` (
    //;       $j++;
    //;       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
    logic  [`(2**($booth-1))-1`:0] sel_x`$j`;
-   logic sel_S`$j`;
-   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`), .sel_S(sel_S`$j`));      
+   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`));      
 
    //;     }
    //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
    `$BoothCell_obj->instantiate` 
-     (.sel_x(sel_x`$j`), .sel_S(sel_S`$j`),
+     (.sel_x(sel_x`$j`),
 
       .x( {
    //;     if ($booth>=4) {
