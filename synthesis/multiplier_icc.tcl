@@ -18,7 +18,7 @@ proc add_cells_to_rp_group {args} {
 
   set cells_count [sizeof_collection $cells];
   if {$cells_count>1} {
-    create_rp_group $cells_name -columns [expr int(floor($cells_count/$height)+1)] -rows $height;
+    create_rp_group $cells_name -columns [expr $cells_count/$height + ($cells_count%$height?1:0)] -rows $height;
     add_to_rp_group $rp_groups -hierarchy ${DESIGN_NAME}::${cells_name} -column $column -row $row;
   }
   set cell_idx 0;
@@ -26,7 +26,7 @@ proc add_cells_to_rp_group {args} {
     set cell_name [get_object_name $cell];
     if {$cells_count>1} {
       add_to_rp_group ${DESIGN_NAME}::$cells_name -leaf $cell_name \
-                      -column [expr int(floor($cell_idx/$height))] -row [expr $cell_idx%$height];
+                      -column [expr $cell_idx/$height] -row [expr $cell_idx%$height];
     } else {
       add_to_rp_group $rp_groups -leaf $cell_name -column $column -row $row;
     }
@@ -75,13 +75,13 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 
 
 
-  set CSA_cells [get_cells -hierarchical "*csa*"];
-  set max_row 0;
-  set max_column 0;
-  set max_compressed_column 0;
-  set min_compressed_column 100000;
+set CSA_cells [get_cells -hierarchical "*csa*"];
+set max_row 0;
+set max_column 0;
+set max_compressed_column 0;
+set min_compressed_column 100000;
 
-  foreach_in_collection CSA_cell $CSA_cells {
+foreach_in_collection CSA_cell $CSA_cells {
 
     regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_column row_index compressed_CSA_column;
 
@@ -100,29 +100,81 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
     if { $row_index > $max_row } {
       set max_row $row_index
     }
+}
+
+set max_csa_column_width 0.0;
+set max_booth_column_width 0.0;
+set total_csa_column_width 0.0;
+set total_booth_column_width 0.0;
+  
+for { set compressed_column $min_compressed_column } { $compressed_column <= $max_compressed_column} { incr compressed_column } {
+  set csa_column_cells [get_cells "Tree/column_*/csa_*_${compressed_column}/*"];
+  set csa_column_width 0.0;
+  foreach_in_collection csa_column_cell $csa_column_cells {
+    set csa_column_width [expr $csa_column_width+[get_attribute $csa_column_cell width]];
+  }
+  set total_csa_column_width [expr $total_csa_column_width+$csa_column_width];
+  if { $csa_column_width > $max_csa_column_width} {
+    set max_csa_column_width $csa_column_width;
   }
 
-  set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
-  set booth_encoder_count 0;
-  set booth_sel_count 0;
-  set boothSel_aspect_ratio 4;
+  set booth_column_index [expr $compressed_CSA_column-$min_compressed_column];
+  set booth_column_cells [get_cells "Booth/BoothEnc_u*/cell_${booth_column_index}/*"];
+  set booth_column_width 0.0;
+  foreach_in_collection booth_column_cell $booth_column_cells {
+    set booth_column_width [expr $booth_column_width+[get_attribute $booth_column_cell width]];
+  }
+  set total_booth_column_width [expr $total_booth_column_width+$booth_column_width];
+  if { $booth_column_width > $max_booth_column_width} {
+    set max_booth_column_width $booth_column_width;
+  }
+}
+set average_csa_column_width [expr $total_csa_column_width/($max_compressed_column-$min_compressed_column)];
+set average_booth_column_width [expr $total_booth_column_width/($max_compressed_column-$min_compressed_column)];
 
-  foreach_in_collection booth_sel_cell $booth_sel_cells {
+set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
+set booth_encoder_count 0;
+set booth_sel_count -1;
 
-    regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9]*)} [get_object_name $booth_sel_cell] matched booth_sel_row booth_sel_col;
+foreach_in_collection booth_sel_cell $booth_sel_cells {
 
-    if { $booth_sel_row >= $booth_encoder_count } {
-      set booth_encoder_count [expr $booth_sel_row+1]
-    }
+  regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9]*)} [get_object_name $booth_sel_cell] matched booth_sel_row booth_sel_col;
 
-    if { $booth_sel_col >= $booth_sel_count } {
-      set booth_sel_count [expr $booth_sel_col+1]
-    }
+  if { $booth_sel_row >= $booth_encoder_count } {
+    set booth_encoder_count [expr $booth_sel_row+1]
   }
 
-  set row_count [expr $max_row + 2 > $booth_encoder_count? $max_row + 2 : $booth_encoder_count];
-  set column_count [expr $max_compressed_column - $min_compressed_column + 1 + $booth_sel_count];
-  set booth_select_cadence [expr $column_count/$booth_sel_count];
+  if { $booth_sel_col >= $booth_sel_count } {
+    set booth_sel_count [expr $booth_sel_col+1]
+  }
+}
+
+set max_boothSel_column_width 0.0;
+set total_boothSel_column_width 0.0;
+for { set $booth_sel_col 0 } { $booth_sel_col < $booth_sel_count} { incr booth_sel_col } {
+  set boothSel_column_cells [get_cells "Booth/BoothEnc_u*/Booth_sel_${booth_sel_col}/*"];
+  set boothSel_column_width 0.0;
+  foreach_in_collection boothSel_column_cell $boothSel_column_cells {
+    set boothSel_column_width [expr $boothSel_column_width+[get_attribute $boothSel_column_cell width]];
+  }
+  set total_boothSel_column_width [expr $total_boothSel_column_width+$boothSel_column_width];
+  if { $boothSel_column_width > $max_boothSel_column_width} {
+    set max_boothSel_column_width $boothSel_column_width;
+  }
+}
+set average_boothSel_column_width [expr $total_boothSel_column_width/$booth_sel_count];
+
+set boothSel_aspect_ratio [expr int(ceil(2*$max_boothSel_column_width/($average_csa_column_width+$average_booth_column_width)))];
+
+echo "CSA width (max= $max_csa_column_width, avg= $average_csa_column_width )\n"\
+     "Booth width (max= $max_booth_column_width, avg= $average_booth_column_width )\n"\
+     "BoothSel width (max= $max_boothSel_column_width, avg= $average_boothSel_column_width )\n"\
+     "BoothSel aspect ratio = $boothSel_aspect_ratio" > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.floorplanning.rpt
+
+
+set row_count [expr $max_row + 2 > $booth_encoder_count? $max_row + 2 : $booth_encoder_count];
+set column_count [expr $max_compressed_column - $min_compressed_column + 1 + $booth_sel_count];
+set booth_select_cadence [expr $column_count/$booth_sel_count];
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
@@ -156,7 +208,6 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set_pin_physical_constraints -pin_name out0[$port_number] -side 3 -order [expr ($port_number*2)+2] 
     set_pin_physical_constraints -pin_name out1[$port_number] -side 3 -order [expr ($port_number*2)+3] 
   }
-
 
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002 RPGP-090]
