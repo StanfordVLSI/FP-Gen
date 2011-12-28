@@ -4,6 +4,45 @@
 
 source ../header.tcl
 
+proc add_cells_to_rp_group {args} {
+
+  global DESIGN_NAME;
+  set row 0;
+  set column 0;
+  set height 1;
+
+  parse_proc_arguments -args $args results
+  foreach argname [array names results] { 
+    set [regsub {\-} $argname ""] $results($argname);
+  }
+
+  set cells_count [sizeof_collection $cells];
+  if {$cells_count>1} {
+    create_rp_group $cells_name -columns [expr int(floor($cells_count/$height)+1)] -rows $height;
+    add_to_rp_group $rp_groups -hierarchy ${DESIGN_NAME}::${cells_name} -column $column -row $row;
+  }
+  set cell_idx 0;
+  foreach_in_collection cell $cells {
+    set cell_name [get_object_name $cell];
+    if {$cells_count>1} {
+      add_to_rp_group ${DESIGN_NAME}::$cells_name -leaf $cell_name \
+                      -column [expr int(floor($cell_idx/$height))] -row [expr $cell_idx%$height];
+    } else {
+      add_to_rp_group $rp_groups -leaf $cell_name -column $column -row $row;
+    }
+    set cell_idx [expr $cell_idx + 1]
+  }
+}
+
+define_proc_attributes add_cells_to_rp_group -info "Adds a group of cells to an existing relative placement group." \
+  -define_args \
+  {{cells "Specifies the cells to add to the relative placement groups in rp_groups." cells list required}
+   {cells_name "Specifies the name of the cells to be added" cells_name string required}
+   {rp_groups "Specifies the relative placement groups in which to add an item. The groups must all be in the same design." rp_groups list required}
+   {-column "Specifies the column position in which to add the item. If you do not specify the column position, it defaults to zero." integer int optional} 
+   {-row "Specifies the row position in which to add the item. If you do not specify the row position, it defaults to zero." integer int optional}
+   {-height "number of columns to spread cells across" integer int optional}}
+
 
 if {$target_delay==0} {
   set target_delay min
@@ -26,7 +65,6 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
             -mw_reference_library $mw_ref_lib_dbs \
             $MW_DESIGN_LIBRARY
 }
-
 
 
 open_mw_lib $MW_DESIGN_LIBRARY
@@ -137,26 +175,9 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set boothSel_row [expr 2*($column_count -1 - ($booth_sel_count-1-$boothSel_index)*$booth_select_cadence)]
 
     set boothSel_child_cells [get_cells "${boothSel_name}/*"];
-    set boothSel_children_count [sizeof_collection $boothSel_child_cells];
-    if {$boothSel_children_count>1} {
-      create_rp_group rp_boothSel_${boothEnc_index}_${boothSel_index} -columns [expr int(floor($boothSel_children_count/$boothSel_aspect_ratio)+1)] -rows $boothSel_aspect_ratio;
-      set boothSel_child_idx 0;
-      foreach_in_collection boothSel_child_cell $boothSel_child_cells {
-        set boothSel_child_name [get_object_name $boothSel_child_cell];
-        add_to_rp_group ${DESIGN_NAME}::rp_boothSel_${boothEnc_index}_${boothSel_index} \
-                           -leaf $boothSel_child_name -column [expr int(floor($boothSel_child_idx/$boothSel_aspect_ratio))] -row [expr $boothSel_child_idx%$boothSel_aspect_ratio];
-        set boothSel_child_idx [expr $boothSel_child_idx + 1]
-      }
-      add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -hierarchy ${DESIGN_NAME}::rp_boothSel_${boothEnc_index}_${boothSel_index} \
-                    -column $boothEnc_index -row $boothSel_row;
-    } else {
-      foreach_in_collection boothSel_child_cell $boothSel_child_cells {
-        set boothSel_child_name [get_object_name $boothSel_child_cell];
-        add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -leaf $boothSel_child_name -column $boothEnc_index -row $boothSel_row;
-      }
-    }
+
+    add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} ${DESIGN_NAME}::rp_tree \
+                    -column $boothEnc_index -row $boothSel_row -height $boothSel_aspect_ratio;
   }
   
 
@@ -174,60 +195,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
  
     # Second: CSA cells 
     set CSA_child_cells [get_cells "${CSA_name}/*"];
-    #set_dont_touch $CSA_child_cells;
-    set CSA_children_count [sizeof_collection $CSA_child_cells];
-    if {$CSA_children_count>1} {
-      create_rp_group rp_CSA_${row_index}_${column_index} -columns $CSA_children_count -rows 1;
-      #echo "created rp group rp_CSA_${row_index}_${column_index}";
-      set CSA_child_column 0;
-      foreach_in_collection CSA_child_cell $CSA_child_cells {
-        set CSA_child_name [get_object_name $CSA_child_cell];
-        add_to_rp_group ${DESIGN_NAME}::rp_CSA_${row_index}_${column_index} \
-                           -leaf $CSA_child_name -column $CSA_child_column -row 0;
-        #echo "added leaf  $CSA_child_name to rp group rp_CSA_${row_index}_${column_index}";
-        set CSA_child_column [expr $CSA_child_column + 1]
-      }
-      add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -hierarchy ${DESIGN_NAME}::rp_CSA_${row_index}_${column_index} \
+    add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_NAME}::rp_tree \
                     -column [expr $row_index+1-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
-      #echo "added group  rp_CSA_${row_index}_${column_index}  to rp group rp_tree";
-    } else {
-      foreach_in_collection CSA_child_cell $CSA_child_cells {
-        set CSA_child_name [get_object_name $CSA_child_cell];
-        add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -leaf $CSA_child_name -column [expr $row_index+1-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
-            #echo "added leaf  $CSA_child_name to rp group rp_tree";
-      }
-    } 
 
     # Second: Booth cells
     set booth_column_index [expr $column_index - $column_offset];
-    set booth_cells [get_cells -hierarchical -regexp  "BoothEnc_u${row_index}.cell_${booth_column_index}"];
-    #set_dont_touch $booth_cells ;
-    set booth_count [sizeof_collection $booth_cells];
-    foreach_in_collection booth_cell $booth_cells {
-      set booth_name [get_object_name $booth_cell];
-      set booth_child_cells [get_cells "${booth_name}/*"];
-      set booth_children_count [sizeof_collection $booth_child_cells];
-      if {$booth_children_count>0} {
-         create_rp_group rp_booth_${row_index}_${booth_column_index} -columns [expr $booth_children_count+1] -rows 1;
-         #echo "created rp group rp_booth_${row_index}_${booth_column_index}";
-         set booth_child_column 0;
-         foreach_in_collection booth_child_cell $booth_child_cells {
-           set booth_child_name [get_object_name $booth_child_cell];
-           add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${booth_column_index} \
-                           -leaf $booth_child_name -column $booth_child_column -row 0;
-           #echo "added leaf  $booth_child_name to rp group rp_booth_${row_index}_${booth_column_index}";
-           set booth_child_column [expr $booth_child_column + 1]
-         }
-         add_to_rp_group ${DESIGN_NAME}::rp_booth_${row_index}_${booth_column_index} \
-                    -keepout gap_${row_index}_${booth_column_index} -type space -column $booth_children_count -row 0 -width 4 -height 1;
-         add_to_rp_group ${DESIGN_NAME}::rp_tree \
-                    -hierarchy ${DESIGN_NAME}::rp_booth_${row_index}_${booth_column_index} \
+    set booth_cells [get_cells "Booth/BoothEnc_u${row_index}/cell_${booth_column_index}/*"];
+    add_cells_to_rp_group $booth_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
                     -column [expr $row_index-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
-         #echo "added group  rp_booth_${row_index}_${booth_column_index}  to rp group rp_tree";
-      }    
-    }
   }
 
 #ADDER PLACEMENT SCRIPTS HERE:
