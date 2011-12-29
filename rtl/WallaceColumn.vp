@@ -327,7 +327,5 @@ endmodule
 //;	      Doc=>"Array of number of co's per level of the tree");
 //; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1,
 //;           Doc=>"Number of column carry out signals");
-//; parameter(Name=>'CarryOut2Width', Val=>0, Force=>1,
-//;           Doc=>"Number of column carry out 2 signals");
 //; $self->error("The number of constructed co in Wallace does not match $co_idx != $co_w")
 //;          unless $co_idx == $co_w;
