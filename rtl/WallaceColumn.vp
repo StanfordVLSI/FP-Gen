@@ -159,7 +159,6 @@ module `mname()` (
    //;   my $local_csa_count = floor($hight/3);
    //;   my $next_hight = $local_csa_count + $local_ci_count + $extra_pp_count;
    //;   my $local_csa_count = floor($hight/3);
-   //;   my $ci_count=2;
    //;   my $extra_HA = ( $hight%3==2 && (   ($step==$max_level-2? ($next_hight%3==2 && $step <= $#prev_co_arr && $prev_co_arr[$step]==1)
    //;                                                           :  $next_hight%3==1)
    //;                                    ||  $next_hight==2) );
@@ -176,8 +175,11 @@ module `mname()` (
    //;   $ci_idx = $count_upward?$ci_idx:$ci_idx+$local_ci_count;
    //;   my $next_pp_idx = $count_upward?0:$next_hight;
    //;   $co_idx = $count_upward?$co_idx:$co_idx+$local_csa_count;
+   //;   my $csa_cadence = $local_csa_count>0? ($col_ht-1)/$local_csa_count : 0;
+   //;   my @ci_count_array = $csa_cadence>14? (2,1,0) : $csa_cadence>5? (2,2,1,0,2,2,0,0,0) : (2,2,2,0,0,0);
+   //;   my $ci_count_idx=0;
 
-   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`$local_ci_count` $extra_HA=`$extra_HA`
+   // Starting Level `$step` of the tree. Hight=`$hight` EstimatedNextHight=`$next_hight` ci=`$local_ci_count` extra_HA=`$extra_HA` cadence=`$csa_cadence` 
       logic [`$next_hight-1`:0] pp_step`$step`; // For holding results of level `$step`
 
    //;   
@@ -213,9 +215,12 @@ module `mname()` (
    //;     ##########################################
    //;
    //;     ########### Instantiate Cell #############
+   //;     my $ci_count=$ci_count_array[$ci_count_idx];
+   //;     $ci_count_idx++;
+   //;     $ci_count_idx=0 if $ci_count_idx > $#ci_count_array;
    //;     if ( $use_compressor_4_2_part2 ){
    //;
-   //;       my $CSA_obj = generate('Compressor_4_2_p2', "csa_${row}_${Y}", ENABLE_CI=> ($hight==3) );
+   //;       my $CSA_obj = generate('Compressor_4_2_p2', "csa${step}_${row}_${Y}", ENABLE_CI=> ($hight==3) );
       `$CSA_obj->instantiate()` ( .s_abcd(pp_step`$step-1`[`$pp_idx++`]),   .d(pp_step`$step-1`[`$pp_idx++`]),
    //;       if ($hight==3){
                                   .ci(pp_step`$step-1`[`$pp_idx++`]), 
@@ -225,7 +230,7 @@ module `mname()` (
    //;
    //;     }elsif ( $enable_compressors && $step==$max_level-1  && $hight>3 ) {
    //;
-   //;       my $CSA_obj = generate('Compressor_4_2_p1', "csa_${row}_${Y}");
+   //;       my $CSA_obj = generate('Compressor_4_2_p1', "csa${step}_${row}_${Y}");
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]),   .b(pp_step`$step-1`[`$pp_idx++`]),
                                   .c(pp_step`$step-1`[`$pp_idx++`]), .d(pp_step`$step-1`[`$pp_idx`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]));
@@ -245,7 +250,7 @@ module `mname()` (
    //;
    //;       if ($extra_HA && ($ci_count>0 || $i==$local_csa_count-1) ){
    //;
-   //;         my $CSA_obj = generate('HA', "csa_${row}_${Y}");
+   //;         my $CSA_obj = generate('HA', "csa${step}_${row}_${Y}");
    //;         if ($count_upward){
       `$CSA_obj->instantiate()` ( .a(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
@@ -267,7 +272,7 @@ module `mname()` (
    //;           $local_ci_idx++;
    //;           $ci_count--;
    //;         }
-   //;         my $CSA_obj = generate('CSA', "csa_${row}_${Y}");
+   //;         my $CSA_obj = generate('CSA', "csa${step}_${row}_${Y}", MinArea => ($step==1) );
    //;         if ($count_upward){
       `$CSA_obj->instantiate()` ( .ci(pp_step`$step-1`[`$pp_idx++`]), .b(pp_step`$step-1`[`$pp_idx++`]), .a(pp_step`$step-1`[`$pp_idx++`]),
                                   .s(pp_step`$step`[`$next_pp_idx++`]), .co(wallace_co[`$co_idx++`]) );
@@ -275,8 +280,6 @@ module `mname()` (
       `$CSA_obj->instantiate()` ( .ci(pp_step`$step-1`[`--$pp_idx`]), .b(pp_step`$step-1`[`--$pp_idx`]), .a(pp_step`$step-1`[`--$pp_idx`]),
                                   .s(pp_step`$step`[`--$next_pp_idx`]), .co(wallace_co[`--$co_idx`]) );
    //;         }
-
-   //;         $ci_count=2;
    //;       }
    //;
    //;     }

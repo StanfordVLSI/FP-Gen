@@ -83,7 +83,7 @@ set min_compressed_column 100000;
 
 foreach_in_collection CSA_cell $CSA_cells {
 
-    regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_column row_index compressed_CSA_column;
+    regexp {column_([0-9]*)/csa([0-9]*)_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_level CSA_column row_index compressed_CSA_column;
 
     if { $CSA_column > $max_column } {
       set max_column $CSA_column
@@ -285,7 +285,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
       set CSA_name [get_object_name $CSA_cell];
 
-      regexp {column_([0-9]*)/csa_([0-9]*)_([0-9]*)} $CSA_name matched CSA_column row_index compressed_CSA_column;
+      regexp {column_([0-9]*)/csa([0-9]*)_([0-9]*)_([0-9]*)} $CSA_name matched CSA_level CSA_column row_index compressed_CSA_column;
       set column_offset [expr $booth_sel_count - 1 - ($max_compressed_column - $compressed_CSA_column) / ($booth_select_cadence-1)];
       set column_offset [expr $column_offset<0? 0:$column_offset];
       set column_index [expr $compressed_CSA_column-$min_compressed_column+$column_offset ]
