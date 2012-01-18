@@ -1,4 +1,4 @@
-################################################################################
+##############################################################################
 ################ Makefile Definitions
 ################################################################################
 # This little trick finds where the makefile exists
@@ -15,9 +15,9 @@ ifndef SIM_ENGINE
 SIM_ENGINE := synopsys
   $(warning WARNING: SIM_ENGINE not specified. Using default SIM_ENGINE=synopsys) 
   $(warning WARNING: Rerun with SIM_ENGINE=synopsys or SIM_ENGINE=mentor)
-ifndef SYNOPSYS
- $(error ERROR: Path to SYNOPSYS not set)
-endif
+# ifndef SYNOPSYS
+#  $(error ERROR: Path to SYNOPSYS not set)
+# endif
 endif
 
 
@@ -60,7 +60,7 @@ GENESIS_VLOG_LIST := genesis_vlog.vf
 
 # Input xml program
 ifndef GENESIS_CFG_XML
-  GENESIS_CFG_XML := 	empty.xml
+  GENESIS_CFG_XML := 	$(DESIGN_HOME)/empty.xml
   $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
 else
   $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
@@ -116,6 +116,8 @@ VERILOG_ENV :=
 VERILOG_DESIGN :=	
 
 VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
+
+SYNOPSYS := /hd/cad/synopsys/dc_shell/F-2011.09
 
 VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
 			+incdir+$(SYNOPSYS)/dw/sim_ver/
@@ -259,7 +261,21 @@ run: $(EXECUTABLE)
 	@echo ==================================================
 	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN)
 
+########## For Design Compiler #############
+############################################
+RUN_NAME := synthesis/syn_$(VT)_$(Voltage)_$(target_delay)
+io2core ?= 30	
+COMMAND_STRING :=  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
+OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
+	
+# DC Run rules:
+######################
+.PHONY: run_dc
+run_dc: $(RUN_NAME)/log/dc_$(RUN_NAME).log
 
+$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
+	mkdir -p $(RUN_NAME); cd $(RUN_NAME); mkdir -p log; \
+	dc_shell-xg-t -64bit -f ../multiplier_dc.tcl -x $(COMMAND_STRING) | tee -i log/dc_$(RUN_NAME).log
 
 # Cleanup rules:
 #####################
