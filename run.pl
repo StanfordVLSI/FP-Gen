@@ -101,9 +101,9 @@ while ( $#xmls >= 0){
 		my $usrname = $ENV{'USER'};
 		my $count = `qstat | grep -c $usrname`;
 		while ($count >= $jobs){
-			print "Now there are already $count jobs in the queue. The maximum is $jobs. Please wait...\n";
+			print "Now there are already $count jobs in the queue. The maximum is $jobs. Job #$id is waiting...\n";
 			sleep(30);
-			my $count = `qstat | grep -c $usrname`;
+			$count = `qstat | grep -c $usrname`;
 		}
 		$count++;
 		`jsub -q horowitz -- ./$batchName`;
