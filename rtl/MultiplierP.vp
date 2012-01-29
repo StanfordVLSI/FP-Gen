@@ -31,6 +31,7 @@
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//; my $designware_mode = $self->get_top_param('Designware_MODE'); # Reads this parameter from the top level
 //;
 //; # Interface parameter
 //; my $useInc = parameter(Name=>'UseInc', Val=>'', List=>['YES', 'NO'],
@@ -56,6 +57,12 @@ module `mname`(
    //; }	    
     output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
+
+
+//; if($designware_mode =~ /ON/){
+DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .out0(out0), .out1(out1) );
+
+//; }else{
 
 /* BOOTH ENCODING
 */
@@ -116,6 +123,6 @@ module `mname`(
     assign out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
     assign out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
    //; }
-
+//; }
 endmodule
 
