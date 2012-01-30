@@ -8,13 +8,13 @@ my $xml_dir = $home_dir . "/SysCfgs";
 my $synth_dir = $home_dir . "/synthesis";
 my $work_dir = $home_dir . "/work";
 
-my $claster = ();
+my $cluster = ();
 my $jobs = 50;
 my @xmls = ();
 my @synths = ();
 
 GetOptions(
-	'claster!'	=>	\$claster,
+	'cluster!'	=>	\$cluster,
 	'jobs=i'	=>	\$jobs,
 	'xml=s'		=>	\@xmls,
 	'synth=s'	=>	\@synths,
@@ -97,7 +97,7 @@ while ( $#xmls >= 0){
     	close( BATCHFILE ) ;
 	`chmod 777 $batchName`;
 	
-	if($claster){
+	if($cluster){
 		my $usrname = $ENV{'USER'};
 		my $count = `qstat | grep -c $usrname`;
 		while ($count >= $jobs){

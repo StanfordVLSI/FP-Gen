@@ -298,6 +298,7 @@ clean:
 	\rm -rf ucli.key
 	\rm -rf *~
 	\rm -rf top.v
+	\rm -f graph_*.m
 	\rm -rf $(GENESIS_INTERMIDS)
 	\rm -rf $(GENESIS_INTERMIDS:.pm=_unq*.v)
 	\rm -rf $(GENESIS_INTERMIDS:.pm=_tmp*.v)

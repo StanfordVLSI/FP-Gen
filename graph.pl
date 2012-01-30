@@ -21,7 +21,7 @@ GetOptions(
 	'Vdd=f'		=>	\$Vdd,
 	'Vth=s'		=>	\$Vth,
         'csv=s'         =>      \@csvs,
-	'designwares=s'	=>	\@designwares,
+	'designware=s'	=>	\@designwares,
 ); 
 
 my $tag = sprintf( "%03x" , int( rand( 4095 ) ) ) ;
