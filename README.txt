@@ -20,30 +20,50 @@ To use perl script to run jobs and to plot graphs, do following step:
 
 1. To compile .vp file and to run synthesis jobs, use:
 	./run.pl [--cluster] [--jobs=50] --xml=XMLFILE --synth=SYNTHSCRIPT
+
    Example:
 	./run.pl -c -x=Designware_16_syn.xml -s=run_lvt_16.sh -x=Designware_32_syn.xml -s=run_lvt_32.sh  -x=Designware_64_syn.xml -s=run_lvt_64.sh -x=Designware_128_syn.xml -s=run_lvt_128.sh -x=WlcBth2Sqr_16_syn.xml -s=run_lvt_16.sh -x=WlcBth3Sqr_16_syn.xml -s=run_lvt_16.sh -x=WlcBth2Sqr_32_syn.xml -s=run_lvt_32.sh -x=WlcBth3Sqr_32_syn.xml -s=run_lvt_32.sh -x=WlcBth2Sqr_64_syn.xml -s=run_lvt_64.sh -x=WlcBth3Sqr_64_syn.xml -s=run_lvt_64.sh -x=WlcBth2Sqr_128_syn.xml -s=run_lvt_128.sh -x=WlcBth3Sqr_128_syn.xml -s=run_lvt_128.sh
 
   Description:
+	Compile and run Genesis .vp file for each XMLFILE in ./work directory,
+	and then run synthesis with target delay script SYNTHSCRIPT.
 
   Options:
-	cluster: whether you are on a cluster
-	jobs: the maximum jobs to run on the cluster
-	xml: input xml config file in ./SysCfgs folder to run genesis
-	synth: target delay script in ./synthesis folder to run synthesis
-* NOTE: input option XMLFILE must be followed by its SYNTHSCRIPT, and more than one pairs of XMLFILE and SYNTHSCRIPT can be set, but the numbers of input XMLFILE and SYNTHSCRIPT must be the same.
+	-c, --cluster: whether you are on a cluster
+	-j, --jobs: the maximum jobs to run on the cluster. The default is 50.
+	-x, --xml: input xml config file in ./SysCfgs folder to run genesis
+	-s, --synth: target delay script in ./synthesis folder to run synthesis
+	
+	**NOTE: input option XMLFILE must be followed by its SYNTHSCRIPT, 
+	and more than one pairs of XMLFILE and SYNTHSCRIPT can be set, but
+	the numbers of input XMLFILE and SYNTHSCRIPT must be the same.
+
 
 2. To collect the synthesis results, use:
 	./collectResults.pl -xml=XMLFILE
+
    Example:
 	./collectResults.pl -x=Designware_16_syn.xml -x=Designware_32_syn.xml -x=Designware_64_syn.xml -x=Designware_128_syn.xml -x=WlcBth2Sqr_16_syn.xml -x=WlcBth3Sqr_16_syn.xml -x=WlcBth2Sqr_32_syn.xml -x=WlcBth3Sqr_32_syn.xml -x=WlcBth2Sqr_64_syn.xml -x=WlcBth3Sqr_64_syn.xml -x=WlcBth2Sqr_128_syn.xml -x=WlcBth3Sqr_128_syn.xml
 
+   Description:
+	Collect results for each XMLFILE, the output csv files will be saved
+	in ./results folder.
+
+
 3. To plot the graphs, use:
 	./graph.pl [--nodisplay] [--Vdd=VDD] [--Vth=VTH] --csv=CSVFILE --desinware=DESIGNWARE_CSV
+
    Example:
 	./graph.pl -c=WlcBth2Sqr_64_syn.csv -c=WlcBth3Sqr_64_syn.csv -d=Designware_64_syn.csv
 	./graph.pl -n -c=WlcBth2Sqr_64_syn.csv -c=WlcBth3Sqr_64_syn.csv -d=Designware_64_syn.csv
 
+   Description:
+	Generate a MATLAB script to plot a graph of several result csv files.
+	Then run MATLAB, generate the graph and save a pdf version in
+	./results folder. --nodisplay option is available for non-GUI
+	environment.
+
    Options:
-	nodisplay: do not launch MATLAB GUI
-	Vdd: the Vdd we use to plot the graph
-	Vth: the Vth we use to plot the graph
+	-n, --nodisplay: do not launch MATLAB GUI
+	--Vdd: the Vdd we use to plot the graph. The default is 1.0.
+	--Vth: the Vth we use to plot the graph. The default is lvt.
