@@ -32,6 +32,9 @@
  * Nov 22, 2011   Artem     initial version
  * Dec 19, 2011   Artem     Removed unused HAs. Fixed OS1 for 128bit FP Mult
  * Jan 08, 2012   Artem     Changed how ci[] is wired to produce min. delay
+ * Jan 25, 2012   Artem     Fixed $Y culculation for the first CSA (and placement for 
+ *                          all CSAs). Routed from previous CSA sum to the ci of the 
+ *                          next one in the branch to compensate slow/fast paths
  * 
  * ****************************************************************************/
 
@@ -174,6 +177,8 @@ module `mname()` (
    //;
    //;  my $row = $min_row;
    //;  my $Y = $col;
+   //;    $Y = $col - $row * $booth  if $layout_shape =~ /Square/;
+   //;    $Y = $col if $layout_shape =~ /Parallelogram/;
    //; 
    //;  my $put_csa = 1;
    //;
@@ -262,7 +267,7 @@ module `mname()` (
    //;
    //;               $csa_cnt++;
    //;               if($put_csa){
-      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
+      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`), .ci(`$array_conn[1]`),
    //;               }else{
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
    //;               }
@@ -307,7 +312,7 @@ module `mname()` (
    //;               $csa_cnt++;
       logic pp_merge1_`$array-1`_s;
    //;              if($put_csa){
-      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`), .ci(`$array_conn[2]`),
+      `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[2]`), .ci(`$array_conn[1]`),
    //;              }else{
       `$CSA_obj->instantiate()` ( .a(`$array_conn[0]`), .b(`$array_conn[1]`),
    //;              }
