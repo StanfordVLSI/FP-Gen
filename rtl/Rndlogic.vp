@@ -1,0 +1,31 @@
+/*******************************************************************
+
+  Rounding Modes
+   The rounding modes determine the conditions under which the significand is incremented
+    by choice of F1 and F2 (F1 < F <  F2), of an infinite precision result value F.
+  ______________________________
+   RND | Mode | Description
+  ______________________________
+   000 |  RNE |  Round to the nearest representablesignificand. If the two significands are equally near, choose the even significand.
+   001 |  RZ  |  Use F1 if the value is positive or F2 if the value is negative.
+   010 |  RP  |  Output is always F2.
+   011 |  RM  |  Output is always F1. 
+  ______________________________
+
+******************************************************************/
+
+module `mname()` (input logic [2:0] rnd,
+                  input logic Sign, LSB, Guard, Sticky,
+                  output logic Inc, MaxNum);
+/*
+rnd	 Inc
+0 0 0    Guard & (Sticky | LSB)
+0 0 1    0
+0 1 0    ~S
+0 1 1    S
+*/
+
+assign Inc =  rnd[1] ? ~rnd[0] ^ Sign : ~rnd[0] & Guard & (Sticky | LSB);
+assign MaxNum = rnd[1] ? rnd[0] ^ Sign : rnd[0];
+
+endmodule

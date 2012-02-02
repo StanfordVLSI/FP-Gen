@@ -1,0 +1,192 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FMA_Man.vp#1 $
+ ** $DateTime: 2011/12/24 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * FMA mantissa datapath
+ *  
+ * 
+  * Parameters:
+ * * FractionWidth, ExponentWidth, EnableDenormals, useInc
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//;
+//; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//;
+//; # And some local variables
+//; $useInc = ($useInc =~ /YES/)? 1:0;
+//; my $product_width = 2 * $frac_width + 2;
+//; my $wide_width = 4 * $frac_width  + 7; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)
+//; my $shift_width = CeilOfLog2($wide_width);
+//; my $lza_width = $wide_width - $frac_width - 1;
+//; my $lza_enc_width = CeilOfLog2($lza_width) + 1;
+//;
+
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$frac_width`:0] ManA, ManB, ManC,
+   //; if ($useInc){
+    input logic IncA, IncB,
+   //; }
+    input logic SignA, SignB, SignC,
+    input logic [`$shift_width-1`:0] RshiftAmt, 
+    input logic [`$lza_width-1`:0] lza_override_mask,
+    output logic [`$lza_enc_width-1`:0] LshiftAmt,
+    output logic [`$frac_width`:0] Result,
+    output logic SignResult, ResultExactZero, LSB, Guard, Sticky, IncExp);	
+
+
+  logic [`$wide_width-1`:0] wide_C, shifted_C, final_C;
+  logic [`$frac_width+1`:0] C_upper_0, C_upper_1;
+  logic SignProduct, KillCarry, subtract, co_middle, co0, co1, SumSign, IncCarryOut, RSticky, mostSticky;
+  logic [`$product_width+1`:0] AB_pp0, AB_pp1;
+  logic [`$product_width+2`:0] C_middle;
+  logic [`$product_width+2`:0] ps0, ps1 , MiddleSum0, MiddleSum1;
+  logic [`$lza_width`:0] Sum0, Sum1, FinalSum, ShiftedResult;
+  logic [`$lza_width+1`:0] LZA_ps0, LZA_ps1;
+  logic [`$lza_width-1`:0] lzd_hotone_mask;
+
+
+
+	/*Multiplier*/
+
+//; my $Mul_obj = generate('MultiplierP', 'MUL0', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
+  `$Mul_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+      .a(ManA), .b(ManB), 
+      //; if ($useInc){
+      .ainc(IncA), .binc(IncB),
+      //; }
+      .out0(AB_pp0), .out1(AB_pp1)
+      );
+
+  assign KillCarry = AB_pp0[`$product_width+1`] | AB_pp1[`$product_width+1`];
+
+  /* Aligner*/
+  assign wide_C = {1'b0, ManC, {(`$lza_width-1`){1'b0}}};
+  assign shifted_C = wide_C >> RshiftAmt;
+  assign RSticky = (|shifted_C[`$frac_width-1`:0]) | (~|shifted_C[`$wide_width-1`:`$frac_width`] & |ManC); // the sticky bit is calculated from the non inverted version of C
+
+  
+  assign final_C = subtract? ~shifted_C : shifted_C;
+  assign C_middle = final_C[`$product_width+$frac_width+2`:`$frac_width`];
+  assign C_upper_0 = final_C[`$wide_width-1`:`$lza_width-1`];
+  assign C_upper_1 = C_upper_0 + 1;
+
+  /* Carry look around adder 
+     Pad a zero before the partial products for support for denormals
+     Use compound adder that produces sum and sum+1 and use the following logic to select the correct result 
+
+     subtract  RSticky SumSign    Sum
+     -------------------------------
+     0           X     X         Sum
+     1           0     0         Sum+1
+     1           0     1        ~Sum
+     1           1     0         Sum
+     1           1     1        ~Sum
+
+  */
+  DW01_csa #(`$product_width+3`) CSA0 (.a({AB_pp0,1'b0}),.b({AB_pp1,1'b0}),.c(C_middle),.ci(1'b0), .carry(ps0), .sum(ps1), .co(co_middle) );
+
+//; my $CAdd_obj = generate('CompoundAdder', 'CADD', Width=>($product_width+3), EnableCarryIn=>'OFF', ZeroWidth=>0);   
+  `$CAdd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(ps0), .b(ps1), .sum0(MiddleSum0), .co0(co0),  .sum1(MiddleSum1), .co1(co1));
+
+
+  assign Sum0 = { (co0 & (co_middle | ~KillCarry)? C_upper_1 : C_upper_0),MiddleSum0};
+  assign Sum1 = { (co1 & (co_middle | ~KillCarry)? C_upper_1 : C_upper_0),MiddleSum1};
+
+  assign FinalSum = subtract? (SumSign?~Sum0:(RSticky?Sum0:Sum1)) : Sum0;
+
+  /* Leading Zero Anticipator */
+//; my $lza_obj = generate('LZA', 'LZA0', Width=>$lza_width);
+  assign LZA_ps0 = { (KillCarry?C_upper_0:{(`$frac_width+2`){1'b0}}), co_middle , ps0};
+  assign LZA_ps1 = { (KillCarry?{~C_upper_0[`$frac_width+1`],~C_upper_0}:C_upper_0), ps1};
+  `$lza_obj->instantiate()`  ( .A(LZA_ps0), .B(LZA_ps1), .override_mask(lza_override_mask), .result_is_zero(ResultExactZero), .enc(LshiftAmt));
+
+
+  /* Normalizer */
+  assign ShiftedResult = FinalSum << LshiftAmt;
+  assign IncExp = (LshiftAmt!=0) & ShiftedResult[`$lza_width`];
+  assign mostSticky = (| ShiftedResult[`$wide_width-2*$frac_width-4`:0]) | RSticky;
+  assign {Result, Guard, Sticky} = IncExp ? 
+             {ShiftedResult[`$wide_width-$frac_width-1`:`$wide_width-2*$frac_width-2`],mostSticky | ShiftedResult[`$wide_width-2*$frac_width-3`]}
+            :{ShiftedResult[`$wide_width-$frac_width-2`:`$wide_width-2*$frac_width-3`],mostSticky};
+  assign LSB = Result[0];
+
+
+  /* sign calculations */
+  assign SignProduct = SignA ^ SignB;
+  assign subtract = SignProduct ^ SignC;
+  assign SumSign = Sum0[`$wide_width-$frac_width-1`];
+  assign SignResult = ResultExactZero? SignProduct & SignC : SignProduct ^ SumSign;
+
+
+//; if ($verif_mode =~ /ON/){
+	// synopsys translate_off
+	always @(posedge dumptolog)
+	begin
+		$display ("AB_pp0      = %b", AB_pp0);
+		$display ("AB_pp1      = %b",AB_pp1);
+		$display ("C_middle    = %b", C_middle);
+		$display ("KillCarry = %b co_middle = %b co0=%b", KillCarry, co_middle, co0);
+		$display ("final_C= %b", final_C);
+		$display ("C_upper_1= %b", {C_upper_1 ,MiddleSum0});
+		$display ("Sum0 = %b",Sum0);
+		$display ("FinalSum = %b", FinalSum);
+		$display ("lza_override_mask = %b LshiftAmt=%d IncExp=%b", lza_override_mask, LshiftAmt, IncExp);
+		$display ("Result = %b SignResult= %b ResultExactZero=%b",Result, SignResult, ResultExactZero);
+	end
+	// synopsys translate_on
+//; }
+
+endmodule
+
+

@@ -1,0 +1,228 @@
+
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FMA.vp#1 $
+ ** $DateTime: 2011/12/24 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * FMA datapath
+ * Status flag bits
+ * ______________________________
+ * Bit| Flag      | Description
+ * ______________________________
+ *  0 | Zero      | Integer or floating point output is zero.
+ *  1 | Infinity  | Floating point output is infinity.
+ *  2 | Invalid   | Floating point operation is not valid (0x∞, ∞-∞ ) . It is also set to 1 when one of the inputs is NaN
+ *  3 | Tiny      | Non zero floating point output after rounding has a magnitude less than the minimum normalized number( a denormalized number)
+ *  4 | Huge      | Finite floating point result after rounding has a magnitude greater than the maximum normalized number.
+ *  5 | Inexact   | Integer or floating point output is not equal to the infinitely precise result.
+ * ______________________________
+ *  
+ * 
+ * Parameters:
+ * ------------
+ * * FractionWidth, ExponentWidth, EnableDenormals, useInc
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off." ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off.");
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//;
+//; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//;
+//; # And some local variables
+//; # $useInc = ($useInc =~ /YES/)? 1:0;
+//; my $product_width = 2 * $frac_width + 2;
+//; my $wide_width = 4 * $frac_width  + 7; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)
+//; my $shift_width = CeilOfLog2($wide_width);
+//; my $lza_width = $wide_width - $frac_width - 1;
+//; my $lza_enc_width = CeilOfLog2($lza_width) + 1;
+//;
+
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input  logic dumptolog,
+   //; }
+    input  logic [`$exp_width + $frac_width`:0] a, b, c,
+    input  logic ainc, binc, cinc,
+    input  logic [2:0] rnd,
+    output logic [`$exp_width + $frac_width`:0] z,
+    output logic zinc,
+    output logic [7:0] status
+           );
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+
+
+  wire [`$frac_width`:0] ManResult;
+  wire [`$frac_width-1`:0] SigA, SigB, SigC;
+  wire [`$frac_width`:0] ManA, ManB, ManC;
+  wire [`$shift_width-1`:0] RshiftAmt;
+  wire [`$lza_enc_width-1`:0] LshiftAmt;
+  wire [`$lza_width-1`:0] lza_override_mask;
+  wire [`$exp_width-1`:0] ExpA, ExpB, ExpC, ExpResult;
+  wire [`$exp_width + $frac_width`:0] FMA_Result;
+  wire SignA, SignB, SignC;
+  wire ManLSB, Guard, Sticky, IncExp,IncExpFromLZA, LZA_wrong, RoundInc, SignResult,SignInfinity;
+
+  wire denormA, denormB, denormC, denormResult, NANorInfA, NANorInfB, NANorInfC, zeroSigA, zeroSigB, zeroSigC, zeroManResult, IncCarryOut;
+  wire InfA, InfB, InfC, InfFromInput, NANA, NANB, NANC, ZeroA, ZeroB, ZeroC, ZeroResult;
+  wire SignProduct, SignSpecial, ResultIsInfinity, ResultIsC, ResultIsFMA, ResultExactZero;
+  wire FV_exp, FU_exp;
+  wire FX, FV, FU, FI, Tiny;
+  wire RndMaxNum, MaxNum;
+
+  assign SignA = a[`$exp_width + $frac_width`];
+  assign SignB = b[`$exp_width + $frac_width`];
+  assign SignC = c[`$exp_width + $frac_width`];
+
+  assign ExpA = a[`$exp_width + $frac_width -1`:`$frac_width`];
+  assign ExpB = b[`$exp_width + $frac_width -1`:`$frac_width`];
+  assign ExpC = c[`$exp_width + $frac_width -1`:`$frac_width`];
+
+  assign denormA = ExpA == 0;
+  assign denormB = ExpB == 0;
+  assign denormC = ExpC == 0;
+
+  assign SigA = a[`$frac_width -1`:0];
+  assign SigB = b[`$frac_width -1`:0];
+  assign SigC = c[`$frac_width -1`:0];
+
+//assign Tiny = denormResult & ~ZeroResult;
+  assign Tiny = 0;
+  assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
+
+  assign zeroSigA = SigA==0 & ~ainc;
+  assign zeroSigB = SigB==0 & ~binc;
+  assign zeroSigC = SigC==0;
+  assign zeroManResult = ManResult==0;
+
+  assign NANorInfA =  ExpA == {(`$exp_width`){1'b1}};
+  assign NANorInfB =  ExpB == {(`$exp_width`){1'b1}};
+  assign NANorInfC =  ExpC == {(`$exp_width`){1'b1}};
+
+  assign InfA = zeroSigA & NANorInfA;
+  assign InfB = zeroSigB & NANorInfB;
+  assign InfC = zeroSigC & NANorInfC;
+  assign InfFromInput = InfA | InfB | InfC;
+
+  assign NANA = ~zeroSigA & NANorInfA;
+  assign NANB = ~zeroSigB & NANorInfB;
+  assign NANC = ~zeroSigC & NANorInfC;
+
+
+  assign ManA = { ~denormA , SigA};
+  assign ManB = { ~denormB , SigB};
+  assign ManC = { ~denormC , SigC};
+  assign ZeroA = zeroSigA & denormA;
+  assign ZeroB = zeroSigB & denormB;
+  assign ZeroC = zeroSigC & denormC;
+
+  assign ZeroResult = zeroManResult & denormResult;
+
+  assign SignProduct = SignA ^ SignB;
+  assign SignInfinity = InfC ? SignC : SignProduct;
+  assign SignSpecial = SignC & (~ZeroC | SignProduct);
+
+//; my $fma_exp_obj = generate('FMA_Exp', 'FMA_EXP0', FractionWidth=>$frac_width 
+//;                                                 , ExponentWidth=>$exp_width
+//;                                                 , EnableDenormals=>$enable_denormals
+//;                                                 , UseInc => $useInc);
+  `$fma_exp_obj->instantiate()` (.ExpA(ExpA), .ExpB(ExpB), .ExpC(ExpC),
+                   .denormA(denormA), .denormB(denormB), .denormC(denormC), .ZeroC(ZeroC),
+                   .RshiftAmt(RshiftAmt), .lza_override_mask(lza_override_mask), .LshiftAmt(LshiftAmt), .IncExp(IncExp),
+                   .denormResult(denormResult), .ResultExactZero(ResultExactZero), .ExpResult(ExpResult), .FV(FV_exp) , .dumptolog(dumptolog));
+
+//; my $fma_man_obj = generate('FMA_Man', 'FMA_MAN0', FractionWidth=>$frac_width 
+//;                                                 , ExponentWidth=>$exp_width
+//;                                                 , EnableDenormals=>$enable_denormals
+//;                                                 , UseInc => $useInc);
+  `$fma_man_obj->instantiate()`  (.ManA(ManA), .IncA(ainc), .ManB(ManB), .IncB(binc),
+                   .ManC(ManC), .SignA(SignA), .SignB(SignB), .SignC(SignC),
+		   .RshiftAmt(RshiftAmt),.lza_override_mask(lza_override_mask), .LshiftAmt(LshiftAmt), .Result(ManResult),
+                   .SignResult(SignResult), .ResultExactZero(ResultExactZero), .LSB(ManLSB), .Guard(Guard), .Sticky(Sticky),
+                   .IncExp(IncExp), .dumptolog(dumptolog));
+
+//; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
+  `$rnd_obj->instantiate()` (.rnd(rnd), .Sign(SignResult), .LSB(ManLSB), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
+  assign denormResult = ~ManResult[`$frac_width`];
+  assign FMA_Result = {SignResult, ExpResult, ManResult[`$frac_width -1`:0]};		   
+  
+
+
+  assign FX = (ResultIsFMA & (Guard | Sticky)) | FV;
+  assign FI = NANA | NANB | NANC | ((InfA | InfB) & InfC & (SignProduct!=SignC)) | (InfA & ZeroB) | (InfB & ZeroA);
+  assign FV = FV_exp & ~InfFromInput & ~FI & ~ResultIsC ;
+  assign FU = ZeroResult & FX & ResultIsFMA;
+
+
+  assign ResultIsInfinity = ( InfFromInput | FV) & ~FI;
+  assign ResultIsC = (ZeroA | ZeroB) & ~InfFromInput   & ~FI;
+  assign ResultIsFMA = ~ResultIsC   & ~ResultIsInfinity   & ~FI;
+
+  assign MaxNum =  FV & RndMaxNum; 
+
+  assign {zinc,z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width -1`){1'b0}}}
+              : ResultIsInfinity ? {1'b0,SignInfinity,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
+                                    : ResultIsC ? {1'b0,SignSpecial,ExpC, ManC[`$frac_width -1`:0]} : {RoundInc, FMA_Result};
+//; if ($verif_mode =~ /ON/){
+  // synopsys translate_off
+  always @(posedge dumptolog)
+  begin
+    $display ("denormA=%b ZeroA=%b InfA=%b ManA=%b",denormA, ZeroA, InfA, ManA);
+    $display ("denormB=%b ZeroB=%b InfB=%b ManB=%b",denormB, ZeroB, InfB, ManB);
+    $display ("denormC=%b ZeroC=%b InfC=%b ManC=%b",denormC, ZeroC, InfC, ManC);
+    $display ("ResultIsInfinity =%b , ResultIsC =%b ,ResultIsFMA =%b",ResultIsInfinity, ResultIsC,ResultIsFMA);
+    $display ("FU =%b , FV =%b ,FI =%b ,FX =%b",FU, FV , FI,FX);
+    $display ("ZeroResult=%b ,zeroManResult=%b ,denormResult=%b", ZeroResult,zeroManResult,denormResult);
+  end
+  // synopsys translate_on
+//; }	
+endmodule
+
+

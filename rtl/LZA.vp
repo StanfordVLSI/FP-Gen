@@ -1,0 +1,86 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/LZA.vp#1 $
+ ** $DateTime: 2011/12/24 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * LZA is leading zero anticpator that tries to estimate the leading zero count of the sum of the two numbers A, B
+ * since the sum might be positive or negative, this module generates an edge vector that detects changes from string
+ * of zeroes to string of ones and vice versa which could be used by leading zero detector to determine the shif amount
+ * The predicted shift value may be over
+ * 
+ * Algorithm:
+ * ----------
+ * Define the following mutually exclusive signals
+ * - Kill		K = A nor B
+ * - Propagate	P = A xor B
+ * - Generate	G = A and B
+ * 	
+ * - for detecting 0->1 edge, the patterns are K+ : K'  and P+ : G : K* : K'
+ * - for detecting 1->0 edge, the patterns are G+ : G'  and P+ : K : G* : G'
+ * 
+ * A three-bit pattern is sufficient to determine an edge vector V:
+ * 
+ * V[i] = P'[i-2] K[i-1] 'K[i] + P'[i-2] G[i-1] 'G[i] + P[i-2] G[i-1] 'K[i] + P[i-2] K[i-1] 'G[i]
+ * 
+ * It is assumed that the inputs are sign extended by two bits
+ * 
+ * 
+ * Parameters:
+ * -----------
+ * *  Width
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>109, Min=>2, Step=>1,
+//;                       Doc=>"Width of signals input to LZA");
+//; my $enc_width = CeilOfLog2($width) + 1;
+//;
+
+module `mname` (input logic [`$width+1`:0] A,B,
+        input logic [`$width-1`:0] override_mask,
+        output logic result_is_zero,
+        output logic [`$enc_width-1`:0] enc);
+
+	
+  logic [`$width+1`:0] P,G,K;
+  logic [`$width-1`:0] edge_mask, lzd_hotone_mask;
+
+  assign K = ~(A | B);
+  assign P = A ^ B;
+  assign G = A & B;
+
+  assign edge_mask = (~P[`$width+1`:2] & K[`$width`:1] & ~K[`$width-1`:0]) | 
+                     (~P[`$width+1`:2] & G[`$width`:1] & ~G[`$width-1`:0]) | 
+                     ( P[`$width+1`:2] & G[`$width`:1] & ~K[`$width-1`:0]) |
+                     ( P[`$width+1`:2] & K[`$width`:1] & ~G[`$width-1`:0]) ;
+
+  DW_lzd #(`$width`) LZD0 ( .a(edge_mask | override_mask), .dec(lzd_hotone_mask), .enc(enc) );
+
+  assign result_is_zero = ~|edge_mask;
+	
+endmodule : `mname`
+
