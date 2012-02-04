@@ -123,7 +123,7 @@ module `mname` (
   
 
 //; for (my $i=0 ; $i<$lza_width-1 ; $i++){
-  assign lza_override_mask[`$i`] = max_shift_dec[`$lza_width-i`];//max_shift_dec[manB_width-i+1]; 
+  assign lza_override_mask[`$i`] = max_shift_dec[`$lza_width-$i`];//max_shift_dec[manB_width-i+1]; 
 //; }
 
 
@@ -148,7 +148,7 @@ module `mname` (
     // synopsys translate_off
     always @(posedge dumptolog)
     begin
-      $display ("ExpAB=%b",ExpAB);
+      $display ("pre_shift=%h ExpAB=%h", pre_shift, ExpAB);
       $display ("ExpResult=%b",ExpResult);
       $display ("IncExp=%b",IncExp);
       $display ("ExpResultIsC=%b",ExpResultIsC);
