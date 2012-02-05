@@ -159,11 +159,11 @@ class `mname`;
    // --------------------------------------------------------------------------
    // Kind of C'tor for a regular, NON-Random transaction
    function ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, 
-    			     logic [`$frac_width - 1`:0] Frac);
+    			     logic [`$frac_width - 1`:0] Frac, logic Inc);
       this.Fraction = Frac;
       this.Exponent = Exp;
       this.Sign = Sign;
-      this.Inc = 1'b0;
+      this.Inc = Inc;
       
       if(Exponent == `$exp_width`'b0) begin
 	 if (Fraction == `$frac_width`'b0)
@@ -206,17 +206,17 @@ class `mname`;
       // Start with clear cut flagged cases:
       // ----------------------------------
       if (NaN) begin // NaN cases
-	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b1); // FIXME: Signaling? maybe Quiet NaN?
+	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b1, 1'b0); // FIXME: Signaling? maybe Quiet NaN?
 	 $display("NaN==1 ==> Assuming NaN");
 	 return;
       end
       if (Inf) begin // Inf cases
-	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b0);
+	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b0, 1'b0);
 	 $display("Inf==1 ==> Assuming Inf");
 	 return;
       end
       if (Zero) begin // Zero cases
-	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, `$frac_width`'b0);
+	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, `$frac_width`'b0, 1'b0);
 	 $display("Zero==1 ==> Assuming Zero");
 	 return;
       end
@@ -237,23 +237,23 @@ class `mname`;
       // Move to unflagged cases:
       // ---------------------------
       if (Exp > `2**$exp_width-2`) begin // Exponent overflow case
-	 this.ForceSignExpFrac(Sign, {(`$exp_width+2`){1'b1}}, `$frac_width`'b0);
+	 this.ForceSignExpFrac(Sign, {(`$exp_width+2`){1'b1}}, `$frac_width`'b0, 1'b0);
 	 $display("Exp>MaxExp (`2**$exp_width-2`)  ==> Assume Inf");
       end else
       if (Exp == `$exp_width+2`'b0) begin // Zero cases
-	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], `$frac_width`'b0);
+	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], `$frac_width`'b0, 1'b0);
 	 $display("Exp==0  ==> Assume Zero");
       end
       else if (Exp == `$exp_width+2`'b1) begin // Denorm and Normal cases
 	 if (Man[`$frac_width`] == 1'b0) begin  // Denorm
-	    this.ForceSignExpFrac(Sign, `$exp_width+2`'b0, Man[`$frac_width - 1`:0]);
+	    this.ForceSignExpFrac(Sign, `$exp_width+2`'b0, Man[`$frac_width - 1`:0], 1'b0);
 	    $display("Exp==1, Man[msb]=0  ==> Assume Denorm");
 	 end else begin 			// Normals (with wxp=1)
-	    this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
+	    this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
 	    $display("Exp==1, Man[msb]=1  ==> Assume Normal");
 	 end
       end else if (Exp == {(`$exp_width+2`){1'b1}}) begin // Inf and NaN cases
-	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
+	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
 	 $display("Exp==111..1 ==> Assuming Inf or NaN");
       end
 
@@ -261,7 +261,7 @@ class `mname`;
       // ---------------------------
       else begin 					// Just normal cases
 	 $display("Normal Case!");
-	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0]);
+	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
       end
    endfunction // FPMultResult_to_FPTrans
 

@@ -237,7 +237,7 @@ class `mname`;
 	    if (sticky) begin
 	       ExpExpected = 0;
 	       FracExpected = sticky;
-	       Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
+	       Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected, 1'b0);
 	    end else begin
 	       Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
 	    end
@@ -248,10 +248,10 @@ class `mname`;
 	      //; if ($test_denormals =~ /NO/){
 	      Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
               //; } else {
-	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected);
+	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected, 1'b0);
 	      //; }
 	    else							  // Normal case
-	      Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected);
+	      Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected, 1'b0);
 	 end
       end // End of the "normal" case (no special input)
       
