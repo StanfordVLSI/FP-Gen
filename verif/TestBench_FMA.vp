@@ -1,0 +1,209 @@
+/* *****************************************************************************
+ * Description:
+ * -----------
+ * TestBench for FMA
+ * 
+ * Runtime Arguments 
+ * -----------------
+ * (Via the "make run RUN=+<runtime_flag[=value]>" notation)
+ * * Wave, Seed, NumTrans
+ * 
+ * Parameters:
+ * -----------
+ * * FractionWidth, ExponentWidth, Architecture, TestDenormals, UseInc
+ * * NumTrans, Seed
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 05, 2011  shacham   init version - test generator for FP Mult-Acc
+ * 
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
+//; my $arch = parameter(Name=>'Architecture', Val=>'Fused', List=>['Cascade', 'Fused'],
+//; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
+//; 			      "or Fused? (Pick:Cascade/Fused)");
+//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
+//;                           Doc=>"Number of test transactions to run ".
+//;                                "(can be overriden at runtime using the '+NumTrans=value' command line notation)");
+//; my $seed = parameter(Name=>'Seed',Val=>12345, Min=>0, Step=>1,
+//;                      Doc=>"Seed for random values".
+//;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
+//;                                 
+//; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2
+
+program automatic `mname` (
+    output logic dumptolog,
+			   // signals to drive the design
+    output logic [`$exp_width + $frac_width`:0] a, b, c,
+    output logic ainc, binc, cinc,
+    output logic [2:0] rnd,			
+
+			   // results from the design
+    input logic [`$exp_width + $frac_width`:0] z,
+    input logic zinc,
+    input logic [7:0] status 
+		);
+
+   // Local variables and handles for controlling the simulation
+   int 					seed=`$seed`;
+   int 					num_trans = `$num_trans`;
+   int 					dummy;
+
+   // FP transaction handles
+   //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
+   //;				    Random=>'YES',
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width,
+   //; 				    Architecture=>$arch,
+   //;                              TestDenormals=>$test_denormals);
+   `$TransGenA_obj->instantiate`;
+   //; my $TransGenB_obj = generate('FPTransaction','TransGenB',
+   //;				    Random=>'YES',
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //; 				    Architecture=>$arch,
+   //;                              TestDenormals=>$test_denormals);
+   `$TransGenB_obj->instantiate`;
+   //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
+   //;				    Random=>'YES',
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //; 				    Architecture=>$arch,
+   //;                              TestDenormals=>$test_denormals);
+   `$TransGenC_obj->instantiate`;
+
+   // one more handle for the observed output
+   //; my $TransRes_obj = generate('FPTransaction','TransRes',
+   //;				    Random=>'NO',
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width, 
+   //; 				    Architecture=>$arch,
+   //;                              TestDenormals=>$test_denormals);
+   `$TransRes_obj->instantiate`;
+   
+   // Reference model
+   //; my $GoldRef_obj = generate('GoldFMA', 'GoldRef', 
+   //;                              FPTransA_Ptr=>$TransGenA_obj, 
+   //;                              FPTransB_Ptr=>$TransGenB_obj,
+   //;                              FPTransC_Ptr=>$TransGenC_obj,
+   //;                              FPTransRes_Ptr=>$TransRes_obj,
+   //;                              TestDenormals=>$test_denormals);
+   `$GoldRef_obj->instantiate`;
+   
+   
+   initial begin
+      $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
+      // some simulation control initialization
+      get_command_line_args();
+      dummy = $urandom(seed);
+      TransGenA = new();
+      TransGenB = new();
+      TransGenC = new();
+      TransRes = new();
+      GoldRef = new();
+
+      $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
+      // some simulation wire values initialization
+      dumptolog = 1'b0;
+      a = 0;
+      b = 0;
+      c = 0;
+      ainc = 1'b0;
+      binc = 1'b0;
+      cinc = 1'b0;
+      rnd = 3'b0;
+
+      for (int i=0; i<num_trans; i++) 
+	begin
+	   // Assign values to the lines
+	   dumptolog = 1'b0;
+	   TransGenA.randomize();
+	   TransGenB.randomize();
+	   TransGenC.randomize();
+	   a[`$exp_width + $frac_width`] = TransGenA.Sign;
+	   a[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenA.Exponent;
+	   a[`$frac_width -1`:0] = TransGenA.Fraction;
+	   ainc = TransGenA.Inc;
+	   b[`$exp_width + $frac_width`] = TransGenB.Sign;
+	   b[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenB.Exponent;
+	   b[`$frac_width -1`:0] = TransGenB.Fraction;
+	   binc = TransGenB.Inc;
+	   c[`$exp_width + $frac_width`] = TransGenC.Sign;
+	   c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
+	   c[`$frac_width -1`:0] = TransGenC.Fraction;
+	   cinc = TransGenC.Inc;
+
+	   
+	   // wait for it...
+	   #100;
+	   $display("\n%t: Transaction #%0d: ", $time, i);
+	   TransRes.ForceSignExpFrac(z[`$exp_width + $frac_width`],
+				     z[`$exp_width + $frac_width -1`:`$frac_width`],
+				     z[`$frac_width -1`:0],
+				     zinc);
+	   #100;
+	   GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
+	   
+	   // now check results... 
+	   if (! GoldRef.CheckMultResult(TransRes) && 
+		(TransGenA.Sign^TransGenB.Sign == TransGenC.Sign))//for now we just check the cases where AB and C have the same sign
+	     begin
+		dumptolog = 1'b1;
+		#1;
+		$display("%t: \033[0;31mERROR Found\033[0m", $time);
+		$finish(2);
+	     end
+
+	   // wait before starting over
+	   #100;
+    	end // for (int i=0; i<num_trans; i++)
+      
+      #1000; // give the lines some time to settle
+      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
+   end // initial begin
+   
+   
+   
+   //-------------------------------------------------------------------------//
+   // general intialization procedure
+   task get_command_line_args;
+      // if this is a "+wave" run, it must record all signals
+      if ( $test$plusargs("Wave") ) 
+	begin
+           $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
+           //         levels  instance
+           $vcdpluson(0,        top_FMA);
+	   $vcdplusmemon(0,     top_FMA);
+        end
+      // find the seed for this run
+      if ( $test$plusargs("Seed") ) 
+	begin
+	   $value$plusargs("Seed=%d", seed);
+	   $display("%t:\tRuntime input +Seed=%d found",$time, seed);
+	end
+      if ( $test$plusargs("NumTrans") )
+	begin
+	   $value$plusargs("NumTrans=%d", num_trans);
+	   $display("%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
+	end
+   endtask // get_command_line_args
+   
+      
+endprogram : `mname`

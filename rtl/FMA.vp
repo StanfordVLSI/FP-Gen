@@ -220,9 +220,10 @@ module `mname` (
   // synopsys translate_off
   always @(posedge dumptolog)
   begin
-    $display ("denormA=%b ZeroA=%b InfA=%b ManA=%b",denormA, ZeroA, InfA, ManA);
-    $display ("denormB=%b ZeroB=%b InfB=%b ManB=%b",denormB, ZeroB, InfB, ManB);
-    $display ("denormC=%b ZeroC=%b InfC=%b ManC=%b",denormC, ZeroC, InfC, ManC);
+    $display ("denormA=%b ZeroA=%b InfA=%b ManA=%h",denormA, ZeroA, InfA, ManA);
+    $display ("denormB=%b ZeroB=%b InfB=%b ManB=%h",denormB, ZeroB, InfB, ManB);
+    $display ("denormC=%b ZeroC=%b InfC=%b ManC=%h",denormC, ZeroC, InfC, ManC);
+    $display ("IncZ=%b SignZ=%b ExpZ=%h SigZ=%h",zinc,z[`$exp_width + $frac_width`],z[`$exp_width + $frac_width -1`:`$frac_width`],z[`$frac_width -1`:0]);
     $display ("ResultIsInfinity =%b , ResultIsC =%b ,ResultIsFMA =%b",ResultIsInfinity, ResultIsC,ResultIsFMA);
     $display ("FU =%b , FV =%b ,FI =%b ,FX =%b",FU, FV , FI,FX);
     $display ("ZeroResult=%b ,zeroManResult=%b ,denormResult=%b", ZeroResult,zeroManResult,denormResult);

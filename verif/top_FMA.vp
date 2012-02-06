@@ -1,0 +1,93 @@
+/* *****************************************************************************
+ * Description:
+ * Top module for simulation, used for simple FMA module testing. Should not
+ * be mistaken as a full fledged verification environment. It's not!
+ * 
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Feb 04, 2012  jingpu    init version - change original top module to FMA verif
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off." ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off.");
+//; my $desinware_mode = parameter(Name=>'Designware_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Designware mode determines whether or not ".
+//;                                 "designware codes are used instead of our ".
+//;                                 "design.");
+
+
+module `mname` ();   
+   //; # Generate the DUT here
+   //; my $FP_obj = generate('FMA', 'FMA');
+
+   //; # Read what kind of DUT the user wanted so you can test it
+   //; my $frac_width = $FP_obj->get_param('FractionWidth');
+   //; my $exp_width = $FP_obj->get_param('ExponentWidth');
+   //; my $useInc = $FP_obj->get_param('UseInc');
+   //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
+   //; my $product_width = 2 * $frac_width + 2;
+  
+   // local signals for driving inputs
+   logic [`$exp_width + $frac_width`:0] a, b, c;
+   logic ainc, binc, cinc;
+   logic [2:0] rnd;
+
+   
+   // local signals for observing outputs
+   logic [`$exp_width + $frac_width`:0] z;
+   logic zinc;
+   logic [7:0] status;
+						  
+   //; if ($verif_mode =~ /ON/){
+   logic 				      dumptolog;
+   //; }
+   
+   // Instantiate the dut here
+   `$FP_obj->instantiate()` (
+			     // inputs:
+			     //; if ($verif_mode =~ /ON/){
+			     .dumptolog(dumptolog),
+			     //; }
+			     .a(a), .b(b), .c(c), .rnd(rnd),
+			     //;# if ($arch =~ /Cascade/){
+			     .ainc(ainc), .binc(binc), .cinc(cinc),
+			     //;# }
+			     //outputs:
+			     .z(z), .zinc(zinc), .status(status)
+			     );
+   
+   
+   //; if ($verif_mode =~ /ON/){
+   // ------------------------ VERIFICATION HARNES ---------------------------//
+   // Instantiate the TestGenerator here:
+   //; my $TestBench_obj = generate('TestBench_FMA', 'TestBench', 
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width,
+   //; 				    UseInc=>$useInc,
+   //;                              TestDenormals=>$enable_denormals);
+   `$TestBench_obj->instantiate` (
+				// outputs:
+				.dumptolog(dumptolog),
+				.a(a), .b(b), .c(c), .rnd(rnd),
+				.ainc(ainc), .binc(binc), .cinc(cinc),
+				// inputs
+				.z(z), .zinc(zinc), .status(status)
+				);
+   //; } # End of "if ($verif_mode..."
+   
+endmodule : `mname`
