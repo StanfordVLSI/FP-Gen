@@ -1,0 +1,407 @@
+/* *****************************************************************************
+ * Description:
+ * Gold model with full precision for FP multiplier
+ * 
+ * Parameters:
+ * * FPTransA_Ptr, FPTransB_Ptr, FPTransC_Ptr(pointers to the FP transactions classes generators)
+ * * FPTransRes_Ptr (pointer to a result class generator)
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Feb 5, 2012   jingpu    init version -
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $FPTransA_Ptr = parameter(Name=>'FPTransA_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class generator object for FP trans A');
+//; my $FPTransB_Ptr = parameter(Name=>'FPTransB_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class generator object for FP trans B');
+//; my $FPTransC_Ptr = parameter(Name=>'FPTransC_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class generator object for FP trans C');
+//; my $FPTransRes_Ptr = parameter(Name=>'FPTransRes_Ptr', Val=>'',
+//;				 Doc=>'Pointer to the class object for FP observed result tran');
+//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) -- FIXME: Not sure what to".
+//; 							   "do with this info here?");
+//; my $frac_width = $FPTransA_Ptr->get_param('FractionWidth');
+//; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2
+//; my $sum_width = $product_width + $frac_width + 3;	
+//; my $fracRes_width = $FPTransRes_Ptr->get_param('FractionWidth');
+//; my $exp_width = $FPTransA_Ptr->get_param('ExponentWidth');
+//; my $typeA = $FPTransA_Ptr->mname;
+//; my $typeB = $FPTransB_Ptr->mname;
+//; my $typeC = $FPTransC_Ptr->mname;
+//; my $typeRes = $FPTransRes_Ptr->mname;
+//;
+
+class `mname`;
+
+   //; my $expectedResult_obj = clone($FPTransRes_Ptr, 'Expected');
+   `$expectedResult_obj->instantiate` = new();
+   
+
+   function bit CheckMultResult(`$typeRes` transRes);
+      //$display("%t: RESULT: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+      //transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction);
+		transRes.CalculateInc(); 
+		Expected.CalculateInc();
+      // First check flags:
+      if (transRes.TransType == `$typeRes`::QuietNaN || transRes.TransType == `$typeRes`::SignalingNaN) begin
+	 if (Expected.TransType == `$typeRes`::QuietNaN || Expected.TransType == `$typeRes`::SignalingNaN)
+	   return 1'b1;
+      end
+      if (transRes.TransType == `$typeRes`::Inf) begin
+	 if (Expected.TransType == `$typeRes`::Inf)
+	   return 1'b1;
+      end
+      
+      // Normal case
+      if (transRes.Sign == Expected.Sign &&
+	  transRes.Exponent == Expected.Exponent &&
+	  transRes.Fraction == Expected.Fraction ) begin
+	 return 1'b1;
+      end
+      
+      // default: Fail
+      return 1'b0;
+
+   endfunction // bit
+
+
+   
+   function CalcGold(`$typeA` transA, `$typeB` transB, `$typeC` transC, logic [2:0] rnd);
+      // Local Variables
+      logic [`$fracRes_width-1`:0]    FracExpected;
+      logic [`$exp_width - 1`:0]      ExpExpected;
+      logic 			      SignExpected, SignProduct, SignInfinity, SignResIsC;
+      logic [`$exp_width + 1`:0]      ExpProduct, ExpSum, Exp_offset, Exp_max, ExpC;
+      logic [`$product_width-1`:0]    ManProduct;
+      logic [`$frac_width`:0] 	      ManC;	
+      logic [`$sum_width-1`:0] 	      ManSum, NumShift, ManC4add, ManProduct4add;
+      logic 			      msbA, msbB, msbC, denormA, denormB, denormC;
+      logic 			      sticky, LSB, guard, IncExpected;
+      logic 			      overflow = 0, underflow = 0;
+
+      
+      $write(  "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b\n ", $time,
+	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
+      $write(  "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b\n", $time,
+	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
+      $write(  "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
+	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);      
+      
+      // init all values:
+      FracExpected = '0;
+      ExpExpected = '0;
+      SignExpected = '0;
+      transA.CalculateInc(); 
+      transB.CalculateInc();
+      transC.CalculateInc();
+      
+      $write(  "%t: PostInc: TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b\n ", $time,
+	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
+      $write(  "%t:          TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b\n", $time,
+	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
+      $write(  "%t:          TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
+	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);      
+      
+      // First we calculate the expected sign, since it used in both regular and corner cases
+      // plus x plus ==> plus; plus x minus ==> minus; minus x minus ==> minus; 
+	  SignProduct = transA.Sign ^ transB.Sign;
+	  SignInfinity = (transC.TransType == `$typeC`::Inf) ? transC.Sign : SignProduct;
+	  SignResIsC = transC.Sign & (~(transC.TransType == `$typeC`::Zero) | SignProduct);
+      
+      // Start with corner cases:
+      // 1. Either input is NaN                       Result is NaN
+      if (transA.TransType == `$typeA`::QuietNaN || transA.TransType == `$typeA`::SignalingNaN || 
+	  transB.TransType == `$typeB`::QuietNaN || transB.TransType == `$typeB`::SignalingNaN || 
+	  transC.TransType == `$typeC`::QuietNaN || transC.TransType == `$typeC`::SignalingNaN) begin
+
+	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
+	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+      end 
+      
+      // 2. 0*Inf                                     Result is NaN
+      //   (A=0 and B=Inf or vice-versa)                            
+      else if ( (transA.TransType == `$typeA`::Zero && transB.TransType == `$typeB`::Inf) || 
+		(transB.TransType == `$typeB`::Zero && transA.TransType == `$typeA`::Inf) ) begin
+
+	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
+	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+      end
+
+	  // 3. AB is +-Inf and C is -+Inf                 Result is NaN
+      //   (A=0 and B=Inf or vice-versa)                            
+      else if ( (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf) && transC.TransType == `$typeC`::Inf && (SignProduct != transC.Sign)) begin
+
+	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
+	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+      end
+      
+	  
+	 // next part only for round mode 000, i.e. Round to the nearest
+	 
+      // 4. Either input is Inf                        Result is signed Inf
+      else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf || transC.TransType == `$typeC`::Inf) begin
+	 Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignInfinity) && (Inc == 1'b0); };
+      end
+
+      // 5. 0*num or 0*0 or num*o                      Result is C
+      else if (transA.TransType == `$typeA`::Zero || transB.TransType == `$typeB`::Zero) begin
+	 Expected.ForceSignExpFrac(SignResIsC, transC.Exponent, transC.Fraction, 1'b0); 
+      end
+
+//; if ($test_denormals =~ /NO/){
+      // 6. Treat denorms as zero 
+      else if (transA.TransType == `$typeA`::Denorm100 || transA.TransType == `$typeA`::DenormFFF || 
+	       transA.TransType == `$typeA`::Denorm001 || transA.TransType == `$typeA`::DenormRnd || 
+	       transB.TransType == `$typeB`::Denorm100 || transB.TransType == `$typeB`::DenormFFF || 
+	       transB.TransType == `$typeB`::Denorm001 || transB.TransType == `$typeB`::DenormRnd) begin
+	 Expected.ForceSignExpFrac(SignResIsC, transC.Exponent, transC.Fraction, 1'b0); };
+      end
+//; }      
+     
+      // Now for the normal case
+      else begin
+	 // first we find if there is a leading one:
+	 msbA = |(transA.Exponent);
+	 msbB = |(transB.Exponent);
+	 msbC = |(transC.Exponent);
+	 denormA = ~msbA;
+	 denormB = ~msbB;
+	 denormC = ~msbC;
+	 
+
+	 /* Now we calculate the product of A and B:
+	  * Note that ManProduct was the result of 1.xxx * 1.xxx which means it has
+	  * the format zz.xxxxxx. But we nees a z.zxxxxxx format which means we need to do
+	  * one RIGHT shift. In addition, we need to shift LEFT all leading zeros
+	  * */
+	 ManProduct = {msbA, transA.Fraction} * {msbB, transB.Fraction};
+	 ManC = {msbC, transC.Fraction};
+	 //$display("DEBUG: full man=%h", ManProduct);
+	 
+
+	 /* Now for the exponent:
+	  * Exp is in 0:2046 which correspond to -1023:1023 ==>
+	  * TotalExp is in 0:4092 but we need to subtract 1023 ==>
+	  * if TotalExp < 1023 we are at underflow
+	  * if TotalExp > 2046+1023 we have overflow
+	  * Note that these numbers are for ieee double. In general these are:
+	  * Exp range: 0:2^$exp_width-2 ==> 0:2^`$exp_width-2` ==> 0:`2**$exp_width-2`
+	  * Exp offset: 2^($exp_width-1)-1 ==> 2^`$exp_width-1`-1 ==> `2**($exp_width-1) -1`
+	  * 
+	  * Also, for denorms, exp is saved as 00..0 but it actually represents 1'b1
+	  * */
+	 ExpProduct = transA.Exponent + transB.Exponent + denormA + denormB;
+	 ExpC = transC.Exponent + denormC;
+	 Exp_offset = `2**($exp_width-1)-1`;
+	 Exp_max = `2**$exp_width-2`;
+	 //$display("DEBUG: exp=%h", ExpProduct);
+	 
+//-----------------
+
+	 /* Time to convert the zz.xxxxxx to 1.xxxxxxx AND get rid of leading zeros (if exist)
+	  */
+	 if (ManProduct[`$product_width-1`] == 1'b1) begin
+	    ExpProduct +=1; /* this is a shift right by one for exp but no op
+			       * required for man */
+//	 $display("DEBUG: Exp_offset=%h ExpProduct=%h ManProduct=%b",Exp_offset, ExpProduct,ManProduct);
+	 end
+	 else if (ManProduct[`$product_width-1`:`$product_width-2`] == 2'b01) begin
+	    ManProduct = {ManProduct[`$product_width-2`:0], 1'b0}; /* this is a no shift as far as 
+									* exp is concerned */
+//	 $display("DEBUG: Exp_offset=%h ExpProduct=%h ManProduct=%b",Exp_offset, ExpProduct,ManProduct);
+	 end
+	 else begin
+	    /* this means that the mantissa starts with 00.xxxxxx 
+	     * but note that this is not Zero since this was already checked above.
+	     */
+	    ManProduct = {ManProduct[`$product_width-2`:0], 1'b0}; /* this first one is a no shift as far as 
+									* exp is concerned */
+//	 $display("DEBUG: Exp_offset=%h ExpProduct=%h ManProduct=%b",Exp_offset, ExpProduct,ManProduct);
+	    while (ManProduct[`$product_width-1`] == 1'b0) begin	// as long as the lead is 0 AND	   
+	       ManProduct = {ManProduct[`$product_width-2`:0], 1'b0};
+			if(ExpProduct == 0) begin 
+				Exp_offset+=1;
+			end 
+			else begin
+				ExpProduct -=1;
+			end
+//	 $display("DEBUG: Exp_offset=%h ExpProduct=%h ManProduct=%b",Exp_offset, ExpProduct,ManProduct);
+	    end
+	 end // else: !if(ManProduct[`$product_width`] == 1'b1)
+
+//----------------------
+
+	 /* Now we do AB+C
+	  */
+if (transC.Sign == SignProduct) begin
+	SignExpected = SignProduct;
+	sticky = 1'b0;
+	// if C is much larger than AB
+	if (ExpC + Exp_offset > ExpProduct + `$frac_width+1` + 1) begin
+		ManSum = {ManC, 2'b0, {(`$product_width`){1'b0}}};
+		ExpSum = ExpC + Exp_offset;
+		sticky = 1'b1;
+	end
+	// else if AB is much larger than C
+	else if (ExpProduct > ExpC + Exp_offset+ `$product_width` + 1) begin
+		ManSum = { ManProduct, 2'b0, {(`$frac_width+1`){1'b0}}};
+		ExpSum = ExpProduct;
+		sticky = | (ManC);
+	end
+	// if C is larger than AB, then left shift C
+	else if (ExpC + Exp_offset >= ExpProduct) begin
+		ManSum = {1'b0, ManC, 1'b0, {(`$product_width`){1'b0}}};
+		NumShift = {1'b0, ManProduct, 1'b0, {(`$frac_width+1`){1'b0}}};
+//	 $display("DEBUG: ManSum=  %b", ManSum);
+//	 $display("DEBUG: NumShift=%b",NumShift);
+		NumShift = NumShift >> (ExpC + Exp_offset - ExpProduct);
+//	 $display("DEBUG: ManSum=  %b", ManSum);
+//	 $display("DEBUG: NumShift=%b",NumShift);
+		ManSum += NumShift;
+//	 $display("DEBUG: ManSum=  %b", ManSum);
+//	 $display("DEBUG: NumShift=%b",NumShift);
+		ExpSum = ExpC + Exp_offset + 1;
+	end 
+	//else AB is larger than C
+	else if (ExpC + Exp_offset < ExpProduct) begin
+		ManSum = {1'b0, ManProduct, 1'b0, {(`$frac_width+1`){1'b0}}};
+		NumShift = {1'b0, ManC, 1'b0, {(`$product_width`){1'b0}}};
+		NumShift = NumShift >> (ExpProduct - ExpC - Exp_offset);
+		ManSum += NumShift;
+		ExpSum = ExpProduct + 1;
+	end
+//	    $display("DEBUG: full man=%h ExpSum=%h Exp_offset=%h", ManSum, ExpSum, Exp_offset);
+end // if (transC.Sign == SignProduct)
+else begin //if (transC.Sign != SignProduct)
+   	sticky = 1'b0;
+   // if C=0
+   if(ExpC == 1 && ManC == {(`$frac_width+1`){1'b0}})begin
+      ManSum = { ManProduct, 2'b0, {(`$frac_width+1`){1'b0}}};
+      SignExpected = SignProduct;
+      ExpSum = ExpProduct;
+   end
+   else begin
+	// if |C| is much larger than |AB|
+	if (ExpC + Exp_offset > ExpProduct + `$frac_width+1` + 1) begin
+	   ManSum = {ManC, 2'b0, {(`$product_width`){1'b0}}} - 1;
+	   ExpSum = ExpC + Exp_offset;
+	   SignExpected = transC.Sign;
+	   sticky = 1'b1;
+	end
+	// else if |AB| is much larger than |C|
+	else if (ExpProduct > ExpC + Exp_offset+ `$product_width` + 1) begin
+	   sticky = | (ManC);
+	   ManSum = { ManProduct, 2'b0, {(`$frac_width+1`){1'b0}}} - sticky;
+	   SignExpected = SignProduct;
+	   ExpSum = ExpProduct; 
+	end
+	// do substration
+	else begin
+	   // now shift either C or AB
+	   if (ExpC + Exp_offset > ExpProduct) begin
+	      ManC4add = {1'b0, ManC, 1'b0, {(`$product_width`){1'b0}}};
+	      ManProduct4add = {1'b0, ManProduct, 1'b0, {(`$frac_width+1`){1'b0}}};
+	      ManProduct4add = ManProduct4add >> (ExpC + Exp_offset - ExpProduct);
+	      ExpSum = ExpC + Exp_offset + 1;
+	   end
+	   else begin
+	      ManProduct4add = {1'b0, ManProduct, 1'b0, {(`$frac_width+1`){1'b0}}};
+	      ManC4add = {1'b0, ManC, 1'b0, {(`$product_width`){1'b0}}};
+	      ManC4add = ManC4add >> (ExpProduct - ExpC - Exp_offset);
+	      ExpSum = ExpProduct + 1;
+	   end
+	   // now compare |C| and |AB|
+	   // if |C| >= |AB|, then sum=C-AB
+	   if(ManC4add > ManProduct4add)begin
+	      ManSum = ManC4add - ManProduct4add;
+	      SignExpected = transC.Sign;
+	   end
+	   else if(ManC4add < ManProduct4add) begin
+	      ManSum = ManProduct4add - ManC4add;
+	      SignExpected = SignProduct;
+	   end
+	   else begin // if |AB| = |C|, then AB+C=0
+	      ManSum = 0;
+	      SignExpected = SignProduct & transC.Sign;
+	   end
+	end // else: !if(ExpProduct > ExpC + Exp_offset+ `$product_width` + 1)
+   end
+end	 
+//-----------------
+
+	 /* Get rid of leading zeros of ManSum(if exist)
+	  */
+	 while (ManSum[`$sum_width-1`] == 1'b0 && 	// as long as the lead is 0 AND
+		   ExpSum > Exp_offset			// exp is still in range
+		   ) begin
+	       ManSum = {ManSum[`$sum_width-2`:0], 1'b0};
+	       ExpSum -=1;
+	 end
+//	    $display("DEBUG: full man=%h ExpSum=%h Exp_offset=%h", ManSum, ExpSum, Exp_offset);
+
+//----------------------
+
+	 /* Now we consider the case of exp<exp_offset+1 and try to shift RIGHT
+	  * while exp<exp_offset+1 (and while the man is not all zeros)*/
+//	 $display("DEBUG: full man=%h", ManSum);
+	sticky = sticky | ( |ManSum[`$sum_width-$fracRes_width-3`:0]);
+	 while (ExpSum <= Exp_offset && 
+		ManSum[`$sum_width-1`:`$sum_width-$fracRes_width-2`] != `$fracRes_width+2`'b0) begin
+	    sticky = sticky | ManSum[`$sum_width-$fracRes_width-2`];
+	    ManSum = {1'b0, ManSum[`$sum_width-1`:1]};
+	    ExpSum +=1;
+	 end
+//	    $display("DEBUG: full man=%h ExpSum=%h Exp_offset=%h", ManSum, ExpSum, Exp_offset);
+	 
+//----------------------
+
+	 // Finally, sum it all up:
+	 overflow = (ExpSum > Exp_max+Exp_offset) ? 1'b1 : 1'b0;
+	 underflow = (ExpSum < Exp_offset+1) ? 1'b1 : 1'b0;
+	 if (overflow)
+	   Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected) && (Inc == 1'b0);};
+	 else if (underflow) begin
+		guard = ManSum[`$sum_width-$fracRes_width-2`];
+		LSB = ManSum[`$sum_width-$fracRes_width-1`];
+		IncExpected = guard & (sticky | LSB);
+	    Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected) && (Inc == IncExpected); };
+	 end 
+	 else begin
+	    ExpExpected = ExpSum - Exp_offset;
+	    FracExpected = ManSum[`$sum_width-2`:`$sum_width-$fracRes_width-1`];
+		guard = ManSum[`$sum_width-$fracRes_width-2`];
+		LSB = ManSum[`$sum_width-$fracRes_width-1`];
+		IncExpected = guard & (sticky | LSB);
+	//	$display("DEBUG: guard=%b LSB=%b sticky=%b IncExpected=%b",guard, LSB, sticky, IncExpected);
+	    if (ExpExpected==1 && ManSum[`$sum_width-1`]==1'b0) // Denorm case ==> zero the exp
+	      //; if ($test_denormals =~ /NO/){
+	      Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected) && (Inc == 1'b0); };
+              //; } else {
+	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected, IncExpected);
+	      //; }
+	    else							  // Normal case
+	      Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected, IncExpected);
+	 end
+      end // End of the "normal" case (no special input)
+      
+      
+
+      // finally put it in your memory for a later check 
+      $display("%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h Inc=%1b", $time,
+	       Expected.TransType.name(), Expected.Sign, Expected.Exponent, Expected.Fraction, Expected.Inc);
+   endfunction // CalcGold
+   
+   
+		
+
+
+endclass : `mname`

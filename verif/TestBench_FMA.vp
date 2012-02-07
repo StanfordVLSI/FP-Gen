@@ -162,8 +162,7 @@ program automatic `mname` (
 	   GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
 	   
 	   // now check results... 
-	   if (! GoldRef.CheckMultResult(TransRes) && 
-		(TransGenA.Sign^TransGenB.Sign == TransGenC.Sign))//for now we just check the cases where AB and C have the same sign
+	   if (! GoldRef.CheckMultResult(TransRes))
 	     begin
 		dumptolog = 1'b1;
 		#1;
