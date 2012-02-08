@@ -31,11 +31,11 @@
 //;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>109, Min=>2, Step=>1,
-//;                       Doc=>"Width of signals to be added");
+//;                       Doc=>"Width of signals to be added  !FUNCTIONAL!");
 //; my $enable_ci = parameter(Name=>'EnableCarryIn', Val=>'OFF', List=>['ON','OFF'],
-//;                       Doc=>"Enables a carry in bit at the LSB in addition to the 2 addends");
+//;                       Doc=>"Enables a carry in bit at the LSB in addition to the 2 addends  !FUNCTIONAL!");
 //; my $zero_width = parameter(Name=>'ZeroWidth', Val=>0, Min=>0, Step=>1,
-//;                       Doc=>"checks the lower ZeroWidth bits of sum and sum+1 if they are zero");
+//;                       Doc=>"checks the lower ZeroWidth bits of sum and sum+1 if they are zero  !FUNCTIONAL!");
 
 module `mname` (
     //; if ($verif_mode =~ /ON/){

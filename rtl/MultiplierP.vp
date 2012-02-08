@@ -31,7 +31,6 @@
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
-//; my $designware_mode = $self->get_top_param('Designware_MODE'); # Reads this parameter from the top level
 //;
 //; # Interface parameter
 //; my $useInc = parameter(Name=>'UseInc', Val=>'', List=>['YES', 'NO'],
@@ -40,13 +39,19 @@
 //;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
-//;                       Doc=>"Signal bit widths");
+//;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
-//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
 //;
 //; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
-//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)");
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
+//; my $designware_mode = parameter(Name=>'Designware_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Designware mode determines whether or not ".
+//;                                 "designware codes are used instead of our ".
+//;                                 "design. !IMPLEMENTATION! ");
 
+   
 module `mname`(
    //; if ($verif_mode =~ /ON/){
     input logic dumptolog,

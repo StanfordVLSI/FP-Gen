@@ -8,23 +8,23 @@
 //;
 //  PARAMETERS:
 //; my $AdderType = parameter( name=>'AdderType', val=>'Sklansky' ,
-//;                            doc=>'!implementation! AdderType: Indicate the topology to use for the Propogate Generate tree.  Ripple type indicates that a ripple chain should be used rather than a tree.  Sklansky indicates that a sklansky topology should be used (Weste&Harris 3rd pp662). Legal Values: Ripple Sklansky' ,
-//;                            list=>[ 'Ripple' , 'Sklansky' ] ) ;
+//;                            doc=>'!implementation! AdderType: Indicate the topology to use for the Propogate Generate tree.  Ripple type indicates that a ripple chain should be used rather than a tree.  Sklansky indicates that a sklansky topology should be used (Weste&Harris 3rd pp662). Legal Values: Ripple Sklansky  !IMPLEMENTATION!' ,
+//;                            list=>[ 'Sklansky' ] ) ;
 //; my $BW  = parameter( name=>'BitWidth', val=>16 , 
-//;                      doc=>'!functional! BitWidth of input and output values.  32 corresponds to a 32 bit signal A added to a 32 bit signal B  resulting in a 32 bit output S. Legal Values: Integers from 2 to 512' , 
+//;                      doc=>'!functional! BitWidth of input and output values.  32 corresponds to a 32 bit signal A added to a 32 bit signal B  resulting in a 32 bit output S. Legal Values: Integers from 2 to 512  !FUNCTIONAL!' , 
 //;                      min=>2 , max=>512, step=>1 );
 //;
 //; #SYNTH Parameters
 //;
 //; my $ORIENTATION = parameter( name=>'Orientation', val=>'L',
-//;                              doc=>'!placement! Indicates the orientation of the adder placement.  Horizontal indicates that the placement should be long in the horizontal direction with inputs travelling north to south or south to north.  Vertical indacates that the placement should be tall in the vertical direction with inputs travelling east to west or west to east.  An L shaped design splits the design into a vertical and horizontal component to wrap around a multp structure. Legal Values: horizontal , vertical , L ',
+//;                              doc=>'!placement! Indicates the orientation of the adder placement.  Horizontal indicates that the placement should be long in the horizontal direction with inputs travelling north to south or south to north.  Vertical indacates that the placement should be tall in the vertical direction with inputs travelling east to west or west to east.  An L shaped design splits the design into a vertical and horizontal component to wrap around a multp structure. Legal Values: horizontal , vertical , L  !PHYSICAL!',
 //;                              list=>[ 'horizontal' , 'vertical' , 'L' ] );  #, 
 //; my $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
-//;                                doc=>'!placement! Affects the direction that data travels.  NW_to_SE indicates will travel from the northwest down to the southeast. Legal Values: NW_to_SE',
+//;                                doc=>'!placement! Affects the direction that data travels.  NW_to_SE indicates will travel from the northwest down to the southeast. Legal Values: NW_to_SE  !PHYSICAL!',
 //;                                list=>[ 'NW_to_SE' ] ); # 'SE_to_NW' 
 //; my $GROUPNAME = parameter( name=>'GroupName', 
 //;                            val=>("Adder" . "_" . $BW . "_" . $ORIENTATION . "_" . $DATADIRECTION ),
-//;                            doc=>'!placement! GroupName is used as the synopsys groupname.  The purpose of this argument is to uniquify the instances such that they can be uniquly placed.  This name can be used when creating relative placements in the parent.  Legal Values: a unique name without white space or special characters' );
+//;                            doc=>'!placement! GroupName is used as the synopsys groupname.  The purpose of this argument is to uniquify the instances such that they can be uniquly placed.  This name can be used when creating relative placements in the parent.  Legal Values: a unique name without white space or special characters  !PHYSICAL!' );
  
 
 

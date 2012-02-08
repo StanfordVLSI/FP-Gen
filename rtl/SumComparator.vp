@@ -33,7 +33,7 @@
 //;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>109, Min=>2, Step=>1,
-//;                       Doc=>"Width of signals");
+//;                       Doc=>"Width of signals !FUNCTIONAL!");
 
 
 module `mname` (

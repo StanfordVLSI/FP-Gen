@@ -54,25 +54,25 @@
 //;
 //; # module parameters
 //; my $col_ht = parameter(Name=>'PPCount', Val=>4, Min=>0, Step=>1,
-//;                          Doc=>"Number of partial products to sum");
+//;                          Doc=>"Number of partial products to sum  !IGNORE!");
 //; my $max_col_ht = parameter(Name=>'MaxPPCount', Val=>4, Min=>0, Step=>1,
-//;                          Doc=>"Number of partial products to sum");
+//;                          Doc=>"Number of partial products to sum  !IGNORE!");
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
-//;                          Doc=>"The column number");
+//;                          Doc=>"The column number  !IGNORE!");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
-//;                          Doc=>"The starting row position");
+//;                          Doc=>"The starting row position  !IGNORE!");
 //; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>4, Step=>1,
 //;                       Doc=>"What booth was used to create the partial products? ".
 //;                            "(This determines the slope of the partial products ".
-//;                            "paralleloid)");
+//;                            "paralleloid)  !IGNORE!");
 //; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
 //;			     Doc=>"Pointer to the previous column of the multiplier ".
-//;				  "(must be assigned or set to zero at instantiation!)");
+//;				  "(must be assigned or set to zero at instantiation!)  !IGNORE!");
 //; $self->error("Parameter PrevColumn must be assigned with a pointer to a Wallace column or 0 (zero)!")
 //;          unless $prev_col || $prev_col==0;
 //;
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
-//;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
+//;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)  !IGNORE!");
 //;
 //; # Find how many carry in we have
 //; my $ci_w = 0;
@@ -87,7 +87,7 @@
 //; $co_w = 0 if $co_w<0;
 //;
 //; parameter(Name=>'CarryOutWidth', Val=>$co_w, Force=>1,
-//;           Doc=>"Number of column carry out signals (exported parameter)");
+//;           Doc=>"Number of column carry out signals (exported parameter)  !IGNORE!");
 //;
 //; # print STDERR "DEBUG: hight=$col_ht, col=$col, min_row=$min_row, booth=$booth, ci_w=$ci_w, co_w=$co_w \n";
 
