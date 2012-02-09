@@ -92,12 +92,6 @@ module `mname` (
    assign x3_padded = {1'b0, x3, 1'b0};
   //;   }
 
-  //;   if ($booth==2){
-   assign S = y[2] & (~y[1]|~y[0]);
-  //;   } else {
-   assign S = y[`$booth`];
-  //;   }
-
    //;if ($booth==2) {
    logic [`$width+2*$booth-3`:0] xn;
    assign xn[0] = ~y[2];
@@ -132,6 +126,16 @@ module `mname` (
    
    //;   }
 
+
+
+  //;   if ($booth==2){
+  //;     my $i=$width+2*($booth-1); 
+  //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
+  `$BoothCell_obj->instantiate` (.sel_x(sel_x`$j`), .x( 2'b0 ), .xn1(~y[2]), .y(y) , .pp(S));
+  //;   } else {
+   assign S = y[`$booth`];
+  //;   }
    assign pp[`$width+$booth-1`] = ~S;
+
 endmodule
 
