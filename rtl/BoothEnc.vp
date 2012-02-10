@@ -58,7 +58,7 @@
 //;                       Doc=>"Signal bit widths");
 //; my $encode_fanout = parameter(Name=>'EncFanout', Val=>18, Min=>1, Step=>1,
 //;                       Doc=>"Fanout of Booth select signals");
-//; $encode_fanout = ceil( ($width+$booth-1) / ceil( ($width+$booth-1) / $encode_fanout ) );
+//; $encode_fanout = ceil( ($width+$booth) / ceil( ($width+$booth) / $encode_fanout ) );
 
 //$encode_fanout = `$encode_fanout`
 
@@ -107,7 +107,8 @@ module `mname` (
    `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`));      
 
    //;     }
-   //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
+   //;     my $BoothCellIdx = $i - ($booth-1);
+   //;     my $BoothCell_obj = generate('BoothCell', "cell_$BoothCellIdx", BoothType=>$booth);
    `$BoothCell_obj->instantiate` 
      (.sel_x(sel_x`$j`),
 
@@ -129,8 +130,8 @@ module `mname` (
 
 
   //;   if ($booth==2){
-  //;     my $i=$width+2*($booth-1); 
-  //;     my $BoothCell_obj = generate('BoothCell', "cell_$i", BoothType=>$booth);
+  //;     my $BoothCellIdx=$width+$booth-1; 
+  //;     my $BoothCell_obj = generate('BoothCell', "cell_$BoothCellIdx", BoothType=>$booth);
   `$BoothCell_obj->instantiate` (.sel_x(sel_x`$j`), .x( 2'b0 ), .xn1(~y[2]), .y(y) , .pp(S));
   //;   } else {
    assign S = y[`$booth`];
