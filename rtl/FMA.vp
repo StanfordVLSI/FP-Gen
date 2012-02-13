@@ -49,33 +49,33 @@
 //;                            Val=>'ON', List=>['ON','OFF'],
 //;                            Doc=>"Verification mode determines whether or not ".
 //;                                 "monitors and drivers are on. Possible values ".
-//;                                 "are ON or Off." ); 
+//;                                 "are ON or Off. !IGNORE!" ); 
 //; my $synth_mode = parameter(Name=>'SYNTH_MODE',
 //;                            Val=>'OFF', List=>['ON','OFF'],
 //;                            Doc=>"Synthesis mode determines whether or not ".
 //;                                 "special synthesis constructs are used. ".
-//;                                 "Possible values are ON or Off.");
+//;                                 "Possible values are ON or Off.  !IGNORE!");
 //; my $desinware_mode = parameter(Name=>'Designware_MODE',
 //;                            Val=>'OFF', List=>['ON','OFF'],
 //;                            Doc=>"Designware mode determines whether or not ".
 //;                                 "designware codes are used instead of our ".
-//;                                 "design.");
+//;                                 "design.  !IGNORE!"); #HACK-> Change to !IMPLEMENTATION! later
 
 //;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!");
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
-//;                                "of inputs A and B correctly (YES/NO)");
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //;
 //; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
-//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
 //; # And some local variables
 //; # $useInc = ($useInc =~ /YES/)? 1:0;
