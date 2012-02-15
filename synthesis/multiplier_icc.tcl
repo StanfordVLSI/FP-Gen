@@ -123,7 +123,8 @@ set max_booth_column_width 0.0;
 set max_column_width 0.0;
 set total_csa_column_width 0.0;
 set total_booth_column_width 0.0;
-set core_utilization_ratio 0.6;
+set core_utilization_ratio 0.5;
+
 
   
 for { set compressed_column $min_compressed_column } { $compressed_column <= $max_compressed_column} { incr compressed_column } {
@@ -180,6 +181,7 @@ set average_column_width [expr ($average_csa_column_width + $average_booth_colum
 set USE_3_2_FLOORPLAN 0;
 
 set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
+set booth_cells [get_cells -hierarchical "BoothEnc_u*cell_*"];
 set booth_encoder_count 0;
 set booth_sel_count -1;
 
@@ -212,7 +214,7 @@ for { set booth_sel_col 0 } { $booth_sel_col < $booth_sel_count} { incr booth_se
 set average_boothSel_column_width [expr $total_boothSel_column_width/$booth_sel_count];
 
 set row_count [expr $max_row + 2 > $booth_encoder_count? $max_row + 2 : $booth_encoder_count];
-set column_count [expr $max_compressed_column - $min_compressed_column + 1 + $booth_sel_count];
+set column_count [expr $max_compressed_column - $min_compressed_column + 2 + $booth_sel_count];
 set booth_select_cadence [expr $column_count/$booth_sel_count];
 
 if { $USE_3_2_FLOORPLAN } {
@@ -276,6 +278,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   }
 }
 
+
 if {$max_compressed_column > 0} {
   initialize_floorplan \
   	-control_type row_number \
@@ -306,9 +309,9 @@ set placement_site_width  [get_attribute [get_core_areas] tile_width];
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # flip rows and columns to keep it more square
-  suppress_message [list SEL-004 PSYN-1002 RPGP-090];
+  suppress_message [list SEL-004 PSYN-1002 RPGP-020 RPGP-090 PSYN-040];
 
-  create_rp_group rp_tree -columns $row_count -rows $rp_column_count -allow_non_rp_cells ;
+  create_rp_group rp_tree -columns [expr int(ceil(1.5*$row_count))] -rows $rp_column_count -allow_non_rp_cells ;
 
   if { $USE_3_2_FLOORPLAN } {
     set current_rp_column 0;
@@ -333,8 +336,8 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
           incr current_rp_column;
           for {set row_index 0} { $row_index < $booth_encoder_count } {incr row_index} {
             set booth_column_index_plus [expr $booth_column_index + 1];
-            set booth_cells [get_cells "Booth/BoothEnc_u${row_index}/cell_${booth_column_index}/* Booth/BoothEnc_u${row_index}/cell_${booth_column_index_plus}/*"];
-            add_cells_to_rp_group $booth_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
+            set booth_cell [get_cells "Booth/BoothEnc_u${row_index}/cell_${booth_column_index}/* Booth/BoothEnc_u${row_index}/cell_${booth_column_index_plus}/*"];
+            add_cells_to_rp_group $booth_cell rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
                     -column $row_index -row $current_rp_column;
           }
 
@@ -348,6 +351,10 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   } else {
 
+    for { set i 0 } { $i < $rp_column_count} { incr i } {
+      set column_occupied($i) 0;
+    }
+
     set boothSel_cells [get_cells -hierarchical "*Booth_sel_*"];
 
 
@@ -356,12 +363,23 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       set boothSel_name [get_object_name $boothSel_cell];
 
       regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9])} $boothSel_name matched boothEnc_index boothSel_index;
-      set boothSel_row [expr 2*($column_count -1 - ($booth_sel_count-1-$boothSel_index)*$booth_select_cadence)]
+      set boothSel_column [expr $rp_column_count -1 - ($booth_sel_count-1-$boothSel_index)*$rp_column_count/$booth_sel_count];
+
+      set column_occupied($boothSel_column) 1;
 
       set boothSel_child_cells [get_cells "${boothSel_name}/*"];
 
       add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} ${DESIGN_NAME}::rp_tree \
-                    -column $boothEnc_index -row $boothSel_row -height $boothSel_aspect_ratio;
+                    -column [expr int(floor(1.5*$boothEnc_index))] -row $boothSel_column -height $boothSel_aspect_ratio;
+    }
+
+    set column_offset(0) $column_occupied(0);
+    for { set i 1 } { $i < $rp_column_count} { incr i } {
+      set column_offset($i) $column_offset([expr $i-1]);
+      set occupy_idx [expr $i+$column_offset($i)];
+      if { $occupy_idx < $rp_column_count} {
+        set column_offset($i) [expr $column_offset($i)+$column_occupied($occupy_idx) ]
+      }
     }
 
     foreach_in_collection CSA_cell $CSA_cells {
@@ -369,22 +387,36 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       set CSA_name [get_object_name $CSA_cell];
 
       regexp {column_([0-9]*)/csa([0-9]*)_([0-9]*)_([0-9]*)} $CSA_name matched CSA_level CSA_column row_index compressed_CSA_column;
-      set column_offset [expr $booth_sel_count - 1 - ($max_compressed_column - $compressed_CSA_column) / ($booth_select_cadence-1)];
-      set column_offset [expr $column_offset<0? 0:$column_offset];
-      set column_index [expr $compressed_CSA_column-$min_compressed_column+$column_offset ]
       set is_odd_row [expr $row_index%2];
+      set column_index [expr 2*($compressed_CSA_column-$min_compressed_column)+$is_odd_row];
+      set column_position [expr $column_index + $column_offset($column_index)];
  
       # Second: CSA cells
-      set in_space [expr int(floor( 2*($max_column_width - ($is_odd_row ? $column_odd_width($compressed_CSA_column) : $column_even_width($compressed_CSA_column) )) / ( $placement_site_width * $row_count) )) ];
+
       set CSA_child_cells [get_cells "${CSA_name}/*"];
       add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_NAME}::rp_tree \
-                    -column [expr $row_index+1-$is_odd_row] -row [expr 2*$column_index+$is_odd_row] -space_width $in_space;
+                    -column [expr int(floor(1.5*$row_index))+1-$is_odd_row] -row $column_position;
 
-      # Second: Booth cells
-      set booth_column_index [expr $column_index - $column_offset];
-      set booth_cells [get_cells "Booth/BoothEnc_u${row_index}/cell_${booth_column_index}/*"];
-      add_cells_to_rp_group $booth_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
-                    -column [expr $row_index-$is_odd_row] -row [expr 2*$column_index+$is_odd_row];
+      set in_space [expr  ($row_index%4==0 || $row_index%4==1)? \
+                    int(floor( 4 * ( 1.3 * $max_column_width - ($is_odd_row ? $column_odd_width($compressed_CSA_column) : $column_even_width($compressed_CSA_column) )) / ( $placement_site_width * $row_count) ))  \
+                    : 0 ];
+      if {$in_space>0} {
+        add_to_rp_group ${DESIGN_NAME}::rp_tree -keepout SPACE_${row_index}_${column_index} -type space -width $in_space -height 1 \
+                    -column [expr int(floor(1.5*$row_index))+2-$is_odd_row] -row $column_position;
+      }
+    }
+
+    foreach_in_collection booth_cell $booth_cells {
+
+      set booth_cell_name [get_object_name $booth_cell];
+      regexp {BoothEnc_u([0-9]*)/cell_([0-9]*)} $booth_cell_name  matched row_index booth_column_index;
+      set is_odd_row [expr $row_index%2];
+      set column_index [expr 2*$booth_column_index+$is_odd_row ];
+      set column_position [expr $column_index + $column_offset($column_index)];
+
+      set booth_child_cells [get_cells "${booth_cell_name}/*"];
+      add_cells_to_rp_group $booth_child_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
+                    -column [expr int(floor(1.5*$row_index))-$is_odd_row] -row $column_position;
     }
 
   }
@@ -404,15 +436,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     source -echo ../../place_PartialProductSum.tcl
     check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum
     check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum_2
+    create_rp_group RP_MULT -columns 2 -rows 2 -allow_non_rp_cells
+    add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::rp_tree            -column 0 -row 1 ;
+    add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum  -column 0 -row 0 ;
+    add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum_2  -column 1 -row 1 ;
+    check_rp_groups -verbose ${DESIGN_NAME}::RP_MULT
   }
 
   check_rp_groups -all -verbose
-  create_rp_group RP_MULT -columns 2 -rows 2 -allow_non_rp_cells
-  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::rp_tree            -column 0 -row 1 ;
-  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum  -column 0 -row 0 ;
-  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum_2  -column 1 -row 1 ;
-  check_rp_groups -verbose ${DESIGN_NAME}::RP_MULT
-
 
 
   set_rp_group_options [all_rp_groups] \
@@ -448,20 +479,24 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -tie
 
 
-#place_opt  -effort low -num_cpus 2
+#place_opt  -effort low
 
 
-if {$max_compressed_column > 0} {
+ if {$max_compressed_column > 0} {
+#  place_opt -effort high -power -area_recovery
   create_placement
-  legalize_placement
+#  psynopt -area_recovery
+  refine_placement
   save_mw_cel -as ${DESIGN_NAME}_before_rp_blowout
   remove_rp_groups -all
-  place_opt -skip_initial_placement -effort high -power -area_recovery -num_cpus 2
+  refine_placement
+  save_mw_cel -as ${DESIGN_NAME}_before_psynopt
+  place_opt -skip_initial_placement -effort high -power -area_recovery
   estimate_fp_area -sizing_type fixed_height
-} else {
-  place_opt -effort high -power -area_recovery -num_cpus 2
+ } else {
+  place_opt -effort high -power -area_recovery
   estimate_fp_area -sizing_type fixed_aspect_ratio
-}
+ }
 
 save_mw_cel -as ${DESIGN_NAME}_before_routing
 
