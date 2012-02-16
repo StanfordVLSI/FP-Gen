@@ -179,20 +179,53 @@ module `mname` (
 //;                                                 , ExponentWidth=>$exp_width
 //;                                                 , EnableDenormals=>$enable_denormals
 //;                                                 , UseInc => $useInc);
-  `$fma_exp_obj->instantiate()` (.ExpA(ExpA), .ExpB(ExpB), .ExpC(ExpC),
-                   .denormA(denormA), .denormB(denormB), .denormC(denormC), .ZeroC(ZeroC),
-                   .RshiftAmt(RshiftAmt), .lza_override_mask(lza_override_mask), .LshiftAmt(LshiftAmt), .IncExp(IncExp),
-                   .denormResult(denormResult), .ResultExactZero(ResultExactZero), .ExpResult(ExpResult), .FV(FV_exp) , .dumptolog(dumptolog));
+  `$fma_exp_obj->instantiate()` (
+				 .ExpA(ExpA),
+				 .ExpB(ExpB),
+				 .ExpC(ExpC),
+				 .denormA(denormA),
+				 .denormB(denormB),
+				 .denormC(denormC),
+				 .ZeroC(ZeroC),
+				 .RshiftAmt(RshiftAmt),
+				 .lza_override_mask(lza_override_mask),
+				 .LshiftAmt(LshiftAmt),
+				 .IncExp(IncExp),
+				 .denormResult(denormResult),
+				 .ResultExactZero(ResultExactZero),
+				 .ExpResult(ExpResult),
+				 .FV(FV_exp)
+				 //; if ($verif_mode =~ /ON/){
+				  , .dumptolog(dumptolog)
+				 //; }
+				 );
 
 //; my $fma_man_obj = generate('FMA_Man', 'FMA_MAN0', FractionWidth=>$frac_width 
 //;                                                 , ExponentWidth=>$exp_width
 //;                                                 , EnableDenormals=>$enable_denormals
 //;                                                 , UseInc => $useInc);
-  `$fma_man_obj->instantiate()`  (.ManA(ManA), .IncA(ainc), .ManB(ManB), .IncB(binc),
-                   .ManC(ManC), .SignA(SignA), .SignB(SignB), .SignC(SignC),
-		   .RshiftAmt(RshiftAmt),.lza_override_mask(lza_override_mask), .LshiftAmt(LshiftAmt), .Result(ManResult),
-                   .SignResult(SignResult), .ResultExactZero(ResultExactZero), .LSB(ManLSB), .Guard(Guard), .Sticky(Sticky),
-                   .IncExp(IncExp), .dumptolog(dumptolog));
+  `$fma_man_obj->instantiate()`  (  .ManA(ManA), 
+				    .IncA(ainc), 
+				    .ManB(ManB), 
+				    .IncB(binc), 
+			      	    .ManC(ManC), 
+				    .SignA(SignA), 
+				    .SignB(SignB), 
+				    .SignC(SignC), 
+				    .RshiftAmt(RshiftAmt), 
+				    .lza_override_mask(lza_override_mask), 
+				    .LshiftAmt(LshiftAmt), 
+				    .Result(ManResult), 
+				    .SignResult(SignResult), 
+				    .ResultExactZero(ResultExactZero), 
+				    .LSB(ManLSB), 
+				    .Guard(Guard), 
+				    .Sticky(Sticky), 
+				    .IncExp(IncExp)
+				    //; if ($verif_mode =~ /ON/){
+				    , .dumptolog(dumptolog)
+				    //; }
+				    );
 
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
   `$rnd_obj->instantiate()` (.rnd(rnd), .Sign(SignResult), .LSB(ManLSB), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
