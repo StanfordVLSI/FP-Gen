@@ -94,6 +94,10 @@ module `mname` (
     input  logic [`$exp_width + $frac_width`:0] a, b, c,
     input  logic ainc, binc, cinc,
     input  logic [2:0] rnd,
+
+    input logic clk ,
+    input logic rst ,
+		
     output logic [`$exp_width + $frac_width`:0] z,
     output logic zinc,
     output logic [7:0] status
