@@ -5,7 +5,7 @@ function [xo, yo] = getFrontier (xi, yi)
     for i = 1:length(x2)
         flag = true;
         for j = 1:length(x2)
-            if ( x2(j) <= x2(i)*0.97 && y2(j) < y2(i)*0.97)
+            if ( x2(j) <= x2(i) && y2(j) < y2(i)*0.98)
                 flag = false;
                 break
             end
