@@ -59,7 +59,7 @@
 //;                            Val=>'OFF', List=>['ON','OFF'],
 //;                            Doc=>"Designware mode determines whether or not ".
 //;                                 "designware codes are used instead of our ".
-//;                                 "design.  !IGNORE!"); #HACK-> Change to !IMPLEMENTATION! later
+//;                                 "design.  !IMPLEMENTATION!");
 
 //;
 //; # module parameters
@@ -74,8 +74,14 @@
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //;
-//; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
-//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//; my $useInc ;
+//; if( $desinware_mode eq 'OFF' ){
+//;     $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
+//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//; } elsif($desinware_mode eq 'ON'){
+//;     $useInc = parameter(Name=>'UseInc', Val=>'NO', List=>['NO'],
+//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//; }
 //;
 //; # And some local variables
 //; # $useInc = ($useInc =~ /YES/)? 1:0;
@@ -107,8 +113,18 @@ module `mname` (
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
   */
+//; if( $desinware_mode eq 'ON' ){
 
-
+   DW_fp_mac #( `$frac_width` , `$exp_width` , `$enable_denormals eq 'YES' ?1:0` ) U1 (
+									       .a(a),
+									       .b(b),
+									       .c(c),
+									       .rnd(rnd),
+									       .z(z),
+									       .status(status) );
+   
+   
+//; } elsif( $desinware_mode eq 'OFF'  ) {
   wire [`$frac_width`:0] ManResult;
   wire [`$frac_width-1`:0] SigA, SigB, SigC;
   wire [`$frac_width`:0] ManA, ManB, ManC;
@@ -266,7 +282,8 @@ module `mname` (
     $display ("ZeroResult=%b ,zeroManResult=%b ,denormResult=%b", ZeroResult,zeroManResult,denormResult);
   end
   // synopsys translate_on
-//; }	
+//; }
+//; } #End Not Designware Loop
 endmodule
 
 

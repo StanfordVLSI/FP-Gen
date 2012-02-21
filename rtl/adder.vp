@@ -9,7 +9,7 @@
 //  PARAMETERS:
 //; my $AdderType = parameter( name=>'AdderType', val=>'Sklansky' ,
 //;                            doc=>'!implementation! AdderType: Indicate the topology to use for the Propogate Generate tree.  Ripple type indicates that a ripple chain should be used rather than a tree.  Sklansky indicates that a sklansky topology should be used (Weste&Harris 3rd pp662). Legal Values: Ripple Sklansky  !IMPLEMENTATION!' ,
-//;                            list=>[ 'Sklansky' ] ) ;
+//;                            list=>[ 'Sklansky' , 'DesignWare' ] ) ;
 //; my $BW  = parameter( name=>'BitWidth', val=>16 , 
 //;                      doc=>'!functional! BitWidth of input and output values.  32 corresponds to a 32 bit signal A added to a 32 bit signal B  resulting in a 32 bit output S. Legal Values: Integers from 2 to 512  !FUNCTIONAL!' , 
 //;                      min=>2 , max=>512, step=>1 );
@@ -58,8 +58,16 @@ module `mname()`
 //;                                                      Direction=>$DATADIRECTION ,
 //;                                                      GroupName=>$GROUPNAME 
 //;                                                   );
-   
-`$adderInst->instantiate()` (.*); //Ports implied
 
+//; if( $AdderType eq 'DesignWare' ){
+   
+  DW01_add #(`$BW`)
+            U1 (.A(a), .B(b), .CI(ci), .SUM(s), .CO(co) );
+
+//; } else {
+   
+   `$adderInst->instantiate()` (.*); //Ports implied
+
+//; }
       
 endmodule : `mname` 
