@@ -328,6 +328,15 @@ class `mname`;
       return Sign == 1'b1;
    endfunction // bit IsPos
 
+   function bit [`$frac_width+$exp_width` : 0] GetFPNum();
+      bit [`$frac_width+$exp_width` : 0] tmp;
+      tmp[`$frac_width + $exp_width`] = this.Sign;
+      tmp[`$frac_width + $exp_width - 1`:`$frac_width`] = this.Exponent;
+      tmp[`$frac_width - 1`:0] = this.Fraction;
+      return tmp;
+   endfunction // GetFPNum
+   
+
 
    
    // --------------------------------------------------------------------------
