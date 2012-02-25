@@ -225,9 +225,11 @@ module `mname` (
 //;                                                 , EnableDenormals=>$enable_denormals
 //;                                                 , UseInc => $useInc);
   `$fma_man_obj->instantiate()`  (  .ManA(ManA), 
-				    .IncA(ainc), 
 				    .ManB(ManB), 
-				    .IncB(binc), 
+				    //; if ($useInc eq 'YES'){
+				    .IncA(ainc),		     
+				    .IncB(binc),
+				    //; }
 			      	    .ManC(ManC), 
 				    .SignA(SignA), 
 				    .SignB(SignB), 
