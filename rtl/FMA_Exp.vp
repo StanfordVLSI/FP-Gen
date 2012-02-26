@@ -94,13 +94,21 @@ module `mname` (
                                   .carry(RshiftCarry),.sum(RshiftSum),.co(DummyCo2));
   assign RshiftInitial = RshiftSum + RshiftCarry;
   assign ExpResultIsC = RshiftInitial[`$exp_width+1`] & ~ZeroC; //no right shift and C is not zero
+//; if( $exp_width >= $shift_width ){
   assign RshiftAmt = ExpResultIsC?
                          8'b0:
                          (RshiftInitial[`$exp_width`:`$shift_width`]==0) ?
                                RshiftInitial[`$shift_width-1`:0] :
                                {(`$shift_width`){1'b1}};
-
-
+//; } else {
+  assign RshiftAmt = ExpResultIsC?
+                         8'b0:
+                         //(RshiftInitial[`$exp_width`:`$shift_width`]==0) ?
+                               RshiftInitial[`$shift_width-1`:0] 
+                         //:
+                         //    {(`$shift_width`){1'b1}}
+		         ;
+//; }
 
 
 
@@ -114,10 +122,17 @@ module `mname` (
 
   wire [(1<<`$shift_width`)-1 : 0] max_shift_dec;
 
+//; if( $exp_width >= $shift_width ){
   DW_decode_en #(`$shift_width`) U1 ( .en(~|ExpBase[`$exp_width`:`$shift_width`])    // Disable if the exponent is big enough
                                  , .a(ExpBase[`$shift_width-1`:0])
                                  , .b(max_shift_dec) );
+//; } else {
+  DW_decode_en #(`$shift_width`) U1 ( .en(1'b1)    // Disable if the exponent is big enough
+                                 , .a(ExpBase[`$shift_width-1`:0])
+                                 , .b(max_shift_dec) );
+//; }
 
+   
   //assign max_shift_mask= {max_shift_dec[manB_width+1:2],max_shift_dec[1] | max_shift_dec[0]};
   assign lza_override_mask[`$lza_width-1`] = max_shift_dec[1] | max_shift_dec[0] | ExpBase[`$exp_width+1`]; //The mask has one at Expbase - 1 position
   
