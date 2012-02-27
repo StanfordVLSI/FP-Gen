@@ -38,19 +38,24 @@ GENESIS_INC := 	-incpath ./			\
 
 # vpath directive tells where to search for *.vp and *.vph files
 vpath 	%.vp  $(GENESIS_SRC)
+vpath 	%.svp  $(GENESIS_SRC)
 vpath 	%.vph $(GENESIS_INC)
+vpath 	%.svph $(GENESIS_INC)
 
 GENESIS_PRIMITIVES :=	
 
-GENESIS_ENV :=		$(wildcard $(DESIGN_HOME)/verif/*.vp)
+GENESIS_ENV :=		$(wildcard $(DESIGN_HOME)/verif/*.vp) $(wildcard $(DESIGN_HOME)/verif/*.svp)
 GENESIS_ENV :=		$(notdir $(GENESIS_ENV)) 
 
-GENESIS_DESIGN := 	$(wildcard $(DESIGN_HOME)/rtl/*.vp)
+GENESIS_DESIGN := 	$(wildcard $(DESIGN_HOME)/rtl/*.vp) $(wildcard $(DESIGN_HOME)/rtl/*.svp)
 GENESIS_DESIGN := 	$(notdir $(GENESIS_DESIGN))
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 
-GENESIS_INTERMIDS := $(GENESIS_INPUTS:.vp=.pm)
+GENESIS_INTERMIDS := $(GENESIS_INPUTS)
+GENESIS_INTERMIDS := $(GENESIS_INTERMIDS:.vp=.pm)
+GENESIS_INTERMIDS := $(GENESIS_INTERMIDS:.svp=.pm)
+
 
 # debug level
 GENESIS_DBG_LEVEL := 0
@@ -209,6 +214,12 @@ all: $(EXECUTABLE)
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_PARSE_FLAGS) -input $? $(PARSE)
 
+%.pm: %.svp
+	@echo ""
+	@echo Making $@ because of $?
+	@echo ==================================================
+	Genesis2.pl $(GENESIS_PARSE_FLAGS) -input $? $(PARSE)
+
 # Genesis2 Generate:
 # This is the rule to activate Genesis2 generator to generate verilog 
 # files (_unqN.v) from the perl (.pm) program.
@@ -267,7 +278,7 @@ RUN_NAME := synthesis/syn_$(VT)_$(Voltage)_$(target_delay)
 io2core ?= 30	
 COMMAND_STRING :=  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
 OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
-	
+
 # DC Run rules:
 ######################
 .PHONY: run_dc
