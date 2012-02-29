@@ -47,7 +47,7 @@ To use perl script to run jobs and to plot graphs, do following step:
 
    Description:
 	Collect results for each XMLFILE, the output csv files will be saved
-	in ./results folder.
+	in FOLDER folder.
 
    Options:
 	-f, --folder: define the folder to save csv files. The default is ./results
@@ -64,7 +64,7 @@ To use perl script to run jobs and to plot graphs, do following step:
    Description:
 	Generate a MATLAB script to plot a graph of several result csv files.
 	Then run MATLAB, generate the graph and save a pdf version in
-	./results folder. --nodisplay option is available for non-GUI
+	FOLDER folder. --nodisplay option is available for non-GUI
 	environment.
 
    Options:
