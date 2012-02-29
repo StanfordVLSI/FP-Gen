@@ -8,7 +8,7 @@ my $xml_dir = $home_dir . "/SysCfgs";
 my $synth_dir = $home_dir . "/synthesis";
 my $work_dir = $home_dir . "/work";
 my $result_dir = $home_dir . "/results";
-my $matlab_dir = $home_dir . "/matlab_plot_script";
+my $matlab_dir = $home_dir . "/scripts";
         
 my @csvs = ();
 my @designwares = ();
@@ -17,6 +17,7 @@ my $Vdd = 1.0;
 my $Vth = "lvt";
         
 GetOptions(
+	'folder=s'	=>	\$result_dir,
         'nodisplay!'	=>      \$nodisplay,
 	'Vdd=f'		=>	\$Vdd,
 	'Vth=s'		=>	\$Vth,

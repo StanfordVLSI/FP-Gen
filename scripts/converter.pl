@@ -12,12 +12,9 @@ my %RndEncoding = {
     'neginf'  => 3,
 };
 
-GetOptions(
-    'file=s' => \@files,
-    );
 
-while($#files >= 0){
-    my $filename = shift @files;
+while($#ARGV >= 0){
+    my $filename = shift @ARGV;
     if(!$filename =~ /.fpres$/){     # if it is not .fpres file
 	print "Only .fpres file supported. $filename is ignored.\n";
 	next;                   # ignore it
