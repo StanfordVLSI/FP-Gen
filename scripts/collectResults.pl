@@ -16,8 +16,10 @@ GetOptions(
         'xml=s'         =>      \@xmls,
 );
 
+$result_dir = "$home_dir/$result_dir" unless $result_dir =~ m/^\//;
 
 mkdir ("$result_dir");
+
 chdir ("$work_dir")||die("There is no work dir.\n");
 print "Entering $work_dir\n";
 
