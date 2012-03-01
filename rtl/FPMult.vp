@@ -94,7 +94,8 @@ module `mname`(
    logic 				      RStickyAB_int, ManAB_normalized_nextbit;
    logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
 
-   logic 				      noShiftRight
+   logic 				      noShiftRight;
+   
    
 
 
