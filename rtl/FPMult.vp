@@ -81,7 +81,10 @@ module `mname`(
    //; }	
 
    logic [`$exp_width + 1`:0] 		      bias_offset, Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
-   logic [`$product_width - 1`: 0] 	      ManAB_unnormalized, ManAB_normalized;
+   logic [`$product_width-1`: 0] 	      ManAB_unnormalized, ManAB_normalized;
+   //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger
+   logic [`$product_width`: 0] 		      ManAB_unnormalized_long;
+   
 
    logic 				      NANorInfA, NANorInfB, zeroSigA, zeroSigB, InfA;
    logic 				      InfB, NANA, NANB, SignA, SignB, ZeroExpA, ZeroExpB;
@@ -90,6 +93,8 @@ module `mname`(
 
    logic 				      RStickyAB_int, ManAB_normalized_nextbit;
    logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
+
+   logic 				      noShiftRight
    
 
 
@@ -145,7 +150,7 @@ module `mname`(
    //         - 2^($exp_width-1) + 1 = - 2^(`$exp_width-1`) + 1
 
   DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
-					.ci(1'b0), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
+					.ci(noShiftRight), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
 
    //; if ($enable_denormals=~ /YES/i){
    // enable_denormals = YES
@@ -233,11 +238,13 @@ module `mname`(
       //; if ($useInc){
       .ainc(IncA), .binc(IncB),
       //; }
-      .out(ManAB_unnormalized)
+      .out(ManAB_unnormalized_long)
       );
 
-
-
+   //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger, next two lines deal with this case
+   assign noShiftRight = ManAB_unnormalized_long[`$product_width`];
+   assign ManAB_unnormalized = noShiftRight?ManAB_unnormalized_long[`$product_width`:1]:ManAB_unnormalized_long[`$product_width-1`:0];
+   
    
 /*
   DW02_mult #(`$frac_width`+1, `$frac_width`+1 ) U1 ( .A(ManA),   .B(ManB),
@@ -268,7 +275,7 @@ module `mname`(
 	$display ("`mname`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB);
 	$display ("`mname`: ExpAB =%h , ManAB =%h",ExpAB, ManAB);
 	$display ("`mname`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
-	$display ("`mname`: ManAB_unnormalized =%h ManAB_normalized =%h ",ManAB_unnormalized,ManAB_normalized);
+	$display ("`mname`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long);
 	$display ("`mname`: noShift =0x%h ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
 	$display ("`mname`: ZeroAB=0x%h InfAB=0x%h NANAB=0x%h RStickyAB=0x%h",ZeroAB, InfAB, NANAB, RStickyAB);
 	$display ("`mname`: NANorInfAplusInc=%d, zeroSigAplusInc=%d, NANAplusInc=%d, NANBplusInc=%d, InfAplusInc=%d, ZeroBplusInc=%d, InfBplusInc=%d, ZeroAplusInc=%d, NANAB=%d",NANorInfAplusInc,zeroSigAplusInc,NANAplusInc, NANBplusInc, InfAplusInc, zeroBplusInc, InfBplusInc, zeroAplusInc, NANAB);

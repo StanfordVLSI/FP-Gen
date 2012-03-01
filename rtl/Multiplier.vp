@@ -61,7 +61,7 @@ module `mname`(
    //; if ($useInc){
     input logic 		  ainc, binc,
    //; }
-    output logic [`2*$width-1`:0] out		  
+    output logic [`2*$width`:0] out		  
 		    );
 
 //; if( $DW_mode eq 'ON' ){
@@ -89,24 +89,31 @@ module `mname`(
       );
 
 
-/* FINAL SUMMATION */
-   
+/* FINAL SUMMATION */  
    //; my $adderInst = generate( 
    //;                            'adder'  ,  
    //;                            'PartialProductSum'   , 
-   //;                            BitWidth=>2*$width  ,
+   //;                            BitWidth=>2*$width+1  ,
    //;                            Orientation=>'L' ,
    //;                            GroupName=>'PartialProductSum' 
    //;                          );
    `$adderInst->instantiate()` (   
-				   .a(  multp_out0[`2*$width-1`:0]  ) , 
-				   .b(  multp_out1[`2*$width-1`:0]  ) , 
+				   .a(  multp_out0[`2*$width`:0]  ) , 
+				   .b(  multp_out1[`2*$width`:0]  ) , 
 				   .ci(1'b0) , 
 				   .s(  out  ) 
-			       ); 
+			       );
+   
 //; #end $DW_mode eq 'OFF'
 //; } else {
 //;   self->error( "Not a legal case" ) ;
 //; }
+
+//; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+     begin
+	$display ("`mname`: multp_out0=%h, multp_out1=%h, bit=%d", multp_out0, multp_out1,`2*$width+2`);
+     end
+ //; }
 endmodule
 
