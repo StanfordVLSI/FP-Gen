@@ -45,7 +45,7 @@
 //;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
 //; my $dw   = parameter(Name=>'DesignWare', Val=>'NO' , List=>['YES','NO'] ,
 //;                      Doc=>'Use the designware implementation of FPMult documented !IGNORE!' );  #JB- ignore until implementd
-//; my $arch = parameter(Name=>'Architecture', Val=>'Fused', List=>['Cascade', 'Fused'],
+//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
 //; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
 //; 			      "or Fused? (Pick:Cascade/Fused)  !IGNORE!"); #JB- ignoring for now...
 //; my $useInc = ($arch =~ /Cascade/)?1:0;
@@ -89,31 +89,46 @@ module `mname`(
    logic 				      co_dummy3, co_dummy4, noShift, denormalAB;
 
    logic 				      RStickyAB_int, ManAB_normalized_nextbit;
+   logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
    
 
 
-  assign SigA  = A[`$frac_width - 1` : 0 ];
-  assign SigB  = B[`$frac_width - 1` : 0 ];
-  assign ZeroExpA  =  (A[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
-  assign ZeroExpB  =  (B[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
-  assign ExpA  = { A[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpA | A[`$frac_width`] }; // convert denormals exponents to normal
-  assign ExpB  = { B[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpB | B[`$frac_width`] }; // convert denormals exponents to normal
-  assign SignA = A[ `$exp_width + $frac_width` ];
-  assign SignB = B[ `$exp_width + $frac_width` ];
-
-  assign NANorInfA =  ExpA=={(`$exp_width`){1'b1}};
-  assign NANorInfB =  ExpB=={(`$exp_width`){1'b1}};
-  assign zeroSigA  =  SigA==0 & ~IncA;
-  assign zeroSigB  =  SigB==0 & ~IncB;
-  assign ZeroA     =  zeroSigA & ZeroExpA;
-  assign ZeroB     =  zeroSigB & ZeroExpB;
-  assign InfA      =  zeroSigA & NANorInfA;
-  assign InfB      =  zeroSigB & NANorInfB;
-  assign NANA      = ~zeroSigA & NANorInfA;
-  assign NANB      = ~zeroSigB & NANorInfB;
-
-  assign NANAB = NANA | NANB | (InfA & ZeroB) | (InfB & ZeroA);
-  assign InfAB = (InfB | InfA) & ~NANAB ;
+   assign SigA  = A[`$frac_width - 1` : 0 ];
+   assign SigB  = B[`$frac_width - 1` : 0 ];
+   assign ZeroExpA  =  (A[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
+   assign ZeroExpB  =  (B[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
+   assign ExpA  = { A[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpA | A[`$frac_width`] }; // convert denormals exponents to normal
+   assign ExpB  = { B[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpB | B[`$frac_width`] }; // convert denormals exponents to normal
+   assign SignA = A[ `$exp_width + $frac_width` ];
+   assign SignB = B[ `$exp_width + $frac_width` ];
+   
+   assign NANorInfA =  ExpA=={(`$exp_width`){1'b1}};
+   assign NANorInfB =  ExpB=={(`$exp_width`){1'b1}};
+   assign zeroSigA  =  SigA==0;
+   assign zeroSigB  =  SigB==0;
+   assign ZeroA     =  zeroSigA & ZeroExpA;
+   assign ZeroB     =  zeroSigB & ZeroExpB;
+   assign InfA      =  zeroSigA & NANorInfA;
+   assign InfB      =  zeroSigB & NANorInfB;
+   assign NANA      = ~zeroSigA & NANorInfA;
+   assign NANB      = ~zeroSigB & NANorInfB;
+   assign MaxA      =  ExpA=={{(`$exp_width-1`){1'b1}},1'b0} && SigA=={(`$frac_width`){1'b1}};
+   assign MaxB      =  ExpB=={{(`$exp_width-1`){1'b1}},1'b0} && SigB=={(`$frac_width`){1'b1}};
+   
+   assign NANorInfAplusInc = NANorInfA | (IncA & MaxA);
+   assign NANorInfBplusInc = NANorInfB | (IncB & MaxB);
+   assign zeroSigAplusInc = (zeroSigA & ~(IncA & ~InfA & ~NANA)) | (IncA & MaxA);
+   assign zeroSigBplusInc = (zeroSigB & ~(IncB & ~InfB & ~NANB)) | (IncB & MaxB);
+   assign zeroAplusInc = zeroSigAplusInc & ZeroExpA;
+   assign zeroBplusInc = zeroSigBplusInc & ZeroExpB;
+   assign InfAplusInc =  zeroSigAplusInc & NANorInfAplusInc;
+   assign InfBplusInc =  zeroSigBplusInc & NANorInfBplusInc;
+   assign NANAplusInc = ~zeroSigAplusInc & NANorInfAplusInc;
+   assign NANBplusInc = ~zeroSigBplusInc & NANorInfBplusInc;
+   
+  assign NANAB = NANAplusInc | NANBplusInc | (InfAplusInc & zeroBplusInc) | (InfBplusInc & zeroAplusInc);
+ 
+  assign InfAB = (InfBplusInc | InfAplusInc) & ~NANAB ;
 
 
   assign ManA = { ~ZeroExpA , SigA };
@@ -232,7 +247,7 @@ module `mname`(
 
 
   assign noShift = ManAB_normalized[`$product_width - 1`];
-  assign ZeroAB = ZeroA|ZeroB;
+  assign ZeroAB = zeroAplusInc | zeroBplusInc;
 //  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
 
   // Sameh? assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
@@ -256,6 +271,7 @@ module `mname`(
 	$display ("`mname`: ManAB_unnormalized =%h ManAB_normalized =%h ",ManAB_unnormalized,ManAB_normalized);
 	$display ("`mname`: noShift =0x%h ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
 	$display ("`mname`: ZeroAB=0x%h InfAB=0x%h NANAB=0x%h RStickyAB=0x%h",ZeroAB, InfAB, NANAB, RStickyAB);
+	$display ("`mname`: NANorInfAplusInc=%d, zeroSigAplusInc=%d, NANAplusInc=%d, NANBplusInc=%d, InfAplusInc=%d, ZeroBplusInc=%d, InfBplusInc=%d, ZeroAplusInc=%d, NANAB=%d",NANorInfAplusInc,zeroSigAplusInc,NANAplusInc, NANBplusInc, InfAplusInc, zeroBplusInc, InfBplusInc, zeroAplusInc, NANAB);
      end
  //; }
 
