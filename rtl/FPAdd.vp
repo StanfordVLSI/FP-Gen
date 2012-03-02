@@ -1,0 +1,176 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FPAdd.vp#2 $
+ ** $DateTime: 2012/02/08 11:27:28 $
+ ** $Change: 10078 $
+ ** $Author: jbrunhav $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Floating Point adder
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 13, 2011   sameh   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)  !FUNCTIONAL!");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
+//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//;
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//;
+//; # And some local variables
+//; my $manA_width = $frac_width + 1;
+//; my $manB_width = 2 * $manA_width;
+//; my $ExpB_width = $exp_width + 2;
+//; my $shift_width = CeilOfLog2($manB_width+1) + 1;
+
+
+module `mname` (
+  //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+  //; }
+    input logic [`$exp_width + $frac_width`:0] A,
+  //; if ($useInc){
+    input logic IncA,
+  //; }
+    input logic [`$ExpB_width-1`:0] ExpB, ExpDifference,
+    input logic [`$manB_width-1`:0] ManB,
+    input logic SignB, InfB, NANB, ZeroB, RStickyB, ResultIsClose, ExpB_gt_ExpA,
+    input logic [2:0] rnd, 
+    output logic [`$exp_width + $frac_width`:0] Z, 
+  //; if ($useInc){
+    output logic IncZ,
+  //; }
+    output [7:0] status,
+    output logic [`$ExpB_width-1`:0] ExpZ_pp0, ExpZ_pp1,
+    output logic ExpZDecrementWhenShifting, ShiftZ
+               );
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+	
+  logic [`$frac_width-1`:0] SigA;
+  logic [`$frac_width`:0] ManA, FarManSum , CloseManDiff, ManSum;
+  logic [`$ExpB_width-1`:0] ExpA , CloseExpbase, LShiftAmtWide;
+  logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
+  logic [`$exp_width + $frac_width`:0] FinalSum;
+  logic SignA, ZeroExpA, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ;
+  logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract;
+  logic FX, FV, FU, FI, Tiny, FV_exp;
+  logic RndMaxNum, MaxNum;
+
+  assign SigA  = A[`$frac_width-1`: 0 ];
+  assign ZeroExpA  =  ~|A[`$exp_width+$frac_width-1`:`$frac_width`];
+  assign ExpA  = { A[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroExpA | A[`$frac_width`] }; // convert denormals exponents to normal
+  assign ManA  = { ~ZeroExpA , SigA}; //add implicit 1 to normal floatin point significands
+  assign SignA = A[ `$exp_width + $frac_width` ];
+
+  assign NANorInfA =   &ExpA[`$exp_width-1`:0]; // ExpA==111....11
+  assign zeroSigA  =  SigA==0 & ~IncA;
+  assign ZeroA     =  zeroSigA & ZeroExpA;
+  assign InfA      =  zeroSigA & NANorInfA;
+  assign NANA      = ~zeroSigA & NANorInfA;
+
+  assign subtract = SignA ^ SignB;
+
+  
+  assign FI = NANA | NANB | (InfA & InfB & (SignA!=SignB));
+  assign FX = ResultIsNotSpecial & (Guard | Sticky| FV_exp);
+  assign FV = FV_exp & ~ZeroB & ~InfA & ~InfB & ~FI;
+  assign FU = ZeroResult & FX;
+
+
+  assign ResultIsInfinity = ( InfA | InfB | FV) & ~FI;
+  assign ResultIsA = ZeroB & ~FI & ~IncA;
+  assign ResultIsNotSpecial = ~ResultIsA & ~ResultIsInfinity & ~FI;
+
+//; my $FarPathAdd_obj = generate('FarPathAdd', 'FPA', 
+//;                               , FractionWidth => $frac_width
+//;                               , ExponentWidth => $exp_width
+//;                               , useInc => $useInc
+//;                               , EnableDenormals => $enable_denormals);
+
+  `$FarPathAdd_obj->instantiate()` (.ManA(ManA), .IncA(IncA), .ExpA(ExpA), .SignA(SignA), .ZeroA(ZeroA), .ManB(ManB), .ExpB(ExpB), .SignB(SignB), .ZeroB(ZeroB), .RStickyB(RStickyB),
+                         .ExpDifference(ExpDifference) , .ExpB_gt_ExpA(ExpB_gt_ExpA), .ManSum(FarManSum), .ExpSum(FarExpSum),
+                         .SignSum(SignFarSum), .ZeroSum(ZeroFarSum), .Guard(FarGuard), .Sticky(FarSticky) ,.Overflow(FarOverflow) , .ShiftExponent(FarShiftZ), .dumptolog(dumptolog));
+
+//; my $ClosePathSub_obj = generate('ClosePathSub', 'CPS', 
+//;                               , FractionWidth => $frac_width
+//;                               , ExponentWidth => $exp_width
+//;                               , useInc => $useInc);
+
+  `$ClosePathSub_obj->instantiate()` ( .ManA(ManA), .IncA(IncA), .ExpA(ExpA), .SignA(SignA), .ManB(ManB), .ExpB(ExpB), .SignB(SignB),
+                         .RStickyB(RStickyB), .ManDiff(CloseManDiff), .Guard(CloseGuard), .Sticky(CloseSticky), .ExpDiff(CloseExpDiff),
+                         .Expbase(CloseExpbase), .LShiftAmtWide(LShiftAmtWide),
+                         .SignDiff(CloseDiffSign) , .ZeroDiff(ZeroCloseDiff), .LZA_wrong(CloseShiftZ), .dumptolog(dumptolog));
+
+  assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow, ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting, ShiftZ} = 
+                    ResultIsClose?
+                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, 1'b0       , CloseExpbase       , ~LShiftAmtWide             , 1'b0     , CloseShiftZ}
+                   :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, {2'b0,FarExpSum}   , {(`$ExpB_width`){1'b1}}, subtract , FarShiftZ};
+
+//; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
+  `$rnd_obj->instantiate()` (.rnd(rnd), .Sign(SignResult), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
+
+  assign denormResult= ~ManSum[`$frac_width`] ;
+  assign FinalSum = {SignResult, ExpSum[`$exp_width-1`:1]   ,ExpSum[0]   & ManSum[`$frac_width`]   , ManSum[`$frac_width-1`:0]};
+  assign FV_exp = Overflow;
+  
+  assign MaxNum =  FV & RndMaxNum;
+  //assign Tiny = denormResult & (FinalSum!=0);
+  assign Tiny = 0;
+
+  assign SignInfinity = InfA ? SignA : SignB;
+  assign SignSpecial = SignA & (~ZeroA | SignB); 
+
+  assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
+
+  assign {IncZ,Z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width-1`){1'b0}}}
+              : ResultIsInfinity ? {1'b0, SignInfinity,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
+                                    : ResultIsA ? {1'b0,SignSpecial,A[`$exp_width + $frac_width - 1`:0]} : {RoundInc,FinalSum};
+
+//; if ($verif_mode =~ /ON/){
+  // synopsys translate_off
+  always @(posedge dumptolog)
+  begin
+    $display ("CascadeFPAdd: ZeroExpC=%b ZeroC=%b InfC=%b ExpC=%h ManC=%h, SigC=%h IncC=%b",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
+    $display ("CascadeFPAdd: ExpDifference=%d ResultIsInfinity =%b , ResultIsA =%b ,ResultIsNotSpecial =%b, ResultIsClose=%b",ExpDifference, ResultIsInfinity, ResultIsA,ResultIsNotSpecial, ResultIsClose);
+    $display ("CascadeFPAdd: FU =%b , FV =%b ,FI =%b ,FX =%b, LSB=%b, Guard=%b, Sticky=%b, RoundInc =%b FV_exp=%b Overflow=%b FarOverflow=%b",FU, FV , FI,FX, ManSum[0], Guard, Sticky, RoundInc, FV_exp,Overflow,FarOverflow);
+    $display ("CascadeFPAdd: ManSum   =%h ExpSum   =%h FinalSum=%h Z=%h", ManSum,ExpSum, FinalSum, Z);
+  end
+  // synopsys translate_on
+//; }
+endmodule : `mname`
+

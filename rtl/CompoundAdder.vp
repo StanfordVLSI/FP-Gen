@@ -65,7 +65,7 @@ module `mname` (
   assign g = in0 & in1;
   assign p = in0 ^ in1;
 
-  //; my $CompoundAdderTree_obj = generate('SklanskyAdderTree', 'CompoundAdderTree', Width=>$width); 
+  //; my $CompoundAdderTree_obj = generate('SklanskyAdderTree', 'CompoundAdderTree', Width => $width); 
   `$CompoundAdderTree_obj->instantiate` (.g(g), .p(p), .G(G), .P(P));
 
    // the cout is not accurate
@@ -84,9 +84,9 @@ module `mname` (
 */
 
    //; if ($zero_width > 0){
-   //; my $SC0_obj = generate('SumComparator', 'SC0', Width=>`$zero_width`);
+   //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $zero_width);
    `$SC0_obj->instantiate` (.a(in0[`$zero_width-1`:0]), .b(in1[`$zero_width-1`:0]), .sum({ (`$zero_width`){1'b0}}), .equal(zero0));
-   //; my $SC1_obj = generate('SumComparator', 'SC1', Width=>`$zero_width`);
+   //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $zero_width);
    `$SC1_obj->instantiate` (.a(in0[`$zero_width-1`:0]), .b(in1[`$zero_width-1`:0]), .sum({ (`$zero_width`){1'b1}}), .equal(zero1));
    //; }
 

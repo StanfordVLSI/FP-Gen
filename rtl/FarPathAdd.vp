@@ -1,0 +1,210 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FarPathAdd.vp#1 $
+ ** $DateTime: 2012/02/08 11:27:28 $
+ ** $Change: 10078 $
+ ** $Author: jbrunhav $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Far Path Adder
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 13, 2011   sameh   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)  !FUNCTIONAL!");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
+//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//;
+//; # And some local variables
+//; my $manA_width = $frac_width + 1;
+//; my $manB_width = 2 * $manA_width;
+//; my $ExtendedExp_width = $exp_width + 2;
+//; my $shift_width = CeilOfLog2($manB_width+1) + 1;
+module `mname`(
+ //; if ($verif_mode =~ /ON/){
+  input logic dumptolog,
+ //; }
+  input logic [`$manA_width-1`:0] ManA, 
+  //; if ($useInc){
+  input logic IncA,
+  //; }
+  input logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, ExpDifference, 
+  input logic SignA, SignB, ZeroA, ZeroB, RStickyB, ExpB_gt_ExpA,
+  input logic [`$manB_width-1`:0] ManB,
+  output logic [`$manA_width-1`:0] ManSum, 
+  output logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum,
+  output logic [`$exp_width-1`:0] ExpSum, 
+  output logic [`$ExtendedExp_width-1`:0] Expbase, LShiftAmtWide
+              );
+
+  logic [`$shift_width-1`:0] LshiftAmtUnbounded, shift_amount;
+  logic [`$manB_width-1`:0] biggerFraction, sum0, sum1;
+  logic [`$manB_width+$manA_width-1`:0] shift_in, shift_out , smallerFraction;
+  logic [`$manB_width-$manA_width-4`:0] sumMiddle;
+  logic [`$manA_width-2`:0]  left0, left1;
+  logic [`$manA_width-1`:0]  sumRight, sumCenter, sumLeft, sumUpperLeft;
+  logic [`$manA_width` :0] a,b;
+  logic [`$manA_width+3`  :0] sumUpper;
+
+  logic [`$ExtendedExp_width-1`:0] ExpA_wide, shift_amount_unbounded, ExtendedExpSum, ExtendedExpSumInc, ExtendedExpSumDec, ExtendedExpSumPlus2;
+  logic [`$exp_width-1`:0] ExpSumCenter, ExpSumRight, ExpSumLeft, ExpSumUpperLeft, ExpSumShifted;
+
+  logic OverflowCenter, OverflowRight, OverflowLeft, OverflowShifted, OverflowUpperLeft;
+  logic subtract, RSticky, ci, co0, co1, co2, zero0, zero1, sumMiddleSticky;
+  logic stickyRight, guardRight, stickyCenter, guardCenter, stickyLeft, stickyUpperLeft, guardLeft, guardUpperLeft, ExpSumCenterIsOne;
+
+
+  assign subtract = SignA ^ SignB;
+
+  // Calculate shift amount
+  assign shift_amount = ExpDifference[`$ExtendedExp_width-1`:`$shift_width`]==0 ? ExpDifference[`$shift_width-1`:0] : `$manB_width`; //saturation logic
+
+  // Alignment & inversion
+  assign biggerFraction    = ExpB_gt_ExpA ? ManB : {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}};
+  assign shift_in          = ExpB_gt_ExpA ? {1'b0, ManA,{(`$manB_width-1`){IncA}}} : {ManB,{(`$manA_width`){1'b0}}};
+
+
+  assign shift_out         = shift_in >> shift_amount ;
+  assign smallerFraction   = subtract ? ~shift_out : shift_out;
+  
+ 
+  // Divide the additions to 3 regions:
+  // - Lower Part (manA_width): Use for sticky bit calculation Rsticky
+  assign RSticky= RStickyB | (ExpB_gt_ExpA & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
+
+  // - Middle Part (manB_width-manA_width-1): calculate sum using subtract& ~RSticky as an input
+
+  assign ci = &smallerFraction[`$manA_width-1`:0];
+
+
+//; my $CompoundAdder_obj = generate('CompoundAdder', 'SM', 
+//;                                                 , Width =>$manB_width
+//;                                                 , EnableCarryIn => 'ON'
+//;                                                 , ZeroWidth => $manB_width-$manA_width-3);
+
+   `$CompoundAdder_obj->instantiate()` (.a(smallerFraction[`$manB_width+$manA_width-1`:`$manA_width`]),
+                                     .b(biggerFraction),
+                                     .ci( IncA & ~ExpB_gt_ExpA ),
+                                     .sum0(sum0), .co0(co0), .zero0(zero0),
+                                     .sum1(sum1), .co1(co1), .zero1(zero1), .dumptolog(dumptolog));
+
+  assign ZeroSum = (ZeroA & ZeroB) | (subtract & ~RSticky & (shift_out[`$manB_width+$manA_width-1`:`$manA_width`]==biggerFraction));
+
+//;if ($enable_denormals==1) {
+  assign {sumUpper,sumMiddle, sumMiddleSticky} =  subtract ?
+                                                                ( ~RSticky ?
+                                                                            {co1^subtract,sum1, ~zero1}
+                                                                           :{co0^subtract,sum0, ~zero0} )
+                                                               :(IncA & ci?
+                                                                           {co1^subtract,sum1, ~zero1}
+                                                                          :{co0^subtract,sum0, ~zero0} )   ;
+  assign SignSum = ZeroSum? 0 :(ExpB_gt_ExpA? SignB: SignA);
+
+//;} else {
+  assign {sumUpper,sumMiddle, sumMiddleSticky} =  subtract ?
+                                                                (co0?
+                                                                     ( ~RSticky ?
+                                                                                 {co1^subtract,sum1, ~zero1}
+                                                                                :{co0^subtract,sum0, ~zero0} )
+                                                                    :{co0~^subtract,~sum0, ~zero1})
+                                                               :(IncA & ci?
+                                                                           {co1^subtract,sum1, ~zero1} 
+                                                                          :{co0^subtract,sum0, ~zero0} )   ; 
+  assign SignSum = ZeroSum? 0 :(ExpB_gt_ExpA? SignB: SignA^(subtract & ~co0));
+//;}
+
+
+
+
+ //UPPERLEFT needed only for sum0
+  assign stickyUpperLeft = sumUpper[2] | stickyLeft;
+  assign {sumUpperLeft, guardUpperLeft }  = sumUpper[`$manA_width+3`:3];
+  assign {ExpSumUpperLeft, OverflowUpperLeft} = {ExtendedExpSumPlus2[`$exp_width-1`:0],|ExtendedExpSumPlus2[`$ExtendedExp_width-1`:`$exp_width`] | &ExtendedExpSumPlus2[`$exp_width-1`:0]}; //ExpSumCenter + 1
+
+
+  //LEFT needed only for sum0
+  assign stickyLeft = sumUpper[1] | stickyCenter;
+  assign {sumLeft, guardLeft }  = sumUpper[`$manA_width+2`:2];
+  assign {ExpSumLeft, OverflowLeft} = {ExtendedExpSumInc[`$exp_width-1`:0],|ExtendedExpSumInc[`$ExtendedExp_width-1`:`$exp_width`] | &ExtendedExpSumInc[`$exp_width-1`:0]}; //ExpSumCenter + 1
+
+
+  //CENTER needed for sum0, ~sum0 and sum1
+  assign stickyCenter =  sumUpper[0] | stickyRight;
+  assign {sumCenter, guardCenter} = sumUpper[`$manA_width+1`:1];
+  assign ExpSumCenter    = ExtendedExpSum[`$exp_width-1`:0];
+  assign OverflowCenter  = (|ExtendedExpSum[`$ExtendedExp_width-1`:`$exp_width`]) | (&ExtendedExpSum[`$exp_width-1`:0]);
+
+
+  //RIGHT needed for ~sum0 and sum1
+  assign stickyRight   = sumMiddleSticky | RSticky;
+  assign {sumRight,guardRight}  = sumUpper[`$manA_width`:0];
+  assign {ExpSumRight, OverflowRight} = {ExtendedExpSumDec[`$exp_width-1`:0], |ExtendedExpSumDec[`$ExtendedExp_width-1`:`$exp_width`]} ; //ExpSumRight - 1
+
+  assign ExpSumCenterIsOne  = ExpSumCenter==1;
+
+  assign ExtendedExpSum  = ExpB_gt_ExpA ? ExpB : ExpA;
+  assign ExtendedExpSumInc = ExtendedExpSum + 1;
+  assign ExtendedExpSumPlus2 = ExtendedExpSum + 2;
+  assign ExtendedExpSumDec = ExtendedExpSum -1;
+
+  assign {ExpSum, ManSum, Guard, Sticky, Overflow, ShiftExponent} =
+      sumUpper[`$manA_width+3`]?
+               {ExpSumUpperLeft, sumUpperLeft, guardUpperLeft, stickyUpperLeft, OverflowUpperLeft, 1'b1}
+               :(sumUpper[`$manA_width+2`]?
+                    {ExpSumLeft, sumLeft, guardLeft, stickyLeft, OverflowLeft, 1'b1}
+                   :(sumUpper[`$manA_width+1`] | ExpSumCenterIsOne?       //shift only if the exponent is greater than 1
+                        {ExpSumCenter, sumCenter, guardCenter, stickyCenter, OverflowCenter, 1'b0}
+                       :{ExpSumRight, sumRight, guardRight, stickyRight, OverflowRight, 1'b1} ));
+
+//; if ($verif_mode =~ /ON/){
+// synopsys translate_off
+always @(posedge dumptolog)
+begin
+    $display ("FarPathAdd: ExpSum=%h ManSum=%h Guard=%b Sticky=%b",ExpSum, ManSum, Guard, Sticky);
+    $display ("FarPathAdd: biggerFraction =%h ExpB_gt_ExpA=%h", biggerFraction,ExpB_gt_ExpA);
+    $display ("FarPathAdd: smallerFraction=%h shift_in=%h shift_amount=%d",smallerFraction, shift_in, shift_amount);
+    $display ("FarPathAdd: RSticky=%b subtract=%b ci=%b co1=%b",RSticky, subtract, ci, co1);
+    $display ("FarPathAdd: sum0=%h sum1=%h {sumUpper,sumMiddle}=%h",sum0, sum1, {sumUpper,sumMiddle});
+    $display ("FarPathAdd: ExpSumRight=%h sumRight=%h guardRight=%b",ExpSumRight, sumRight,guardRight);
+    $display ("FarPathAdd: ExpSumCenter=%h sumCenter=%h guardCenter=%b",ExpSumCenter, sumCenter,guardCenter);
+    $display ("FarPathAdd: ExpSumLeft  =%h sumLeft  =%h guardLeft=%b",ExpSumLeft, sumLeft, guardLeft);
+    $display ("FarPathAdd: sumUpper=%b Rsticky=%b",sumUpper, RSticky);
+    $display ("FarPathAdd: Overflow=%b OverflowCenter=%b OverflowShifted=%b",Overflow, OverflowCenter, OverflowShifted);
+end
+// synopsys translate_on
+//; }
+
+endmodule
+

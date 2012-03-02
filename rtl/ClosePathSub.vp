@@ -1,0 +1,163 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/ClosePathSub.vp#1 $
+ ** $DateTime: 2012/02/08 11:27:28 $
+ ** $Change: 10078 $
+ ** $Author: jbrunhav $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Close Path Subtractor
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 13, 2011   sameh   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)  !FUNCTIONAL!");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
+//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//;
+//; # And some local variables
+//; my $manA_width = $frac_width + 1;
+//; my $manB_width = 2 * $manA_width;
+//; my $ExtendedExp_width = $exp_width + 2;
+//; my $shift_width = CeilOfLog2($manB_width+1) + 1;
+module `mname`(
+ //; if ($verif_mode =~ /ON/){
+  input logic dumptolog,
+ //; }
+  input logic [`$manA_width-1`:0] ManA, 
+  //; if ($useInc){
+  input logic IncA,
+  //; }
+  input logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, 
+  input logic SignA, SignB, RStickyB,
+  input logic [`$manB_width-1`:0] ManB,
+  output logic [`$manA_width-1`:0] ManDiff, 
+  output logic Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff,
+  output logic [`$exp_width-1`:0] ExpDiff, 
+  output logic [`$ExtendedExp_width-1`:0] Expbase, LShiftAmtWide
+              );
+
+  logic [`$manB_width-1`:0] manA_wide;
+  logic [`$exp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpDiff0, ExpDiff1, ExpDiff2;
+  logic [`$manB_width+1`:0] op1, op2, diff, max_shift_mask;
+  logic [`$manB_width+2`:0] shiftedDiff;
+  logic ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2, mostSticky, a_gt_b, co_dummy0, co_dummy1, co_dummy2;
+  logic [`$shift_width-1`:0] LshiftAmt;
+  logic [(1<<`$shift_width`)-1 : 0] max_shift_dec;
+
+  assign manA_wide = {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}}; //pad to the right with zeros for the mantissa
+
+  assign ExpA_gt_ExpB_1 = ExpA[1] ^ ExpB[1]?  ~ExpA[0] &  ExpB[0] : ExpA[0] &  ~ExpB[0];
+  assign ExpA_gt_ExpB_2 = (ExpA[0] ~^ ExpB[0])  & (ExpA[2] ^ ExpB[2]?  ~ExpA[1] &  ExpB[1] : ExpA[1] &  ~ExpB[1]);
+  assign ExpB_gt_ExpA_1 = ExpA[1] ^ ExpB[1]?   ExpA[0] & ~ExpB[0] :~ExpA[0] &   ExpB[0];
+  assign ExpB_gt_ExpA_2 = (ExpA[0] ~^ ExpB[0]) & (ExpA[2] ^ ExpB[2]?   ExpA[1] & ~ExpB[1] :~ExpA[1] &   ExpB[1]);
+
+  assign Expbase = (ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB;
+
+  assign op1 = ExpB_gt_ExpA_2? {2'b0 , manA_wide}
+                             : ExpB_gt_ExpA_1? {1'b0 ,manA_wide,IncA} : {manA_wide,IncA,IncA};
+  assign op2 = ExpA_gt_ExpB_2? {2'b0 , ManB}
+                             : ExpA_gt_ExpB_1? {1'b0 , ManB,1'b0} : {ManB,2'b0};
+
+ 
+  //Subtraction + LZA
+  
+  DW_decode_en #(`$shift_width`) U1 ( .en(~|Expbase[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
+                                 , .a(Expbase[`$shift_width-1`:0])
+                                 , .b(max_shift_dec) );
+
+  //assign max_shift_mask= {max_shift_dec[manB_width+1:2],max_shift_dec[1] | max_shift_dec[0]};
+  assign max_shift_mask[`$manB_width+1`] = max_shift_dec[1] | max_shift_dec[0]; //The mask has one at Expbase - 1 position
+  
+//; for (my $i=$manB_width ; $i>=0 ; $i--)
+//; {
+  assign max_shift_mask[`$i`] = max_shift_dec[`$manB_width-$i+2`]; 
+//; }
+
+
+//; my $Abs_diff_obj = generate('AbsoluteDifference', 'manDiff', 
+//;                                                 , Width =>$manB_width+2
+//;                                                 , LZA_enable => 'YES'
+//;                                                 , useInc => $useInc);
+
+
+  `$Abs_diff_obj->instantiate()` (.a(op1), .ainc(IncA), .b(op2), .rsticky_b(RStickyB), .absdiff(diff), .LZA_override_mask(max_shift_mask), .a_gt_b(a_gt_b),.LZA_count(LshiftAmt), .dumptolog(dumptolog)); // The shift amount
+
+  //normalization
+
+  assign shiftedDiff = {1'b0,diff} << LshiftAmt;
+  assign LZA_wrong = shiftedDiff[`$manB_width+2`];
+  assign mostSticky = (| shiftedDiff[`$manB_width-$manA_width-1`:0]) | RStickyB;
+  assign {ManDiff, Guard, Sticky} = shiftedDiff[`$manB_width+2`] ? 
+        {shiftedDiff[`$manB_width+2`:`$manB_width-$manA_width+2`],
+         mostSticky | shiftedDiff[`$manB_width-$manA_width+1`] | shiftedDiff[`$manB_width-$manA_width`]}
+        : shiftedDiff[`$manB_width+1`] ?
+                          {shiftedDiff[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky | shiftedDiff[`$manB_width-$manA_width`]}
+                         :{shiftedDiff[`$manB_width`:`$manB_width-$manA_width`],mostSticky};
+
+  assign ZeroDiff= (diff==0) & ~RStickyB;
+
+
+  //calculate Expbase - LShiftAmt + (0 | 1 | 2)
+  assign LShiftAmtWide = LshiftAmt;
+  assign ExpDiff_pp0 = {Expbase[`$exp_width-1`:1] ~^ LShiftAmtWide[`$exp_width-1`:1], Expbase[0]^LShiftAmtWide[0]};
+  assign ExpDiff_pp1 = {Expbase[`$exp_width-2`:1] & ~LShiftAmtWide[`$exp_width-2`:1], Expbase[0]|~LShiftAmtWide[0],1'b0};
+
+
+//; my $CompoundAdder_obj = generate('CompoundAdder', 'CA', 
+//;                                                 , Width =>$exp_width);
+
+  `$CompoundAdder_obj->instantiate()` (.a(ExpDiff_pp0),
+                                   .b(ExpDiff_pp1),
+                                   .sum0(ExpDiff0), .co0(co_dummy0),
+                                   .sum1(ExpDiff1), .co1(co_dummy1));
+  assign ExpDiff2 = ExpDiff_pp0 + ExpDiff_pp1 + 2;
+  
+  assign ExpDiff = ZeroDiff ? 0 : shiftedDiff[`$manB_width+2`]? ExpDiff2 : shiftedDiff[`$manB_width+1`]? ExpDiff1 :ExpDiff0; // handle total cancelation case
+  assign SignDiff = ZeroDiff ? 0 : a_gt_b ^ SignB;
+
+//; if ($verif_mode =~ /ON/){
+// synopsys translate_off
+always @(posedge dumptolog)
+begin
+    $display ("ClosePathSub: ManA=%b",ManA);
+    $display ("ClosePathSub: op1=%b op2=%b ",op1, op2);
+    $display ("ClosePathSub: ExpB_gt_ExpA_1=%b, ExpB_gt_ExpA_2=%b, ExpA_gt_ExpB_1=%b, ExpA_gt_ExpB_2=%b",ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2);
+    $display ("ClosePathSub: ExpDiff=%h ManDiff=%h Guard=%b Sticky=%b SignDiff=%b",ExpDiff, ManDiff, Guard, Sticky, SignDiff);
+    $display ("ClosePathSub: Expbase=%h, LShiftAmtWide=%d ExpDiff0=%h ExpDiff1=%h",Expbase, LShiftAmtWide, ExpDiff0, ExpDiff1);
+    $display ("ClosePathSub: diff=%h max_shift_mask=%h LshiftAmt=%d shiftedDiff=%h LZA_wrong=%b",diff, max_shift_mask, LshiftAmt, shiftedDiff, LZA_wrong);
+    $display ("ClosePathSub: Expbase=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase,max_shift_dec,  SignA, SignB);
+end
+// synopsys translate_on
+//; }
+
+endmodule
+

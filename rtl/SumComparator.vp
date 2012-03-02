@@ -32,12 +32,12 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # module parameters
-//; my $width = parameter(Name=>'Width', Val=>109, Min=>2, Step=>1,
+//; my $width = parameter(Name=>'Width', Val=>109, Min=>1, Step=>1,
 //;                       Doc=>"Width of signals !FUNCTIONAL!");
 
 
 module `mname` (
-    input [`$width-1`:0] a, b, sum;
+    input [`$width-1`:0] a, b, sum,
     output 		 equal
 		);
    
@@ -49,5 +49,5 @@ module `mname` (
 
    assign equal = & (v^w);
 
-endmodule : `maname`
+endmodule : `mname`
 

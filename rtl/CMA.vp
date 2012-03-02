@@ -1,0 +1,135 @@
+
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/CMA.vp#1 $
+ ** $DateTime: 2011/12/24 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * FMA datapath
+ * Status flag bits
+ * ______________________________
+ * Bit| Flag      | Description
+ * ______________________________
+ *  0 | Zero      | Integer or floating point output is zero.
+ *  1 | Infinity  | Floating point output is infinity.
+ *  2 | Invalid   | Floating point operation is not valid (0x∞, ∞-∞ ) . It is also set to 1 when one of the inputs is NaN
+ *  3 | Tiny      | Non zero floating point output after rounding has a magnitude less than the minimum normalized number( a denormalized number)
+ *  4 | Huge      | Finite floating point result after rounding has a magnitude greater than the maximum normalized number.
+ *  5 | Inexact   | Integer or floating point output is not equal to the infinitely precise result.
+ * ______________________________
+ *  
+ * 
+ * Parameters:
+ * ------------
+ * * FractionWidth, ExponentWidth, EnableDenormals, useInc
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off." ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off.");
+//; my $desinware_mode = parameter(Name=>'Designware_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Designware mode determines whether or not ".
+//;                                 "designware codes are used instead of our ".
+//;                                 "design.");
+
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//;
+//; my $useInc = parameter(Name=>'useInc', Val=>1, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//;
+//; # And some local variables
+//; my $product_width = 2 * $frac_width + 2;
+//; my $ExtendedExp_width = $exp_width + 2;
+//;
+
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$exp_width+$frac_width`:0]  a, b, c,
+    input logic [2:0] rnd,
+    input logic [`$ExtendedExp_width-1`:0] ExpA_pp0, ExpA_pp1, 
+    input logic ExpADecrementWhenShifting, ShiftA,
+   //; if ($useInc){
+    input  logic ainc,  binc,  cinc, 
+    output logic zinc,
+   //; }
+    output logic [`$exp_width + $frac_width`:0] z,
+    output logic [7:0] status,
+    output logic [`$ExtendedExp_width-1`:0] ExpZ_pp0, ExpZ_pp1, 
+    output logic ExpZDecrementWhenShifting, ShiftZ
+   );
+
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */	
+  logic SignAB, NANAB, InfAB, ZeroAB, RStickyAB, ResultIsClose, ExpB_gt_ExpA, SignA, ExpABInc;
+  logic [`$ExtendedExp_width-1`:0] ExpDifference, ExpAB;
+  logic [`$product_width-1` : 0] ManAB;
+
+  assign SignA = c[ `$exp_width + $frac_width` ];
+
+//; my $CascadeMUL_obj = generate('FPMult', 'MUL', FractionWidth=>$frac_width 
+//;                                              , ExponentWidth=>$exp_width
+//;                                              , EnableDenormals=>$enable_denormals
+//;                                              , useInc => $useInc);
+  `$CascadeMUL_obj->instantiate()` (.A(a), .IncA(ainc), .B(b) , .IncB(binc), .SignAB(SignAB), .ExpAB(ExpAB) , .ManAB(ManAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB), .dumptolog(dumptolog));
+
+
+//; my $ED_obj = generate('ExponentDifference', 'ED', ExponentWidth=>$exp_width);
+  `$ED_obj->instantiate()` (.ExpA_pp0(ExpA_pp0), .ExpA_pp1(ExpA_pp1), .ExpADecrementWhenShifting(ExpADecrementWhenShifting), .SignA(SignA), .ShiftA(ShiftA), 
+                .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpB_gt_ExpA(ExpB_gt_ExpA), .dumptolog(dumptolog));
+
+
+
+//; my $CascadeADD_obj = generate('FPAdd', 'ADD', FractionWidth=>$frac_width 
+//;                                             , ExponentWidth=>$exp_width
+//;                                             , EnableDenormals=>$enable_denormals
+//;                                             , useInc => $useInc);
+  `$CascadeADD_obj->instantiate()` (.A(c), .IncA(cinc), .SignB(SignAB), .ExpB(ExpAB), .ManB(ManAB), .InfB(InfAB), .NANB(NANAB), .ZeroB(ZeroAB), .RStickyB(RStickyAB), .rnd(rnd), .Z(z), .IncZ(zinc), .status(status), .dumptolog(dumptolog), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpB_gt_ExpA(ExpB_gt_ExpA), .ExpZ_pp0(ExpZ_pp0), .ExpZ_pp1(ExpZ_pp1), .ExpZDecrementWhenShifting(ExpZDecrementWhenShifting), .ShiftZ(ShiftZ));
+	
+endmodule
+

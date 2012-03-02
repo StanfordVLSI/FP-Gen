@@ -125,10 +125,11 @@ set total_csa_column_width 0.0;
 set total_booth_column_width 0.0;
 set core_utilization_ratio 0.5;
 
-
+set BoothPath [get_object_name [get_cells -hierarchical "Booth"]];
+set TreePath  [get_object_name [get_cells -hierarchical "Tree"]];
   
 for { set compressed_column $min_compressed_column } { $compressed_column <= $max_compressed_column} { incr compressed_column } {
-  set csa_column_cells [get_cells "Tree/column_*/csa*_*_${compressed_column}/*"];
+  set csa_column_cells [get_cells "${TreePath}/column_*/csa*_*_${compressed_column}/*"];
   set csa_odd_column_width 0.0;
   set csa_even_column_width 0.0;
   foreach_in_collection csa_column_cell $csa_column_cells {
@@ -146,7 +147,7 @@ for { set compressed_column $min_compressed_column } { $compressed_column <= $ma
   }
 
   set booth_column_index [expr $compressed_column-$min_compressed_column];
-  set booth_column_cells [get_cells "Booth/BoothEnc_u*/cell_${booth_column_index}/*"];
+  set booth_column_cells [get_cells "${BoothPath}/BoothEnc_u*/cell_${booth_column_index}/*"];
   set booth_odd_column_width  0.0;
   set booth_even_column_width 0.0;
   foreach_in_collection booth_column_cell $booth_column_cells {
@@ -201,7 +202,7 @@ foreach_in_collection booth_sel_cell $booth_sel_cells {
 set max_boothSel_column_width 0.0;
 set total_boothSel_column_width 0.0;
 for { set booth_sel_col 0 } { $booth_sel_col < $booth_sel_count} { incr booth_sel_col } {
-  set boothSel_column_cells [get_cells "Booth/BoothEnc_u*/Booth_sel_${booth_sel_col}/*"];
+  set boothSel_column_cells [get_cells "${BoothPath}/BoothEnc_u*/Booth_sel_${booth_sel_col}/*"];
   set boothSel_column_width 0.0;
   foreach_in_collection boothSel_column_cell $boothSel_column_cells {
     set boothSel_column_width [expr $boothSel_column_width+[get_attribute $boothSel_column_cell width]];
@@ -259,22 +260,46 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set_pin_physical_constraints -side 2 $b_port -order [expr $port_number+1]
   }
 
-  set max_out_port 0;
-  set out0_ports [get_ports {out0[*]}]
-  foreach_in_collection out0_port $out0_ports {
-    regexp {out0\[([0-9]*)\]} [get_object_name $out0_port] matched port_number
-    if { $port_number > $max_out_port } {
-      set max_out_port $port_number
-    }
-  }
 
-  for { set port_number 0 } { $port_number < [expr int($max_out_port/2)] } { incr port_number } {
-    set_pin_physical_constraints -pin_name out0[$port_number] -side 4 -order [expr ($port_number*2)+2]
-    set_pin_physical_constraints -pin_name out1[$port_number] -side 4 -order [expr ($port_number*2)+3] 
-  }
-  for { set port_number [expr int($max_out_port/2)] } { $port_number < $max_out_port} { incr port_number } {
-    set_pin_physical_constraints -pin_name out0[$port_number] -side 3 -order [expr ($port_number*2)+2] 
-    set_pin_physical_constraints -pin_name out1[$port_number] -side 3 -order [expr ($port_number*2)+3] 
+  if {$DESIGN_NAME=="FMA"} {
+
+    set c_ports [get_ports {c[*]}] 
+    foreach_in_collection c_port $c_ports {
+      regexp {c\[([0-9]*)\]} [get_object_name $c_port] matched port_number
+      set_pin_physical_constraints -side 4 $c_port -order [expr $port_number+1]
+    }
+
+    set z_ports [get_ports {z[*]}] 
+    foreach_in_collection z_port $z_ports {
+      regexp {z\[([0-9]*)\]} [get_object_name $z_port] matched port_number
+      set_pin_physical_constraints -side 3 $z_port -order [expr $port_number+1]
+    }
+
+    set status_ports [get_ports {status[*]}] 
+    foreach_in_collection status_port $status_ports {
+      regexp {status\[([0-9]*)\]} [get_object_name $status_port] matched port_number
+      set_pin_physical_constraints -side 3 $status_port
+    } 
+
+  } else {
+
+    set max_out_port 0;
+    set out0_ports [get_ports {out0[*]}]
+    foreach_in_collection out0_port $out0_ports {
+      regexp {out0\[([0-9]*)\]} [get_object_name $out0_port] matched port_number
+      if { $port_number > $max_out_port } {
+        set max_out_port $port_number
+      }
+    }
+
+    for { set port_number 0 } { $port_number < [expr int($max_out_port/2)] } { incr port_number } {
+      set_pin_physical_constraints -pin_name out0[$port_number] -side 4 -order [expr ($port_number*2)+2]
+      set_pin_physical_constraints -pin_name out1[$port_number] -side 4 -order [expr ($port_number*2)+3] 
+    }
+    for { set port_number [expr int($max_out_port/2)] } { $port_number < $max_out_port} { incr port_number } {
+      set_pin_physical_constraints -pin_name out0[$port_number] -side 3 -order [expr ($port_number*2)+2] 
+      set_pin_physical_constraints -pin_name out1[$port_number] -side 3 -order [expr ($port_number*2)+3] 
+    }
   }
 }
 
@@ -311,7 +336,8 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002 RPGP-020 RPGP-090 PSYN-040];
 
-  create_rp_group rp_tree -columns [expr int(ceil(1.5*$row_count))] -rows $rp_column_count -allow_non_rp_cells ;
+  create_rp_group rp_tree -columns [expr int(ceil(1.5*$row_count))] -rows $rp_column_count -allow_non_rp_cells \
+                          -anchor_corner bottom-left -x_offset 0.0 -y_offset 0.0;
 
   if { $USE_3_2_FLOORPLAN } {
     set current_rp_column 0;
@@ -320,14 +346,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       if { ($column_count-1-$column) % $booth_select_cadence == 0 } {
         set boothSel_index [expr ($column_count-1-$column) / $booth_select_cadence];
         for {set boothEnc_index 0} { $boothEnc_index < $booth_encoder_count } {incr boothEnc_index} {
-          set boothSel_child_cells [get_cells "Booth/BoothEnc_u${boothEnc_index}/Booth_sel_${boothSel_index}/*"];
+          set boothSel_child_cells [get_cells "${BoothPath}/BoothEnc_u${boothEnc_index}/Booth_sel_${boothSel_index}/*"];
           add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} \
                     ${DESIGN_NAME}::rp_tree -column $boothEnc_index -row $current_rp_column -height $boothSel_aspect_ratio;
         }
       } else {
 
         for {set row_index 0} { $row_index < $max_row } {incr row_index} {
-          set CSA_child_cells [get_cells "Tree/column_*/csa*_${row_index}_${column_index}/*"];
+          set CSA_child_cells [get_cells "${TreePath}/column_*/csa*_${row_index}_${column_index}/*"];
           add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_NAME}::rp_tree \
                     -column $row_index -row $current_rp_column;
         }
@@ -336,7 +362,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
           incr current_rp_column;
           for {set row_index 0} { $row_index < $booth_encoder_count } {incr row_index} {
             set booth_column_index_plus [expr $booth_column_index + 1];
-            set booth_cell [get_cells "Booth/BoothEnc_u${row_index}/cell_${booth_column_index}/* Booth/BoothEnc_u${row_index}/cell_${booth_column_index_plus}/*"];
+            set booth_cell [get_cells "${BoothPath}/BoothEnc_u${row_index}/cell_${booth_column_index}/* Booth/BoothEnc_u${row_index}/cell_${booth_column_index_plus}/*"];
             add_cells_to_rp_group $booth_cell rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
                     -column $row_index -row $current_rp_column;
           }
