@@ -142,6 +142,7 @@ module `mname` (
   wire FV_exp, FU_exp;
   wire FX, FV, FU, FI, Tiny;
   wire RndMaxNum, MaxNum;
+      logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
 
   assign SignA = a[`$exp_width + $frac_width`];
   assign SignB = b[`$exp_width + $frac_width`];
@@ -163,8 +164,8 @@ module `mname` (
   assign Tiny = 0;
   assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
 
-  assign zeroSigA = SigA==0 & ~ainc;
-  assign zeroSigB = SigB==0 & ~binc;
+  assign zeroSigA = SigA==0;
+  assign zeroSigB = SigB==0;
   assign zeroSigC = SigC==0;
   assign zeroManResult = ManResult==0;
 
@@ -175,13 +176,29 @@ module `mname` (
   assign InfA = zeroSigA & NANorInfA;
   assign InfB = zeroSigB & NANorInfB;
   assign InfC = zeroSigC & NANorInfC;
-  assign InfFromInput = InfA | InfB | InfC;
+  
 
   assign NANA = ~zeroSigA & NANorInfA;
   assign NANB = ~zeroSigB & NANorInfB;
   assign NANC = ~zeroSigC & NANorInfC;
 
 
+   assign MaxA      =  ExpA=={{(`$exp_width-1`){1'b1}},1'b0} && SigA=={(`$frac_width`){1'b1}};
+   assign MaxB      =  ExpB=={{(`$exp_width-1`){1'b1}},1'b0} && SigB=={(`$frac_width`){1'b1}};
+   
+   assign NANorInfAplusInc = NANorInfA | (ainc & MaxA);
+   assign NANorInfBplusInc = NANorInfB | (binc & MaxB);
+   assign zeroSigAplusInc = (zeroSigA & ~(ainc & ~InfA & ~NANA)) | (ainc & MaxA);
+   assign zeroSigBplusInc = (zeroSigB & ~(binc & ~InfB & ~NANB)) | (binc & MaxB);
+   assign ZeroAplusInc = zeroSigAplusInc & denormA;
+   assign ZeroBplusInc = zeroSigBplusInc & denormB;
+   assign InfAplusInc =  zeroSigAplusInc & NANorInfAplusInc;
+   assign InfBplusInc =  zeroSigBplusInc & NANorInfBplusInc;
+   assign NANAplusInc = ~zeroSigAplusInc & NANorInfAplusInc;
+   assign NANBplusInc = ~zeroSigBplusInc & NANorInfBplusInc;
+
+  assign InfFromInput = InfAplusInc | InfBplusInc | InfC;
+   
   assign ManA = { ~denormA , SigA};
   assign ManB = { ~denormB , SigB};
   assign ManC = { ~denormC , SigC};
@@ -257,13 +274,13 @@ module `mname` (
 
 
   assign FX = (ResultIsFMA & (Guard | Sticky)) | FV;
-  assign FI = NANA | NANB | NANC | ((InfA | InfB) & InfC & (SignProduct!=SignC)) | (InfA & ZeroB) | (InfB & ZeroA);
+  assign FI = NANAplusInc | NANBplusInc | NANC | ((InfAplusInc | InfBplusInc) & InfC & (SignProduct!=SignC)) | (InfAplusInc & ZeroBplusInc) | (InfBplusInc & ZeroAplusInc);
   assign FV = FV_exp & ~InfFromInput & ~FI & ~ResultIsC ;
   assign FU = ZeroResult & FX & ResultIsFMA;
 
 
   assign ResultIsInfinity = ( InfFromInput | FV) & ~FI;
-  assign ResultIsC = (ZeroA | ZeroB) & ~InfFromInput   & ~FI;
+  assign ResultIsC = (ZeroAplusInc | ZeroBplusInc) & ~InfFromInput   & ~FI;
   assign ResultIsFMA = ~ResultIsC   & ~ResultIsInfinity   & ~FI;
 
   assign MaxNum =  FV & RndMaxNum; 
