@@ -32,7 +32,7 @@
 //;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
 //; my $vector_file = parameter(Name=>'TestVectorFile', Val=>'',
 //;                             Doc=>"Name of the input testvector file");
-//; my $arch = parameter(Name=>'Architecture', Val=>'Fused', List=>['Cascade', 'Fused'],
+//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
 //; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
 //; 			      "or Fused? (Pick:Cascade/Fused)");
 //; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
@@ -105,7 +105,7 @@ program automatic `mname` (
    //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
-   //; 				    Architecture=>$arch,
+   //; 				    Architecture=>'Fused', 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenC_obj->instantiate`;
 
@@ -114,7 +114,7 @@ program automatic `mname` (
    //;				    Random=>'NO',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
-   //; 				    Architecture=>$arch,
+   //; 				    Architecture=>$arch,   
    //;                              TestDenormals=>$test_denormals);
    `$TransRes_obj->instantiate`;
    
