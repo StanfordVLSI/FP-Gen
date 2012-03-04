@@ -42,7 +42,7 @@
 //; $DW_mode eq 'OFF' and @incOpts = ['YES','NO'] ;
 //;
 //; # Interface parameter
-//; my $useInc = parameter(Name=>'UseInc', Val=>'', List=>@incOpts,
+//; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>@incOpts,
 //; 			  Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //; $useInc = ($useInc =~ /YES/)? 1:0;
 //;
