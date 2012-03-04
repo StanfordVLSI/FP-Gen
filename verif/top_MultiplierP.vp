@@ -1,0 +1,63 @@
+/* *****************************************************************************
+ * Description:
+ * Top module for simulation, used for simple FMA module testing. Should not
+ * be mistaken as a full fledged verification environment. It's not!
+ * 
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Feb 04, 2012  jingpu    init version - change original top module to FMA verif
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off." ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off.");
+
+
+module `mname` ();   
+   //; # Generate the DUT here
+   //; my $Inst_obj = generate('MultiplierP' , 'MultiplierP' );
+
+   //; # Read what kind of DUT the user wanted so you can test it
+   //; my $BW     = $Inst_obj->get_param('Width');
+   //; my $useInc = $Inst_obj->get_param('UseInc') eq 'YES';
+   
+   // local signals for DUT
+   logic [`$BW-1`:0]     a, b;
+   logic                 IncA , IncB ;
+   logic [`2*$BW+2-1`:0] pp0 , pp1 ;
+   					  
+   //; if ($verif_mode =~ /ON/){
+   logic 		 dumptolog,
+   //; }
+
+   // Instantiate the dut here
+   `$Inst_obj->instantiate()` (
+			       //; if ($verif_mode =~ /ON/){
+			       .dumptolog(dumptolog),
+			       //; }
+
+				.a(a), 
+				.b(b),
+				//; if ($useInc){
+				.ainc(IncA), 
+				.binc(IncB), 
+				//;}
+				.out0(pp0),
+				.out1(pp1) 
+			      );
+
+   
+endmodule : `mname`
