@@ -33,7 +33,7 @@
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; # Interface parameter
-//; my $useInc = parameter(Name=>'UseInc', Val=>'', List=>['YES', 'NO'],
+//; my $useInc = parameter(Name=>'UseInc', Val=>'NO', List=>['YES', 'NO'],
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; $useInc = ($useInc =~ /YES/)? 1:0;
 //;
@@ -46,13 +46,13 @@
 //;                                 "designware codes are used instead of our ".
 //;                                 "design. !IMPLEMENTATION! ");
 //; my $booth ;
+//; my $tree ;
 //; if( $designware_mode eq 'OFF' ){
 //;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
-//; }
-//;
-//; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
+//;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
+//; }
 
    
 module `mname`(
