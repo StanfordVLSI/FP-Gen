@@ -57,9 +57,13 @@
    
 module `mname`(
    //; if ($verif_mode =~ /ON/){
-    input logic dumptolog,
+    input logic 		  dumptolog,
    //; }
-    input logic [`$width-1`:0]    a,b,
+    input logic [`$width-1`:0] 	  a,b,
+ 
+    input logic 		  clk ,
+    input logic 		  rst ,
+	       
    //; if ($useInc){
     input logic 		  ainc, binc,
    //; }	    
