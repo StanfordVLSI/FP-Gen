@@ -17,7 +17,7 @@
  * * PrevColumn (pointer to the previous column object)
  * 
  * Inputs:
- * * Given that N=ColumnHight
+ * * Given that PPcount is the number of partial products to reduce in addition to ci_w carry in's
  * * [PPcount-1:0] pp                 
  * * [ci_w-1:0] ci
  *  
@@ -51,16 +51,14 @@
 //; my $pp_count = parameter(Name=>'PPCount', Val=>4, Min=>0, Step=>1,
 //;                          Doc=>"Number of partial products to sum");
 //; my $max_pp_count = parameter(Name=>'MaxPPCount', Val=>4, Min=>0, Step=>1,
-//;                          Doc=>"Number of partial products to sum");
+//;                          Doc=>"Maximum number of partial products in the tree");
 
 //; my $col = parameter(Name=>'ColumnPosition', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The column number");
 //; my $min_row = parameter(Name=>'MinRow', Val=>0, Min=>0, Step=>1,
 //;                          Doc=>"The starting row position");
 //; my $booth = parameter(Name=>'BoothType', Val=>1, Min=>1, Max=>4, Step=>1,
-//;                       Doc=>"What booth was used to create the partial products? ".
-//;                            "(This determines the slope of the partial products ".
-//;                            "paralleloid)");
+//;                       Doc=>"What booth was used to create the partial products? ");
 //; my $enable_compressors = parameter(Name=>'EnableCompressors', Val=>0, Min=>0, Max=>1, Step=>1,
 //;                       Doc=>"flag for using 4-2 compressors in last stage ");
 //; my $prev_col = parameter(Name=>'PrevColumn', Val=>-1, 
@@ -72,6 +70,7 @@
 //; my $layout_shape = parameter(Name=>'LayoutShape',Val=>'Square', List=>['Square','Parallelogram'],
 //;                              Doc=>"Hints for layout positioning (Supported layouts: Square, Parallelogram)");
 //;
+//; #get pointer to previous column. the prev_co_arr is a histogram of carry outs of previous columns at every delay
 //; my $prev_co_arr_ptr = [];
 //; if ($prev_col){
 //;   $prev_co_arr_ptr = $prev_col->get_param('COArr');
@@ -79,15 +78,19 @@
 //; my @prev_co_arr = @{$prev_co_arr_ptr}; # dereference the array pointer
 //; my @co_arr = ();
 //;
+//; # calculate the total number of ci signals
+//; my $ci_w = 0;
+//; $ci_w  += $_ foreach @prev_co_arr;
+//;
+//; # calculate maximum number of levels in multiplier tree 
 //; my $max_level=0;
 //; my $p=$max_pp_count;
 //; while($p>2){
 //;   $p = 2*floor($p/3) + $p%3;
 //;   $max_level++;
 //; }
-//; my $ci_w = 0;
-//; $ci_w  += $_ foreach @prev_co_arr;
-//; 
+//;
+//; # calculate number of tree levels l for current Wallace column and the number of carry out signals co_w 
 //; my $co_w = -1;
 //; my $h = $pp_count;
 //; my $l = 0;
@@ -147,7 +150,7 @@ module `mname()` (
    //;   }
    logic [`$co_w`:0] wallace_co;
 
-
+   //; # main iterative loop of Wallace tree construction
    //; while($hight > 1 || $step <= $#prev_co_arr){
    //;   $step++;
    //;   push(@co_arr, 0);
@@ -158,7 +161,6 @@ module `mname()` (
    //;   my $extra_pp_count = $hight%3;
    //;   my $local_csa_count = floor($hight/3);
    //;   my $next_hight = $local_csa_count + $local_ci_count + $extra_pp_count;
-   //;   my $local_csa_count = floor($hight/3);
    //;   my $extra_HA = ( $hight%3==2 && (   ($step==$max_level-2? ($next_hight%3==2 && $step <= $#prev_co_arr && $prev_co_arr[$step]==1)
    //;                                                           :  $next_hight%3==1)
    //;                                    ||  $next_hight==2) );
@@ -169,13 +171,13 @@ module `mname()` (
    //;      $next_hight--;
    //;   }
 
-   //;   my $count_upward = $step%2==1 || $use_compressor_4_2_part2
-   //;                      || ($enable_compressors && $step==$max_level-1  && $hight>3); 
+   //;   my $count_upward = $step%2==1 || $use_compressor_4_2_part2 || ($enable_compressors && $step==$max_level-1  && $hight>3); 
    //;   my $pp_idx = $count_upward?0:$hight;
    //;   $ci_idx = $count_upward?$ci_idx:$ci_idx+$local_ci_count;
    //;   my $next_pp_idx = $count_upward?0:$next_hight;
    //;   $co_idx = $count_upward?$co_idx:$co_idx+$local_csa_count;
-   //;   my $csa_cadence = $local_csa_count>0? ($col_ht-1)/$local_csa_count : 0;
+   //;   my $csa_cadence = $local_csa_count>0? ($col_ht-1)/$local_csa_count : 0; #average distance between CSA on this level of the tree
+   //;   #choose tree texture for carry save combinations between SCC_SCS, SCC_SCC_SCS_SCC_SCC_SSS, SCC_SCC_SCC_SSS 
    //;   my @ci_count_array = $csa_cadence>14? (2,1,0) : $csa_cadence>5? (2,2,1,0,2,2,0,0,0) : (2,2,2,0,0,0);
    //;   my $ci_count_idx=0;
 
@@ -185,7 +187,7 @@ module `mname()` (
    //;   
    //;   for (my $i=0; $i < $local_csa_count; $i++){
    //;
-   //;     ######### Calculate Cell Location ##########
+   //;     ######### Calculate Cell layout information which are embedded in the CSA instance name ##########
    //;     my $row_candidate = floor(($count_upward?$i:$local_csa_count-$i-1)/$local_csa_count * ($col_ht-1));
    //;     my $row_candidate_up = $row_candidate;
    //;     my $row_candidate_down = $row_candidate;
@@ -237,7 +239,7 @@ module `mname()` (
    //;        $use_compressor_4_2_part2 =1;
    //;
    //;     } else {
-   //;
+   //;       # bypass extra pp signals (ones not fed into CSA's) to next level
    //;       while ( $ci_count>0 && $extra_pp_count>0){
    //;         if ($count_upward){
       assign pp_step`$step`[`$next_pp_idx++`] = pp_step`$step-1`[`$pp_idx++`];
@@ -262,7 +264,7 @@ module `mname()` (
    //;         $extra_HA=0;
    //;         $ci_count--;
    //;       } else {
-   //;
+   //;         # feed ci signals to next level of the tree
    //;         while ( $ci_count>0 && $local_ci_idx< $local_ci_count ){
    //;           if ($count_upward){
       assign pp_step`$step`[`$next_pp_idx++`] = wallace_ci[`$ci_idx++`];
