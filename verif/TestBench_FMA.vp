@@ -224,7 +224,7 @@ program automatic `mname` (
 	    TransRes.CalculateInc();
 	    z2 = TransRes.GetFPNum();
             $display("%t: After Inc: Sign = %h, Exp = %h, Man = %h  ", $time,
-		     z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0], status[5]               );
+		     z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0] );
 	    if(z2 != expectZ) begin
 	       dumptolog = 1'b1;
 	       #1;

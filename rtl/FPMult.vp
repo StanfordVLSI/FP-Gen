@@ -48,7 +48,7 @@
 //; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
 //; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
 //; 			      "or Fused? (Pick:Cascade/Fused)  !IGNORE!"); #JB- ignoring for now...
-//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; my $useInc = parameter(Name=>'useInc', Val=>1, List=>[1, 0],
 //; 			   Doc=>"Inputs A has an increment signal");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
