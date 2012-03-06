@@ -142,8 +142,8 @@ module `mname()` (
 	// synopsys translate_off
 	always @(posedge dumptolog)
 	begin
-		$display ("`mname`: out0 = %b", out0);
-		$display ("`mname`: out1 = %b", out1);
+		$display ("`$self->get_instance_path()`: out0 = %b", out0);
+		$display ("`$self->get_instance_path()`: out1 = %b", out1);
 	end
 	// synopsys translate_on
 

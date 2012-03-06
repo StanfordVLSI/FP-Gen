@@ -117,7 +117,8 @@ module `mname`(
 //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
      begin
-	$display ("`mname`: multp_out0=%h, multp_out1=%h, bit=%d", multp_out0, multp_out1,`2*$width+2`);
+        $display ("`$self->get_instance_path()`: a=%h, b=%h, out=%h", a,b,out);
+	$display ("`$self->get_instance_path()`: multp_out0=%h, multp_out1=%h, bit=%d", multp_out0, multp_out1,`2*$width+2`);
      end
  //; }
 endmodule

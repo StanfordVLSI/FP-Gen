@@ -148,13 +148,13 @@ module `mname`(
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
-    $display ("ClosePathSub: ManA=%b",ManA);
-    $display ("ClosePathSub: op1=%b op2=%b ",op1, op2);
-    $display ("ClosePathSub: ExpB_gt_ExpA_1=%b, ExpB_gt_ExpA_2=%b, ExpA_gt_ExpB_1=%b, ExpA_gt_ExpB_2=%b",ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2);
-    $display ("ClosePathSub: ExpDiff=%h ManDiff=%h Guard=%b Sticky=%b SignDiff=%b",ExpDiff, ManDiff, Guard, Sticky, SignDiff);
-    $display ("ClosePathSub: Expbase=%h, LShiftAmtWide=%d ExpDiff0=%h ExpDiff1=%h",Expbase, LShiftAmtWide, ExpDiff0, ExpDiff1);
-    $display ("ClosePathSub: diff=%h max_shift_mask=%h LshiftAmt=%d shiftedDiff=%h LZA_wrong=%b",diff, max_shift_mask, LshiftAmt, shiftedDiff, LZA_wrong);
-    $display ("ClosePathSub: Expbase=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase,max_shift_dec,  SignA, SignB);
+    $display ("`$self->get_instance_path()`: ManA=%b",ManA);
+    $display ("`$self->get_instance_path()`: op1=%b op2=%b ",op1, op2);
+    $display ("`$self->get_instance_path()`: ExpB_gt_ExpA_1=%b, ExpB_gt_ExpA_2=%b, ExpA_gt_ExpB_1=%b, ExpA_gt_ExpB_2=%b",ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2);
+    $display ("`$self->get_instance_path()`: ExpDiff=%h ManDiff=%h Guard=%b Sticky=%b SignDiff=%b",ExpDiff, ManDiff, Guard, Sticky, SignDiff);
+    $display ("`$self->get_instance_path()`: Expbase=%h, LShiftAmtWide=%d ExpDiff0=%h ExpDiff1=%h",Expbase, LShiftAmtWide, ExpDiff0, ExpDiff1);
+    $display ("`$self->get_instance_path()`: diff=%h max_shift_mask=%h LshiftAmt=%d shiftedDiff=%h LZA_wrong=%b",diff, max_shift_mask, LshiftAmt, shiftedDiff, LZA_wrong);
+    $display ("`$self->get_instance_path()`: Expbase=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase,max_shift_dec,  SignA, SignB);
 end
 // synopsys translate_on
 //; }

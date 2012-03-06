@@ -96,9 +96,9 @@ module `mname`(
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
-    $display ("ExponentDifference: ExpA_pp0=%h ExpA_pp1=%h ExpB=%h",ExpA_pp0, ExpA_pp1, ExpB);
-    $display ("ExponentDifference: ExpA_ExpB_2=%h ExpA_ExpB_1=%h ExpA_ExpB=%h ExpA_ExpB_plus1=%h ExpB_gt_ExpA=%b", ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpB_gt_ExpA);
-    $display ("ExponentDifference: ExpDifference=%d ResultIsClose=%b",ExpDifference, ResultIsClose);
+    $display ("`$self->get_instance_path()`: ExpA_pp0=%h ExpA_pp1=%h ExpB=%h",ExpA_pp0, ExpA_pp1, ExpB);
+    $display ("`$self->get_instance_path()`: ExpA_ExpB_2=%h ExpA_ExpB_1=%h ExpA_ExpB=%h ExpA_ExpB_plus1=%h ExpB_gt_ExpA=%b", ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpB_gt_ExpA);
+    $display ("`$self->get_instance_path()`: ExpDifference=%d ResultIsClose=%b",ExpDifference, ResultIsClose);
 end
 // synopsys translate_on
 //; }

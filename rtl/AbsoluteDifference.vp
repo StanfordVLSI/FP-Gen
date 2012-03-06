@@ -1,0 +1,143 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/AbsoluteDifference.vp#1 $
+ ** $DateTime: 2012/02/08 11:27:28 $
+ ** $Change: 10078 $
+ ** $Author: Sameh $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Absolute difference: return abs(a-b)
+ *   - positive result: difference = a - b = a + ~b + 1
+ *   - negative result: difference = b - a = - (a - b - 1) - 1 = ~ ( a + ~b )
+ *
+ * if LZA_enable option is enabled it also return leading zero count of the absolute difference that may be MORE than the actual number of leading zeros by 1.
+ * LZA_override_mask can be used to limit the maximum LZA_count that might be needed to support some denormal operations
+ * 
+ * Parameters:
+ * * Width, BoothType, TreeType
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # Interface parameter
+//; my $LZA_enable = parameter(Name=>'LZA_enable', Val=>'NO', List=>['YES', 'NO'],
+//; 			   Doc=>"Leading zero count is outputted with absolute difference");
+//; $LZA_enable = ($LZA_enable =~ /YES/)? 1:0;
+
+//; my $signed_enable = parameter(Name=>'signed', Val=>'NO', List=>['YES', 'NO'],
+//; 			   Doc=>"Inputs A and B are signed");
+//; $signed_enable = ($signed_enable =~ /YES/)? 1:0;
+
+//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; 			   Doc=>"Inputs A and B are signed");
+
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//;                       Doc=>"width of inputs");
+//; my $enc_width = CeilOfLog2($width+1) + 1;
+
+
+module `mname`(
+ //; if ($verif_mode =~ /ON/){
+  input logic dumptolog,
+ //; }
+ //; if ($LZA_enable){
+  input logic [`$width-1`:0] LZA_override_mask,
+  output logic [`$enc_width-1`:0] LZA_count,
+ //; }
+  input logic [`$width-1`:0] a,b,
+ //; if ($useInc){
+  input logic ainc,
+ //; }
+  input logic rsticky_b,
+  output logic [`$width-1`:0] absdiff, 
+  output logic a_gt_b
+        );
+
+
+  logic [`$width-1`:0] pp0, pp1, g, p, G, P;
+  logic cout;
+//; if( $LZA_enable) {
+  logic [`$width-1`:0] k, LZA_mask, LZD_mask;
+//; }
+ 
+//; if ($useInc){
+  assign pp0 = { a[`$width-1`:1]^~b[`$width-1`:1] , a[0]~^b[0]^ainc};
+  assign pp1 = { a[`$width-2`:1]&~b[`$width-2`:1] , (a[0]&ainc | ~b[0]&ainc | a[0]&~b[0]) , 1'b0};
+  assign cout = a[`$width-1`]&~b[`$width-1`];
+//; } else {
+  assign pp0 = a;
+  assign pp1 = ~b;
+  assign cout = 0;
+//; }
+
+  assign g = pp0 & pp1;
+  assign p = pp0 ^ pp1;
+//; if( $LZA_enable) {
+  assign k = ~pp0 & ~pp1;
+//; }
+
+//; my $SklanskyAdderTree_obj = generate('SklanskyAdderTree', 'PGTree', Width=>$width); 
+
+  // Instantiate upper and lower trees
+  `$SklanskyAdderTree_obj->instantiate()` (.g(g), .p(p),.G(G), .P(P));
+
+  assign absdiff[0] = ~p[0];
+  assign absdiff[`$width-1`:1] = ( a_gt_b? G[`$width-2`:0]|P[`$width-2`:0]&{(`$width-1`){~rsticky_b}}  : ~ G[`$width-2`:0] ) ^ p[`$width-1`:1];
+
+//; if( $signed_enable ){
+  assign a_gt_b = G[`$width-2`] ~^ p[`$width-1`]; //sign bit inverted
+//; } else {
+  assign a_gt_b = G[`$width-1`]; // G is 1 if a-b-1 is positive
+//; }
+
+//; if( $LZA_enable) {
+  // g[width+1]= 0     p[width+1]=1      K[width+1]=0
+  // g[width]  = cout  p[width]  = ~cout   K[width]  =0
+
+  assign LZA_mask[`$width-1`] = cout & ~k[`$width-1`] ;
+  assign LZA_mask[`$width-2`] =  (  cout & k[`$width-1`] & ~k[`$width-2`]) | (  cout & g[`$width-1`] & ~g[`$width-2`]) | 
+			         ( ~cout & g[`$width-1`] & ~k[`$width-2`]) | ( ~cout & k[`$width-1`] & ~g[`$width-2`]);
+  assign LZA_mask[`$width-3`:0]  =  (~p[`$width-1`:2] & k[`$width-2`:1] & ~k[`$width-3`:0]) | 
+			            (~p[`$width-1`:2] & g[`$width-2`:1] & ~g[`$width-3`:0]) | 
+			            ( p[`$width-1`:2] & g[`$width-2`:1] & ~k[`$width-3`:0]) |
+			            ( p[`$width-1`:2] & k[`$width-2`:1] & ~g[`$width-3`:0]);
+  DW_lzd #(`$width+1`) LZD ( .a({LZA_mask,~p[0]} | {LZA_override_mask,1'b0}), .enc(LZA_count) ); // extended by one bit for the case of difference of 1
+//; }
+
+//; if ($verif_mode =~ /ON/){
+// synopsys translate_off
+  always @(posedge dumptolog)
+  begin
+//;    if ($useInc){
+       $display ("`$self->get_instance_path()`: a=%h ainc=%b b=%h rsticky_b=%b absdiff=%b a_gt_b=%b",a, ainc, b, rsticky_b, absdiff, a_gt_b);
+//;    } else {
+       $display ("`$self->get_instance_path()`: a=%b b=%b rsticky_b=%b absdiff=%b a_gt_b=%b",a, b, rsticky_b, absdiff, a_gt_b);
+//;    }
+//;    if( $LZA_enable) {
+       $display ("`$self->get_instance_path()`: LZA_mask=%b LZA_override_mask=%b ",LZA_mask, LZA_override_mask);
+//;    }
+  end
+// synopsys translate_on
+//; }
+
+endmodule : `mname`
+

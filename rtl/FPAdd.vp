@@ -165,10 +165,10 @@ module `mname` (
   // synopsys translate_off
   always @(posedge dumptolog)
   begin
-    $display ("CascadeFPAdd: ZeroExpC=%b ZeroC=%b InfC=%b ExpC=%h ManC=%h, SigC=%h IncC=%b",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
-    $display ("CascadeFPAdd: ExpDifference=%d ResultIsInfinity =%b , ResultIsA =%b ,ResultIsNotSpecial =%b, ResultIsClose=%b",ExpDifference, ResultIsInfinity, ResultIsA,ResultIsNotSpecial, ResultIsClose);
-    $display ("CascadeFPAdd: FU =%b , FV =%b ,FI =%b ,FX =%b, LSB=%b, Guard=%b, Sticky=%b, RoundInc =%b FV_exp=%b Overflow=%b FarOverflow=%b",FU, FV , FI,FX, ManSum[0], Guard, Sticky, RoundInc, FV_exp,Overflow,FarOverflow);
-    $display ("CascadeFPAdd: ManSum   =%h ExpSum   =%h FinalSum=%h Z=%h", ManSum,ExpSum, FinalSum, Z);
+    $display ("`$self->get_instance_path()`: ZeroExpC=%b ZeroC=%b InfC=%b ExpC=%h ManC=%h, SigC=%h IncC=%b",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
+    $display ("`$self->get_instance_path()`: ExpDifference=%d ResultIsInfinity =%b , ResultIsA =%b ,ResultIsNotSpecial =%b, ResultIsClose=%b",ExpDifference, ResultIsInfinity, ResultIsA,ResultIsNotSpecial, ResultIsClose);
+    $display ("`$self->get_instance_path()`: FU =%b , FV =%b ,FI =%b ,FX =%b, LSB=%b, Guard=%b, Sticky=%b, RoundInc =%b FV_exp=%b Overflow=%b FarOverflow=%b",FU, FV , FI,FX, ManSum[0], Guard, Sticky, RoundInc, FV_exp,Overflow,FarOverflow);
+    $display ("`$self->get_instance_path()`: ManSum   =%h ExpSum   =%h FinalSum=%h Z=%h", ManSum,ExpSum, FinalSum, Z);
   end
   // synopsys translate_on
 //; }

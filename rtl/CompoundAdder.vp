@@ -95,9 +95,9 @@ module `mname` (
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
    begin
-      $display ("CompoundAdder: a=%h b=%h ci=%b",a, b, ci);
-      $display ("CompoundAdder: sum0=%h co0=%h zero0=%b",sum0, co0, zero0);
-      $display ("CompoundAdder: sum1=%h co1=%h zero1=%b",sum1, co1, zero1);
+      $display ("`$self->get_instance_path()`: a=%h b=%h ci=%b",a, b, ci);
+      $display ("`$self->get_instance_path()`: sum0=%h co0=%h zero0=%b",sum0, co0, zero0);
+      $display ("`$self->get_instance_path()`: sum1=%h co1=%h zero1=%b",sum1, co1, zero1);
    end
    //; }
 
