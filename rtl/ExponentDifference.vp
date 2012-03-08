@@ -66,12 +66,16 @@ module `mname`(
 
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'CA0', 
 //;                                                 , Width =>$ExtendedExp_width
-//;                                                 , EnableCarryIn => 'ON'
+//;                                                 , EnableCarryIn => 'OFF'
 //;                                                 , ZeroWidth => 0);
 
-  `$CompoundAdder_obj->instantiate()`  (.a(ExpDiff_pp0), .b(ExpDiff_pp1), 
-                                   .sum0(ExpA_ExpB_2), .co0(co_dummy1),
-                                   .sum1(ExpA_ExpB_1), .co1(co_dummy2));
+  `$CompoundAdder_obj->instantiate()`  (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+       .a(ExpDiff_pp0), .b(ExpDiff_pp1), 
+       .sum0(ExpA_ExpB_2), .co0(co_dummy1),
+       .sum1(ExpA_ExpB_1), .co1(co_dummy2));
 
   //Half adder for a+b+2
   assign ExpA_ExpB = ExpDiff_pp0 + ExpDiff_pp1 + 2;

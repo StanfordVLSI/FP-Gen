@@ -197,9 +197,9 @@ begin
     $display ("`$self->get_instance_path()`: smallerFraction=%h shift_in=%h shift_amount=%d",smallerFraction, shift_in, shift_amount);
     $display ("`$self->get_instance_path()`: RSticky=%b subtract=%b ci=%b co1=%b",RSticky, subtract, ci, co1);
     $display ("`$self->get_instance_path()`: sum0=%h sum1=%h {sumUpper,sumMiddle}=%h",sum0, sum1, {sumUpper,sumMiddle});
-    $display ("`$self->get_instance_path()`: ExpSumRight=%h sumRight=%h guardRight=%b",ExpSumRight, sumRight,guardRight);
-    $display ("`$self->get_instance_path()`: ExpSumCenter=%h sumCenter=%h guardCenter=%b",ExpSumCenter, sumCenter,guardCenter);
-    $display ("`$self->get_instance_path()`: ExpSumLeft  =%h sumLeft  =%h guardLeft=%b",ExpSumLeft, sumLeft, guardLeft);
+    $display ("`$self->get_instance_path()`: ExpSumRight=%h sumRight=%h guardRight=%b stickyRight=%b",ExpSumRight, sumRight,guardRight, stickyRight);
+    $display ("`$self->get_instance_path()`: ExpSumCenter=%h sumCenter=%h guardCenter=%b stickyCenter=%b",ExpSumCenter, sumCenter,guardCenter, stickyCenter);
+    $display ("`$self->get_instance_path()`: ExpSumLeft  =%h sumLeft  =%h guardLeft=%b stickyLeft=%b",ExpSumLeft, sumLeft, guardLeft, stickyLeft);
     $display ("`$self->get_instance_path()`: sumUpper=%b Rsticky=%b",sumUpper, RSticky);
     $display ("`$self->get_instance_path()`: Overflow=%b OverflowCenter=%b OverflowShifted=%b",Overflow, OverflowCenter, OverflowShifted);
 end

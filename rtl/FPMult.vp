@@ -259,11 +259,11 @@ module `mname`(
   assign ZeroAB = zeroAplusInc | zeroBplusInc;
 //  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
 
-  // Sameh? assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
-  // Sameh? assign ManAB = ManAB_normalized;
+  assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
+  assign ManAB = ManAB_normalized;
 
-  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
-  assign ManAB = noShift? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],ManAB_normalized_nextbit};
+  // Ofer?assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
+  // Ofer? assign ManAB = noShift? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],ManAB_normalized_nextbit};
   assign SignAB = SignA ^ SignB;
   assign RStickyAB = noShift?  RStickyAB_int|ManAB_normalized_nextbit : RStickyAB_int;
    
@@ -275,7 +275,7 @@ module `mname`(
      begin
 	$display ("`$self->get_instance_path()`: ZeroExpA=0x%h ZeroA=0x%h InfA=0x%h ExpA=%h ManA=%h, SigA=%h IncA=0x%h",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
 	$display ("`$self->get_instance_path()`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB);
-	$display ("`$self->get_instance_path()`: ExpAB =%h , ManAB =%h",ExpAB, ManAB);
+	$display ("`$self->get_instance_path()`: ExpAB=%h , ManAB=%h, SignAB=%h, NANAB=%h, InfAB=%h, ZeroAB=%h, RStickyAB=%h",ExpAB, ManAB, SignAB, NANAB, InfAB, ZeroAB, RStickyAB);
 	$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
 	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long);
 	$display ("`$self->get_instance_path()`: noShift =0x%h ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
