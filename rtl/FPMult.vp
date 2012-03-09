@@ -54,6 +54,8 @@
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//; my $floating_digits= parameter(Name=>'FloatingDigits', Val=>1,  List=>[1,2],
+//; 			   Doc=>"Number of digits before floating point");
 //;
 //; # And some local variables
 //; my $shift_width = CeilOfLog2($frac_width+1) + 1;
@@ -92,7 +94,7 @@ module `mname`(
    logic 				      ZeroA, ZeroB, co_dummy0, co_dummy1, co_dummy2;
    logic 				      co_dummy3, co_dummy4, noShift, denormalAB;
 
-   logic 				      RStickyAB_int, ManAB_normalized_nextbit;
+//   logic 				      RStickyAB_int, ManAB_normalized_nextbit;
    logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
 
    logic 				      noShiftRight;
@@ -152,9 +154,9 @@ module `mname`(
    //         - 2^($exp_width-1) + 1 = - 2^(`$exp_width-1`) + 1
 
   DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
-					.ci(noShiftRight), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
+					.ci(1'b0), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
 
-   //; if ($enable_denormals=~ /YES/i){
+//; if ($enable_denormals=~ /YES/i){
    // enable_denormals = YES
     logic [`$exp_width + 1`:0] Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5, Eab_1_ps0;
     logic [`$exp_width + 1`:0] Eab_1_ps1, ExpAB_1, denormalShiftConst, SHD_ps0, SHD_ps1, SHD_wide;
@@ -210,15 +212,29 @@ module `mname`(
   //;}
 
     assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>shiftAmount;
-    assign ManAB_normalized = ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`];
-    assign ManAB_normalized_nextbit = ManAB_shifted[`$frac_width`];
-    assign RStickyAB_int = |ManAB_shifted[`$frac_width-1`:0] | ( ManAB_normalized==0 & ~ZeroAB);
 
-   //; }else{           
+   //;  if ($floating_digits==1) {
+    assign noShift = ManAB_shifted[`$product_width + $frac_width`];
+    assign ManAB = noShift? ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`] : ManAB_shifted[`$product_width + $frac_width`:`$frac_width`];
+    assign RStickyAB = |ManAB_shifted[`$frac_width-1`:0]  | (noShift & ManAB_shifted[`$frac_width`] ) |  ( ManAB==0 & ~ZeroAB);
+   //;  } else {
+    assign noShift = 0;
+    assign ManAB = ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`];
+    assign RStickyAB = |ManAB_shifted[`$frac_width`:0] | ( ManAB==0 & ~ZeroAB);
+   //;   }
+
+//; }else{ 
+          
    // enable_denormals = NO
    assign denormalAB = 0;
-   assign ManAB_normalized = ManAB_unnormalized;
    assign RStickyAB = 0;
+   //;  if ($floating_digits==1) {
+   assign noShift = ManAB_unnormalized[`$product_width-1`];
+   assign ManAB= noShift? ManAB_unnormalized : {ManAB_unnormalized[`$product_width-2`:0],1'b0};
+   //;  } else {
+   assign noShift = 0;
+   assign ManAB = ManAB_unnormalized;
+   //;  }
    //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
    `$ExpAdd_obj->instantiate()` 
      (
@@ -227,7 +243,8 @@ module `mname`(
       //; }
       .a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4)
       );
-   //; }
+
+//; }
 
 
    //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
@@ -243,9 +260,8 @@ module `mname`(
       .out(ManAB_unnormalized_long)
       );
 
-   //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger, next two lines deal with this case
-   assign noShiftRight = ManAB_unnormalized_long[`$product_width`];
-   assign ManAB_unnormalized = noShiftRight?ManAB_unnormalized_long[`$product_width`:1]:ManAB_unnormalized_long[`$product_width-1`:0];
+   //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger, this case is ignored because IncA and IncB are mutually exclusive
+   assign ManAB_unnormalized = ManAB_unnormalized_long[`$product_width`-1:0];
    
    
 /*
@@ -255,17 +271,15 @@ module `mname`(
 */
 
 
-  assign noShift = ManAB_normalized[`$product_width - 1`];
   assign ZeroAB = zeroAplusInc | zeroBplusInc;
-//  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
-
-  assign ExpAB = ZeroAB? 0 : (denormalAB?1:ExpAB0);
-  assign ManAB = ManAB_normalized;
-
-  // Ofer?assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
-  // Ofer? assign ManAB = noShift? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],ManAB_normalized_nextbit};
   assign SignAB = SignA ^ SignB;
-  assign RStickyAB = noShift?  RStickyAB_int|ManAB_normalized_nextbit : RStickyAB_int;
+
+//;  if ($floating_digits==1) {
+  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
+//; } else {
+  assign ExpAB = ZeroAB? 0 :  (denormalAB?1:ExpAB0);
+//; }
+
    
 
 
@@ -273,11 +287,13 @@ module `mname`(
 //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
      begin
+        assert ( ~ (IncA & IncB)) else $display("`$self->get_instance_path()`: ERROR: IncA (%b) and IncB (%b) can't be asserted simultaneaously ", IncA, IncB);
 	$display ("`$self->get_instance_path()`: ZeroExpA=0x%h ZeroA=0x%h InfA=0x%h ExpA=%h ManA=%h, SigA=%h IncA=0x%h",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
 	$display ("`$self->get_instance_path()`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB);
 	$display ("`$self->get_instance_path()`: ExpAB=%h , ManAB=%h, SignAB=%h, NANAB=%h, InfAB=%h, ZeroAB=%h, RStickyAB=%h",ExpAB, ManAB, SignAB, NANAB, InfAB, ZeroAB, RStickyAB);
 	$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
-	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long);
+	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h ManAB_shifted=%h shiftAmount=%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long, ManAB_shifted, shiftAmount);
+	$display ("`$self->get_instance_path()`: Eab_ps0=%h Eab_ps1=%h Eab_ps2=%h Eab_ps3=%h Eab_ps4=%h Eab_ps5=%h", Eab_ps0, Eab_ps1, Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5);
 	$display ("`$self->get_instance_path()`: noShift =0x%h ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
 	$display ("`$self->get_instance_path()`: ZeroAB=0x%h InfAB=0x%h NANAB=0x%h RStickyAB=0x%h",ZeroAB, InfAB, NANAB, RStickyAB);
 	$display ("`$self->get_instance_path()`: NANorInfAplusInc=%d, zeroSigAplusInc=%d, NANAplusInc=%d, NANBplusInc=%d, InfAplusInc=%d, ZeroBplusInc=%d, InfBplusInc=%d, ZeroAplusInc=%d, NANAB=%d",NANorInfAplusInc,zeroSigAplusInc,NANAplusInc, NANBplusInc, InfAplusInc, zeroBplusInc, InfBplusInc, zeroAplusInc, NANAB);

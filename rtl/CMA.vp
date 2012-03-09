@@ -115,6 +115,7 @@ module `mname` (
 //; my $CascadeMUL_obj = generate('FPMult', 'MUL', FractionWidth=>$frac_width 
 //;                                              , ExponentWidth=>$exp_width
 //;                                              , EnableDenormals=>$enable_denormals
+//;                                              , FloatingDigits => 2
 //;                                              , useInc => $useInc);
   `$CascadeMUL_obj->instantiate()` (.A(a), .IncA(ainc), .B(b) , .IncB(binc), .SignAB(SignAB), .ExpAB(ExpAB) , .ManAB(ManAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB), .dumptolog(dumptolog));
 
