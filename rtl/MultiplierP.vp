@@ -52,6 +52,9 @@
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
 //;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
+//;    `touch place_MultiplierP.tcl` ; #create semaphore for placement
+//; } else {
+//;    -e "place_MultiplierP.tcl" and `rm place_MultiplierP.tcl` ; #eliminate semaphore for placement
 //; }
 
    

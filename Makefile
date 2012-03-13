@@ -24,7 +24,48 @@ endif
 ############# For Genesis2 ##############
 #########################################
 # tile is the top of the pre-processed hierarchy
-TOP_MODULE := top
+
+#DESIGN_NAME ?= FPMult
+#INST_NAME ?= FPMult
+#MOD_NAME ?= FPMult
+#TOP_NAME ?= top_FPMult
+#TOP_MODULE ?= $(TOP_NAME)
+
+#DESIGN_NAME ?= MultiplierP
+#INST_NAME ?= MultiplierP
+#MOD_NAME ?= MultiplierP
+#TOP_NAME ?= top_MultiplierP
+#TOP_MODULE ?= $(TOP_NAME)
+
+#DESIGN_NAME ?= FMA
+#INST_NAME ?= FMA
+#MOD_NAME ?= FMA
+#TOP_NAME ?= top_FMA
+#TOP_MODULE ?= $(TOP_NAME)
+
+#DESIGN_NAME ?= Multiplier
+#INST_NAME ?= Multiplier
+#MOD_NAME ?= Multiplier
+#TOP_NAME ?= top_Multiplier
+#TOP_MODULE ?= $(TOP_NAME)
+
+#DESIGN_NAME ?= FPMult
+#INST_NAME ?= FPMult
+#MOD_NAME ?= FPMult
+#TOP_NAME ?= top_FPMult
+#TOP_MODULE ?= $(TOP_NAME)
+
+#DESIGN_NAME ?= adder
+#INST_NAME ?= adder
+#MOD_NAME ?= adder
+#TOP_NAME ?= top_adder
+#TOP_MODULE ?= $(TOP_NAME)
+
+DESIGN_NAME ?= MultiplierP
+INST_NAME ?= MultiplierP
+MOD_NAME ?= MultiplierP
+TOP_NAME ?= top
+TOP_MODULE ?= $(TOP_NAME)
 
 
 # list src folders and include folders
@@ -73,7 +114,7 @@ endif
 
 # xml hierarchy file
 ifndef GENESIS_HIERARCHY
-GENESIS_HIERARCHY := hierarchy_out.xml
+GENESIS_HIERARCHY := $(MOD_NAME).xml
 else
   $(warning WARNING: GENESIS_HIERARCHY set to $(GENESIS_HIERARCHY))
 endif
@@ -138,6 +179,9 @@ VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
 # "+noportcoerce" compile-time option to shut off the port coercion for the entire design
 # "-top topModuleName" specifies the top module
 # "-f verilogFiles.list" specifies a file that contains list of verilog files to compile
+
+J_CC ?= gcc 
+
 VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				+cli 						\
 				+lint=PCWM					\
@@ -148,7 +192,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-debug_pp					\
 				-timescale=1ns/1ns				\
 				+noportcoerce         				\
-				-ld gcc -debug_pp				\
+				-ld $(J_CC) -debug_pp				\
 				-top $(TOP_MODULE)				\
 				-f $(GENESIS_VLOG_LIST) 			\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
@@ -253,7 +297,7 @@ $(EXECUTABLE):	$(VERILOG_FILES) $(GENESIS_VLOG_LIST)
 	@(if [ "$(SIM_ENGINE)" = "mentor" ]; then 	\
 	    vlib work;					\
 	  fi )
-	$(COMPILER)  $(VERILOG_COMPILE_FLAGS) $(COMP) 
+	$(COMPILER)  $(VERILOG_COMPILE_FLAGS) $(COMP) 2>&1 | tee comp_bb.log 
 
 
 # Simulation rules:
@@ -264,13 +308,13 @@ run_wave: $(EXECUTABLE)
 	@echo ""
 	@echo Now Running $(EXECUTABLE) with wave
 	@echo ==================================================
-	$(EXECUTABLE) +wave $(VERILOG_SIMULATION_FLAGS) $(RUN)
+	$(EXECUTABLE) +wave $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log 
 
 run: $(EXECUTABLE)
 	@echo ""
 	@echo Now Running $(EXECUTABLE)
 	@echo ==================================================
-	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN)
+	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log 
 
 ########## For Design Compiler #############
 ############################################
@@ -287,6 +331,50 @@ run_dc: $(RUN_NAME)/log/dc_$(RUN_NAME).log
 $(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p $(RUN_NAME); cd $(RUN_NAME); mkdir -p log; \
 	dc_shell-xg-t -64bit -f ../multiplier_dc.tcl -x $(COMMAND_STRING) | tee -i log/dc_$(RUN_NAME).log
+
+# ICC Run rules:
+############################
+.PHONY: run_synthesis
+run_synthesis: log/syn_$(RUN_NAME).log
+
+SYN_CLK_PERIOD ?= 1.5
+target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
+
+RUN_SYNTHESIS_FLAGS:= \
+                      VT=$(VT) \
+                      Voltage=$(Voltage) \
+                      target_delay=$(target_delay) \
+                      io2core=$(io2core) \
+                      MOD_NAME=$(MOD_NAME)
+
+log/syn_$(RUN_NAME).log: $(EXECUTABLE)
+	mkdir -p log
+	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee  syn_bb.log
+
+clean_synthesis:
+	rm -rf synthesis/svt_*v*_*.*
+	rm -rf synthesis/lvt_*v*_*.*
+	rm -rf synthesis/hvt_*v*_*.*
+	rm -f syn_bb.log
+	make -C synthesis -f Makefile clean VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+
+#Rollup Rules:
+##############################
+
+.PHONY: rollup1  rollup2 rollup3
+rollup1: 
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+rollup2: 
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+rollup3: 
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+
+
+#Eval Rules
+##############################
+.PHONY: eval 
+eval: comp rollup1 run rollup2 run_synthesis rollup3
+
 
 # Cleanup rules:
 #####################
@@ -323,6 +411,8 @@ ifeq ($(SIM_ENGINE), mentor)
 	\rm -rf transcript
 endif
 
-cleanall: clean
+cleanall: clean clean_synthesis
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
+	\rm -f *.v
+	\rm -f *.pm

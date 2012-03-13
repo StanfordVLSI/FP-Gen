@@ -1,0 +1,101 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/verif/top.vp#14 $
+ ** $DateTime: 2012/03/05 19:02:57 $
+ ** $Change: 10233 $
+ ** $Author: jingpu $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Top module for simulation, used for simple module testing. Should not
+ * be mistaken as a full fledged verification environment. It's not!
+ * 
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 03, 2011  shacham   init version - ported my wallace env
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off.  !IGNORE!" ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off. !IGNORE! ");
+
+module `mname` ();   
+   //; # Generate the DUT here
+   //; my $FP_obj = generate('FPMult', 'FPMult');
+
+   //; # Read what kind of DUT the user wanted so you can test it
+   //; my $frac_width = $FP_obj->get_param('FractionWidth');
+   //; my $exp_width = $FP_obj->get_param('ExponentWidth');
+   //; my $arch = $FP_obj->get_param('Architecture');
+   //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
+   //; my $product_width = 2 * $frac_width + 2;
+  
+   // local signals for driving inputs
+   logic [`$frac_width - 1`:0] 		      FracA, FracB, FracC;
+   logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
+   logic 				      SignA, SignB, SignC;
+   logic 				      IncA, IncB, IncC;
+
+
+   
+   // local signals for observing outputs
+   logic [`$exp_width + 1`:0] 		      ExpAB;
+   logic [`$product_width - 1`: 0] 	      ManAB; //entire mantissa, not just fraction
+   logic 				      SignAB, NANAB, InfAB, ZeroAB, RStickyAB;
+  
+   //; if ($verif_mode =~ /ON/){
+   logic 				      dumptolog;
+   //; }
+   
+   // Instantiate the dut here
+   `$FP_obj->instantiate()` (
+			     // inputs:
+			     //; if ($verif_mode =~ /ON/){
+			     .dumptolog(dumptolog),
+			     //; }
+			     .A({SignA, ExpA, FracA}), .B({SignB, ExpB, FracB}), 
+			     //; if ($arch =~ /Cascade/){
+			     .IncA(IncA), .IncB(IncB),
+			     //;}
+			     //outputs:
+			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
+			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
+			     );
+   
+   
+   //; if ($verif_mode =~ /ON/){
+   // ------------------------ VERIFICATION HARNES ---------------------------//
+   // Instantiate the TestGenerator here:
+   //; my $TestBench_obj = generate('TestBench', 'TestBench', 
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width,
+   //; 				    Architecture=>$arch,
+   //;                              TestDenormals=>$enable_denormals);
+   `$TestBench_obj->instantiate` (
+				// outputs:
+				.dumptolog(dumptolog),
+				.SignA(SignA), .ExpA(ExpA), .FracA(FracA), .IncA(IncA), 
+				.SignB(SignB), .ExpB(ExpB), .FracB(FracB), .IncB(IncB), 
+				.SignC(SignC), .ExpC(ExpC), .FracC(FracC), .IncC(IncC), 
+				// inputs
+				.SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB),
+				.NaNRes(NANAB), .InfRes(InfAB), .ZeroRes(ZeroAB), .RStickyRes(RStickyAB) 
+				);
+   //; } # End of "if ($verif_mode..."
+   
+endmodule : `mname`
