@@ -26,7 +26,15 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set APPENDIX $VT
 }
 
+if { [info exists ENABLE_MANUAL_PLACEMENT] } {
+    if { ![file exists ../../place_MultiplierP.tcl] } {
+	unset ENABLE_MANUAL_PLACEMENT  
+    }
+}
+
 set target_library [set ${VT}_${Voltage}_target_libs]
+
+set_host_options -max_cores 2
 
 set link_library [set wc_${Voltage}_lib_dbs]
 set synthetic_library [list dw_foundation.sldb]
@@ -34,5 +42,8 @@ foreach L $synthetic_library {
  lappend link_library $L
 }
 
-
-set DESIGN_NAME MultiplierP_unq1
+if {![info exists DESIGN_TARGET]} {
+    exit ;
+} else {
+    set DESIGN_NAME ${DESIGN_TARGET}
+}

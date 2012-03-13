@@ -2,7 +2,7 @@
 # one example is running this from command line
 # icc_shell -f multiplier_icc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1;" | tee -i multiplier_icc_optimized.log
 
-source ../header.tcl
+source -echo ../header.tcl
 
 proc add_cells_to_rp_group {args} {
 
@@ -89,7 +89,7 @@ read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 
-
+if { [file exists ../../place_MultiplierP.tcl] } {
 
 set CSA_cells [get_cells -hierarchical "*csa*"];
 set max_row 0;
@@ -245,6 +245,9 @@ puts $fp "BoothSel aspect ratio = $boothSel_aspect_ratio";
 
 close $fp;
 
+}
+#END: if { [file exists ../../place_MultiplierP.tcl] } {
+
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # First: pin placement
@@ -303,7 +306,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   }
 }
 
-
+if { [file exists ../../place_MultiplierP.tcl] } {
 if {$max_compressed_column > 0} {
   initialize_floorplan \
   	-control_type row_number \
@@ -313,20 +316,35 @@ if {$max_compressed_column > 0} {
   	-left_io2core $io2core \
   	-bottom_io2core $io2core \
   	-right_io2core $io2core \
-  	-top_io2core $io2core \
+ 	-top_io2core $io2core \
   	-start_first_row      
 } else {
   initialize_floorplan \
   	-control_type aspect_ratio \
   	-core_aspect_ratio 1 \
-  	-core_utilization $core_utilization_ratio \
+ 	-core_utilization $core_utilization_ratio \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
   	-bottom_io2core $io2core \
-  	-right_io2core $io2core \
+ 	-right_io2core $io2core \
   	-top_io2core $io2core \
   	-start_first_row
 }
+} else {
+  set core_utilization_ratio 0.5;
+  initialize_floorplan \
+  	-control_type aspect_ratio \
+  	-core_aspect_ratio 1 \
+ 	-core_utilization $core_utilization_ratio \
+  	-row_core_ratio 1 \
+  	-left_io2core $io2core \
+  	-bottom_io2core $io2core \
+ 	-right_io2core $io2core \
+  	-top_io2core $io2core \
+  	-start_first_row
+}
+
+
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
 set placement_site_width  [get_attribute [get_core_areas] tile_width];
@@ -458,16 +476,16 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 #  check_rp_groups -verbose ${DESIGN_NAME}::SklanskyAdderTree_K
 #}
 
-  if {[file exists ../../place_PartialProductSum.tcl] && $DESIGN_NAME!="MultiplierP_unq1"} {
-    source -echo ../../place_PartialProductSum.tcl
-    check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum
-    check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum_2
-    create_rp_group RP_MULT -columns 2 -rows 2 -allow_non_rp_cells
-    add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::rp_tree            -column 0 -row 1 ;
-    add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum  -column 0 -row 0 ;
-    add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum_2  -column 1 -row 1 ;
-    check_rp_groups -verbose ${DESIGN_NAME}::RP_MULT
-  }
+  #if {[file exists ../../place_PartialProductSum.tcl] && $DESIGN_NAME!="MultiplierP_unq1"} {
+  #  source -echo ../../place_PartialProductSum.tcl
+  #  check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum
+  #  check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum_2
+  #  create_rp_group RP_MULT -columns 2 -rows 2 -allow_non_rp_cells
+  #  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::rp_tree            -column 0 -row 1 ;
+  #  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum  -column 0 -row 0 ;
+  #  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum_2  -column 1 -row 1 ;
+  #  check_rp_groups -verbose ${DESIGN_NAME}::RP_MULT
+  #}
 
   check_rp_groups -all -verbose
 
@@ -508,10 +526,10 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 #place_opt  -effort low
 
 
- if {$max_compressed_column > 0} {
-#  place_opt -effort high -power -area_recovery
+ if { [file exists ../../place_MultiplierP.tcl] && $max_compressed_column > 0} {
+  place_opt -effort high -power -area_recovery
   create_placement
-#  psynopt -area_recovery
+  psynopt -area_recovery
   refine_placement
   save_mw_cel -as ${DESIGN_NAME}_before_rp_blowout
   remove_rp_groups -all
@@ -546,14 +564,17 @@ remove_attribute [current_design] local_link_library
 set link_library [set wc_0v8_lib_dbs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
 report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.power.rpt
+report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
 
 set link_library [set wc_0v9_lib_dbs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
 report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.power.rpt
+report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
 
 set link_library [set wc_1v0_lib_dbs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
 report_power  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.power.rpt
+report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
 
 
 exit
