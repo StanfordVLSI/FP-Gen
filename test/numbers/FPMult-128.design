@@ -1,0 +1,3 @@
+TOP.top_FPMult.FPMult.EnableDenormals EnableDenormals YES
+TOP.top_FPMult.FPMult.ExponentWidth ExponentWidth 15
+TOP.top_FPMult.FPMult.FractionWidth FractionWidth 112
