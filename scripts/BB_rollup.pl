@@ -124,7 +124,7 @@ foreach my $file ( @files ) {
     while(<REPORTFILE>) {
       if ( $_ =~ /Total cell area:\s+(\d+\.?\d*)/ ) {
 	  $mapped_core_area = $1;
-	  $mapped_core_area /= 1000000 ;
+	  $mapped_core_area = $mapped_core_area / 1000000.0 ;
       }
     }
     close REPORTFILE;
@@ -190,6 +190,7 @@ foreach my $file ( @files ) {
     while(<REPORTFILE>) {
       if ( $_ =~ /Core Area:\s+(\d+\.?\d*)/ ) {
         $routed_core_area = $1;
+        $routed_core_area = $routed_core_area / 1000000.0;
       }
     }
     close REPORTFILE;
@@ -254,6 +255,7 @@ foreach my $file ( @files ) {
     while(<REPORTFILE>) {
       if ( $_ =~ /Core Area:\s+(\d+\.?\d*)/ ) {
         $optimized_core_area = $1;
+	$optimized_core_area = $optimized_core_area / 1000000.0;     
       }
     }
     close REPORTFILE;
@@ -321,6 +323,8 @@ foreach my $file ( @files ) {
     print TARGET "INFO_Routed_Seq_Cell_Count:$routed_seq_cell_count\n";
     print TARGET "INFO_Optimized_Comb_Cell_Count:$optimized_comb_cell_count\n";
     print TARGET "INFO_Optimized_Seq_Cell_Count:$optimized_seq_cell_count\n";
+    print TARGET "INFO_Comb_Cell_Count:$optimized_comb_cell_count\n";
+    print TARGET "INFO_Seq_Cell_Count:$optimized_seq_cell_count\n";
 
     print TARGET "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
 

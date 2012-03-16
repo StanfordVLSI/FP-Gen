@@ -72,7 +72,7 @@ module `mname`(
 //; if( $DW_mode eq 'ON' ){
  
    DW02_mult #( `$width` , `$width` )
-   U1 ( .A(a), .B(b), .TC( 1'b0 ), .PRODUCT(out) );
+   U1 ( .A(a), .B(b), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]) );
    
 //; } elsif( $DW_mode eq 'OFF' ){
 
