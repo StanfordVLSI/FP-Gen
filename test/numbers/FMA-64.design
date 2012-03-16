@@ -1,0 +1,4 @@
+TOP.top_FMA.FMA.EnableDenormals EnableDenormals YES
+TOP.top_FMA.FMA.ExponentWidth ExponentWidth 11
+TOP.top_FMA.FMA.FractionWidth FractionWidth 52
+TOP.top_FMA.FMA.UseInc UseInc NO
