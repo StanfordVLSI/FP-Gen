@@ -2,3 +2,7 @@ TOP.top_FMA.FMA.EnableDenormals EnableDenormals YES
 TOP.top_FMA.FMA.ExponentWidth ExponentWidth 8
 TOP.top_FMA.FMA.FractionWidth FractionWidth 23
 TOP.top_FMA.FMA.UseInc UseInc NO
+TOP.top_FMA.FMA.VERIF_MODE VERIF_MODE OFF
+TOP.top_FMA.FMA.SYNTH_MODE SYNTH_MODE ON
+TOP.top_FMA.VERIF_MODE VERIF_MODE OFF
+TOP.top_FMA.SYNTH_MODE SYNTH_MODE ON

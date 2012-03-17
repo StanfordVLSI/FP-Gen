@@ -1,3 +1,7 @@
 TOP.top_FPMult.FPMult.EnableDenormals EnableDenormals YES
 TOP.top_FPMult.FPMult.ExponentWidth ExponentWidth 5
 TOP.top_FPMult.FPMult.FractionWidth FractionWidth 10
+TOP.top_FPMult.FPMult.VERIF_MODE VERIF_MODE OFF
+TOP.top_FPMult.FPMult.SYNTH_MODE SYNTH_MODE ON
+TOP.top_FPMult.VERIF_MODE VERIF_MODE OFF
+TOP.top_FPMult.SYNTH_MODE SYNTH_MODE ON
