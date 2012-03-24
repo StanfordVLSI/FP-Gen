@@ -85,17 +85,12 @@ vpath 	%.svph $(GENESIS_INC)
 GENESIS_PRIMITIVES :=	
 
 GENESIS_ENV :=		$(wildcard $(DESIGN_HOME)/verif/*.vp) $(wildcard $(DESIGN_HOME)/verif/*.svp)
-$(warning GENESIS_ENV=$(GENESIS_ENV))
 GENESIS_ENV :=		$(notdir $(GENESIS_ENV)) 
 
 GENESIS_DESIGN := 	$(wildcard $(DESIGN_HOME)/rtl/*.vp) $(wildcard $(DESIGN_HOME)/rtl/*.svp)
 GENESIS_DESIGN := 	$(notdir $(GENESIS_DESIGN))
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
-
-GENESIS_INTERMIDS := $(GENESIS_INPUTS)
-GENESIS_INTERMIDS := $(GENESIS_INTERMIDS:.vp=.pm)
-GENESIS_INTERMIDS := $(GENESIS_INTERMIDS:.svp=.pm)
 
 
 # debug level
@@ -244,7 +239,11 @@ endif
 #default rule: 
 all: $(EXECUTABLE)
 
-# Genesis2 rule:
+# phony rules for verilog generation process
+.PHONY: gen clean_genesis
+gen: $(GENESIS_VLOG_LIST)
+
+# Genesis2 rules:
 #####################
 # This is the rule to activate Genesis2 generator to generate verilog 
 # files (_unqN.v) from the genesis (.vp) program.
@@ -255,10 +254,15 @@ $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
 
-# phony rules for verilog generation process
-.PHONY: gen
-
-gen: $(GENESIS_VLOG_LIST)
+clean_genesis:
+	@echo ""
+	@echo Cleanning previous runs of Genesis
+	@echo ===================================
+	for fname in `cat $(GENESIS_VLOG_LIST)`; do 	\
+		\rm -rf $$fname;			\
+	done
+	\rm -rf genesis_work
+	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY) small_$(GENESIS_HIERARCHY) tiny_$(GENESIS_HIERARCHY)
 
 
 # VCS rules:
@@ -357,7 +361,7 @@ eval: comp rollup1 run rollup2 run_synthesis rollup3
 # Cleanup rules:
 #####################
 .PHONY: clean cleanall 
-clean:
+clean: clean_genesis
 	@echo ""
 	@echo Cleanning old files, objects, logs and garbage
 	@echo ==================================================
@@ -377,10 +381,6 @@ clean:
 	\rm -rf top.v
 	\rm -rf top_FMA.v
 	\rm -f graph_*.m
-	\rm -rf $(GENESIS_INTERMIDS)
-	\rm -rf $(GENESIS_INTERMIDS:.pm=_unq*.v)
-	\rm -rf $(GENESIS_INTERMIDS:.pm=_tmp*.v)
-	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY) small_$(GENESIS_HIERARCHY) tiny_$(GENESIS_HIERARCHY)
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
 endif
@@ -392,5 +392,3 @@ endif
 cleanall: clean clean_synthesis
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
-	\rm -f *.v
-	\rm -f *.pm
