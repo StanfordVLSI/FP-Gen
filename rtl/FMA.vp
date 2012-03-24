@@ -73,6 +73,8 @@
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>0, Step=>1,
+//;                       Doc=>"Pipeline depth");
 //;
 //; my $useInc ;
 //; if( $desinware_mode eq 'OFF' ){
@@ -92,7 +94,6 @@
 //; my $lza_enc_width = CeilOfLog2($lza_width) + 1;
 //;
 
-
 module `mname` (
    //; if ($verif_mode =~ /ON/){
     input  logic dumptolog,
@@ -101,8 +102,10 @@ module `mname` (
     input  logic ainc, binc, cinc,
     input  logic [2:0] rnd,
 
-    input logic clk ,
-    input logic rst ,
+   //; if ($pipeline_depth>0){
+    input  logic clk, reset, stall_pipeline, SI, SCAN_ENABLE, test_mode,
+    output logic SO,
+   //; }
 		
     output logic [`$exp_width + $frac_width`:0] z,
     output logic zinc,
@@ -113,6 +116,10 @@ module `mname` (
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
   */
+
+logic [`$exp_width + $frac_width`:0] intermediate_z;
+logic intermediate_zinc; 
+
 //; if( $desinware_mode eq 'ON' ){
 
    DW_fp_mac #( `$frac_width` , `$exp_width` , `$enable_denormals eq 'YES' ?1:0` ) U1 (
@@ -120,7 +127,7 @@ module `mname` (
 									       .b(b),
 									       .c(c),
 									       .rnd(rnd),
-									       .z(z),
+									       .z(intermediate_z),
 									       .status(status) );
    
    
@@ -285,7 +292,7 @@ module `mname` (
 
   assign MaxNum =  FV & RndMaxNum; 
 
-  assign {zinc,z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width -1`){1'b0}}}
+  assign {intermediate_zinc,intermediate_z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width -1`){1'b0}}}
               : ResultIsInfinity ? {1'b0,SignInfinity,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
                                     : ResultIsC ? {1'b0,SignSpecial,ExpC, ManC[`$frac_width -1`:0]} : {RoundInc, FMA_Result};
 //; if ($verif_mode =~ /ON/){
@@ -303,6 +310,15 @@ module `mname` (
   // synopsys translate_on
 //; }
 //; } #End Not Designware Loop
+
+//; if($pipeline_depth>0){
+//;   my $pipeline_obj = generate('FF_pipeline', 'pipeline', Width=> $exp_width + $frac_width+2
+//;                                                 , PipelineDepth=>$pipeline_depth);
+  `$pipeline_obj->instantiate()` ( .in({intermediate_zinc,intermediate_z}) , .clk(clk) , .reset(reset), .out({zinc,z}) );
+//; } else {
+  assign {zinc,z} = {intermediate_zinc,intermediate_z};
+//; }
+
 endmodule
 
 

@@ -8,12 +8,28 @@ if {![info exists VT]} {
   set VT lvt
 }
 
+
+
 if {![info exists Voltage]} {
   set Voltage 1v0
 }
 
+#TODO: get clk to q delay from datasheets that is vth and vdd specific instead of average
+set CLOCK_TO_Q_DELAY 0.15
+set CLOCK_SETUP_TIME 0.05
+
 if {![info exists target_delay]} {
   set target_delay 0
+}
+
+if {[info exists CLOCK_PERIOD_PS]} {
+  set CLOCK_PERIOD [expr double($CLOCK_PERIOD_PS)/1000];
+} else {
+  set CLOCK_PERIOD [expr $target_delay+$CLOCK_SETUP_TIME+$CLOCK_TO_Q_DELAY];
+}
+
+if {![info exists PIPELINE_STAGES_COUNT]} {
+  set PIPELINE_STAGES_COUNT 0
 }
 
 if {![info exists io2core]} {

@@ -1,0 +1,65 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FF_pipeline.vp#1 $
+ ** $DateTime: 2012/02/20 23:29:51 $
+ ** $Change: 10128 $
+ ** $Author: sameh $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * parameterized Flip flop pipeline
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * * Pipeline depth
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * March 23, 2012   Sameh   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>64, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>0, Step=>1,
+//;                       Doc=>"Pipeline depth");
+
+module `mname` (
+  input logic [`$width-1`:0] in, 
+  input logic clk, reset, 
+  output logic [`$width-1`:0] out
+               );
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+
+//; if ($pipeline_depth>0) {
+    reg [`$width-1`:0] stages [0:`$pipeline_depth-1`];
+
+    assign out = stages [`$pipeline_depth-1`];
+
+    always @(posedge clk)
+      stages[0] <= in;
+
+//;   if ($pipeline_depth>1) {
+    always @(posedge clk)
+        stages [1:`$pipeline_depth-1`] <= stages [0:`$pipeline_depth-2`];
+//;   }
+//; } else {
+    assign out = in;
+//; }
+  
+endmodule
+
+
+
