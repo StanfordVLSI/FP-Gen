@@ -38,7 +38,8 @@ set_max_delay [expr ($CLOCK_PERIOD - $CLOCK_SETUP_TIME - $CLOCK_TO_Q_DELAY)] \
     remove_constraint -all
     create_clock clk -period $CLOCK_PERIOD
     set_input_delay $CLOCK_TO_Q_DELAY -clock clk [remove_from_collection [all_inputs] clk]
-    set_output_delay $CLOCK_SETUP_TIME -clock clk [all_outputs]  set ports_clock_root [get_ports [all_fanout -flat -clock_tree -level 0]] 
+    set_output_delay $CLOCK_SETUP_TIME -clock clk [all_outputs]
+    set ports_clock_root [get_ports [all_fanout -flat -clock_tree -level 0]] 
     group_path -name REGOUT -to [all_outputs] 
     group_path -name REGIN -from [remove_from_collection [all_inputs] $ports_clock_root] 
     group_path -name FEEDTHROUGH -from [remove_from_collection [all_inputs] $ports_clock_root] -to [all_outputs]
