@@ -1,0 +1,68 @@
+$map = [
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FMA.FMA.ExponentWidth' => '15',
+           'TOP.DesignIndex' => 0,
+           'TOP.top_FMA.FMA.FractionWidth' => '112',
+           'TOP.VT' => 'svt',
+           'TOP.top_FMA.FMA.EnableDenormals' => 'YES',
+           'TOP.Voltage' => '0.8',
+           'TOP.top_FMA.FMA.Designware_MODE' => 'OFF',
+           'TOP.top_FMA.FMA.UseInc' => 'NO'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FMA.FMA.ExponentWidth' => '15',
+           'TOP.DesignIndex' => 1,
+           'TOP.top_FMA.FMA.FractionWidth' => '112',
+           'TOP.VT' => 'svt',
+           'TOP.top_FMA.FMA.EnableDenormals' => 'YES',
+           'TOP.Voltage' => '0.8',
+           'TOP.top_FMA.FMA.Designware_MODE' => 'ON',
+           'TOP.top_FMA.FMA.UseInc' => 'NO'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FMA.FMA.ExponentWidth' => '15',
+           'TOP.DesignIndex' => 2,
+           'TOP.top_FMA.FMA.FractionWidth' => '112',
+           'TOP.VT' => 'svt',
+           'TOP.top_FMA.FMA.EnableDenormals' => 'YES',
+           'TOP.Voltage' => '0.9',
+           'TOP.top_FMA.FMA.Designware_MODE' => 'OFF',
+           'TOP.top_FMA.FMA.UseInc' => 'NO'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FMA.FMA.ExponentWidth' => '15',
+           'TOP.DesignIndex' => 3,
+           'TOP.top_FMA.FMA.FractionWidth' => '112',
+           'TOP.VT' => 'svt',
+           'TOP.top_FMA.FMA.EnableDenormals' => 'YES',
+           'TOP.Voltage' => '0.9',
+           'TOP.top_FMA.FMA.Designware_MODE' => 'ON',
+           'TOP.top_FMA.FMA.UseInc' => 'NO'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FMA.FMA.ExponentWidth' => '15',
+           'TOP.DesignIndex' => 4,
+           'TOP.top_FMA.FMA.FractionWidth' => '112',
+           'TOP.VT' => 'svt',
+           'TOP.top_FMA.FMA.EnableDenormals' => 'YES',
+           'TOP.Voltage' => '1.0',
+           'TOP.top_FMA.FMA.Designware_MODE' => 'OFF',
+           'TOP.top_FMA.FMA.UseInc' => 'NO'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FMA.FMA.ExponentWidth' => '15',
+           'TOP.DesignIndex' => 5,
+           'TOP.top_FMA.FMA.FractionWidth' => '112',
+           'TOP.VT' => 'svt',
+           'TOP.top_FMA.FMA.EnableDenormals' => 'YES',
+           'TOP.Voltage' => '1.0',
+           'TOP.top_FMA.FMA.Designware_MODE' => 'ON',
+           'TOP.top_FMA.FMA.UseInc' => 'NO'
+         }
+       ];

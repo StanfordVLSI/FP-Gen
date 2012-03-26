@@ -1,0 +1,7 @@
+TOP.top_Multiplier.Multiplier.Designware_MODE !IMPLEMENTATION!!CONTINUOUS!!DISCRETE! 
+TOP.top_Multiplier.Multiplier.MultP.BoothType !IMPLEMENTATION!!CONTINUOUS!!DISCRETE! 
+TOP.top_Multiplier.Multiplier.MultP.Designware_MODE !IMPLEMENTATION!!CONTINUOUS!!DISCRETE! 
+TOP.top_Multiplier.Multiplier.MultP.TreeType !IMPLEMENTATION!!CONTINUOUS!!DISCRETE! 
+TOP.top_Multiplier.Multiplier.PartialProductSum.AdderType !implementation!!IMPLEMENTATION!!CONTINUOUS!!DISCRETE! 
+TOP.top_Multiplier.Multiplier.UseInc !FUNCTIONAL!!CONTINUOUS!!DISCRETE! 
+TOP.top_Multiplier.Multiplier.Width !FUNCTIONAL!!CONTINUOUS!!DISCRETE! 

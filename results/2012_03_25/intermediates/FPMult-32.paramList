@@ -1,0 +1,8 @@
+TOP.top.FPMult.EnableDenormals
+TOP.top.FPMult.ExponentWidth
+TOP.top.FPMult.FractionWidth
+TOP.top.FPMult.Mult.Designware_MODE
+TOP.top.FPMult.Mult.MultP.BoothType
+TOP.top.FPMult.Mult.MultP.Designware_MODE
+TOP.top.FPMult.Mult.MultP.TreeType
+TOP.top.FPMult.Mult.PartialProductSum.AdderType

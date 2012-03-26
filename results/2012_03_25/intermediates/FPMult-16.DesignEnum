@@ -1,0 +1,32 @@
+$map = [
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FPMult.FPMult.FractionWidth' => '10',
+           'TOP.DesignIndex' => 0,
+           'TOP.top_FPMult.FPMult.Mult.Designware_MODE' => 'OFF',
+           'TOP.top_FPMult.FPMult.ExponentWidth' => '5',
+           'TOP.top_FPMult.FPMult.Mult.MultP.Designware_MODE' => 'OFF',
+           'TOP.top_FPMult.FPMult.EnableDenormals' => 'YES',
+           'TOP.top_FPMult.FPMult.Mult.PartialProductSum.AdderType' => 'DesignWare'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FPMult.FPMult.FractionWidth' => '10',
+           'TOP.DesignIndex' => 1,
+           'TOP.top_FPMult.FPMult.Mult.Designware_MODE' => 'OFF',
+           'TOP.top_FPMult.FPMult.ExponentWidth' => '5',
+           'TOP.top_FPMult.FPMult.Mult.MultP.Designware_MODE' => 'OFF',
+           'TOP.top_FPMult.FPMult.EnableDenormals' => 'YES',
+           'TOP.top_FPMult.FPMult.Mult.PartialProductSum.AdderType' => 'Sklansky'
+         },
+         {
+           'INFO_Pareto' => 1,
+           'TOP.top_FPMult.FPMult.FractionWidth' => '10',
+           'TOP.DesignIndex' => 2,
+           'TOP.top_FPMult.FPMult.Mult.Designware_MODE' => 'OFF',
+           'TOP.top_FPMult.FPMult.ExponentWidth' => '5',
+           'TOP.top_FPMult.FPMult.Mult.MultP.Designware_MODE' => 'ON',
+           'TOP.top_FPMult.FPMult.EnableDenormals' => 'YES',
+           'TOP.top_FPMult.FPMult.Mult.PartialProductSum.AdderType' => 'DesignWare'
+         }
+       ];

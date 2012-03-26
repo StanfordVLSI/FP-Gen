@@ -1,0 +1,122 @@
+$map = [
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '1',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Array',
+           'INFO_Pareto' => 0,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 0
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '1',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'OS1',
+           'INFO_Pareto' => 0,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 1
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '1',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Wallace',
+           'INFO_Pareto' => 0,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 2
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '1',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'ZM',
+           'INFO_Pareto' => 0,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 3
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '2',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Array',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 4
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '2',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'OS1',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 5
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '2',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Wallace',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 6
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '2',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'ZM',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 7
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '3',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Array',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 8
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '3',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'OS1',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 9
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '3',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Wallace',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 10
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '3',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'ZM',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 11
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '4',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Array',
+           'INFO_Pareto' => 0,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 12
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => '4',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'Wallace',
+           'INFO_Pareto' => 0,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'OFF',
+           'TOP.DesignIndex' => 13
+         },
+         {
+           'TOP.top_MultiplierP.MultiplierP.Width' => '16',
+           'TOP.top_MultiplierP.MultiplierP.BoothType' => 'NA',
+           'TOP.top_MultiplierP.MultiplierP.TreeType' => 'NA',
+           'INFO_Pareto' => 1,
+           'TOP.top_MultiplierP.MultiplierP.Designware_MODE' => 'ON',
+           'TOP.DesignIndex' => 14
+         }
+       ];

@@ -1,0 +1,1006 @@
+$designList = [
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'ON'
+                                                                 },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'OS1'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '4'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'OS1'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'OS1'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'ZM'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'ZM'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'ZM'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '4'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'OS1'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'ON'
+                                                                 },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'ZM'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '4'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '4'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'ZM'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'ZM'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'OS1'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '3'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Array'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '2'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'OS1'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'DesignWare'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                },
+                {
+                  'TOP.top.FPMult.Mult.MultP.TreeType' => {
+                                                            'short' => 'TreeType',
+                                                            'val' => 'Wallace'
+                                                          },
+                  'TOP.top.FPMult.Mult.Designware_MODE' => {
+                                                             'short' => 'Designware_MODE',
+                                                             'val' => 'OFF'
+                                                           },
+                  'TOP.top.FPMult.ExponentWidth' => {
+                                                      'short' => 'ExponentWidth',
+                                                      'val' => '15'
+                                                    },
+                  'TOP.top.FPMult.Mult.MultP.Designware_MODE' => {
+                                                                   'short' => 'Designware_MODE',
+                                                                   'val' => 'OFF'
+                                                                 },
+                  'TOP.top.FPMult.Mult.MultP.BoothType' => {
+                                                             'short' => 'BoothType',
+                                                             'val' => '1'
+                                                           },
+                  'TOP.top.FPMult.Mult.PartialProductSum.AdderType' => {
+                                                                         'short' => 'AdderType',
+                                                                         'val' => 'Sklansky'
+                                                                       },
+                  'TOP.top.FPMult.FractionWidth' => {
+                                                      'short' => 'FractionWidth',
+                                                      'val' => '112'
+                                                    },
+                  'TOP.top.FPMult.EnableDenormals' => {
+                                                        'short' => 'EnableDenormals',
+                                                        'val' => 'YES'
+                                                      }
+                }
+              ];
