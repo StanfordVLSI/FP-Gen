@@ -240,7 +240,7 @@ endif
 all: $(EXECUTABLE)
 
 # phony rules for verilog generation process
-.PHONY: gen clean_genesis
+.PHONY: gen genesis_clean
 gen: $(GENESIS_VLOG_LIST)
 
 # Genesis2 rules:
@@ -254,15 +254,13 @@ $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
 
-clean_genesis:
+genesis_clean:
 	@echo ""
 	@echo Cleanning previous runs of Genesis
 	@echo ===================================
-	for fname in `cat $(GENESIS_VLOG_LIST)`; do 	\
-		\rm -rf $$fname;			\
-	done
-	\rm -rf genesis_work
-	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY) small_$(GENESIS_HIERARCHY) tiny_$(GENESIS_HIERARCHY)
+	if test -f "genesis_clean.cmd"; then 	\
+		source genesis_clean.cmd;	\
+	fi
 
 
 # VCS rules:
@@ -361,7 +359,7 @@ eval: comp rollup1 run rollup2 run_synthesis rollup3
 # Cleanup rules:
 #####################
 .PHONY: clean cleanall 
-clean: clean_genesis
+clean: genesis_clean
 	@echo ""
 	@echo Cleanning old files, objects, logs and garbage
 	@echo ==================================================
