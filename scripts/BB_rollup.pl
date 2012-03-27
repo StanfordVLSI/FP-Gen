@@ -294,11 +294,6 @@ foreach my $file ( @files ) {
 	$optimized_seq_cell_count  = $SeqCellCount[0];
     }
 
-    print TARGET "STAT_Mapped_Timing_Good:$design_timing_mapped_good\n" ;
-    print TARGET "STAT_Routed_Timing_Good:$design_timing_routed_good\n" ;
-    print TARGET "STAT_Optimized_Timing_Good:$design_timing_optimized_good\n" ;
-    print TARGET "STAT_Timing_Good:$design_timing_optimized_good\n" ;
-
     print TARGET "COST_Mapped_Delay:$mapped_delay\n" ;
     print TARGET "COST_Routed_Delay:$routed_delay\n" ;
     print TARGET "COST_Optimized_Delay:$optimized_delay\n" ;
