@@ -51,12 +51,13 @@
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //;
 //; # And some local variables
-//; $useInc = ($useInc =~ /YES/)? 1:0;
+//; my $useInc = ($useInc =~ /YES/)? 1:0;
+//; my $denorm = ($enable_denormals =~ /YES/)? 1:0;
 //; my $product_width = 2 * $frac_width + 2;
-//; my $wide_width = 4 * $frac_width  + 7; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)
-//; my $shift_width = CeilOfLog2($wide_width);
+//; my $wide_width = 4 * $frac_width  + 7 +$denorm; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)  NEED ONE MORE BIT FOR DENORM times NORM CORNER CASE
+//; my $shift_width = CeilOfLog2($wide_width -$denorm);
 //; my $lza_width = $wide_width - $frac_width - 1;
-//; my $lza_enc_width = CeilOfLog2($lza_width) + 1;
+//; my $lza_enc_width = CeilOfLog2($lza_width -$denorm) + 1;
 //;
 
 
@@ -70,7 +71,7 @@ module `mname` (
    //; }
     input logic SignA, SignB, SignC,
     input logic [`$shift_width-1`:0] RshiftAmt, 
-    input logic [`$lza_width-1`:0] lza_override_mask,
+    input logic [`$lza_width-1 -$denorm`:0] lza_override_mask,
     output logic [`$lza_enc_width-1`:0] LshiftAmt,
     output logic [`$frac_width`:0] Result,
     output logic SignResult, ResultExactZero, LSB, Guard, Sticky, IncExp);	
@@ -80,13 +81,17 @@ module `mname` (
   logic [`$frac_width+1`:0] C_upper_0, C_upper_1;
   logic SignProduct, KillCarry, subtract, co_middle, co0, co1, SumSign, IncCarryOut, RSticky, mostSticky;
   logic [`$product_width+1`:0] AB_pp0, AB_pp1;
-  logic [`$product_width+2`:0] C_middle;
-  logic [`$product_width+2`:0] ps0, ps1 , MiddleSum0, MiddleSum1;
+  logic [`$product_width+2 +$denorm`:0] C_middle;
+  logic [`$product_width+2 +$denorm`:0] ps0, ps1 , MiddleSum0, MiddleSum1;
   logic [`$lza_width`:0] Sum0, Sum1, FinalSum, ShiftedResult;
   logic [`$lza_width+1`:0] LZA_ps0, LZA_ps1;
-  logic [`$lza_width-1`:0] lzd_hotone_mask;
+  logic [`$lza_width-1`:0] lza_mask_ext;
 
-
+//; if ($denorm){
+  assign lza_mask_ext = {lza_override_mask, 1'b0};
+//;} else {
+  assign lza_mask_ext = lza_override_mask;
+//;}
 
 	/*Multiplier*/
 
@@ -112,7 +117,7 @@ module `mname` (
 
   
   assign final_C = subtract? ~shifted_C : shifted_C;
-  assign C_middle = final_C[`$product_width+$frac_width+2`:`$frac_width`];
+  assign C_middle = final_C[`$product_width+$frac_width+2 +$denorm`:`$frac_width`];
   assign C_upper_0 = final_C[`$wide_width-1`:`$lza_width-1`];
   assign C_upper_1 = C_upper_0 + 1;
 
@@ -129,9 +134,9 @@ module `mname` (
      1           1     1        ~Sum
 
   */
-  DW01_csa #(`$product_width+3`) CSA0 (.a({AB_pp0,1'b0}),.b({AB_pp1,1'b0}),.c(C_middle),.ci(1'b0), .carry(ps0), .sum(ps1), .co(co_middle) );
+  DW01_csa #(`$product_width+3 +$denorm`) CSA0 (.a({AB_pp0,`1+$denorm`'b0}),.b({AB_pp1,`1+$denorm`'b0}),.c(C_middle),.ci(1'b0), .carry(ps0), .sum(ps1), .co(co_middle) );
 
-//; my $CAdd_obj = generate('CompoundAdder', 'CADD', Width=>($product_width+3), EnableCarryIn=>'OFF', ZeroWidth=>0);   
+//; my $CAdd_obj = generate('CompoundAdder', 'CADD', Width=>($product_width+3 +$denorm), EnableCarryIn=>'OFF', ZeroWidth=>0);   
   `$CAdd_obj->instantiate()` 
      (
       //; if ($verif_mode =~ /ON/){
@@ -149,7 +154,7 @@ module `mname` (
 //; my $lza_obj = generate('LZA', 'LZA0', Width=>$lza_width);
   assign LZA_ps0 = { (KillCarry?C_upper_0:{(`$frac_width+2`){1'b0}}), co_middle , ps0};
   assign LZA_ps1 = { (KillCarry?{~C_upper_0[`$frac_width+1`],~C_upper_0}:C_upper_0), ps1};
-  `$lza_obj->instantiate()`  ( .A(LZA_ps0), .B(LZA_ps1), .override_mask(lza_override_mask), .result_is_zero(ResultExactZero), .enc(LshiftAmt));
+  `$lza_obj->instantiate()`  ( .A(LZA_ps0), .B(LZA_ps1), .override_mask(lza_mask_ext), .result_is_zero(ResultExactZero), .enc(LshiftAmt));
 
 
   /* Normalizer */

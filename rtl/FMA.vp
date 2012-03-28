@@ -302,16 +302,19 @@ logic intermediate_zinc;
     $display ("denormA=%b ZeroA=%b InfA=%b ManA=%h",denormA, ZeroA, InfA, ManA);
     $display ("denormB=%b ZeroB=%b InfB=%b ManB=%h",denormB, ZeroB, InfB, ManB);
     $display ("denormC=%b ZeroC=%b InfC=%b ManC=%h",denormC, ZeroC, InfC, ManC);
+    $display ("intermediate_zinc=%h intermediate_z=%h", intermediate_zinc,intermediate_z);
     $display ("IncZ=%b SignZ=%b ExpZ=%h SigZ=%h",zinc,z[`$exp_width + $frac_width`],z[`$exp_width + $frac_width -1`:`$frac_width`],z[`$frac_width -1`:0]);
     $display ("ResultIsInfinity =%b , ResultIsC =%b ,ResultIsFMA =%b",ResultIsInfinity, ResultIsC,ResultIsFMA);
     $display ("FU =%b , FV =%b ,FI =%b ,FX =%b",FU, FV , FI,FX);
     $display ("ZeroResult=%b ,zeroManResult=%b ,denormResult=%b", ZeroResult,zeroManResult,denormResult);
+    $display ("FMA_Result=%h, SignResult=%h, ExpResult=%h, ManResul=%h", FMA_Result, SignResult, ExpResult, ManResult);
   end
   // synopsys translate_on
 //; }
 //; } #End Not Designware Loop
 
-//; if($pipeline_depth>0){
+//;# if($pipeline_depth>0){
+//; if(0){
 //;   my $pipeline_obj = generate('FF_pipeline', 'pipeline', Width=> $exp_width + $frac_width+2
 //;                                                 , PipelineDepth=>$pipeline_depth);
   `$pipeline_obj->instantiate()` ( .in({intermediate_zinc,intermediate_z}) , .clk(clk) , .reset(reset), .out({zinc,z}) );
