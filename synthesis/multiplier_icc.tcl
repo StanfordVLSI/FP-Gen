@@ -350,6 +350,9 @@ if {$max_compressed_column > 0} {
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
 set placement_site_width  [get_attribute [get_core_areas] tile_width];
+set die_area_bb [concat [get_attribute [get_core_area] bbox]];
+set die_area_maxY [lindex [lindex $die_area_bb 1] 0]
+
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
