@@ -89,7 +89,7 @@ read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 
-if { [file exists ../../place_MultiplierP.tcl] } {
+if { [info exists ENABLE_MANUAL_PLACEMENT] } {
 
 set CSA_cells [get_cells -hierarchical "*csa*"];
 set max_row 0;
@@ -246,7 +246,7 @@ puts $fp "BoothSel aspect ratio = $boothSel_aspect_ratio";
 close $fp;
 
 }
-#END: if { [file exists ../../place_MultiplierP.tcl] } {
+
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
@@ -266,12 +266,12 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set port_size [sizeof_collection $b_ports];
 
 
-  if {$DESIGN_NAME=="FMA"} {
+  if {$DESIGN_NAME=="FMA_unq1"} {
 
     set c_ports [get_ports {c[*]}] 
     foreach_in_collection c_port $c_ports {
       regexp {c\[([0-9]*)\]} [get_object_name $c_port] matched port_number
-      set_pin_physical_constraints -side 2 $c_port -order [expr $port_number+1+$port_size]
+      set_pin_physical_constraints -side 4 $c_port -order [expr $port_number+1]
     }
 
     set z_ports [get_ports {z[*]}] 
@@ -308,11 +308,12 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   }
 }
 
-if { [file exists ../../place_MultiplierP.tcl] } {
-if {$max_compressed_column > 0} {
+set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && $DESIGN_NAME!="FMA_unq1"]; 
+
+if {$FixedHeightFloorPlan} {
   initialize_floorplan \
   	-control_type row_number \
-  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count + ($DESIGN_NAME=="FMA"?6:0)] \
+  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
   	-core_utilization $core_utilization_ratio \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
@@ -332,36 +333,25 @@ if {$max_compressed_column > 0} {
   	-top_io2core $io2core \
   	-start_first_row
 }
-} else {
-  set core_utilization_ratio 0.5;
-  initialize_floorplan \
-  	-control_type aspect_ratio \
-  	-core_aspect_ratio 1 \
- 	-core_utilization $core_utilization_ratio \
-  	-row_core_ratio 1 \
-  	-left_io2core $io2core \
-  	-bottom_io2core $io2core \
- 	-right_io2core $io2core \
-  	-top_io2core $io2core \
-  	-start_first_row
-}
 
 
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
 set placement_site_width  [get_attribute [get_core_areas] tile_width];
 set die_area_bb [concat [get_attribute [get_core_area] bbox]];
-set die_area_maxY [lindex [lindex $die_area_bb 1] 0]
+set die_area_maxY [lindex [lindex $die_area_bb 1] 1];
+set die_area_minY [lindex [lindex $die_area_bb 0] 1];
+set core_height [expr $die_area_maxY-$die_area_minY]
 
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
   # flip rows and columns to keep it more square
   suppress_message [list SEL-004 PSYN-1002 RPGP-020 RPGP-090 PSYN-040];
-
+  
+  set rp_height [expr ($rp_column_count+2) * $placement_site_height];
   create_rp_group rp_tree -columns [expr int(ceil(1.5*$row_count))] -rows $rp_column_count -allow_non_rp_cells \
-                          -anchor_corner bottom-left -x_offset 0.0;
- # -y_offset 0.0;
+                          -anchor_corner bottom-left -x_offset 0.0 -y_offset [expr $core_height-$rp_height];
 
   if { $USE_3_2_FLOORPLAN } {
     set current_rp_column 0;
@@ -532,7 +522,7 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 #place_opt  -effort low
 
 
- if { [file exists ../../place_MultiplierP.tcl] && $max_compressed_column > 0} {
+ if { [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0} {
   place_opt -effort high -power -area_recovery
   create_placement
   psynopt -area_recovery
@@ -542,11 +532,16 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
   refine_placement
   save_mw_cel -as ${DESIGN_NAME}_before_psynopt
   place_opt -skip_initial_placement -effort high -power -area_recovery
-  estimate_fp_area -sizing_type fixed_height
+
  } else {
   place_opt -effort high -power -area_recovery
-  estimate_fp_area -sizing_type fixed_aspect_ratio
  }
+
+if { $FixedHeightFloorPlan } {
+  estimate_fp_area -sizing_type fixed_height
+} else {
+  estimate_fp_area -sizing_type fixed_aspect_ratio
+}
 
 save_mw_cel -as ${DESIGN_NAME}_before_routing
 
