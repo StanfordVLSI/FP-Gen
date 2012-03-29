@@ -263,13 +263,15 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     set_pin_physical_constraints -side 2 $b_port -order [expr $port_number+1]
   }
 
+  set port_size [sizeof_collection $b_ports];
+
 
   if {$DESIGN_NAME=="FMA"} {
 
     set c_ports [get_ports {c[*]}] 
     foreach_in_collection c_port $c_ports {
       regexp {c\[([0-9]*)\]} [get_object_name $c_port] matched port_number
-      set_pin_physical_constraints -side 4 $c_port -order [expr $port_number+1]
+      set_pin_physical_constraints -side 2 $c_port -order [expr $port_number+1+$port_size]
     }
 
     set z_ports [get_ports {z[*]}] 
@@ -310,7 +312,7 @@ if { [file exists ../../place_MultiplierP.tcl] } {
 if {$max_compressed_column > 0} {
   initialize_floorplan \
   	-control_type row_number \
-  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
+  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count + ($DESIGN_NAME=="FMA"?6:0)] \
   	-core_utilization $core_utilization_ratio \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
@@ -355,7 +357,8 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   suppress_message [list SEL-004 PSYN-1002 RPGP-020 RPGP-090 PSYN-040];
 
   create_rp_group rp_tree -columns [expr int(ceil(1.5*$row_count))] -rows $rp_column_count -allow_non_rp_cells \
-                          -anchor_corner bottom-left -x_offset 0.0 -y_offset 0.0;
+                          -anchor_corner bottom-left -x_offset 0.0;
+ # -y_offset 0.0;
 
   if { $USE_3_2_FLOORPLAN } {
     set current_rp_column 0;
