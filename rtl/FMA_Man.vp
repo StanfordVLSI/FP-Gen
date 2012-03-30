@@ -69,15 +69,15 @@ module `mname` (
    //; if ($useInc){
     input logic IncA, IncB,
    //; }
-    input logic SignA, SignB, SignC,
-    input logic [`$shift_width-1`:0] RshiftAmt, 
+    input logic SignA, SignB, SignC, ExpResultIsC,
+    input logic [`$exp_width+1`:0] RshiftInitial, 
     input logic [`$lza_width-1 -$denorm`:0] lza_override_mask,
     output logic [`$lza_enc_width-1`:0] LshiftAmt,
     output logic [`$frac_width`:0] Result,
     output logic SignResult, ResultExactZero, LSB, Guard, Sticky, IncExp);	
 
 
-  logic [`$wide_width-1`:0] wide_C, shifted_C, final_C;
+  logic [`$wide_width-1`:0] wide_C, Rshifted_C, shifted_C, final_C;
   logic [`$frac_width+1`:0] C_upper_0, C_upper_1;
   logic SignProduct, KillCarry, subtract, co_middle, co0, co1, SumSign, IncCarryOut, RSticky, mostSticky;
   logic [`$product_width+1`:0] AB_pp0, AB_pp1;
@@ -112,7 +112,11 @@ module `mname` (
 
   /* Aligner*/
   assign wide_C = {1'b0, ManC, {(`$lza_width-1`){1'b0}}};
-  assign shifted_C = wide_C >> RshiftAmt;
+//  assign shifted_C = wide_C >> RshiftAmt;
+//; my $Rshift_obj = generate('RightShifter', 'RSH0', Width=>$wide_width, ShiftWidth=> $exp_width+1 ,  isSigned=>"NO");
+  `$Rshift_obj->instantiate()` ( .a(wide_C), .sh(RshiftInitial[`$exp_width`:0]), .z(Rshifted_C));
+  assign shifted_C = ExpResultIsC ? wide_C : Rshifted_C;
+
   assign RSticky = (|shifted_C[`$frac_width-1`:0]) | (~|shifted_C[`$wide_width-1`:`$frac_width`] & |ManC); // the sticky bit is calculated from the non inverted version of C
 
   

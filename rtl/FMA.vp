@@ -73,7 +73,7 @@
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>0, Step=>1,
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0, Step=>1,
 //;                       Doc=>"Pipeline depth");
 //;
 //; my $useInc ;
@@ -135,7 +135,7 @@ logic intermediate_zinc;
   wire [`$frac_width`:0] ManResult;
   wire [`$frac_width-1`:0] SigA, SigB, SigC;
   wire [`$frac_width`:0] ManA, ManB, ManC;
-  wire [`$shift_width-1`:0] RshiftAmt;
+  wire [`$exp_width+1`:0] RshiftInitial;
   wire [`$lza_enc_width-1`:0] LshiftAmt;
   wire [`$lza_width-1`:0] lza_override_mask;
   wire [`$exp_width-1`:0] ExpA, ExpB, ExpC, ExpResult;
@@ -145,7 +145,7 @@ logic intermediate_zinc;
 
   wire denormA, denormB, denormC, denormResult, NANorInfA, NANorInfB, NANorInfC, zeroSigA, zeroSigB, zeroSigC, zeroManResult, IncCarryOut;
   wire InfA, InfB, InfC, InfFromInput, NANA, NANB, NANC, ZeroA, ZeroB, ZeroC, ZeroResult;
-  wire SignProduct, SignSpecial, ResultIsInfinity, ResultIsC, ResultIsFMA, ResultExactZero;
+  wire SignProduct, SignSpecial, ResultIsInfinity, ResultIsC, ResultIsFMA, ResultExactZero, ExpResultIsC;
   wire FV_exp, FU_exp;
   wire FX, FV, FU, FI, Tiny;
   wire RndMaxNum, MaxNum;
@@ -231,7 +231,8 @@ logic intermediate_zinc;
 				 .denormB(denormB),
 				 .denormC(denormC),
 				 .ZeroC(ZeroC),
-				 .RshiftAmt(RshiftAmt),
+				 .RshiftInitial(RshiftInitial),
+                                 .ExpResultIsC(ExpResultIsC),
 				 .lza_override_mask(lza_override_mask),
 				 .LshiftAmt(LshiftAmt),
 				 .IncExp(IncExp),
@@ -258,7 +259,8 @@ logic intermediate_zinc;
 				    .SignA(SignA), 
 				    .SignB(SignB), 
 				    .SignC(SignC), 
-				    .RshiftAmt(RshiftAmt), 
+				    .RshiftInitial(RshiftInitial),
+                                    .ExpResultIsC(ExpResultIsC),
 				    .lza_override_mask(lza_override_mask), 
 				    .LshiftAmt(LshiftAmt), 
 				    .Result(ManResult), 
