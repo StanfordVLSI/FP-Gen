@@ -309,6 +309,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 }
 
 set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && $DESIGN_NAME!="FMA_unq1"]; 
+set core_utilization_ratio 0.7;
 
 if {$FixedHeightFloorPlan} {
   initialize_floorplan \
