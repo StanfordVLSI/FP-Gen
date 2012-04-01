@@ -308,33 +308,42 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   }
 }
 
-set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && $DESIGN_NAME!="FMA_unq1"]; 
-set core_utilization_ratio 0.7;
+#HACK FIXME
+#set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![$DESIGN_NAME=="FMA_unq1"]]; 
 
-if {$FixedHeightFloorPlan} {
-  initialize_floorplan \
-  	-control_type row_number \
-  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
-  	-core_utilization $core_utilization_ratio \
-  	-row_core_ratio 1 \
-  	-left_io2core $io2core \
-  	-bottom_io2core $io2core \
-  	-right_io2core $io2core \
- 	-top_io2core $io2core \
-  	-start_first_row      
-} else {
+#if {$FixedHeightFloorPlan} {
+#  initialize_floorplan \
+#  	-control_type row_number \
+#  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
+#  	-core_utilization $core_utilization_ratio \
+#  	-row_core_ratio 1 \
+#  	-left_io2core $io2core \
+#  	-bottom_io2core $io2core \
+#  	-right_io2core $io2core \
+# 	-top_io2core $io2core \
+#  	-start_first_row      
+#} else {
+#  initialize_floorplan \
+#  	-control_type aspect_ratio \
+#  	-core_aspect_ratio 1 \
+# 	-core_utilization $core_utilization_ratio \
+#  	-row_core_ratio 1 \
+#  	-left_io2core $io2core \
+#  	-bottom_io2core $io2core \
+# 	-right_io2core $io2core \
+#  	-top_io2core $io2core \
+#  	-start_first_row
+#}
   initialize_floorplan \
   	-control_type aspect_ratio \
   	-core_aspect_ratio 1 \
- 	-core_utilization $core_utilization_ratio \
+ 	-core_utilization 0.5 \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
   	-bottom_io2core $io2core \
  	-right_io2core $io2core \
   	-top_io2core $io2core \
   	-start_first_row
-}
-
 
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
@@ -538,11 +547,13 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
   place_opt -effort high -power -area_recovery
  }
 
-if { $FixedHeightFloorPlan } {
-  estimate_fp_area -sizing_type fixed_height
-} else {
+
+#HACK FIXME
+#if { $FixedHeightFloorPlan } {
+#  estimate_fp_area -sizing_type fixed_height
+#} else {
   estimate_fp_area -sizing_type fixed_aspect_ratio
-}
+#}
 
 save_mw_cel -as ${DESIGN_NAME}_before_routing
 

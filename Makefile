@@ -159,7 +159,9 @@ VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)
 SYNOPSYS := /hd/cad/synopsys/dc_shell/F-2011.09
 
 VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
-			+incdir+$(SYNOPSYS)/dw/sim_ver/
+			+incdir+$(SYNOPSYS)/dw/sim_ver/	\
+			-y $(SYNOPSYS)/packages/gtech/src_ver/	\
+			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/  
 
 
 # "-sverilog" enables system verilog
@@ -320,12 +322,15 @@ run_synthesis: log/syn_$(RUN_NAME).log
 SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
+RETIME ?= 0 
+
 RUN_SYNTHESIS_FLAGS:= \
                       VT=$(VT) \
                       Voltage=$(Voltage) \
                       target_delay=$(target_delay) \
                       io2core=$(io2core) \
-                      MOD_NAME=$(MOD_NAME)
+                      MOD_NAME=$(MOD_NAME) \
+                      RETIME=$(RETIME)
 
 log/syn_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
@@ -390,3 +395,5 @@ endif
 cleanall: clean clean_synthesis
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
+	\rm -f *.v
+	\rm -f *.pm

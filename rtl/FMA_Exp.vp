@@ -65,15 +65,15 @@ module `mname` (
     input  logic [`$exp_width-1`:0]  ExpA, ExpB, ExpC,
     input  logic denormA, denormB, denormC, ZeroC, IncExp, denormResult, ResultExactZero,
     input  logic [`$lza_enc_width-1`:0] LshiftAmt, 
-    output logic [`$exp_width+1`:0] RshiftInitial,
+    output logic [`$shift_width-1`:0] RshiftAmt,
     output logic [`$lza_width-1`:0] lza_override_mask,
     output logic [`$exp_width-1`:0] ExpResult,
-    output logic ExpResultIsC, FV  //overflow flag,
+    output logic FV //overflow flag
                  );
 
   logic [`$exp_width-1`:0] ExpResult1;
   logic [`$exp_width+1`:0] pre_shift, ExpSum, ExpCarry, ExpAB, ExpBase, RshiftSum, RshiftCarry, RshiftInitial, ExpResult0, ExpResult0_b;
-  logic ExpUnderflow ;
+  logic ExpUnderflow, ExpResultIsC;
   logic DummyCo1, DummyCo2, DummyCo3, DummyCo4, DummyCo5, DummyCo6, DummyCo7;
 
   /* base exponent calculation
@@ -94,6 +94,22 @@ module `mname` (
                                   .carry(RshiftCarry),.sum(RshiftSum),.co(DummyCo2));
   assign RshiftInitial = RshiftSum + RshiftCarry;
   assign ExpResultIsC = RshiftInitial[`$exp_width+1`] & ~ZeroC; //no right shift and C is not zero
+//; if( $exp_width >= $shift_width ){
+  assign RshiftAmt = ExpResultIsC?
+                         8'b0:
+                         (RshiftInitial[`$exp_width`:`$shift_width`]==0) ?
+                               RshiftInitial[`$shift_width-1`:0] :
+                               {(`$shift_width`){1'b1}};
+//; } else {
+  assign RshiftAmt = ExpResultIsC?
+                         8'b0:
+                         //(RshiftInitial[`$exp_width`:`$shift_width`]==0) ?
+                               RshiftInitial[`$shift_width-1`:0] 
+                         //:
+                         //    {(`$shift_width`){1'b1}}
+		         ;
+//; }
+
 
 
   /*MaxLshiftAmt calculation 

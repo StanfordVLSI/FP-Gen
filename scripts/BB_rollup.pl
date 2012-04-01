@@ -66,10 +66,6 @@ foreach my $file ( @files ) {
    
     $file =~ /(.vt_\dv\d_.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
 
-    print TARGET "INFO_VT:$VT\n" ;
-    print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
-    print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
-    print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
 
     my $folder_name=$1;
     my $design_name = $2;
@@ -80,12 +76,6 @@ foreach my $file ( @files ) {
     my $optimized_prefix = "$design_name.optimized.${vt}_$vdd.$target_delay";
 
     my $vdd_param = $vdd; $vdd_param =~ s/v/./ ;
-
-    if( ($VT eq $vt) and ($vdd_param eq $Target_Voltage) and ($target_delay eq $Target_Delay) ){
-	print TARGET "INFO_TARGET:1\n" ;
-    } else {
-	print TARGET "INFO_TARGET:0\n" ;
-    }
 
     print TARGET "INFO_DESIGN:$design_name\n" ;
     print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
@@ -294,8 +284,35 @@ foreach my $file ( @files ) {
 	$optimized_seq_cell_count  = $SeqCellCount[0];
     }
 
-    print TARGET "STAT_Timing_Good:$synStatus\n" ;
-   
+
+
+
+
+    print TARGET "INFO_VT:$VT\n" ;
+    print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
+    print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
+    print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
+
+    if( ($VT eq $vt) and ($vdd_param eq $Target_Voltage) and ($target_delay eq $Target_Delay) ){
+	print TARGET "INFO_TARGET:1\n" ;
+    } else {
+	print TARGET "INFO_TARGET:0\n" ;
+    }
+
+    my $mapped_dynamic_energy    = $mapped_dynamic_power * $mapped_delay ;
+    my $routed_dynamic_energy    = $routed_dynamic_power * $routed_delay ;
+    my $optimized_dynamic_energy = $optimized_dynamic_power * $optimized_delay ;
+
+    #RP RESULTS
+    print TARGET "INFO_DESIGN:$design_name\n" ;
+    print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
+    print TARGET "TOP.Voltage:$vdd_param\n" ;
+    print TARGET "TOP.VT:$vt\n" ;
+    print TARGET "TOP.RP:YES\n" ;
+    print TARGET "STAT_Comp_Good:$compStatus\n" ;
+    print TARGET "STAT_Run_Good:$runStatus\n" ;
+    print TARGET "STAT_Synthesis_Good:$synStatus\n" ;
+    print TARGET "STAT_Timing_Good:$synStatus\n" ; 
     print TARGET "COST_Mapped_Delay:$mapped_delay\n" ;
     print TARGET "COST_Routed_Delay:$routed_delay\n" ;
     print TARGET "COST_Optimized_Delay:$optimized_delay\n" ;
@@ -304,16 +321,15 @@ foreach my $file ( @files ) {
     print TARGET "COST_Routed_Area:$routed_core_area\n" ;
     print TARGET "COST_Optimized_Area:$optimized_core_area\n" ;
     print TARGET "COST_Area:$optimized_core_area\n" ;
-    print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_power\n" ;
-    print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_power\n" ;
-    print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_power\n" ;
-    print TARGET "COST_Dyn_Energy:$optimized_dynamic_power\n" ;
+    print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_energy\n" ;
+    print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_energy\n" ;
+    print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_energy\n" ;
+    print TARGET "COST_Dyn_Energy:$optimized_dynamic_energy\n" ;
     print TARGET "COST_Mapped_Leak_Power:$mapped_leakage_power\n" ;
     print TARGET "COST_Routed_Leak_Power:$routed_leakage_power\n" ;
     print TARGET "COST_Optimized_Leak_Power:$optimized_leakage_power\n";
     print TARGET "COST_Leak_Power:$optimized_leakage_power\n";
     print TARGET "INFO_Suggest_Delay:$optimized_delay\n";
-
     print TARGET "INFO_Mapped_Comb_Cell_Count:$mapped_comb_cell_count\n";
     print TARGET "INFO_Mapped_Seq_Cell_Count:$mapped_seq_cell_count\n";
     print TARGET "INFO_Routed_Comb_Cell_Count:$routed_comb_cell_count\n";
@@ -322,13 +338,48 @@ foreach my $file ( @files ) {
     print TARGET "INFO_Optimized_Seq_Cell_Count:$optimized_seq_cell_count\n";
     print TARGET "INFO_Comb_Cell_Count:$optimized_comb_cell_count\n";
     print TARGET "INFO_Seq_Cell_Count:$optimized_seq_cell_count\n";
-
+    print TARGET "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+    #NON-RP RESULT
+    print TARGET "INFO_VT:$VT\n" ;
+    print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
+    print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
+    print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
+    print TARGET "INFO_TARGET:0\n" ;
+    print TARGET "INFO_DESIGN:$design_name\n" ;
+    print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
+    print TARGET "TOP.Voltage:$vdd_param\n" ;
+    print TARGET "TOP.VT:$vt\n" ;
+    print TARGET "TOP.RP:NO\n" ;
+    print TARGET "STAT_Comp_Good:$compStatus\n" ;
+    print TARGET "STAT_Run_Good:$runStatus\n" ;
+    print TARGET "STAT_Synthesis_Good:$synStatus\n" ;
+    print TARGET "STAT_Timing_Good:$synStatus\n" ;
+    print TARGET "COST_Mapped_Delay:$mapped_delay\n" ;
+    print TARGET "COST_Routed_Delay:$routed_delay\n" ;
+    print TARGET "COST_Optimized_Delay:$optimized_delay\n" ;
+    print TARGET "COST_Delay:$routed_delay\n" ;
+    print TARGET "COST_Mapped_Area:$mapped_core_area\n" ;
+    print TARGET "COST_Routed_Area:$routed_core_area\n" ;
+    print TARGET "COST_Optimized_Area:$optimized_core_area\n" ;
+    print TARGET "COST_Area:$routed_core_area\n" ;
+    print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_energy\n" ;
+    print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_energy\n" ;
+    print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_energy\n" ;
+    print TARGET "COST_Dyn_Energy:$routed_dynamic_energy\n" ;
+    print TARGET "COST_Mapped_Leak_Power:$mapped_leakage_power\n" ;
+    print TARGET "COST_Routed_Leak_Power:$routed_leakage_power\n" ;
+    print TARGET "COST_Optimized_Leak_Power:$optimized_leakage_power\n";
+    print TARGET "COST_Leak_Power:$routed_leakage_power\n";
+    print TARGET "INFO_Suggest_Delay:$optimized_delay\n";
+    print TARGET "INFO_Mapped_Comb_Cell_Count:$mapped_comb_cell_count\n";
+    print TARGET "INFO_Mapped_Seq_Cell_Count:$mapped_seq_cell_count\n";
+    print TARGET "INFO_Routed_Comb_Cell_Count:$routed_comb_cell_count\n";
+    print TARGET "INFO_Routed_Seq_Cell_Count:$routed_seq_cell_count\n";
+    print TARGET "INFO_Optimized_Comb_Cell_Count:$optimized_comb_cell_count\n";
+    print TARGET "INFO_Optimized_Seq_Cell_Count:$optimized_seq_cell_count\n";
+    print TARGET "INFO_Comb_Cell_Count:$routed_comb_cell_count\n";
+    print TARGET "INFO_Seq_Cell_Count:$routed_seq_cell_count\n";
     print TARGET "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
 
 
-  $vdd =~ s/v/./;
-  if ($mapped_delay != 1000)
-  {
-     #print "${vt}_$target_delay, $vt, $vdd, $mapped_delay, $routed_delay, $optimized_delay, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power\n";
-  }
 }

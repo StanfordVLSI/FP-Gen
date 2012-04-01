@@ -10,45 +10,42 @@ check_design
 
 
 
-if { $PIPELINE_STAGES_COUNT > 0 } {
+if { 1 } {
+    #HACKY JOHN STUFF...
+    #CLEANUP BEFORE P4 Submit
 
-  if { $PIPELINE_STAGES_COUNT > 1 } {
-    set MUL_Block [get_cells -hierarchical MUL0];
-set_max_delay [expr ($CLOCK_PERIOD - $CLOCK_SETUP_TIME - $CLOCK_TO_Q_DELAY)] \ 
-   -from [get_pins -filter {@pin_direction == in} -of_objects $MUL_Block] \
-   -to [get_pins -filter {@pin_direction == out} -of_objects $MUL_Block];
-  }
+    set CLK clk
+    set RST reset 
 
-  set PRE_RETIMING_CLOCK_PERIOD [expr ($CLOCK_PERIOD - $CLOCK_SETUP_TIME - $CLOCK_TO_Q_DELAY) * $PIPELINE_STAGES_COUNT];
+    #Hedged Constraints for DC
+    set CLK_PERIOD [expr 0.8*double($target_delay)/1000] 
+    create_clock $CLK -period $CLK_PERIOD
+    set_output_delay [ expr $CLK_PERIOD*3/4 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
+    set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
+    set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/4 ] $all_inputs_wo_rst_clk
+    
+    remove_driving_cell $RST
+    set_drive 0 $RST
+    set_dont_touch_network $RST
 
-  
-  create_clock clk -period  $PRE_RETIMING_CLOCK_PERIOD
-  set_switching_activity -toggle_rate 2 -clock clk -static_probability 0.5 clk
-  set_switching_activity -toggle_rate 0.5 -clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] }]
-  set_switching_activity -toggle_rate 0.01 -clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
-  set_switching_activity -toggle_rate 0.2 -clock clk -static_probability 0.2 stall_pipeline
+    #set_optimize_registers true -design ${DESIGN_NAME} 
+    #compile_ultra -no_autoungroup -retime
 
+    if { $RETIME } {
+	set_optimize_registers true -design ${DESIGN_NAME} 
+	compile_ultra -no_autoungroup -retime
+    } else {
+	compile_ultra -no_autoungroup
+    }
 
-  set_input_delay $CLOCK_TO_Q_DELAY -clock clk [remove_from_collection [all_inputs] clk]
-  set_output_delay $CLOCK_SETUP_TIME -clock clk [all_outputs]
+    #Reset Constraints for ICC
+    set CLK_PERIOD [expr 0.8*double($target_delay)/1000]
+    create_clock $CLK -period $CLK_PERIOD
+    set_output_delay [ expr $CLK_PERIOD*3/4 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
+    set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
+    set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/4 ] $all_inputs_wo_rst_clk
 
-  compile_ultra -no_autoungroup
-  
-  if { $PIPELINE_STAGES_COUNT > 1 } {
-    remove_constraint -all
-    create_clock clk -period $CLOCK_PERIOD
-    set_input_delay $CLOCK_TO_Q_DELAY -clock clk [remove_from_collection [all_inputs] clk]
-    set_output_delay $CLOCK_SETUP_TIME -clock clk [all_outputs]
-    set ports_clock_root [get_ports [all_fanout -flat -clock_tree -level 0]] 
-    group_path -name REGOUT -to [all_outputs] 
-    group_path -name REGIN -from [remove_from_collection [all_inputs] $ports_clock_root] 
-    group_path -name FEEDTHROUGH -from [remove_from_collection [all_inputs] $ports_clock_root] -to [all_outputs]
-    optimize_registers -no_compile
-    insert_clock_gating
-    propagate_constraints -gate_clock
-    compile_ultra -no_autoungroup -retime
-  }
-
+ 
 } else {
 
   if {$target_delay!=-1} {
