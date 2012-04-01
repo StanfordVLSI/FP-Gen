@@ -24,6 +24,7 @@ endif
 ############# For Genesis2 ##############
 #########################################
 # tile is the top of the pre-processed hierarchy
+
 #DESIGN_NAME ?= FPMult
 #INST_NAME ?= FPMult
 #MOD_NAME ?= FPMult
@@ -92,6 +93,10 @@ GENESIS_DESIGN := 	$(notdir $(GENESIS_DESIGN))
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 
+GENESIS_INTERMIDS := $(GENESIS_INPUTS)
+GENESIS_INTERMIDS := $(GENESIS_INTERMIDS:.vp=.pm)
+GENESIS_INTERMIDS := $(GENESIS_INTERMIDS:.svp=.pm)
+
 
 # debug level
 GENESIS_DBG_LEVEL := 0
@@ -123,7 +128,8 @@ endif
 #                                    ---   (such as "for" or "while")
 #                                    ---   may not work properly.
 #        [-perl_modules modulename]  ---   Additional perl modules to load
-GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC)			
+GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC)			\
+			-debug $(GENESIS_DBG_LEVEL)
 
 # For more Genesis parsing options, type 'Genesis2.pl -help'
 #        [-generate]                 ---   should we generate a verilog hierarchy?
@@ -136,6 +142,7 @@ GENESIS_GEN_FLAGS :=	-gen -top $(TOP_MODULE)					\
 			-depend depend.list					\
 			-product $(GENESIS_VLOG_LIST)				\
 			-hierarchy $(GENESIS_HIERARCHY)                		\
+			-debug $(GENESIS_DBG_LEVEL)				\
 			-xml $(GENESIS_CFG_XML)
 
 
@@ -241,28 +248,41 @@ endif
 #default rule: 
 all: $(EXECUTABLE)
 
-# phony rules for verilog generation process
-.PHONY: gen genesis_clean
-gen: $(GENESIS_VLOG_LIST)
-
 # Genesis2 rules:
 #####################
-# This is the rule to activate Genesis2 generator to generate verilog 
-# files (_unqN.v) from the genesis (.vp) program.
-# Use "make GEN=<genesis2_gen_flags>" to add elaboration time flags
-$(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
+# Genesis2 Parse:
+# This is the rule to activate Genesis2 parser to generate perl module (.pm)
+# from the input verilog preprocessed (.vp) files.
+# Use "make PARSE=<genesis2_parse_flags>" to add elaboration time flags
+%.pm: %.vp
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
+	Genesis2.pl $(GENESIS_PARSE_FLAGS) -input $? $(PARSE)
 
-genesis_clean:
+%.pm: %.svp
 	@echo ""
-	@echo Cleanning previous runs of Genesis
-	@echo ===================================
-	if test -f "genesis_clean.cmd"; then 	\
-		source genesis_clean.cmd;	\
-	fi
+	@echo Making $@ because of $?
+	@echo ==================================================
+	Genesis2.pl $(GENESIS_PARSE_FLAGS) -input $? $(PARSE)
+
+# Genesis2 Generate:
+# This is the rule to activate Genesis2 generator to generate verilog 
+# files (_unqN.v) from the perl (.pm) program.
+# Use "make GEN=<genesis2_gen_flags>" to add elaboration time flags
+$(GENESIS_VLOG_LIST): $(GENESIS_INTERMIDS) $(GENESIS_CFG_XML)
+	@echo ""
+	@echo Making $@ because of $?
+	@echo ==================================================
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN)
+
+
+# phony rules for partial compilation process
+.PHONY: parse gen
+
+parse: $(GENESIS_INTERMIDS)
+
+gen: $(GENESIS_VLOG_LIST)
 
 
 # VCS rules:
@@ -364,7 +384,7 @@ eval: comp rollup1 run rollup2 run_synthesis rollup3
 # Cleanup rules:
 #####################
 .PHONY: clean cleanall 
-clean: genesis_clean
+clean:
 	@echo ""
 	@echo Cleanning old files, objects, logs and garbage
 	@echo ==================================================
@@ -384,6 +404,10 @@ clean: genesis_clean
 	\rm -rf top.v
 	\rm -rf top_FMA.v
 	\rm -f graph_*.m
+	\rm -rf $(GENESIS_INTERMIDS)
+	\rm -rf $(GENESIS_INTERMIDS:.pm=_unq*.v)
+	\rm -rf $(GENESIS_INTERMIDS:.pm=_tmp*.v)
+	\rm -rf depend.list $(GENESIS_VLOG_LIST) $(GENESIS_HIERARCHY) small_$(GENESIS_HIERARCHY)
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
 endif
