@@ -10,9 +10,7 @@ check_design
 
 
 
-if { 1 } {
-    #HACKY JOHN STUFF...
-    #CLEANUP BEFORE P4 Submit
+if { $PIPED } {
 
     set CLK clk
     set RST reset 

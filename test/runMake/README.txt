@@ -98,3 +98,69 @@ paretoReport.pl  -d  ./../NUM_Results/Multiplier-32.Data  -s  ./../NUM_Results/i
 energy_delay_plot_v2.py  -f ./../NUM_Results/intermediates/Multiplier-32.paretoData  -F Multiplier-32-Pareto.pdf --fileOut2 Multiplier-32-Pareto-Delay.pdf -t Multiplier-32-Pareto 
 
 energy_delay_plot_v2.py  -f ./../NUM_Results/Multiplier-16.Data  -F Multiplier-16-All.pdf --fileOut2 Multiplier-16-All-Delay.pdf --fileOut3 Multiplier-16-All-LinDelay.pdf --fileOut4 Multiplier-16-All-RunTime.pdf -t Multiplier-16-All 
+
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+make cleanall gen \
+                     DESIGN_NAME=FMA \
+                     INST_NAME=FMA \
+                     MOD_NAME=FMA \
+                     TOP_NAME=top_FMA 
+
+locDesignMap.pl \
+                     INPUT_XML=small_FMA.xml \
+                     DESIGN_FILE=/dev/null \
+                     LOC_DESIGN_MAP_FILE=/dev/null \
+                     PARAM_LIST_FILE=test/runMake/FMA.paramList \
+                     PARAM_ATTRIBUTE_FILE=/dev/null
+
+setGenCfg.pl \
+    DESIGN_FILE=test/numbers/FMA-32.design \
+    INPUT_XML=small_FMA.xml \
+    OUTPUT_XML=small_FMA_target.xml 
+
+make cleanall gen \
+          GENESIS_CFG_XML=small_FMA_target.xml \
+          DESIGN_NAME=FMA \
+          INST_NAME=FMA \
+          MOD_NAME=FMA \
+          TOP_NAME=top_FMA 
+
+make cleanall gen eval  \
+           SYN_CLK_PERIOD=1.0 \
+           DESIGN_NAME=FMA \
+           INST_NAME=FMA \
+           MOD_NAME=FMA \
+           TOP_NAME=top_FMA \
+	   ROLLUP_TARGET=FMA_ROLLUP.txt \
+           GENESIS_CFG_XML=small_FMA_target.xml \
+           SIM_ENGINE=synopsys \
+           VT=svt \
+           Voltage=0v9  \
+           io2core=30
+
+locDesignMap.pl \
+                     INPUT_XML=small_FMA.xml \
+                     DESIGN_FILE=/dev/null \
+                     LOC_DESIGN_MAP_FILE=/dev/null \
+                     PARAM_LIST_FILE=/dev/null \
+                     PARAM_ATTRIBUTE_FILE=/dev/null
+
+
+runMake.pl                 -t test/runMake/FMA.target \
+                           -a test/runMake/FMA.rawData   \
+                           -p test/runMake/FMA.paramList \
+                           DESIGN_FILE=test/numbers/FMA-32.design \
+                           SYN_CLK_PERIOD=1.0 \
+                           DESIGN_NAME=FMA \
+                           INST_NAME=FMA \
+                           MOD_NAME=FMA \
+                           TOP_NAME=top_FMA \
+                           SYN_SAIF_MODE=0 \
+                           SIM_ENGINE=synopsys \
+                           VT=svt \
+                           Voltage=0v9  \
+                           io2core=30

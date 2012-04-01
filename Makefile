@@ -343,6 +343,7 @@ SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
 RETIME ?= 0 
+PIPED ?= 0 
 
 RUN_SYNTHESIS_FLAGS:= \
                       VT=$(VT) \
@@ -350,7 +351,8 @@ RUN_SYNTHESIS_FLAGS:= \
                       target_delay=$(target_delay) \
                       io2core=$(io2core) \
                       MOD_NAME=$(MOD_NAME) \
-                      RETIME=$(RETIME)
+                      RETIME=$(RETIME) \
+                      PIPED=$(PIPED)
 
 log/syn_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
@@ -368,11 +370,14 @@ clean_synthesis:
 
 .PHONY: rollup1  rollup2 rollup3
 rollup1: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+	perl scripts/BB_rollup.pl -p $(PIPED) -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) \
+                                  VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup2: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+	perl scripts/BB_rollup.pl -p $(PIPED) -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
+                                  VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup3: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+	perl scripts/BB_rollup.pl -p $(PIPED) -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
+                                  VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 
 
 #Eval Rules

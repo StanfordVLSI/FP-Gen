@@ -5,7 +5,7 @@ use warnings ;
 use Getopt::Std;
 
 my %options ;
-getopts("hd:t:", \%options);
+getopts("hp:d:t:", \%options);
 
 my $makeArguments = "" ; 
 foreach my $mA ( @ARGV ){ $makeArguments .= " $mA " ;}
@@ -285,25 +285,31 @@ foreach my $file ( @files ) {
     }
 
 
+    my $mapped_dynamic_energy    ;
+    my $routed_dynamic_energy    ;
+    my $optimized_dynamic_energy ;
+
+    if( $options{p} ){
+     $mapped_dynamic_energy    = $mapped_dynamic_power * $mapped_delay ;
+     $routed_dynamic_energy    = $routed_dynamic_power * $routed_delay ;
+     $optimized_dynamic_energy = $optimized_dynamic_power * $optimized_delay ;
+    } else {
+     $mapped_dynamic_energy    = $mapped_dynamic_power ;
+     $routed_dynamic_energy    = $routed_dynamic_power  ;
+     $optimized_dynamic_energy = $optimized_dynamic_power  ;
+    }
 
 
-
+    #RP RESULTS
     print TARGET "INFO_VT:$VT\n" ;
     print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
     print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
     print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
-
     if( ($VT eq $vt) and ($vdd_param eq $Target_Voltage) and ($target_delay eq $Target_Delay) ){
 	print TARGET "INFO_TARGET:1\n" ;
     } else {
 	print TARGET "INFO_TARGET:0\n" ;
     }
-
-    my $mapped_dynamic_energy    = $mapped_dynamic_power * $mapped_delay ;
-    my $routed_dynamic_energy    = $routed_dynamic_power * $routed_delay ;
-    my $optimized_dynamic_energy = $optimized_dynamic_power * $optimized_delay ;
-
-    #RP RESULTS
     print TARGET "INFO_DESIGN:$design_name\n" ;
     print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
     print TARGET "TOP.Voltage:$vdd_param\n" ;
