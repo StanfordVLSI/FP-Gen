@@ -24,50 +24,63 @@ endif
 ############# For Genesis2 ##############
 #########################################
 # tile is the top of the pre-processed hierarchy
-#DESIGN_NAME ?= FPMult
-#INST_NAME ?= FPMult
-#MOD_NAME ?= FPMult
-#TOP_NAME ?= top_FPMult
-#TOP_MODULE ?= $(TOP_NAME)
 
-#DESIGN_NAME ?= MultiplierP
-#INST_NAME ?= MultiplierP
-#MOD_NAME ?= MultiplierP
-#TOP_NAME ?= top_MultiplierP
-#TOP_MODULE ?= $(TOP_NAME)
+ifndef DESIGN_NAME
+  DESIGN_NAME:=MultiplierP
+  $(warning WARNING: Running with default design.  DESIGN_NAME=$(DESIGN_NAME))
+endif
 
-#DESIGN_NAME ?= FMA
-#INST_NAME ?= FMA
-#MOD_NAME ?= FMA
-#TOP_NAME ?= top_FMA
-#TOP_MODULE ?= $(TOP_NAME)
+ifeq ($(DESIGN_NAME),MultiplierP)
+  INST_NAME ?= MultiplierP
+  MOD_NAME ?= MultiplierP
+  TOP_NAME ?= top
+  ROLLUP_TARGET ?= MultiplierP_Rollup.target
+endif 
 
-#DESIGN_NAME ?= Multiplier
-#INST_NAME ?= Multiplier
-#MOD_NAME ?= Multiplier
-#TOP_NAME ?= top_Multiplier
-#TOP_MODULE ?= $(TOP_NAME)
+ifeq ($(DESIGN_NAME),FPMult)
+  INST_NAME ?= FPMult
+  MOD_NAME ?= FPMult
+  TOP_NAME ?= top_FPMult
+  ROLLUP_TARGET ?= FPMult_Rollup.target
+endif 
 
-#DESIGN_NAME ?= FPMult
-#INST_NAME ?= FPMult
-#MOD_NAME ?= FPMult
-#TOP_NAME ?= top_FPMult
-#TOP_MODULE ?= $(TOP_NAME)
+ifeq ($(DESIGN_NAME),FMA)
+  DESIGN_NAME ?= FMA
+  INST_NAME ?= FMA
+  MOD_NAME ?= FMA
+  TOP_NAME ?= top_FMA
+  ROLLUP_TARGET ?= FMA_Rollup.target
+endif 
 
-#DESIGN_NAME ?= adder
-#INST_NAME ?= adder
-#MOD_NAME ?= adder
-#TOP_NAME ?= top_adder
-#TOP_MODULE ?= $(TOP_NAME)
+ifeq ($(DESIGN_NAME),Multiplier)
+  DESIGN_NAME ?= Multiplier
+  INST_NAME ?= Multiplier
+  MOD_NAME ?= Multiplier
+  TOP_NAME ?= top_Multiplier
+  ROLLUP_TARGET ?= Multiplier_Rollup.target
+endif 
 
-DESIGN_NAME ?= MultiplierP
-INST_NAME ?= MultiplierP
-MOD_NAME ?= MultiplierP
-TOP_NAME ?= top
+ifeq ($(DESIGN_NAME),FPMult)
+  DESIGN_NAME ?= FPMult
+  INST_NAME ?= FPMult
+  MOD_NAME ?= FPMult
+  TOP_NAME ?= top_FPMult
+  ROLLUP_TARGET ?= FPMult_Rollup.target
+endif 
+
+ifeq ($(DESIGN_NAME),)
+  DESIGN_NAME ?= adder
+  INST_NAME ?= adder
+  MOD_NAME ?= adder
+  TOP_NAME ?= top_adder
+  ROLLUP_TARGET ?= adder_Rollup.target
+endif 
+
 TOP_MODULE ?= $(TOP_NAME)
 
 
 # list src folders and include folders
+
 GENESIS_SRC := 	-srcpath ./			\
 		-srcpath $(DESIGN_HOME)/rtl	\
 		-srcpath $(DESIGN_HOME)/verif			
@@ -322,9 +335,11 @@ run_synthesis: log/syn_$(RUN_NAME).log
 SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
-RETIME ?= 0 
-
-PIPED ?= 0
+RETIME ?= 1 
+PIPED ?= 1
+VT ?= svt
+Voltage ?= 1v0
+io2core ?= 30
 
 RUN_SYNTHESIS_FLAGS:= \
                       VT=$(VT) \
