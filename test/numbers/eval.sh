@@ -12,23 +12,22 @@ numbers.pl -f $PWD/test/numbers/FMA.cfg \
      VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-32-lvt-1v0-r3 DESIGN_FILE=$PWD/test/numbers/FMA-32.design \
      FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param 2>&1 | tee -a eval_log.log
 
-echo "64 FMA svt" 
+echo "64 FMA svt"  
 echo "==============================================================="
 numbers.pl -f $PWD/test/numbers/FMA.cfg \
      VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-64-lvt-1v0-r3 DESIGN_FILE=$PWD/test/numbers/FMA-64.design \
      FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param 2>&1 | tee -a eval_log.log
 
-echo "128 FMA svt" 
-echo "==============================================================="
-numbers.pl -f $PWD/test/numbers/FMA.cfg \
-     VT=svt Voltage=0v9  DESIGN_TITLE=FMA-128-lvt-1v0-r3 DESIGN_FILE=$PWD/test/numbers/FMA-128.design  \
-     FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param 2>&1 | tee -a eval_log.log
+#echo "128 FMA svt" 
+#echo "==============================================================="
+#numbers.pl -f $PWD/test/numbers/FMA.cfg \
+#     VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-128-lvt-1v0-r3 DESIGN_FILE=$PWD/test/numbers/FMA-128.design  \
+#     FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param 2>&1 | tee -a eval_log.log
 
 echo "32 FMA svt Piped" 
 echo "==============================================================="
-numbers.pl -f $PWD/test/numbers/FMA.cfg \
+numbers.pl -f $PWD/test/numbers/FMA-P.cfg \
      VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-32-lvt-1v0-pipe-r3 DESIGN_FILE=$PWD/test/numbers/FMA-32-P.design \
-     PIPED=1 RETIME=1 \
      FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param 2>&1 | tee -a eval_log.log
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-
+ 
 use strict;
 use warnings ;
 use Getopt::Std;
@@ -290,9 +290,9 @@ foreach my $file ( @files ) {
     my $optimized_dynamic_energy ;
 
     if( $options{p} ){
-     $mapped_dynamic_energy    = $mapped_dynamic_power * $mapped_delay ;
-     $routed_dynamic_energy    = $routed_dynamic_power * $routed_delay ;
-     $optimized_dynamic_energy = $optimized_dynamic_power * $optimized_delay ;
+     $mapped_dynamic_energy    = $mapped_dynamic_power    * ($Target_Delay/1000.0) ;
+     $routed_dynamic_energy    = $routed_dynamic_power    * ($Target_Delay/1000.0) ;
+     $optimized_dynamic_energy = $optimized_dynamic_power * ($Target_Delay/1000.0) ;
     } else {
      $mapped_dynamic_energy    = $mapped_dynamic_power ;
      $routed_dynamic_energy    = $routed_dynamic_power  ;
@@ -327,6 +327,10 @@ foreach my $file ( @files ) {
     print TARGET "COST_Routed_Area:$routed_core_area\n" ;
     print TARGET "COST_Optimized_Area:$optimized_core_area\n" ;
     print TARGET "COST_Area:$optimized_core_area\n" ;
+    print TARGET "COST_Mapped_Dyn_Power:$mapped_dynamic_power\n" ;
+    print TARGET "COST_Routed_Dyn_Power:$routed_dynamic_power\n" ;
+    print TARGET "COST_Optimized_Dyn_Power:$optimized_dynamic_power\n" ;
+    print TARGET "COST_Dyn_Power:$optimized_dynamic_power\n" ;
     print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_energy\n" ;
     print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_energy\n" ;
     print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_energy\n" ;
@@ -368,6 +372,10 @@ foreach my $file ( @files ) {
     print TARGET "COST_Routed_Area:$routed_core_area\n" ;
     print TARGET "COST_Optimized_Area:$optimized_core_area\n" ;
     print TARGET "COST_Area:$routed_core_area\n" ;
+    print TARGET "COST_Mapped_Dyn_Power:$mapped_dynamic_power\n" ;
+    print TARGET "COST_Routed_Dyn_Power:$routed_dynamic_power\n" ;
+    print TARGET "COST_Optimized_Dyn_Power:$optimized_dynamic_power\n" ;
+    print TARGET "COST_Dyn_Power:$routed_dynamic_power\n" ;
     print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_energy\n" ;
     print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_energy\n" ;
     print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_energy\n" ;

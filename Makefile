@@ -45,15 +45,14 @@ ifeq ($(DESIGN_NAME),FPMult)
 endif 
 
 ifeq ($(DESIGN_NAME),FMA)
-  DESIGN_NAME ?= FMA
   INST_NAME ?= FMA
   MOD_NAME ?= FMA
   TOP_NAME ?= top_FMA
   ROLLUP_TARGET ?= FMA_Rollup.target
+  PIPELINE_PARAM ?= "TOP.top_FMA.FMA.PipelineDepth PipelineDepth"
 endif 
 
 ifeq ($(DESIGN_NAME),Multiplier)
-  DESIGN_NAME ?= Multiplier
   INST_NAME ?= Multiplier
   MOD_NAME ?= Multiplier
   TOP_NAME ?= top_Multiplier
@@ -61,15 +60,13 @@ ifeq ($(DESIGN_NAME),Multiplier)
 endif 
 
 ifeq ($(DESIGN_NAME),FPMult)
-  DESIGN_NAME ?= FPMult
   INST_NAME ?= FPMult
   MOD_NAME ?= FPMult
   TOP_NAME ?= top_FPMult
   ROLLUP_TARGET ?= FPMult_Rollup.target
 endif 
 
-ifeq ($(DESIGN_NAME),)
-  DESIGN_NAME ?= adder
+ifeq ($(DESIGN_NAME),adder)
   INST_NAME ?= adder
   MOD_NAME ?= adder
   TOP_NAME ?= top_adder
@@ -126,7 +123,7 @@ GENESIS_HIERARCHY := $(MOD_NAME).xml
 else
   $(warning WARNING: GENESIS_HIERARCHY set to $(GENESIS_HIERARCHY))
 endif
-
+GENESIS_TMP_HIERARCHY := $(MOD_NAME)_target.xml
 # For more Genesis parsing options, type 'Genesis2.pl -help'
 #        [-parse]                    ---   should we parse input file to generate perl modules?
 #        [-sources|srcpath dir]      ---   Where to find source files
@@ -150,7 +147,11 @@ GENESIS_GEN_FLAGS :=	-gen -top $(TOP_MODULE)					\
 			-product $(GENESIS_VLOG_LIST)				\
 			-hierarchy $(GENESIS_HIERARCHY)                		\
 			-xml $(GENESIS_CFG_XML)
-
+GENESIS_GEN_FLAGS2 :=	-gen -top $(TOP_MODULE)					\
+			-depend depend.list					\
+			-product $(GENESIS_VLOG_LIST)				\
+			-hierarchy $(GENESIS_HIERARCHY)                		\
+			-xml small_$(GENESIS_TMP_HIERARCHY)
 
 
 
@@ -264,10 +265,23 @@ gen: $(GENESIS_VLOG_LIST)
 # files (_unqN.v) from the genesis (.vp) program.
 # Use "make GEN=<genesis2_gen_flags>" to add elaboration time flags
 $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
+ifdef PIPE_CNT
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
+	@echo $(PIPELINE_PARAM) $(PIPE_CNT) > tmp_cfg.design
+	setGenCfg.pl INPUT_XML=small_$(GENESIS_HIERARCHY) OUTPUT_XML=small_$(GENESIS_TMP_HIERARCHY) DESIGN_FILE=tmp_cfg.design
+	Genesis2.pl $(GENESIS_GEN_FLAGS2) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=/dev/null LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
+else
+	@echo ""
+	@echo Making $@ because of $?
+	@echo ==================================================
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=/dev/null LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
+endif
+
 
 genesis_clean:
 	@echo ""
@@ -336,7 +350,6 @@ SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
 RETIME ?= 1 
-PIPED ?= 1
 VT ?= svt
 Voltage ?= 1v0
 io2core ?= 30
@@ -347,8 +360,7 @@ RUN_SYNTHESIS_FLAGS:= \
                       target_delay=$(target_delay) \
                       io2core=$(io2core) \
                       MOD_NAME=$(MOD_NAME) \
-                      RETIME=$(RETIME) \
-                      PIPED=$(PIPED)
+                      RETIME=$(RETIME)
 
 
 log/syn_$(RUN_NAME).log: $(EXECUTABLE)
@@ -367,15 +379,17 @@ clean_synthesis:
 
 .PHONY: rollup1  rollup2 rollup3
 rollup1: 
-	perl scripts/BB_rollup.pl -p $(PIPED) -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup2: 
-	perl scripts/BB_rollup.pl -p $(PIPED) -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup3: 
-	perl scripts/BB_rollup.pl -p $(PIPED) -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) \
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 
+#PipeLine Hack:
+###############################
 
 #Eval Rules
 ##############################
@@ -419,3 +433,4 @@ cleanall: clean clean_synthesis
 	\rm -rf vcdplus.vpd
 	\rm -f *.v
 	\rm -f *.pm
+	\rm -f $(GENESIS_VLOG_LIST)

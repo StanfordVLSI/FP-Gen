@@ -164,3 +164,22 @@ runMake.pl                 -t test/runMake/FMA.target \
                            VT=svt \
                            Voltage=0v9  \
                            io2core=30
+########################
+
+
+##########################
+
+make cleanall gen eval  \
+           SYN_CLK_PERIOD=0.125 \
+           DESIGN_NAME=FMA \
+           INST_NAME=FMA \
+           MOD_NAME=FMA \
+           TOP_NAME=top_FMA \
+	   ROLLUP_TARGET=FMA_ROLLUP.txt \
+           GENESIS_CFG_XML=small_FMA_target32.xml \
+           SIM_ENGINE=synopsys \
+           VT=lvt \
+           Voltage=1v0  \
+           io2core=30 \
+           PIPED=1 \
+           RETIME=1 

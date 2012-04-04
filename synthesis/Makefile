@@ -12,6 +12,8 @@ OPTIMIZED_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Vo
 
 all: $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log $(RUN_NAME)/log/icc_$(RUN_NAME).log
 
+#-64bit
+
 $(RUN_NAME)/log/dc_$(RUN_NAME).log: $(SRC_DIR)/*.v
 	@echo ==================================================
 	@echo ==================================================

@@ -48,6 +48,14 @@ if { [info exists ENABLE_MANUAL_PLACEMENT] } {
     }
 }
 
+if { [file exists ../../gen_params.tcl] } {
+  source -echo ../../gen_params.tcl
+} 
+
+if {![info exists PipelineDepth]} {
+  set PipelineDepth 0
+}
+
 set target_library [set ${VT}_${Voltage}_target_libs]
 
 set_host_options -max_cores 2

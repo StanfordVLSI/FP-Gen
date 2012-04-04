@@ -1,5 +1,19 @@
 #!/bin/sh
 
+echo "16 FMA lvt" 
+echo "==============================================================="
+numbers.pl -f $PWD/test/numbers/FMA.cfg \
+     VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-16-lvt-1v0-r3 DESIGN_FILE=$PWD/test/numbers/FMA-16.design \
+     FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param \
+     REPORT_ONLY=1  2>&1 | tee -a eval_log.log
+
+echo "32 FMA lvt" 
+echo "==============================================================="
+numbers.pl -f $PWD/test/numbers/FMA.cfg \
+     VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-32-lvt-1v0-r3 DESIGN_FILE=$PWD/test/numbers/FMA-32.design \
+     FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param \
+     REPORT_ONLY=1 2>&1 | tee -a eval_log.log
+
 
 #echo "16 multiplier svt" 
 #echo "==============================================================="

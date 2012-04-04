@@ -10,7 +10,7 @@ check_design
 
 
 
-if { $PIPED } {
+if { $PipelineDepth > 0 } {
 
     set CLK clk
     set RST reset 
