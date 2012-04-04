@@ -6,8 +6,7 @@ source /cad/modules/init_modules.csh
 #setup load module scripts
 # source /hd/cad/modules/init_modules.csh
 
-#print list of available stuff to stdout
-module avail
+
 
 #load some modules to get some work done, this is probably what you need 
 module load genesis2
