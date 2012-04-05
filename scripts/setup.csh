@@ -17,3 +17,4 @@ module load vcs-mx
 module load icc
 module load ic 
 module load FPGen
+module load numbers
