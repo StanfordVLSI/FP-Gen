@@ -10,7 +10,9 @@ MOD_NAME ?= MultiplierP
 DESIGN_TARGET ?= $(MOD_NAME)_unq1
 target_delay ?= 1500
 
-RUN_NAME = $(VT)_$(Voltage)_$(target_delay)
+PIPE_CNT ?= xxx
+
+RUN_NAME = $(VT)_$(Voltage)_$(target_delay)_p$(PIPE_CNT)
 
 COMMAND_STRING =  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET); "
 OPTIMIZED_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET); "

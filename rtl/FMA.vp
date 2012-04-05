@@ -24,6 +24,17 @@
  *  5 | Inexact   | Integer or floating point output is not equal to the infinitely precise result.
  * ______________________________
  *  
+ *
+ * 
+ *  Retiming Diagram 
+ *
+ *   Pin-In --->  [ pipeIn ] --> [pipeRetime0] --> [pipeRetime1] .... --> [pipeRetimeN] --> (FMA Design) --> [ pipeOut ] ---> Pin-Out
+ *                    |                 |             |           |           |                                   |
+ *   clk ---------------------------------------------------------------------------------------------------------
+ * 
+ *   NOTES:
+ *     pipeIn and and pipeOut are fixed and will not be retimed. 
+ *     pipeRetime is not fixed and will be retimed.
  * 
  * Parameters:
  * ------------
@@ -76,7 +87,7 @@
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>1, List=>[ 0,1,2,3,4,5,6,7 ] ,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $retiming ;
-//; if( $pipeline_depth > 2 ){
+//; if( $pipeline_depth > 1 ){
 //;   $retiming = parameter(Name=>'Retiming', Val=>1, List=>[ 0, 1 ] , 
 //;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!");
 //;   $retiming or $self->error( "Error: HACK-> Parameter may only be 1\n" ) ;

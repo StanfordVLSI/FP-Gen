@@ -395,6 +395,7 @@ target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 VT ?= svt
 Voltage ?= 1v0
 io2core ?= 30
+PIPE_CNT ?= xxx
 
 RUN_SYNTHESIS_FLAGS:= \
                       VT=$(VT) \
@@ -402,6 +403,7 @@ RUN_SYNTHESIS_FLAGS:= \
                       target_delay=$(target_delay) \
                       io2core=$(io2core) \
                       MOD_NAME=$(MOD_NAME) 
+                      PIPE_CNT=$(PIPE_CNT) 
 
 log/syn_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log

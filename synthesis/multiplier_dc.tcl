@@ -20,7 +20,11 @@ if { $PipelineDepth > 0 } {
 
     if { $Retiming } { 
         ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
-        
+        ##
+        ## IGNORE set_output_delay and set_input_delay.  These constrainsts are arbitrary.
+        ##   they exist to suppress warnings and errors.  These should have no impact
+        ##   on the design as inputs and outpus are flopped.
+
 	#Remove -no_autoungroup for retiming...
 
 	#Constraints for Full Path Synthesis without FLOPS
@@ -60,6 +64,9 @@ if { $PipelineDepth > 0 } {
     } else {
 
 	#NO RETIMING
+        ## IGNORE set_output_delay and set_input_delay.  These constrainsts are arbitrary.
+        ##   they exist to suppress warnings and errors.  These should have no impact
+        ##   on the design if inputs and outpus are flopped.
 
 	#Hedged Constraints for DC
 	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000] 
@@ -80,6 +87,8 @@ if { $PipelineDepth > 0 } {
     }
  
 } else {
+
+    #DELAY ONLY EVALUATION.  
 
   if {$target_delay!=-1} {
     set_max_delay -from [all_inputs] -to [all_outputs] [expr double($HEDGE)*double($target_delay)/1000]
