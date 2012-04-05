@@ -48,12 +48,12 @@ while($#ARGV >= 0){
 		last;
 	    }
 #	    print $line;
-	    if($line =~ /FMA/){
+	    if($line =~ /fmadd/){
 #		print $line;
 		my $numbers;
 		my $status;
 		($numbers, $status) = split(/, Status bits set:/, $line); # first, break the line into two parts
-		$numbers =~ s/\bFMA\w*\s+|\*  FRT:|\b0x//g;       # remove some strings
+		$numbers =~ s/\bfmadds?\w*\s+|\*  FRT:|\b0x//g;       # remove some strings
 		my $a=0; my $b=0; my $c=0; my $result=0;              # get operands and result
 		($a, $b, $c, $result) = split(/\s+/, $numbers);
 		my $FX=0; my $FO=0; my $FU=0; my $FV=0; my $FZ=0;        # set flags
