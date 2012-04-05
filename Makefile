@@ -308,11 +308,48 @@ $(EXECUTABLE):	$(VERILOG_FILES) $(GENESIS_VLOG_LIST)
 	  fi )
 	$(COMPILER)  $(VERILOG_COMPILE_FLAGS) $(COMP) 2>&1 | tee comp_bb.log 
 
+# IBM's fpgen rules:
+#####################
+# use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
+.PHONY: fpgen
+FPGEN_SEED := 12345
+FPGEN_CLUSTER_SIZE := 10
+FPGEN_CLUSTER_INDEX := 0
+FPGEN_TYPE := fmadd
+COVERAGE_MODEL := ch-5-1-2-3-All-Exponents
+FPDEF_FILE := testVectors/GenericTP/$(COVERAGE_MODEL)/fpdef/$(COVERAGE_MODEL).fpdef
+FPRES_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpres
+FPLOG_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fplog
+TESTVEC_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).txt
+FPGEN_FLAGS := 	-o testVectors		\
+		-r $(FPRES_FILE)	\
+		-l $(FPLOG_FILE)	\
+		-S $(FPGEN_SEED)	\
+		-C $(FPGEN_CLUSTER_SIZE)	\
+		-i $(FPGEN_CLUSTER_INDEX)	\
+		-M $(FPGEN_TYPE)
+
+fpgen: testVectors/$(FPRES_FILE)
+
+testVectors/$(FPRES_FILE):
+	@echo ""
+	@echo Now Running IBM\'s fpgen tool, generating $(FPRES_FILE)
+	@echo ==================================================
+	fpgen $(FPDEF_FILE) $(FPGEN_FLAGS)
+
+
+testVectors/$(TESTVEC_FILE): testVectors/$(FPRES_FILE)
+	@echo ""
+	@echo Now Converting testVectors/$(FPRES_FILE)
+	@echo ==================================================
+	scripts/converter.pl testVectors/$(FPRES_FILE)
+
+
 
 # Simulation rules:
 #####################
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
-.PHONY: run run_wave
+.PHONY: run run_wave run_ibm
 run_wave: $(EXECUTABLE)
 	@echo ""
 	@echo Now Running $(EXECUTABLE) with wave
@@ -323,7 +360,14 @@ run: $(EXECUTABLE)
 	@echo ""
 	@echo Now Running $(EXECUTABLE)
 	@echo ==================================================
-	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log 
+	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
+
+run_ibm: $(EXECUTABLE) testVectors/$(TESTVEC_FILE)
+	@echo ""
+	@echo Now Running $(EXECUTABLE) using IBM\'s fpgen generated vectors
+	@echo ==================================================
+	$(EXECUTABLE)  $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=testVectors/$(TESTVEC_FILE) 2>&1 | tee run_bb.log
+ 
 
 ########## For Design Compiler #############
 ############################################
@@ -332,16 +376,7 @@ io2core ?= 30
 COMMAND_STRING :=  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
 OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
 
-# DC Run rules:
-######################
-.PHONY: run_dc
-run_dc: $(RUN_NAME)/log/dc_$(RUN_NAME).log
-
-$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
-	mkdir -p $(RUN_NAME); cd $(RUN_NAME); mkdir -p log; \
-	dc_shell-xg-t -64bit -f ../multiplier_dc.tcl -x $(COMMAND_STRING) | tee -i log/dc_$(RUN_NAME).log
-
-# ICC Run rules:
+# DC & ICC Run rules:
 ############################
 .PHONY: run_synthesis
 run_synthesis: log/syn_$(RUN_NAME).log
