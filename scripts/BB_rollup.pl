@@ -17,7 +17,7 @@ $makeArguments =~ m/VT/           or die "VT not specified in BB_rollup.pl\n" ;
 $makeArguments =~ m/Voltage/      or die "Voltage not specified in BB_rollup.pl\n" ;
 $makeArguments =~ m/target_delay/ or die "target_delay not specified in BB_rollup.pl\n" ;
 $makeArguments =~ m/io2core/      or die "io2core not specified in BB_rollup.pl\n" ;
- 
+$makeArguments =~ m/DESIGN_FILE/  or die "designFile not specified in BB_rollup.pl\n" ;
 sub extractMakeVal{
     my $name  = shift ;
     my @Parse = $makeArguments =~ m/$name=(\S+)/ ;
@@ -29,7 +29,16 @@ my $VT             = extractMakeVal( "VT" ) ;
 my $Target_Voltage = extractMakeVal( "Voltage" ) ;  $Target_Voltage =~ s/v/./ ;
 my $Target_Delay   = extractMakeVal( "target_delay" ) ;
 my $IO2CORE        = extractMakeVal( "io2core" ) ;
+my $designFile     = extractMakeVal( "DESIGN_FILE" );
 
+-e $designFile or die "Error: Sorry DesignFile is missing....\n" ;
+my $designString = `cat $designFile` ;
+my @pipeRes = $designString =~ m/PipelineDepth\s+(\d)/ ;
+if( scalar( @pipeRes ) ){
+    $options{p} = $pipeRes[0] > 1 ? 1 : 0 ;
+} else {
+    $options{p} = 0 ;
+}
 
 open( TARGET , "| tee $options{t}" );
 

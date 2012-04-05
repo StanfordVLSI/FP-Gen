@@ -2,7 +2,7 @@ export SNPSLMD_LICENSE_FILE=27000@cadlic0.stanford.edu
      
 # Synthesis
 # SYNOPSYS is a standard variable that Synopsys tools use
-export SYNOPSYS=/cad/synopsys/dc_shell/F-2011.09/
+export SYNOPSYS=/cad/synopsys/dc_shell/latest/
 PATH=$PATH:$SYNOPSYS/bin
 
 #IC Compiler

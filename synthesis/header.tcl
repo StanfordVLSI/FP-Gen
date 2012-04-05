@@ -56,6 +56,10 @@ if {![info exists PipelineDepth]} {
   set PipelineDepth 0
 }
 
+if {![info exists Retiming]} {
+  set Retiming 0
+}
+
 set target_library [set ${VT}_${Voltage}_target_libs]
 
 set_host_options -max_cores 2

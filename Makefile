@@ -50,6 +50,12 @@ ifeq ($(DESIGN_NAME),FMA)
   TOP_NAME ?= top_FMA
   ROLLUP_TARGET ?= FMA_Rollup.target
   PIPELINE_PARAM ?= "TOP.top_FMA.FMA.PipelineDepth PipelineDepth"
+  RETIME_PARAM ?= "TOP.top_FMA.FMA.Retiming Retiming"
+  ifeq ($(PIPE_CNT),0)
+    RETIME_STATUS ?= 0
+  else
+    RETIME_STATUS ?= 1
+  endif
 endif 
 
 ifeq ($(DESIGN_NAME),Multiplier)
@@ -170,7 +176,7 @@ VERILOG_DESIGN :=
 
 VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
 
-SYNOPSYS := /hd/cad/synopsys/dc_shell/F-2011.09
+SYNOPSYS := /hd/cad/synopsys/dc_shell/latest
 
 VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
 			+incdir+$(SYNOPSYS)/dw/sim_ver/	\
@@ -269,17 +275,18 @@ ifdef PIPE_CNT
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
 	@echo $(PIPELINE_PARAM) $(PIPE_CNT) > tmp_cfg.design
+	@echo $(RETIME_PARAM) $(RETIME_STATUS) >> tmp_cfg.design
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
 	setGenCfg.pl INPUT_XML=small_$(GENESIS_HIERARCHY) OUTPUT_XML=small_$(GENESIS_TMP_HIERARCHY) DESIGN_FILE=tmp_cfg.design
 	Genesis2.pl $(GENESIS_GEN_FLAGS2) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=/dev/null LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
 else
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=/dev/null LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
 endif
 
 
@@ -290,6 +297,7 @@ genesis_clean:
 	if test -f "genesis_clean.cmd"; then 	\
 		source genesis_clean.cmd;	\
 	fi
+	\rm -rf $(GENESIS_VLOG_LIST)
 
 
 # VCS rules:
@@ -384,7 +392,6 @@ run_synthesis: log/syn_$(RUN_NAME).log
 SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
-RETIME ?= 1 
 VT ?= svt
 Voltage ?= 1v0
 io2core ?= 30
@@ -394,9 +401,7 @@ RUN_SYNTHESIS_FLAGS:= \
                       Voltage=$(Voltage) \
                       target_delay=$(target_delay) \
                       io2core=$(io2core) \
-                      MOD_NAME=$(MOD_NAME) \
-                      RETIME=$(RETIME)
-
+                      MOD_NAME=$(MOD_NAME) 
 
 log/syn_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
@@ -414,13 +419,13 @@ clean_synthesis:
 
 .PHONY: rollup1  rollup2 rollup3
 rollup1: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup2: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET)  \
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup3: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) \
+	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 
 #PipeLine Hack:

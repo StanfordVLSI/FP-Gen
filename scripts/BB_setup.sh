@@ -10,8 +10,8 @@ export VIRSIM_HOME=${VCS_HOME}/gui/virsim
 export DVE=${VCS_HOME}/gui/dve/bin/   
 export VCS_LIC_EXPIRE_WARNING=5   
 
-PATH=/hd/cad/synopsys/dc_shell/F-2011.09/bin/:$PATH   
-export SYNOPSYS=/hd/cad/synopsys/dc_shell/F-2011.09/
+PATH=/hd/cad/synopsys/dc_shell/latest/bin/:$PATH   
+export SYNOPSYS=/hd/cad/synopsys/dc_shell/latest/
 
 export SNPSLMD_QUEUE=true
 export SNPS_MAX_WAITTIME=7200

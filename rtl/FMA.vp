@@ -75,6 +75,16 @@
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>1, List=>[ 0,1,2,3,4,5,6,7 ] ,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//; my $retiming ;
+//; if( $pipeline_depth > 2 ){
+//;   $retiming = parameter(Name=>'Retiming', Val=>1, List=>[ 0, 1 ] , 
+//;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!");
+//;   $retiming or $self->error( "Error: HACK-> Parameter may only be 1\n" ) ;
+//; } else {
+//;   $retiming = parameter(Name=>'Retiming', Val=>0, List=>[ 0, 1 ] ,
+//;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!");
+//;   $retiming and $self->error( "Error: HACK-> Parameter may only be 0\n" ) ;
+//; }
 //;
 //; my $useInc ;
 //; if( $desinware_mode eq 'OFF' ){
@@ -129,7 +139,10 @@ module `mname` (
    logic 				imd_ainc, imd_binc, imd_cinc;
    logic [2:0] 				imd_rnd;
    
-   
+   logic [`$exp_width + $frac_width`:0] r_a, r_b, r_c ;
+   logic 				r_ainc, r_binc, r_cinc;
+   logic [2:0] 				r_rnd;
+  
 
 //; ###################################
 //; #FLOP INPUTS OF BLOCK
@@ -140,12 +153,25 @@ module `mname` (
 //;                             Width=> (( $exp_width + $frac_width + 1 )*3 + 6) ,
 //;                             PipelineDepth=>1 ,
 //;                             Retime=>"NO" );
-  `$pipeIn->instantiate()` ( .in({a,b,c,ainc,binc,cinc,rnd}) , .clk(clk) , .reset(reset), .out({imd_a,imd_b,imd_c,imd_ainc,imd_binc,imd_cinc,imd_rnd}) );
+  `$pipeIn->instantiate()` ( .in({a,b,c,ainc,binc,cinc,rnd}) , .clk(clk) , .reset(reset), .out({r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd}) );
 //; } else {
-   assign {imd_a,imd_b,imd_c,imd_ainc,imd_binc,imd_cinc,imd_rnd} = {a,b,c,ainc,binc,cinc,rnd};
+   assign {r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd} = {a,b,c,ainc,binc,cinc,rnd};
 //; }
 
+//; ###################################
+//; #Retime Flops
+//; ###################################
+//;   my $pipeR = generate(  'dff', 
+//;                           'pipeRetime', 
+//;                            Width=> (( $exp_width + $frac_width + 1 )*3 + 6) ,
+//;                            PipelineDepth=>$pipeline_depth-1 ,
+//;                            Retime=>"YES" );
+  `$pipeR->instantiate()` ( .in({r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd}) , .clk(clk) , .reset(reset), .out({imd_a,imd_b,imd_c,imd_ainc,imd_binc,imd_cinc,imd_rnd}) );
 
+
+ 
+
+   
 
    
 //; if( $desinware_mode eq 'ON' ){
@@ -341,18 +367,17 @@ module `mname` (
 
 
    
-//; if($pipeline_depth>1){
+//; if( 0 ){
 //;   my $pipeline_obj = generate(  'dff', 
 //;                                 'retimingFlops', 
 //;                                  Width=> $exp_width + $frac_width+2 + 8 ,
 //;                                  PipelineDepth=>($pipeline_depth-1) ,
 //;                                  Retime=>"YES" );
-  `$pipeline_obj->instantiate()` ( .in({imd1_zinc,imd1_z,imd1_status}) , .clk(clk) , .reset(reset), .out({imd2_zinc,imd2_z,imd2_status}) );
+//  `$pipeline_obj->instantiate()` ( .in({imd1_zinc,imd1_z,imd1_status}) , .clk(clk) , .reset(reset), .out({imd2_zinc,imd2_z,imd2_status}) );
 //; } else {
   assign {imd2_zinc,imd2_z,imd2_status} = {imd1_zinc,imd1_z,imd1_status};
 //; }
-
-
+   
 //; ###################################
 //; #FLOP OUTPUTS OF BLOCK
 //; ###################################

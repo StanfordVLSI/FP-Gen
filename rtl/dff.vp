@@ -21,36 +21,17 @@ module `mname` (
 //; #   https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/set_dont_retime.html
 //; if( $retime_Status eq 'YES' ){
    set_dont_retime [current_design] false 
+   set_optimize_registers true -design [current_design]
 //; } elsif (  $retime_Status eq 'NO' ){
    set_dont_retime [current_design] true
+   set_optimize_registers false -design [current_design]
 //; } else {
 //;    self->error( "Unexpected branch condition in retiming elaboration...\n" ) ;   
 //; }
   */
    
 //; if ($pipe_depth>0) {
-   logic [`$width-1`:0]       dff_d [0:`$pipe_depth-1`];
-   logic [`$width-1`:0]       dff_q [0:`$pipe_depth-1`];
-   logic [`$width-1`:0]       zero ;
-
-   assign zero = '0 ;
-
-
-//;   #Instantaite Sync. Reset Mux.   
-   assign dff_d[0] = reset ? zero : in ;
-//;    for( my $i = 1 ; $i < $pipe_depth ; $i++ ){
-          assign dff_d[`$i`] = reset ? zero :  dff_q[`$i-1`] ;
-//;    }
-
-//;    #Instantiate FlipFlops
-//;    for( my $i = 0 ; $i < $pipe_depth ; $i++ ){
-//;       for( my $j = 0 ; $j < $width ; $j++ ) {
-             GTECH_FD1 dff_`$i`_`$j`( .Q(dff_q[`$i`][`$j`]) , .D(dff_d[`$i`][`$j`]) , .CP(clk) );
-//;       }
-//;    }
-
-   assign out = dff_q [`$pipe_depth-1`];
-
+   DW03_pipe_reg #(`$pipe_depth`,`$width`) dff ( .A(in) , .clk(clk) , .B(out) ) ;
 //; } else {
     assign out = in;
 //; }
