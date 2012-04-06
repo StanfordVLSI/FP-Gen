@@ -20,37 +20,37 @@ if { $PipelineDepth > 0 } {
 
     if { $Retiming } { 
         ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
+>>>> ORIGINAL //Smart_design/ChipGen/FP-Gen/synthesis/multiplier_dc.tcl#13
+        
+==== THEIRS //Smart_design/ChipGen/FP-Gen/synthesis/multiplier_dc.tcl#14
         ##
         ## IGNORE set_output_delay and set_input_delay.  These constrainsts are arbitrary.
         ##   they exist to suppress warnings and errors.  These should have no impact
         ##   on the design as inputs and outpus are flopped.
+==== YOURS //sameh06p4/FP-Gen/synthesis/multiplier_dc.tcl
+       
+        current_design MultiplierP_unq1
+        set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
+        compile_ultra -no_autoungroup
+  
+        current_design ${DESIGN_NAME}
+        #set_dont_touch [get_cells -hierarchical MUL0] true
+<<<<
 
-	#Remove -no_autoungroup for retiming...
 
-	#Constraints for Full Path Synthesis without FLOPS
-	#set CLK_PERIOD [expr double($PipelineDepth)*double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] 
-	#create_clock $CLK -period $CLK_PERIOD
-	#set_output_delay [ expr $CLK_PERIOD*1/2 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-	#set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-	#set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
-
-	#Synthesize Full Path without Flip Flops  compile_ultra -no_autoungroup
-	#compile 
-
-	#New Timing Constraints for Retiming
-	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000] 
+	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
 	create_clock $CLK -period $CLK_PERIOD
 	set_output_delay [ expr $CLK_PERIOD*1/2 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
 	set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
 	set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
 		
-	set_optimize_registers true -design ${DESIGN_NAME} 
-
+	set_optimize_registers true -design ${DESIGN_NAME}
+ 
         # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/optimize_registers.html
 	#optimize_registers -no_compile -justification_effort high -check_design -verbose -print_critical_loop
 	# https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/compile_ultra.html?otSearchResultSrc=advSearch&otSearchResultNumber=15&otPageNum=1
 	compile_ultra -no_autoungroup -retime
-
+ 
 	#Attempt to Recover the minimum clock period.
 	#balance_registers
 
