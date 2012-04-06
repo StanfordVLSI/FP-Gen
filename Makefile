@@ -195,7 +195,7 @@ VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
 # "-top topModuleName" specifies the top module
 # "-f verilogFiles.list" specifies a file that contains list of verilog files to compile
 
-J_CC ?= gcc 
+
 
 VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				+cli 						\
@@ -207,7 +207,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-debug_pp					\
 				-timescale=1ns/1ns				\
 				+noportcoerce         				\
-				-ld $(J_CC) -debug_pp				\
+				-ld $(VCS_CC) -debug_pp				\
 				-top $(TOP_MODULE)				\
 				-f $(GENESIS_VLOG_LIST) 			\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
