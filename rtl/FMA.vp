@@ -316,8 +316,8 @@ module `mname` (
   `$fma_man_obj->instantiate()`  (  .ManA(ManA), 
 				    .ManB(ManB), 
 				    //; if ($useInc eq 'YES'){
-				    .IncA(ainc),		     
-				    .IncB(binc),
+				    .IncA(imd_ainc),		     
+				    .IncB(imd_binc),
 				    //; }
 			      	    .ManC(ManC), 
 				    .SignA(SignA), 
