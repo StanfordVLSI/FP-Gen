@@ -16,18 +16,8 @@ if { $PipelineDepth > 0 } {
     set CLK clk
     set RST reset 
 
-    #TODO -> BALANCE REGISTER MODE -> use balance_registers  (required for smart retiming...)
-
     if { $Retiming } { 
         ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
->>>> ORIGINAL //Smart_design/ChipGen/FP-Gen/synthesis/multiplier_dc.tcl#13
-        
-==== THEIRS //Smart_design/ChipGen/FP-Gen/synthesis/multiplier_dc.tcl#14
-        ##
-        ## IGNORE set_output_delay and set_input_delay.  These constrainsts are arbitrary.
-        ##   they exist to suppress warnings and errors.  These should have no impact
-        ##   on the design as inputs and outpus are flopped.
-==== YOURS //sameh06p4/FP-Gen/synthesis/multiplier_dc.tcl
        
         current_design MultiplierP_unq1
         set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
@@ -35,7 +25,6 @@ if { $PipelineDepth > 0 } {
   
         current_design ${DESIGN_NAME}
         #set_dont_touch [get_cells -hierarchical MUL0] true
-<<<<
 
 
 	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
