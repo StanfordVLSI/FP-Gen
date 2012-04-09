@@ -255,6 +255,27 @@ VERILOG_SIMULATION_FLAGS := 	-c						\
 endif 
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
+
+##### FLAGS FOR IBM's FPGEN
+
+FPGEN_SEED := 12345
+FPGEN_CLUSTER_SIZE := 10
+FPGEN_CLUSTER_INDEX := 0
+FPGEN_TYPE := fmadd
+COVERAGE_MODEL := ch-5-1-2-3-All-Exponents
+FPDEF_FILE := testVectors/GenericTP/$(COVERAGE_MODEL)/fpdef/$(COVERAGE_MODEL).fpdef
+FPRES_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpres
+FPLOG_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fplog
+TESTVEC_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpvec
+FPGEN_FLAGS := 	-o testVectors		\
+		-r $(FPRES_FILE)	\
+		-l $(FPLOG_FILE)	\
+		-S $(FPGEN_SEED)	\
+		-C $(FPGEN_CLUSTER_SIZE)	\
+		-i $(FPGEN_CLUSTER_INDEX)	\
+		-M $(FPGEN_TYPE)
+########
+
 ################################################################################
 ################ Makefile Rules
 ################################################################################
@@ -320,22 +341,6 @@ $(EXECUTABLE):	$(VERILOG_FILES) $(GENESIS_VLOG_LIST)
 #####################
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
 .PHONY: fpgen
-FPGEN_SEED := 12345
-FPGEN_CLUSTER_SIZE := 10
-FPGEN_CLUSTER_INDEX := 0
-FPGEN_TYPE := fmadd
-COVERAGE_MODEL := ch-5-1-2-3-All-Exponents
-FPDEF_FILE := testVectors/GenericTP/$(COVERAGE_MODEL)/fpdef/$(COVERAGE_MODEL).fpdef
-FPRES_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpres
-FPLOG_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fplog
-TESTVEC_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).txt
-FPGEN_FLAGS := 	-o testVectors		\
-		-r $(FPRES_FILE)	\
-		-l $(FPLOG_FILE)	\
-		-S $(FPGEN_SEED)	\
-		-C $(FPGEN_CLUSTER_SIZE)	\
-		-i $(FPGEN_CLUSTER_INDEX)	\
-		-M $(FPGEN_TYPE)
 
 fpgen: testVectors/$(FPRES_FILE)
 
@@ -462,6 +467,7 @@ clean: genesis_clean
 	\rm -rf top.v
 	\rm -rf top_FMA.v
 	\rm -f graph_*.m
+	cd testVectors;rm -f *.fplog *.fpres *.fpvec
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
 endif
