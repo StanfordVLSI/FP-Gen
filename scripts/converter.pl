@@ -20,7 +20,7 @@ while($#ARGV >= 0){
 	next;                   # ignore it
     }
     my $outfile = $filename;
-    $outfile =~ s/.fpres$/.txt/;
+    $outfile =~ s/.fpres$/.fpvec/;
     open(INPUT,"$filename")||die("Could not open file.\n");
     my $flow = ();                  # variable to save output lines
     my @lines = <INPUT>;
