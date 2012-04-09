@@ -232,8 +232,8 @@ module `mname` (
   assign SigB = imd_b[`$frac_width -1`:0];
   assign SigC = imd_c[`$frac_width -1`:0];
 
-//assign Tiny = denormResult & ~ZeroResult;
-  assign Tiny = 0;
+  assign Tiny = denormResult & ~ZeroResult;
+  //assign Tiny = 0;
   assign imd1_status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
 
   assign zeroSigA = SigA==0;
