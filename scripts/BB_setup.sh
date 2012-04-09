@@ -33,3 +33,11 @@ export J_CC=gcc-4.4
 else
 export J_CC=gcc
 fi
+
+
+export my_fpgen=/cad/IBM/FPGen
+export FPGEN_PATH=/cad/IBM/FPGen/bin
+export FPGEN_FILES_DIR=/cad/IBM/FPGen/tools/files
+export FPGEN_LICENSE_FILE=27002@cadlic0.stanford.edu
+PATH=:${my_fpgen}/bin:$PATH
+
