@@ -175,7 +175,7 @@ module `mname` (
 //;   my $pipeR = generate(  'dff', 
 //;                           'pipeRetime', 
 //;                            Width=> (( $exp_width + $frac_width + 1 )*3 + 6) ,
-//;                            PipelineDepth=>$pipeline_depth-1 ,
+//;                            PipelineDepth=>(($pipeline_depth-1)>0?($pipeline_depth-1):0) ,
 //;                            Retime=>"YES" );
   `$pipeR->instantiate()` ( .in({r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd}) , .clk(clk) , .reset(reset), .out({imd_a,imd_b,imd_c,imd_ainc,imd_binc,imd_cinc,imd_rnd}) );
 
