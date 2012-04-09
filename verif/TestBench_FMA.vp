@@ -82,7 +82,7 @@ program automatic `mname` (
                            // bit field of an array
    logic [`$exp_width + $frac_width`:0] expectZ, z2;
    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
-   logic 				FX, FO, FU, FV, FZ;
+   logic 				FX, FO, FU, FV, FZ,expectNaN;
    int 					loc;
    
  
@@ -211,12 +211,22 @@ program automatic `mname` (
 	    a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
 	    b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
 	    c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];
+	    expectNaN=expectZ[`$fp_width-2`:`$frac_width`]=={(`$exp_width`){1'b1}} && expectZ[`$frac_width-1`:0]!={(`$frac_width`){1'b0}};
+	    
+	    /*
+	    if(FO) begin
+	       expectZ[`$fp_width-2`:0] = {{(`$exp_width`){1'b1}},{(`$frac_width`){1'b0}}};
+	    end
+	    if(FU) begin
+	       expectZ[`$fp_width-2`:0] = {(`$exp_width+$frac_width`){1'b0}};
+	    end
+	    */
 	    #100;
             $display("%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
 		     rnd, a, b, c, $bitstoreal(a),  $bitstoreal(b), $bitstoreal(c), $bitstoreal(expectZ));
 	    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
-            $display("%t: Expect Result: Sign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h", $time,
-		     expectZ[`$fp_width-1`], expectZ[`$fp_width-2`:`$frac_width`], expectZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ);
+            $display("%t: Expect Result: Sign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
+		     expectZ[`$fp_width-1`], expectZ[`$fp_width-2`:`$frac_width`], expectZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
             $display("%t: FMA_Result: Sign = %h, Exp = %h, Man = %h, Inc=%h", $time,
 		     z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0], zinc);
 	    //calculate output result after inc
@@ -225,7 +235,7 @@ program automatic `mname` (
 	    z2 = TransRes.GetFPNum();
             $display("%t: After Inc: Sign = %h, Exp = %h, Man = %h  ", $time,
 		     z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0] );
-	    if(z2 != expectZ) begin
+	    if(z2 != expectZ && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))&& !(expectNaN==1 && (status[2]==1))) begin
 	       dumptolog = 1'b1;
 	       #1;
 	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
