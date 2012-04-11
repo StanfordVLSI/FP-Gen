@@ -86,6 +86,9 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 open_mw_lib $MW_DESIGN_LIBRARY
 import_designs $DESIGN_NAME.$VT.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
 read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
+set_switching_activity -toggle_count 0.5 -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
+set_switching_activity -toggle_count 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
+set_switching_activity -toggle_count 0.2 -base_clock clk -static_probability 0.2 stall_pipeline
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 
@@ -308,42 +311,32 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   }
 }
 
-#HACK FIXME
-#set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![$DESIGN_NAME=="FMA_unq1"]]; 
 
-#if {$FixedHeightFloorPlan} {
-#  initialize_floorplan \
-#  	-control_type row_number \
-#  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
-#  	-core_utilization $core_utilization_ratio \
-#  	-row_core_ratio 1 \
-#  	-left_io2core $io2core \
-#  	-bottom_io2core $io2core \
-#  	-right_io2core $io2core \
-# 	-top_io2core $io2core \
-#  	-start_first_row      
-#} else {
-#  initialize_floorplan \
-#  	-control_type aspect_ratio \
-#  	-core_aspect_ratio 1 \
-# 	-core_utilization $core_utilization_ratio \
-#  	-row_core_ratio 1 \
-#  	-left_io2core $io2core \
-#  	-bottom_io2core $io2core \
-# 	-right_io2core $io2core \
-#  	-top_io2core $io2core \
-#  	-start_first_row
-#}
+set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![$DESIGN_NAME=="FMA_unq1"]]; 
+
+if {$FixedHeightFloorPlan} {
+  initialize_floorplan \
+  	-control_type row_number \
+  	-number_rows [expr $rp_column_count+($boothSel_aspect_ratio-1)*$booth_sel_count] \
+  	-core_utilization $core_utilization_ratio \
+  	-row_core_ratio 1 \
+ 	-left_io2core $io2core \
+  	-bottom_io2core $io2core \
+  	-right_io2core $io2core \
+ 	-top_io2core $io2core \
+  	-start_first_row      
+} else {
   initialize_floorplan \
   	-control_type aspect_ratio \
   	-core_aspect_ratio 1 \
- 	-core_utilization 0.5 \
+ 	-core_utilization $core_utilization_ratio \
   	-row_core_ratio 1 \
   	-left_io2core $io2core \
   	-bottom_io2core $io2core \
  	-right_io2core $io2core \
   	-top_io2core $io2core \
   	-start_first_row
+}
 
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
@@ -351,7 +344,11 @@ set placement_site_width  [get_attribute [get_core_areas] tile_width];
 set die_area_bb [concat [get_attribute [get_core_area] bbox]];
 set die_area_maxY [lindex [lindex $die_area_bb 1] 1];
 set die_area_minY [lindex [lindex $die_area_bb 0] 1];
-set core_height [expr $die_area_maxY-$die_area_minY]
+set core_height [expr $die_area_maxY-$die_area_minY];
+
+# Power Network Synthesis
+set VOLTAGE_SUPPLY [regsub "v" $Voltage "."]
+synthesize_fp_rail -power_budget 1000 -voltage_supply $VOLTAGE_SUPPLY -nets "${MW_POWER_NET} ${MW_GROUND_NET}" -synthesize_power_plan
 
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
@@ -555,12 +552,21 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
   estimate_fp_area -sizing_type fixed_aspect_ratio
 #}
 
-save_mw_cel -as ${DESIGN_NAME}_before_routing
+save_mw_cel -as ${DESIGN_NAME}_after_placement
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -tie
 
+# Clock tree synthesis
+set_delay_calculation -clock_arnoldi
+clock_opt -only_cts -no_clock_route -cts_effort high
+clock_opt -no_clock_route -only_psyn -power -area_recovery
+optimize_clock_tree -buffer_sizing -gate_sizing -effort high
+route_group -all_clock_nets -search_repair_loop 15
 
+save_mw_cel -as ${DESIGN_NAME}_after_CTS
+
+#routing
 route_opt -initial_route_only
 route_opt -skip_initial_route -effort medium -power
 
