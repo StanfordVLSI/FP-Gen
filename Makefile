@@ -316,7 +316,7 @@ genesis_clean:
 	@echo Cleanning previous runs of Genesis
 	@echo ===================================
 	if test -f "genesis_clean.cmd"; then 	\
-		source genesis_clean.cmd;	\
+		tcsh genesis_clean.cmd;	\
 	fi
 	\rm -rf $(GENESIS_VLOG_LIST)
 
