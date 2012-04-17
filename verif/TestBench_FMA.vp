@@ -85,7 +85,7 @@ program automatic `mname` (
 
    // Signals for the input testvector verification
    logic [MEM_WIDTH-1:0] Memory [0:MEM_SIZE-1];  // Space for input file
-   logic [MEM_WIDTH-1:0] Temp;  // Verilog doesn't allow direct access to a
+   logic [MEM_WIDTH-1:0] Temp, Temp_q[$], r_Temp;  // Verilog doesn't allow direct access to a
                            // bit field of an array
    logic [`$exp_width + $frac_width`:0] expectZ, z2;
    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
@@ -207,53 +207,17 @@ program automatic `mname` (
       else begin // use the input test file
 	$readmemh (vector_file, Memory);
 	 loc=0;
-	 #500;
 	 Temp = Memory[loc];
+	 Temp_q = {Temp_q, Temp};
 	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin
-	    #100;
-	    expectZ = Temp[`$fp_width+20-1`:20];
-	    FO = Temp[12];
-	    FZ = Temp[0];
-	    FV = Temp[4];
-	    FU = Temp[8];
-	    FX = Temp[16];
 	    rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
 	    a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
 	    b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
-	    c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];
-	    expectNaN=expectZ[`$fp_width-2`:`$frac_width`]=={(`$exp_width`){1'b1}} && expectZ[`$frac_width-1`:0]!={(`$frac_width`){1'b0}};
-	    
-	    /*
-	    if(FO) begin
-	       expectZ[`$fp_width-2`:0] = {{(`$exp_width`){1'b1}},{(`$frac_width`){1'b0}}};
-	    end
-	    if(FU) begin
-	       expectZ[`$fp_width-2`:0] = {(`$exp_width+$frac_width`){1'b0}};
-	    end
-	    */
-	    #100;
-            $display("%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
-		     rnd, a, b, c, $bitstoreal(a),  $bitstoreal(b), $bitstoreal(c), $bitstoreal(expectZ));
-	    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
-            $display("%t: Expect Result: Sign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
-		     expectZ[`$fp_width-1`], expectZ[`$fp_width-2`:`$frac_width`], expectZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
-            $display("%t: FMA_Result: Sign = %h, Exp = %h, Man = %h, Inc=%h", $time,
-		     z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0], zinc);
-	    //calculate output result after inc
-    	    TransRes.ForceSignExpFrac(z[`$fp_width-1`], z[`$fp_width -2`:`$frac_width`], z[`$frac_width -1`:0], zinc);
-	    TransRes.CalculateInc();
-	    z2 = TransRes.GetFPNum();
-            $display("%t: After Inc: Sign = %h, Exp = %h, Man = %h  ", $time,
-		     z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0] );
-	    if(z2 != expectZ && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))&& !(expectNaN==1 && (status[2]==1))) begin
-	       dumptolog = 1'b1;
-	       #1;
-	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
-	       $finish(2);
-	    end
+	    c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];	    
 	    loc = loc + 1;
+	    #100;
 	    Temp = Memory[loc];
-	    
+	    Temp_q = {Temp_q, Temp};
 	    end // while (loc <MEM_SIZE && MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
    end // initial begin
@@ -297,6 +261,57 @@ program automatic `mname` (
 	   #100;		// wait a clock cycle
     	end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
+      else begin // use the input test file
+	 r_Temp = Temp_q[0];
+  	 Temp_q = Temp_q[1:$];
+	 while( !(r_Temp == 1'bx) ) begin
+	    expectZ = r_Temp[`$fp_width+20-1`:20];
+	    FO = r_Temp[12];
+	    FZ = r_Temp[0];
+	    FV = r_Temp[4];
+	    FU = r_Temp[8];
+	    FX = r_Temp[16];
+	    r_rnd = r_Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
+	    r_a = r_Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
+	    r_b = r_Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
+	    r_c = r_Temp[`$fp_width*2+20-1`:`$fp_width  +20`];
+	    expectNaN = expectZ[`$fp_width-2`:`$frac_width`] == 
+			{(`$exp_width`){1'b1}} && expectZ[`$frac_width-1`:0]!={(`$frac_width`){1'b0}};
+	    
+	    /*
+	    if(FO) begin
+	       expectZ[`$fp_width-2`:0] = {{(`$exp_width`){1'b1}},{(`$frac_width`){1'b0}}};
+	    end
+	    if(FU) begin
+	       expectZ[`$fp_width-2`:0] = {(`$exp_width+$frac_width`){1'b0}};
+	    end
+	    */
+
+
+            $display("%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
+		     r_rnd, r_a, r_b, r_c, $bitstoreal(r_a),  $bitstoreal(r_b), $bitstoreal(r_c), $bitstoreal(expectZ));
+	    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
+            $display("%t: Expect Result: Sign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
+		     expectZ[`$fp_width-1`], expectZ[`$fp_width-2`:`$frac_width`], expectZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
+            $display("%t: FMA_Result: Sign = %h, Exp = %h, Man = %h, Inc=%h", $time,
+		     z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0], zinc);
+	    //calculate output result after inc
+    	    TransRes.ForceSignExpFrac(z[`$fp_width-1`], z[`$fp_width -2`:`$frac_width`], z[`$frac_width -1`:0], zinc);
+	    TransRes.CalculateInc();
+	    z2 = TransRes.GetFPNum();
+            $display("%t: After Inc: Sign = %h, Exp = %h, Man = %h  ", $time,
+		     z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0] );
+	    if(z2 != expectZ && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))&& !(expectNaN==1 && (status[2]==1))) begin
+	       dumptolog = 1'b1;
+	       #1;
+	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
+	       $finish(2);
+	    end
+	    #100;
+	    r_Temp = Temp_q[0];
+  	    Temp_q = Temp_q[1:$];
+	    end // while ( MemTemp !== 1b'x )
+      end // else: !if(vector_file == "")
       #1000; // give the lines some time to settle
       $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
       $finish(0);
