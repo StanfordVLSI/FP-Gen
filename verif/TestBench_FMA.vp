@@ -39,6 +39,8 @@
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO)");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>1, List=>[ 0,1,2,3,4,5,6,7 ] ,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
@@ -57,7 +59,12 @@ program automatic `mname` (
     output logic [`$exp_width + $frac_width`:0] a, b, c,
     output logic ainc, binc, cinc,
     output logic [2:0] rnd,			
-
+   //; if ($pipeline_depth>0){
+    output logic 				clk, reset, stall_pipeline, SI, SCAN_ENABLE, test_mode,
+    input logic 				SO,
+   //; } else {
+    output logic 				clk, reset,
+   //; }
 			   // results from the design
     input logic [`$exp_width + $frac_width`:0] z,
     input logic zinc,
@@ -84,6 +91,12 @@ program automatic `mname` (
    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
    logic 				FX, FO, FU, FV, FZ,expectNaN;
    int 					loc;
+
+
+   // Singals for pipeline output
+   logic [`$exp_width + $frac_width`:0] r_a, r_b, r_c, a_q[$], b_q[$], c_q[$] ;
+   logic 				r_ainc, ainc_q[$], r_binc, binc_q[$], r_cinc, cinc_q[$];
+   logic [2:0] 				r_rnd;
    
  
    // FP transaction handles
@@ -127,7 +140,14 @@ program automatic `mname` (
    //;                              TestDenormals=>$test_denormals);
    `$GoldRef_obj->instantiate`;
    
-   
+   initial forever
+    begin
+      clk=1;	//clock cycle is #100
+      #50;
+      clk=0;
+      #50;
+    end
+
    initial begin
       $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
       // some simulation control initialization
@@ -142,6 +162,8 @@ program automatic `mname` (
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
       dumptolog = 1'b0;
+
+      reset=1'b0;
       a = 0;
       b = 0;
       c = 0;
@@ -149,7 +171,11 @@ program automatic `mname` (
       binc = 1'b0;
       cinc = 1'b0;
       rnd = 3'b0;
-      #100
+   end
+
+   // every #(70+100*k), generate stimulus	
+   initial begin
+      #70;
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 for (int i=0; i<num_trans; i++) begin
 	   // Assign values to the lines
@@ -169,29 +195,13 @@ program automatic `mname` (
 	   c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
 	   c[`$frac_width -1`:0] = TransGenC.Fraction;
 	   cinc = TransGenC.Inc;
-
-	   
-	   // wait for it...
-	   #100;
-	   $display("\n%t: Transaction #%0d: ", $time, i);
-	   TransRes.ForceSignExpFrac(z[`$exp_width + $frac_width`],
-				     z[`$exp_width + $frac_width -1`:`$frac_width`],
-				     z[`$frac_width -1`:0],
-				     zinc);
-	   #100;
-	   GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
-	   
-	   // now check results... 
-	   if (! GoldRef.CheckMultResult(TransRes))
-	     begin
-		dumptolog = 1'b1;
-		#1;
-		$display("%t: \033[0;31mERROR Found\033[0m", $time);
-		$finish(2);
-	     end
-
-	   // wait before starting over
-	   #100;
+	   a_q = {a_q, a};
+	   b_q = {b_q, b};
+	   c_q = {c_q, c};
+	   ainc_q = {ainc_q, ainc};
+	   binc_q = {binc_q, binc};
+	   cinc_q = {cinc_q, cinc};
+	   #100;		// wait a clock cycle
     	end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
       else begin // use the input test file
@@ -246,11 +256,53 @@ program automatic `mname` (
 	    
 	    end // while (loc <MEM_SIZE && MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
-      #1000; // give the lines some time to settle
-      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
    end // initial begin
    
    
+   // every #(130+100*$pipeline_depth+100*k), check results	
+   initial begin
+      #`130+100*$pipeline_depth`;
+      if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
+	 for (int i=0; i<num_trans; i++) begin
+	   $display("\n%t: Transaction #%0d: ", $time, i);
+	   r_a = a_q[0];
+	   r_b = b_q[0];
+	   r_c = c_q[0];
+	   r_ainc = ainc_q[0];
+	   r_binc = binc_q[0];
+	   r_cinc = cinc_q[0];
+	   a_q = a_q[1:$];
+	   b_q = b_q[1:$];
+	   c_q = c_q[1:$];
+	   ainc_q = ainc_q[1:$];
+	   binc_q = binc_q[1:$];
+	   cinc_q = cinc_q[1:$];
+	   TransRes.ForceSignExpFrac(z[`$exp_width + $frac_width`],
+				     z[`$exp_width + $frac_width -1`:`$frac_width`],
+				     z[`$frac_width -1`:0],
+				     zinc);
+	   TransGenA.ForceSignExpFrac(r_a[`$fp_width-1`], r_a[`$fp_width -2`:`$frac_width`], r_a[`$frac_width -1`:0], r_ainc);
+	   TransGenB.ForceSignExpFrac(r_b[`$fp_width-1`], r_b[`$fp_width -2`:`$frac_width`], r_b[`$frac_width -1`:0], r_binc);
+	   TransGenC.ForceSignExpFrac(r_c[`$fp_width-1`], r_c[`$fp_width -2`:`$frac_width`], r_c[`$frac_width -1`:0], r_cinc);
+	   GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
+	   
+	   // now check results... 
+	   if (! GoldRef.CheckMultResult(TransRes))
+	     begin
+		dumptolog = 1'b1;
+		#1;
+		$display("%t: \033[0;31mERROR Found\033[0m", $time);
+		$finish(2);
+	     end
+	   #100;		// wait a clock cycle
+    	end // for (int i=0; i<num_trans; i++)
+      end // if (vector_file == "")
+      #1000; // give the lines some time to settle
+      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
+      $finish(0);
+   end // initial begin
+
+
    
    //-------------------------------------------------------------------------//
    // general intialization procedure

@@ -33,6 +33,7 @@ module `mname` ();
    //; # Read what kind of DUT the user wanted so you can test it
    //; my $frac_width = $FP_obj->get_param('FractionWidth');
    //; my $exp_width = $FP_obj->get_param('ExponentWidth');
+   //; my $pipeline_depth = $FP_obj->get_param('PipelineDepth');
    //; my $useInc = $FP_obj->get_param('UseInc');
    //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
    //; my $product_width = 2 * $frac_width + 2;
@@ -47,6 +48,12 @@ module `mname` ();
    logic [`$exp_width + $frac_width`:0] z;
    logic zinc;
    logic [7:0] status;
+
+   // local signals for pipeline control
+   logic clk, reset;
+   //; if ($pipeline_depth>0){
+   logic stall_pipeline, SI, SCAN_ENABLE, test_mode, SO;
+   //; }
 						  
    //; if ($verif_mode =~ /ON/){
    logic 				      dumptolog;
@@ -59,9 +66,14 @@ module `mname` ();
 			     .dumptolog(dumptolog),
 			     //; }
 			     .a(a), .b(b), .c(c), .rnd(rnd),
-			     //;# if ($arch =~ /Cascade/){
 			     .ainc(ainc), .binc(binc), .cinc(cinc),
-			     //;# }
+   			     //; if ($pipeline_depth>0){
+                             .clk(clk), .reset(reset),
+			     .stall_pipeline(stall_pipeline),  .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
+                             .SO(SO), .SI(SI),
+   		             //; } else {
+ 			     .clk(clk), .reset(reset),
+                             //; }
 			     //outputs:
 			     .z(z), .zinc(zinc), .status(status)
 			     );
@@ -73,6 +85,7 @@ module `mname` ();
    //; my $TestBench_obj = generate('TestBench_FMA', 'TestBench', 
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width,
+   //;                              PipelineDepth=>$pipeline_depth,
    //; 				    UseInc=>$useInc,
    //;                              TestDenormals=>$enable_denormals);
    `$TestBench_obj->instantiate` (
@@ -80,6 +93,13 @@ module `mname` ();
 				.dumptolog(dumptolog),
 				.a(a), .b(b), .c(c), .rnd(rnd),
 				.ainc(ainc), .binc(binc), .cinc(cinc),
+   			     	//; if ($pipeline_depth>0){
+                            	.clk(clk), .reset(reset),
+			     	.stall_pipeline(stall_pipeline),  .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
+                             	.SO(SO), .SI(SI),
+   		            	 //; } else {
+ 			    	 .clk(clk), .reset(reset),
+                            	 //; }
 				// inputs
 				.z(z), .zinc(zinc), .status(status)
 				);
