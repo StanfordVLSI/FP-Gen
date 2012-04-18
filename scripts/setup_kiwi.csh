@@ -10,3 +10,5 @@ module load icc
 module load ic 
 module load FPGen
 module load numbers
+
+setenv VCS_CC gcc-4.4
