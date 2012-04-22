@@ -20,6 +20,7 @@
  * Date           Author    Description
  * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
  *                          genesis
+ * Apr 21, 2011   tema8     added multi precision
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -46,6 +47,11 @@
 //; 			  Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //; $useInc = ($useInc =~ /YES/)? 1:0;
 //;
+//; # Multi precision mode
+//; my $useMP = parameter(Name=>'UseMP', Val=>'YES', List=>@incOpts,
+//; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
+//; $useMP = ($useMP =~ /YES/)? 1:0;
+//;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths !FUNCTIONAL!");
@@ -58,7 +64,11 @@ module `mname`(
     input logic dumptolog,
    //; }
     input logic [`$width-1`:0]    a,b,
-
+	       
+   //; if ($useMP){
+    input logic                   mp_mode,
+   //; }
+	       
     input logic clk ,
     input logic rst ,
 
@@ -79,21 +89,32 @@ module `mname`(
 
 /* SUM/CARRY MULTIPLIER */
    
-   logic [`2*$width+1`:0] 	  multp_out0,multp_out1; // sign extended by 2 because of booth encoding
-   //; my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>($useInc)?"YES":"NO");
+   logic [`2*$width+1`:0] 	  multp_out0, multp_out1; // sign extended by 2 because of booth encoding
+   //; my $width_sub = 24;
+   //; my $Mul_obj;
+   //;
+   //; if ($useMP){
+   //;   $Mul_obj = generate('MultiplierP_MP', 'MultP', Width=>$width, WidthSub=>$width_sub, UseInc=>($useInc)?"YES":"NO");
+   //; }else {
+   //;   $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>($useInc)?"YES":"NO");
+   //; }
    `$Mul_obj->instantiate()` 
      (
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
       .a(a), .b(b), 
+   //; if ($useMP){
+      .mp_mode(mp_mode),
+   //; }
       //; if ($useInc){
       .ainc(ainc), .binc(binc),
       //; }
       .out0(multp_out0), .out1(multp_out1)
       );
 
-
+//   logic [`2*$width`:0] 	  out_mp;
+   
 /* FINAL SUMMATION */  
    //; my $adderInst = generate( 
    //;                            'adder'  ,  
@@ -106,8 +127,25 @@ module `mname`(
 				   .a(  multp_out0[`2*$width`:0]  ) , 
 				   .b(  multp_out1[`2*$width`:0]  ) , 
 				   .ci(1'b0) , 
+				   //.s(  out_mp  ) 
 				   .s(  out  ) 
 			       );
+
+//;my $width_sub = 24;
+
+//logic [`2*$width_sub`:0] 	  out_mp_ac;
+//logic [`2*$width_sub`:0] 	  out_mp_bd;
+
+//   assign out_mp_ac = out_mp[`2*$width_sub`:0];
+//   assign out_mp_bd = out_mp[`2*$width-1`:`2*$width-2*$width_sub-1`];
+
+
+
+
+
+
+
+   
    
 //; #end $DW_mode eq 'OFF'
 //; } else {

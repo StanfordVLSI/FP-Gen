@@ -1,0 +1,165 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/MultiplierP.vp#7 $
+ ** $DateTime: 2012/03/13 09:19:10 $
+ ** $Change: 10257 $
+ ** $Author: jbrunhav $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * This is a multiplier that uses a parametrized booth and parametrized 
+ * summation tree.
+ * 
+ * Parameters:
+ * * Width, BoothType, TreeType
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # Interface parameter
+//; my $useInc = parameter(Name=>'UseInc', Val=>'NO', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//; $useInc = ($useInc =~ /YES/)? 1:0;
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
+//; my $width_sub = parameter(Name=>'WidthSub', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Sub signal bit widths");
+//; my $designware_mode = parameter(Name=>'Designware_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Designware mode determines whether or not ".
+//;                                 "designware codes are used instead of our ".
+//;                                 "design. !IMPLEMENTATION! ");
+//; my $booth ;
+//; my $tree ;
+//; if( $designware_mode eq 'OFF' ){
+//;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
+//;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
+//;    `touch place_MultiplierP.tcl` ; #create semaphore for placement
+//; } else {
+//;    -e "place_MultiplierP.tcl" and `rm place_MultiplierP.tcl` ; #eliminate semaphore for placement
+//; }
+
+   
+module `mname`(
+   //; if ($verif_mode =~ /ON/){
+    input logic 		  dumptolog,
+   //; }
+    input logic [`$width-1`:0] 	  a,b,
+    input logic                   mp_mode,
+ 
+    input logic 		  clk ,
+    input logic 		  rst ,
+	       
+   //; if ($useInc){
+    input logic 		  ainc, binc,
+   //; }	    
+    output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
+		    );
+
+
+//; if($designware_mode =~ /ON/){
+DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .out0(out0), .out1(out1) );
+
+//; }else{
+
+/* BOOTH ENCODING
+*/
+   //; # First we generate the Booth module
+   //; my $Booth_obj = generate('Booth_MP', 'Booth_MP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
+   //;				 UseInc=>($useInc)?"YES":"NO");
+   //;
+   //; # Now we can extract some properties from it: How many partial products and of of what widths
+   //; my $pp_count = $Booth_obj->get_param('PPCount');
+   //; my $pp_width = $Booth_obj->get_param('PPWidth');
+   //;
+   //;
+   //;    
+   // Local signals for partial products
+   logic [`$pp_width-1`:0] 	  pp_mp [0:`$pp_count-1`] ;
+
+   // Booth instance
+   `$Booth_obj->instantiate` (
+			      //; if ($verif_mode =~ /ON/){
+			      .dumptolog(dumptolog),
+			      //; }
+			      .x(a), .y(b),
+			      .mp_mode(mp_mode),
+			      //; if ($useInc){
+			      .xinc(ainc), .yinc(binc),
+			      //; }
+			      .pp(pp_mp)
+			      );
+
+
+  
+ 
+
+
+   
+/* SUMMATION TREE
+*/
+   /* RawOut0/1 hold the raw result from the tree summation, which (depending on the booth)
+    * have some unused bits. The width for RawOut is pp_width plus one booth width 
+    * for every additional pp. The total is thus width = pp_width + booth*(pp_count-1).
+    * (pp_width=`$pp_width`, pp_count=`$pp_count` and booth=`$booth`) */
+   //; my $raw_out_w = $pp_width + $booth*($pp_count-1);
+    logic [`$raw_out_w-1`:0] RawOut0_mp,RawOut1_mp; 
+								  
+
+   //; my $Tree_obj = generate("MultiplierTree", 'Tree_mp', PPWidth=>$pp_width, 
+   //;			        PPCount=>$pp_count, BoothType=>$booth,
+   //;			        TreeType=>$tree);
+   `$Tree_obj->instantiate()` (
+ 			  //; if ($verif_mode =~ /ON/){
+			  .dumptolog(dumptolog),
+  			  //; }
+			  .pp(pp_mp), .out0(RawOut0_mp), .out1(RawOut1_mp)
+			  );
+
+  
+//;#############################################################
+   
+   /* Finally extract only the relevant bits:
+    * We padded pp[0] with zeros on the right --> shift left by booth
+    * If UseInc was set to 'YES' then LSBs are just more paddings to account 
+    *    for adding xinc and yinc at the same significance as pp0
+    *    --> shift left by another booth*useInc
+    * If BoothType>1 then MSBs are just sign extensions (in booth1 sign
+    *    extensions are not used thus we can ignore them completely)
+    * */
+   //; if ($booth==1){
+    assign out0 = RawOut0[`$raw_out_w-1`:`2*$useInc`];
+    assign out1 = RawOut1[`$raw_out_w-1`:`2*$useInc`];
+   //; }else{ # booth==2 or booth==3
+    //assign out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    //assign out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+
+
+
+
+    assign out0 = RawOut0_mp[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    assign out1 = RawOut1_mp[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+   //; }
+//; }
+endmodule
+

@@ -23,6 +23,7 @@
  * Date          Author    Description
  * Oct 01, 2011   shacham   init version - ported Sameh's original code to 
  *                         genesis
+ * Apr 21, 2011  tema8     added multi precision
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -50,6 +51,9 @@
 //; 			      "or Fused? (Pick:Cascade/Fused)  !IGNORE!"); #JB- ignoring for now...
 //; my $useInc = parameter(Name=>'useInc', Val=>1, List=>[1, 0],
 //; 			   Doc=>"Inputs A has an increment signal");
+//; # Multi precision mode
+//; my $useMP = parameter(Name=>'UseMP', Val=>0, List=>[1, 0],
+//; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
@@ -69,6 +73,10 @@ module `mname`(
   //; if ($useInc){
     input logic 			      IncA, IncB,
   //; }	
+	       
+   //; if ($useMP){
+    input logic                   mp_mode,
+   //; }
     output logic 			      SignAB, NANAB, InfAB, ZeroAB, RStickyAB,
     output logic [`$exp_width + 1`:0] 	      ExpAB,
     output logic [`$product_width - 1`: 0]    ManAB
@@ -247,14 +255,18 @@ module `mname`(
 //; }
 
 
-   //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO");
+   //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO", UseMP=>($useMP)?"YES":"NO");
    `$Mul_obj->instantiate()` 
      (
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
       .a(ManA), .b(ManB), 
-      //; if ($useInc){
+	       
+   //; if ($useMP){
+     .mp_mode(mp_mode),
+   //; }
+	//; if ($useInc){
       .ainc(IncA), .binc(IncB),
       //; }
       .out(ManAB_unnormalized_long)

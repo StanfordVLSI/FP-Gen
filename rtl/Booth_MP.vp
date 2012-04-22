@@ -1,0 +1,357 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/Booth.vp#18 $
+ ** $DateTime: 2012/02/20 23:29:51 $
+ ** $Change: 10128 $
+ ** $Author: jbrunhav $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Booth encoding for a multiplier.
+ * 
+ * Booth encoder produce the partial products for computing (x+xinc)*(y+yinc)
+ * 
+ * xinc yinc  result
+ * 0    0     xy
+ * 0    1     xy+x     (through y[-1]=yinc of booth encoding)
+ * 1    0     xy+y     (through adding y as pp[0])
+ * 1    1     xy+x+y+1 (through both methods and 1 is added to pp[2] to S[0])
+ * 
+ * Sign encoding:
+ * --------------
+ * SSSSSS.....S = -1 + ~S
+ * 
+ * S0 S0 S0 S0 S0 S0 S0 S0 S0 S0                              ~S0                      ~S0  S0  S0
+ *                                                          0  -1
+ * S1 S1 S1 S1 S1 S1 S1 S1                 =            ~S1               =          1 ~S1
+ *                                                    0  -1
+ * S2 S2 S2 S2 S2 S2                              ~S2                          1 ~S2
+ *                                              0  -1
+ * 
+ * 
+ * Final tree:
+ * -----------                  __
+ *                              S0 S0 S0 *  *  *  *  *  *  *  *  0  0
+ *                              __
+ *                           1  S1 *  *  *  *  *  *  *  *  0  S0
+ *                        __
+ *                     1  S2 *  *  *  *  *  *  *  *  0  S1
+ *                  __
+ *               1  S3 *  *  *  *  *  *  *  *  0  S2
+ * 
+ *   __
+ * 1 Sn *  *  *  *  *  *  *  *  0  S(n-1)
+ * 
+ *                           Sn = 0 (because y is extended)    
+ * 
+ * 
+ * Parameters:
+ * * Width, BoothType
+ * 
+ * Exported Parameters:
+ * * PPWidth, PPCount
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis + a little restructuring
+ * Nov 09, 2011   shacham   Added basic functionality for booth 4
+ * 
+ * ****************************************************************************/
+
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//;
+//; # Interface parameter
+//; my $useInc = parameter(Name=>'UseInc', Val=>'', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//; $useInc = ($useInc =~ /YES/)?1:0;
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//;
+//; my $width_sub =  parameter(Name=>'WidthSub', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Sub signal bit widths");
+//;
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
+//;
+//; # Declare some local variables
+//; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
+//;
+//; my $extended_width_sub = $width_sub + 1 + $booth - ( $width_sub % $booth);
+//
+// $extended_width=`$extended_width`, $extended_width_sub=`$extended_width_sub`
+//
+//;
+//; my $pp_count = ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
+//; $pp_count -=1 if ((!$useInc) && ($booth==1));
+//;
+//; my $pp_count_sub = ceil(($width_sub + 1) / $booth);
+//; $pp_count_sub -=1 if ((!$useInc) && ($booth==1));
+//;
+//; my $pp_count_mp = $pp_count;
+//; $pp_count_mp = 2*$pp_count_sub if (2*$pp_count_sub > $pp_count);
+//
+//$pp_count=`$pp_count+$useInc`, $pp_count_sub=`$pp_count_sub+$useInc`
+//
+//;
+//; my $pp_width = ($booth==1)? $width+2 : $width+3*$booth;
+//;
+//; my $pp_width_sub = ($booth==1)? $width_sub+2 : $width_sub+3*$booth;
+//
+//$pp_width = `$pp_width`, $pp_width_sub = `$pp_width_sub`
+//
+//; my $pp_width_mp = $pp_width;
+//; $pp_width_mp = 2*$pp_width_sub if (2*$pp_width_sub > $pp_width);
+//;
+//; # Inform the world about the partial products properties
+//; parameter(Name=>'PPWidth', Val=>$pp_width, Force=>1, 
+//;           Doc=>"This is the calculated partial product width for Booth=$booth and Width=$width");
+//; parameter(Name=>'PPCount', Val=>$pp_count+$useInc, Force=>1, 
+//;           Doc=>"This is the calculated number of partial products for Booth=$booth and Width=$width. ".
+//;                "Note that it includes a +1 to account for xinc and yinc");
+//;
+//;# parameter(Name=>'PPWidth_sub', Val=>$pp_width_sub, Force=>1, 
+//;#           Doc=>"This is the calculated partial product width for Booth=$booth and Width=$width");
+//;# parameter(Name=>'PPCount_sub', Val=>$pp_count_sub+$useInc, Force=>1, 
+//;#           Doc=>"This is the calculated number of partial products for Booth=$booth and Width=$width. ".
+//;#                "Note that it includes a +1 to account for xinc and yinc");
+//;
+//;my $pp_width_mp_initial = $width+$booth;
+//;$pp_width_mp_initial = 2*($width_sub+$booth) if (2*($width_sub+$booth)>($width+$booth));
+//;
+//;my $pp_width_sub_initial = $width_sub+$booth;
+//;# $pp_count_sub
+//;
+module `mname`(
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input [`$width-1`:0] x, y,
+    input logic mp_mode,	       
+   //; if ($useInc){
+    input 		 xinc, yinc,
+   //; }
+    //output [`$pp_width-1`:0] pp [0:`$pp_count+$useInc-1`], // `$pp_count`+ `$useInc` to account for xinc and yinc
+
+    output [`$pp_width-1`:0] 	 pp [0:`$pp_count+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
+		);
+
+   logic [`$pp_width_mp_initial-1`:0] initial_pp_mp [0:`$pp_count_mp-1`];
+   logic [`$pp_count_mp-1`:0] 	 S_mp;
+
+//Asuming in MP mode x = {b,a}, y = {d,c}, x*y= {bc,ac} + {bd,ad,0} = {bd, bc+ad, ac }   
+   
+   
+   //assign mp_mode = 1'b1;//1'b0;//
+
+
+   
+   //; if ($booth==1) {
+   //;   if ($useInc){
+   assign pp[0] = xinc ? {y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
+   assign pp[1] = yinc ? {1'b0, x, xinc} : `$pp_width`'b0; // add an extra x if yinc and an extra 1 if xinc AND yinc
+   //;     for (my $i=2; $i<=$pp_count; $i++){
+   assign pp[`$i`] = y[`$i-2`] ? {2'b0, x}: `$pp_width`'b0;
+   //;     }
+   //;   }
+   //;   else{ # i.e., no useInc...
+   //;     for (my $i=0; $i<$pp_count; $i++){
+   assign pp[`$i`] = y[`$i`] ?  {2'b0, x} : `$pp_width`'b0;
+   //;     }   
+   //;   }
+   //;
+   //; } # End of "if ($booth==1)..." 
+   //; elsif ($booth>=2) {
+
+
+   //Mask out unused bits. Eventually this might be done in the higher module
+   logic [`$width-1`:0] 	    x_mp;
+   //assign x_mp = {x[`$width-1`:`$width-$width_sub`],{`$width-2*$width_sub`{1'b0}},x[`$width_sub-1`:0]};
+   assign x_mp[`$width-1`           :`$width-$width_sub`] = x[`$width-1`:`$width-$width_sub`];
+   assign x_mp[`$width-$width_sub-1`:`$width_sub`       ] = mp_mode ?{`$width-2*$width_sub`{1'b0}}:x[`$width-$width_sub-1`:`$width_sub`];
+   assign x_mp[`$width_sub-1`       :0                  ] = x[`$width_sub-1`:0];
+   
+
+   
+   logic [`$extended_width`-1:0] extended_y;
+   logic [`$extended_width`-1:0] extended_y_mp;
+   //;   if ($useInc) {
+   // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
+   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
+
+   assign extended_y_mp[`$width_sub`:0] = {y[`$width_sub-1`:0],yinc};
+   //The following nastines is because  ( $width % $booth) = 1 for 53 and 2 for 24
+   //;my $y_bd_start = $extended_width-$width_sub-($booth - ( $width_sub % $booth));
+   //;my $y_start_ind = $extended_width - $y_bd_start - ($booth - ( $width % $booth));
+   assign extended_y_mp[`$extended_width-1`:`$y_bd_start`] = mp_mode ? {{(`$booth - ( $width_sub % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub`]} : 
+                                                                        {{(`$booth - ( $width % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub-1`]};
+   assign extended_y_mp[`$y_bd_start-1`] = mp_mode ? yinc : y[`$width-$width_sub-2`];
+   assign extended_y_mp[`$y_bd_start-2`:`$width_sub+1`] =  mp_mode ? {`$y_bd_start-2-$width_sub-1+1`{1'b0}}: y[`$width-$width_sub-3`:`$width_sub`];
+
+   //;   }else{
+   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,1'b0};  //sign extension guarantees positive last partial product
+   
+   assign extended_y_mp[`$width_sub`:0] = {y[`$width_sub-1`:0],1'b0};
+   //The following nastines is because  ( $width % $booth) = 1 for 53 and 2 for 24
+   //;my $y_bd_start = $extended_width-$width_sub-($booth - ( $width_sub % $booth));
+   assign extended_y_mp[`$extended_width-1`:`$y_bd_start`] = {{(`$booth - ( $width_sub % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub`]};
+   assign extended_y_mp[`$y_bd_start-1`] = mp_mode ? 1'b0 : y[`$width-$width_sub-1`];
+   assign extended_y_mp[`$y_bd_start-2`:`$width_sub+1`] =  mp_mode ? {`$y_bd_start-2-$width_sub-1+1`{1'b0}}: y[`$width-$width_sub-2`:`$width_sub`];
+
+    //;   }
+   
+    
+   
+   //;   # If booth==3 we need to prepare a 3*x and ~(3*x) products
+   //;   if ($booth>=3) {
+   // Prepare the 3*X 
+   logic [`$width+1`:0] 	 x3;
+   //;   my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
+   `$HM3_obj->instantiate` (
+			    //; if ($verif_mode =~ /ON/){
+			    .dumptolog(dumptolog),
+			    //; }
+			    .x(x), .x3(x3));
+   //;   }
+   
+   //;   if ($booth>=4) {
+   // Prepare the 5*X 
+   logic [`$width+2`:0] 	 x5;
+   //;   my $HM5_obj = generate('HardMultiple5', 'HM5', Width=>$width);
+   `$HM5_obj->instantiate` (
+			    //; if ($verif_mode =~ /ON/){
+			    .dumptolog(dumptolog),
+			    //; }
+			    .x(x), .x5(x5));
+
+   // Prepare the 7*X 
+   logic [`$width+2`:0] 	 x7;
+   //;   my $HM7_obj = generate('HardMultiple7', 'HM7', Width=>$width);
+   `$HM7_obj->instantiate` (
+			    //; if ($verif_mode =~ /ON/){
+			    .dumptolog(dumptolog),
+			    //; }
+			    .x(x), .x7(x7));
+   //;   }
+
+   
+   // Instantiate the booth `$booth` encoders
+   //;   for(my $i=0; $i < $pp_count_mp; $i++){
+   //;     my $mask_side = 3;
+   //;     $mask_side = 0 if($i<$pp_count_sub);
+   //;     $mask_side = 1 if($i>=$pp_count_mp-$pp_count_sub);
+   //;
+   //;     my $BoothEnc_mp_obj = generate('BoothEnc_MP', "BoothEnc_mp_u$i", BoothType=>$booth, Width=>$width, WidthSub=>$width_sub, MaskSide=>$mask_side);
+ 
+   `$BoothEnc_mp_obj->instantiate`
+     (.x(x_mp), 
+      //;   if ($booth>=3) {
+      .x3(x3),
+      //;   }
+      //;   if ($booth>=4) {
+      .x5(x5), .x7(x7),
+      //;   }
+      .	mp_mode(mp_mode),		     
+      .y(extended_y_mp[`$booth*($i+1)`:`$booth*$i`]) , .pp(initial_pp_mp[`$i`]), .S(S_mp[`$i`]));
+  
+   //;   } # End of "for(my $i=0..."
+
+
+   logic [`$pp_width_sub-1`:0] 	 pp_ac [0:`$pp_count_sub+$useInc-1`];
+   logic [`$pp_width_sub-1`:0] 	 pp_bd [0:`$pp_count_sub+$useInc-1`];
+   
+  
+   
+   // Finally, append the sign extenssions to the partial products
+   //;   if ($useInc){
+//;#   assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
+//;#   assign pp[1] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
+//;#   assign pp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[1], {(`$booth-2`){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
+//;#   //;     for(my $i=3; $i < $pp_count+1; $i++) {
+//;#   assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i-1`], {(`$booth-1`){1'b0}},S[`$i-2`]};
+//;#   //;     }
+
+
+
+   assign pp_ac[0] = xinc ? {{(`$booth`){1'b0}}, y[`$width_sub-1`:0], {(2*`$booth`){1'b0}}} : 0;
+   assign pp_ac[1] = {initial_pp_mp[0][`$width_sub+$booth-1`], {(`$booth`){S_mp[0]}}, initial_pp_mp[0][`$width_sub+$booth-2`:0], {(`$booth`){1'b0}}};
+   assign pp_ac[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[1][`$width_sub+$booth-1`:0], {(`$booth-2`){1'b0}}, S_mp[0] & xinc & yinc , S_mp[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
+   //;     for(my $i=3; $i < $pp_count_sub+1; $i++) {
+   assign pp_ac[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`$i-1`][`$width_sub+$booth-1`:0], {(`$booth-1`){1'b0}},S_mp[`$i-2`]};
+   //;     }
+   
+
+
+   assign pp_bd[0] = xinc ? {{(`$booth`){1'b0}}, y[`$width-1`:`$width-$width_sub`], {(2*`$booth`){1'b0}}} : 0;
+   assign pp_bd[1] = {initial_pp_mp[`$pp_count-$pp_count_sub`][`$width+$booth-1`], {(`$booth`){S_mp[`$pp_count-$pp_count_sub`]}}, initial_pp_mp[`$pp_count-$pp_count_sub`][`$width+$booth-2`:`$width-$width_sub`], {(`$booth`){1'b0}}};
+   assign pp_bd[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`1+$pp_count-$pp_count_sub`][`$width+$booth-1`:`$width-$width_sub`], {(`$booth-2`){1'b0}}, S_mp[`$pp_count-$pp_count_sub`] & xinc & yinc , S_mp[`$pp_count-$pp_count_sub`] ^ (xinc & yinc) };  //correction 1 is added
+   
+   //;     for(my $i=3; $i < $pp_count_sub+1; $i++) {
+   assign pp_bd[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`$i-1+$pp_count-$pp_count_sub`][`$width+$booth-1`:`$width-$width_sub`], {(`$booth-1`){1'b0}},S_mp[`$i-2+$pp_count-$pp_count_sub`]};
+   //;     }
+   
+   //;   }
+//;#   //;   else { # i.e., not $useInc
+//;#   assign pp[0] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
+//;#   //;     for(my $i=1; $i < $pp_count; $i++) {
+//;#   assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i`], {(`$booth-1`){1'b0}},S[`$i-1`]};
+//;#   //;     }  
+//;#   //;   }
+   //; } # End of "elsif ($booth==2 || $booth==3)..."
+
+
+
+
+
+
+   logic [`$pp_width-1`:0] 	 pp_mp [0:`$pp_count+$useInc-1`]; // `$pp_count`+ `$useInc` to account for xinc and yinc
+   //;   if ($useInc){
+   assign pp_mp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
+   assign pp_mp[1] = {initial_pp_mp[0][`$width+$booth-1`], {(`$booth`){S_mp[0]}}, initial_pp_mp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
+   assign pp_mp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[1], {(`$booth-2`){1'b0}}, S_mp[0] & xinc & yinc , S_mp[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
+   //;     for(my $i=3; $i < $pp_count+1; $i++) {
+   assign pp_mp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`$i-1`], {(`$booth-1`){1'b0}},S_mp[`$i-2`]};
+   //;     }
+   //;   }
+ 
+
+
+
+
+   //logic [`$pp_width-1`:0] 	 pp_mp_2 [0:`$pp_count+$useInc-1`]; // `$pp_count`+ `$useInc` to account for xinc and yinc
+   //;   if ($useInc){
+   //;     for(my $i=0; $i < $pp_count_sub+1; $i++) {
+   assign pp[`$i`] = mp_mode ? {{`$pp_width-$pp_width_sub`{1'b0}},pp_ac[`$i`]} : pp_mp[`$i`];
+   //;     }
+
+   //;     for(my $i=$pp_count_sub+1; $i < $pp_count-$pp_count_sub; $i++) {
+   assign pp[`$i`] = mp_mode ? {`$pp_width`{1'b0}} : pp_mp[`$i`];
+   //;     }
+
+   //;     for(my $i=$pp_count-$pp_count_sub; $i < $pp_count+1; $i++) {
+   assign pp[`$i`] = mp_mode ? {pp_bd[`$i-($pp_count-$pp_count_sub)`],{`$pp_width-$pp_width_sub`{1'b0}}} : pp_mp[`$i`];
+   //;     }
+   
+   //;   }
+
+
+
+
+   
+endmodule: `mname`
+

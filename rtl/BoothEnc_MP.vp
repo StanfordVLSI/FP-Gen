@@ -1,0 +1,200 @@
+/* *****************************************************************************
+ * Description:
+ * Mulptiple precision booth encoding, based on
+ * Booth TWO encoding for a multiplier.
+ * 
+ * Booth encoder produce the selet signals for partial products for computing (x+xinc)*(y+yinc)
+ * 
+ * Modified Booth 2 encoder
+ * 
+ * Y[2:0]     out  =  pp   +   S
+ * 
+ * 0 0 0      +0      100000  +0      
+ * 0 0 1      +X      (10X)   +0
+ * 0 1 0      +X      (10X)   +0
+ * 0 1 1      +2X     (1X0)   +0
+ * 1 0 0      -2X     (0~X1)  +1
+ * 1 0 1      -X      (01~X)  +1
+ * 1 1 0      -X      (01~X)  +1
+ * 1 1 1      -0      011111  +1
+ * 
+ * NOTE: There is 1 to be augmented to the left of the partial products 
+ *       excepf for the first one
+ * 
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Apr 04, 2012   tema8     init version - base on standard BoothEnc
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(floor ceil); # For floor and ceiling rounding math
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
+//;                       Doc=>"Booth type. Required parameter at instantiation.");
+//; my $width = parameter(Name=>'Width', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//;
+//; my $width_sub = parameter(Name=>'WidthSub', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Sub signal bit widths");
+//;
+//; my $mask_side = parameter(Name=>'MaskSide', Val=>0, Min=>0, Step=>1,
+//;                       Doc=>"Which side is enabled in MP mode");
+//
+//$width = `$width`, $width_sub = `$width_sub`, $mask_side=`$mask_side`
+//
+//;
+//; my $encode_fanout = parameter(Name=>'EncFanout', Val=>18, Min=>1, Step=>1,
+//;                       Doc=>"Fanout of Booth select signals");
+//; $encode_fanout = ceil( ($width+$booth+1) / ceil( ($width+$booth+1) / $encode_fanout ) );
+
+//$encode_fanout = `$encode_fanout`
+
+
+module `mname` (
+    input logic [`$width-1`:0]  x,
+      //;   if ($booth>=3) {
+    input logic [`$width+1`:0] 	x3,
+      //;   }
+      //;   if ($booth>=4) {
+    input logic [`$width+2`:0] 	x5,x7,
+      //;   }
+
+    input logic                     mp_mode,		
+    input logic	[`$booth`:0]	    y,          // y[`$booth-1`]
+    output logic [`$width+$booth-1`:0]   pp,             // extend width by two: 1 bit for sign and ($booth-1) for shifting for 2^($booth-1) multiple
+    output logic		    S
+		);
+   
+   logic [`$width+$booth-1`:0] 	    pp_int;
+
+   
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+   
+   //logic [`$width-1`:0] 	    x_mp;
+   //assign x_mp = {x[`$width-1`:`$width-$width_sub`],{`$width-2*$width_sub`{1'b0}},x[`$width_sub-1`:0]};
+
+   
+   logic [`$width+2*$booth-3`:0]     x_padded;
+   //assign x_padded = {`$booth-1`'b0, x_mp, `$booth-1`'b0};
+   assign x_padded = {`$booth-1`'b0, x, `$booth-1`'b0};
+
+   
+
+   //;   if ($booth==3){
+   logic [`$width+1`:0] 	x3_padded;
+   assign x3_padded = x3; // yep, I know it's not really padded, but it's for the naming convention later   
+   //;   }elsif ($booth>=4) {
+   logic [`$width+3`:0] 	x3_padded;
+   assign x3_padded = {1'b0, x3, 1'b0};
+   //;   }
+
+   //; my $mp_boundary = 0;
+   //; my $mp_disable = ($mask_side==1) ? 1 : 0;
+   //;
+   //;   my $j=-1;
+   //;   for(my $i=$booth-1; $i < $width+2*($booth-1); $i++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1
+   
+   //;     if( ($mask_side==0 && $i==$width_sub+2*($booth-1)) || ($mask_side==1 && $i==$width - $width_sub)){
+   //;         $mp_boundary = 1;
+   //;         $mp_disable = ($mp_disable == 0) ? 1 : 0;
+   /////////////// MP boundary //////////////////
+   //;     } else {
+   //;         $mp_boundary = 0; 
+   //;     }    
+   //;							      
+   //;     if (($i-$booth+1)%$encode_fanout==0 || $mp_boundary == 1){
+   //;       $j++;
+   //;       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
+   logic  [`(2**($booth-1))-1`:0] sel_x`$j`_int;
+   logic  [`(2**($booth-1))-1`:0] sel_x`$j`;
+   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`_int));
+
+   //;if($mp_disable == 0) {
+   assign sel_x`$j` = sel_x`$j`_int;
+   //;} else {
+   //;    if((2**($booth-1))-1>2) {
+   assign sel_x`$j`[`(2**($booth-1))-1`:2] = sel_x`$j`_int[`(2**($booth-1))-1`:2];
+   //;    }
+   assign sel_x`$j`[1:0] = mp_mode ? 2'b11 : sel_x`$j`_int[1:0];
+   //;}
+   
+   //;       if ($booth==2 && $j==0) {
+   logic [`$width+2*$booth-3`:0] xn;
+   //;          my $BoothCell_obj = generate('Booth2SCell', "cell_0");
+
+   `$BoothCell_obj->instantiate` (.y(y), .sel_x(sel_x`$j`_int), .S(S), .xn0(xn[0]) );
+   //;       }
+   //;     }
+   //;
+   //;
+   //;
+   //;     my $BoothCellIdx = $booth==2 ? $i : $i - ($booth-1);
+   //;
+   //;     my $BoothCell_obj;	       
+   //;     $BoothCell_obj = generate('BoothCell', "cell_$BoothCellIdx", BoothType=>$booth);
+
+   
+   `$BoothCell_obj->instantiate` 
+     (
+//.sel_x(sel_x`$j`),
+      .x( {
+   //;     if ($booth>=4) {
+           x_padded[`$i-3`], x7[`$i-3`], x3_padded[`$i-3`] , x5[`$i-3`],
+   //;     }
+   //;     if ($booth>=3) {
+           x_padded[`$i-2`], x3_padded[`$i-2`],
+   //;     }
+           x_padded[`$i-1`] , x_padded[`$i`] } ),
+   //;     if ($booth==2) {
+           .xn1(xn[`$i-1`]), .xn0(xn[`$i`]),
+   //;     }
+      .sel_x(sel_x`$j`),
+      .y(y) , .pp(pp_int[`$i-$booth+1`]));
+   //;   }
+
+
+   logic pp_int_sub;
+   
+  //;   if ($booth==2){
+  //;     my $BoothCellIdx=$width+$booth; 
+  //;     my $BoothCell_obj = generate('Booth2SbarCell', "cell_$BoothCellIdx");
+  `$BoothCell_obj->instantiate` (.y(y), .S_bar(pp_int[`$width+$booth-1`]) );
+
+  //;     my $BoothCellIdx=$width_sub+$booth; 
+  //;     my $BoothCell_obj = generate('Booth2SbarCell', "cell_".$BoothCellIdx."_2");
+  `$BoothCell_obj->instantiate` (.y(y), .S_bar(pp_int_sub) );
+   
+  //;   } else {
+   assign S = y[`$booth`];
+   assign pp_int[`$width+$booth-1`] = ~S;
+
+   assign pp_int_sub = ~S;
+  //;   }
+
+   assign pp[`$width_sub+$booth-2`:0] = pp_int[`$width_sub+$booth-2`:0];
+   
+   assign pp[`$width_sub+$booth-1`] = mp_mode ? pp_int_sub : pp_int[`$width_sub+$booth-1`];
+   
+   assign pp[`$width+$booth-1`:`$width_sub+$booth`] = pp_int[`$width+$booth-1`:`$width_sub+$booth`];
+
+
+endmodule
+

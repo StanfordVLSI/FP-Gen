@@ -18,6 +18,7 @@
  * -----------
  * Date          Author    Description
  * Oct 03, 2011  shacham   init version - ported my wallace env
+ * Apr 21, 2011  tema8     added multi precision
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -42,6 +43,7 @@ module `mname` ();
    //; my $frac_width = $FP_obj->get_param('FractionWidth');
    //; my $exp_width = $FP_obj->get_param('ExponentWidth');
    //; my $arch = $FP_obj->get_param('Architecture');
+   //; my $use_mp = $FP_obj->get_param('UseMP');
    //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
    //; my $product_width = 2 * $frac_width + 2;
   
@@ -69,6 +71,9 @@ module `mname` ();
 			     .dumptolog(dumptolog),
 			     //; }
 			     .A({SignA, ExpA, FracA}), .B({SignB, ExpB, FracB}), 
+			     //; if ($use_mp){
+			     .mp_mode(1'b0),
+			     //;}
 			     //; if ($arch =~ /Cascade/){
 			     .IncA(IncA), .IncB(IncB),
 			     //;}
