@@ -19,13 +19,15 @@ if { $PipelineDepth > 0 } {
     if { $Retiming } { 
         ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
        
-        current_design MultiplierP_unq1
-        set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
-        compile_ultra -no_autoungroup
-  
-        current_design ${DESIGN_NAME}
-        #set_dont_touch [get_cells -hierarchical MUL0] true
+        if { $SmartRetiming } {
+           current_design MultiplierP_unq1
+           set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
+           compile_ultra -no_autoungroup
+	
 
+	    current_design ${DESIGN_NAME}
+            #set_dont_touch [get_cells -hierarchical MUL0] true
+	}  
 
 	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
 	create_clock $CLK -period $CLK_PERIOD

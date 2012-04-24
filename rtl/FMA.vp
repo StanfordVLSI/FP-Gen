@@ -97,6 +97,11 @@
 //;   $retiming and $self->error( "Error: HACK-> Parameter may only be 0\n" ) ;
 //; }
 //;
+//; if( $pipeline_depth > 1 ){
+//;   parameter(Name=>'SmartRetiming', Val=>0, List=>[ 0, 1 ] , 
+//;                       Doc=>"Retiming Should Force Multp to one cycle !IMPLEMENTATION!");
+//; } 
+//;
 //; my $useInc ;
 //; if( $desinware_mode eq 'OFF' ){
 //;     $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
