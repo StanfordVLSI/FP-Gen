@@ -56,6 +56,7 @@
 //;                                 "design. !IMPLEMENTATION! ");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>-4,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//; TODO: inconsistency. At the moment negative pipeline depth is equivalent to pipelining at the beginning and at the end. Normal pipelining is only at the end.
 //;
 //; my $booth ;
 //; my $tree ;
@@ -118,19 +119,17 @@ module `mname`(
 //;   my $pipeline = generate(  'FF_pipeline',  'Mult_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$pipeline_depth );
     `$pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .clk(clk) , .reset(rst), .out({out1,out0}) );
 //; } else {
-    reg [`-$pipeline_depth-1`:0] ring;
-    logic [`-$pipeline_depth-1`:0] next_ring;
+    reg [`-$pipeline_depth-1`:0] enable;
+    logic [`-$pipeline_depth-1`:0] next_enable;
     logic [`2*$width+1`:0] out0_comb, out1_comb;
 
-    assign next_ring = {ring[0], ring[`-$pipeline_depth-1`:1]};
+    assign next_enable = {enable[0], enable[`-$pipeline_depth-1`:1]};
 
-    always @(posedge clk)
-      if (rst) ring <= 1;
+    always @(negedge clk)
+      if (rst)
+        enable <= 1;
       else
-      begin
-        {out1,out0} <= {out1_comb,out0_comb};
-        ring <= next_ring;
-      end
+        enable <= next_enable;
 
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
 //;     if ($verif_mode =~ /ON/){
@@ -141,7 +140,8 @@ module `mname`(
    logic ainc_`$i`, binc_`$i`;
 //;     }
 
-    always @(posedge ring[`$i`])
+    always @(posedge clk)
+    if (enable[`$i`])
     begin
       a_`$i`<=a;
       b_`$i` <= b;
@@ -174,10 +174,13 @@ module `mname`(
   always_comb
     unique case (1'b1)
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-       next_ring[`$i`]: {out1_comb,out0_comb} = {multp`$i`_out1,multp`$i`_out0};
+       enable[`$i`]: {out1_comb,out0_comb} = {multp`$i`_out1,multp`$i`_out0};
 //;   } 
     endcase
-//; } 
+//; }
+
+  always @(posedge clk)
+    {out1,out0} <= {out1_comb,out0_comb};
 
 endmodule
 
