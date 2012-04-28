@@ -1,0 +1,183 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/Pipelined_MultiplierP.vp#7 $
+ ** $DateTime: 2012/03/13 09:19:10 $
+ ** $Change: 10257 $
+ ** $Author: jbrunhav $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * Pipelined Multiplier that keeps out in carry save format
+ * 
+ * Parameters:
+ * * Width, BoothType, TreeType, PipelineDepth
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Oct 04, 2011   shacham   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil); # For ceiling rounding math
+
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off.  !IGNORE!" ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off. !IGNORE! ");
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # Interface parameter
+//; my $useInc = parameter(Name=>'UseInc', Val=>'NO', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//;
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
+//; my $designware_mode = parameter(Name=>'Designware_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Designware mode determines whether or not ".
+//;                                 "designware codes are used instead of our ".
+//;                                 "design. !IMPLEMENTATION! ");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>-4,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//;
+//; my $booth ;
+//; my $tree ;
+//; if( $designware_mode eq 'OFF' ){
+//;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
+//;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace','OS1','OS2','ZM','Array'],
+//;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
+//;    `touch place_MultiplierP.tcl` ; #create semaphore for placement
+//; } else {
+//;    -e "place_MultiplierP.tcl" and `rm place_MultiplierP.tcl` ; #eliminate semaphore for placement
+//; }
+
+   
+module `mname`(
+   //; if ($verif_mode =~ /ON/){
+    input logic 		  dumptolog,
+   //; }
+    input logic [`$width-1`:0] 	  a,b,
+ 
+    input logic 		  clk ,
+    input logic 		  rst ,
+	       
+   //; if ($useInc=~ /YES/){
+    input logic 		  ainc, binc,
+   //; }	    
+    output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
+		    );
+
+//; if ($pipeline_depth==0){
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc);
+
+   `$Mul_obj->instantiate()` (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+      .a(a), .b(b), 
+      //; if ($useInc=~ /YES/){
+      .ainc(ainc), .binc(binc),
+      //; }
+      .clk(clk) , .rst(rst),
+      .out0(out0), .out1(out1)
+      );
+//; } elsif ($pipeline_depth>0){
+
+   logic [`2*$width+1`:0] multp_out0, multp_out1; // sign extended by 2 because of booth encoding
+//; my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc);
+
+   `$Mul_obj->instantiate()` (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(a), .b(b), 
+      //; if ($useInc=~ /YES/){
+      .ainc(ainc), .binc(binc),
+      //; }
+      .clk(clk) , .rst(rst),
+      .out0(multp_out0), .out1(multp_out1)
+      );
+//;   my $pipeline = generate(  'FF_pipeline',  'Mult_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$pipeline_depth );
+    `$pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .clk(clk) , .reset(rst), .out({out1,out0}) );
+//; } else {
+    reg [`-$pipeline_depth-1`:0] ring;
+    logic [`-$pipeline_depth-1`:0] next_ring;
+    logic [`2*$width+1`:0] out0_comb, out1_comb;
+
+    assign next_ring = {ring[0], ring[`-$pipeline_depth-1`:1]};
+
+    always @(posedge clk)
+      if (rst) ring <= 1;
+      else
+      begin
+        {out1,out0} <= {out1_comb,out0_comb};
+        ring <= next_ring;
+      end
+
+//;   for (my $i=0; $i<-$pipeline_depth; $i++){
+//;     if ($verif_mode =~ /ON/){
+   logic dumptolog_`$i`;
+//;     }
+   logic [`$width-1`:0] a_`$i`,b_`$i`;       
+//;     if ($useInc=~ /YES/){
+   logic ainc_`$i`, binc_`$i`;
+//;     }
+
+    always @(posedge ring[`$i`])
+    begin
+      a_`$i`<=a;
+      b_`$i` <= b;
+//;     if ($useInc=~ /YES/){
+      ainc_`$i` <= ainc;
+      binc_`$i` <= binc;
+//;     }
+//;     if ($verif_mode =~ /ON/){
+      dumptolog_`$i` <= dumptolog;
+//;     }
+    end
+
+   logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
+//;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, UseInc=>$useInc);
+
+   `$Mul_obj->instantiate()` (
+//;     if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog_`$i`),
+//;     }
+      .a(a_`$i`), .b(b_`$i`), 
+//;     if ($useInc=~ /YES/){
+      .ainc(ainc_`$i`), .binc(binc_`$i`),
+//;     }
+      .clk(clk) , .rst(rst),
+      .out0(multp`$i`_out0), .out1(multp`$i`_out1)
+      );
+
+//;   }
+
+  always_comb
+    unique case (1'b1)
+//;   for (my $i=0; $i<-$pipeline_depth; $i++){
+       next_ring[`$i`]: {out1_comb,out0_comb} = {multp`$i`_out1,multp`$i`_out0};
+//;   } 
+    endcase
+//; } 
+
+endmodule
+
