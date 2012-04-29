@@ -9,7 +9,7 @@
 
 /* *****************************************************************************
  * Description:
- * parameterized Flip flop pipeline
+ * parameterized Flip flop pipeline with stall signal to clock gate stalled pipeline
  * 
  * 
  * Parameters:
@@ -31,32 +31,59 @@
 //;                       Doc=>"Signal bit widths");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>0, Step=>1,
 //;                       Doc=>"Pipeline depth");
+//; my $retime_Status = parameter( Name=>'Retime' , Val=>'NO' , List=>[ 'YES' , 'NO' ] , Doc=>"Pipeline Is Retimeable" ) ;
 
 module `mname` (
   input logic [`$width-1`:0] in, 
-  input logic clk, reset, 
-  output logic [`$width-1`:0] out
+  input logic clk, stall_in, reset, 
+  output logic [`$width-1`:0] out,
+  output logic stall_out
                );
 
   /* synopsys dc_tcl_script_begin
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
+//; #   https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/set_dont_retime.html
+//; if( $retime_Status eq 'YES' ){
+   set_dont_retime [current_design] false 
+   set_optimize_registers true -design [current_design]
+//; } elsif (  $retime_Status eq 'NO' ){
+   set_dont_retime [current_design] true
+   set_optimize_registers false -design [current_design]
+//; } else {
+//;    self->error( "Unexpected branch condition in retiming elaboration...\n" ) ;   
+//; }
   */
 
 //; if ($pipeline_depth>0) {
     reg [`$width-1`:0] stages [0:`$pipeline_depth-1`];
+    reg stall_stages [0:`$pipeline_depth-1`];
 
     assign out = stages [`$pipeline_depth-1`];
+    assign stall_out = stall_stages[`$pipeline_depth-1`];
 
     always @(posedge clk)
+      stall_stages[0] <= stall_in;
+
+    always @(posedge clk)
+    if (!stall_in)
       stages[0] <= in;
 
 //;   if ($pipeline_depth>1) {
+
     always @(posedge clk)
-        stages [1:`$pipeline_depth-1`] <= stages [0:`$pipeline_depth-2`];
+      stall_stages[1:`$pipeline_depth-1`] <= stall_stages[0:`$pipeline_depth-2`];
+
+//;     for (my $i=0; $i<$pipeline_depth-1; $i++){
+    always @(posedge clk)
+    if (!stall_stages[`$i`])
+      stages[`$i+1`] <= stages [`$i`];
+
+//;     }
 //;   }
 //; } else {
     assign out = in;
+    assign stall_out = stall_in;
 //; }
   
 endmodule

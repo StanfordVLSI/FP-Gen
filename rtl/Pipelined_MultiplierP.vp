@@ -9,8 +9,10 @@
 
 /* *****************************************************************************
  * Description:
- * Pipelined Multiplier that keeps out in carry save format
- * 
+ * Forward Pipelined Multiplier that keeps out in carry save format
+ * Positive pipelinde depth is used to insert pipeline stages while negative
+ * ones are used to create parallel pumped multiplier using clock gating 
+ *
  * Parameters:
  * * Width, BoothType, TreeType, PipelineDepth
  * 
@@ -56,7 +58,6 @@
 //;                                 "design. !IMPLEMENTATION! ");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>-4,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
-//; TODO: inconsistency. At the moment negative pipeline depth is equivalent to pipelining at the beginning and at the end. Normal pipelining is only at the end.
 //;
 //; my $booth ;
 //; my $tree ;
@@ -72,27 +73,22 @@
 
    
 module `mname`(
-   //; if ($verif_mode =~ /ON/){
-    input logic 		  dumptolog,
-   //; }
+
     input logic [`$width-1`:0] 	  a,b,
- 
-    input logic 		  clk ,
-    input logic 		  rst ,
+    input logic 		  clk , rst, stall,
 	       
    //; if ($useInc=~ /YES/){
     input logic 		  ainc, binc,
    //; }	    
-    output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
+    output logic [`2*$width+1`:0] out0,out1, // sign extended by 2 because of booth encoding
+    output logic stall_out
 		    );
 
 //; if ($pipeline_depth==0){
 //;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc);
 
    `$Mul_obj->instantiate()` (
-      //; if ($verif_mode =~ /ON/){
-       .dumptolog(dumptolog),
-      //; }
+
       .a(a), .b(b), 
       //; if ($useInc=~ /YES/){
       .ainc(ainc), .binc(binc),
@@ -102,28 +98,48 @@ module `mname`(
       );
 //; } elsif ($pipeline_depth>0){
 
+   logic [`$width-1`:0] a_0,b_0;
+   logic stall_0;      
+//;     if ($useInc=~ /YES/){
+   logic ainc_0, binc_0;
+//;     }
    logic [`2*$width+1`:0] multp_out0, multp_out1; // sign extended by 2 because of booth encoding
-//; my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc);
 
+//;    if ($useInc=~ /YES/){
+//;      my $pipein = generate(  'FF_pipeline',  'Mult_pipein',  Width=> 2*$width+2 , PipelineDepth=>1, Retime=>"NO");
+   `$pipein ->instantiate()` ( .in({a, ainc, b, binc}) , .stall_in(stall), .clk(clk) , .reset(rst), .out({a_0, ainc_0, b_0, binc_0}), .stall_out(stall_0) );
+//;    } else {
+//;      my $pipein = generate(  'FF_pipeline',  'Mult_pipein',  Width=> 2*$width , PipelineDepth=>1, Retime=>"NO");
+   `$pipein ->instantiate()` ( .in({a, b}) , .clk(clk) , .stall_in(stall), .reset(rst), .out({a_0, b_0}), .stall_out(stall_0) );
+//;    }
+//;    my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc);
    `$Mul_obj->instantiate()` (
-      //; if ($verif_mode =~ /ON/){
-      .dumptolog(dumptolog),
-      //; }
-      .a(a), .b(b), 
+      .a(a_0), .b(b_0), 
       //; if ($useInc=~ /YES/){
-      .ainc(ainc), .binc(binc),
+      .ainc(ainc_0), .binc(binc_0),
       //; }
       .clk(clk) , .rst(rst),
       .out0(multp_out0), .out1(multp_out1)
       );
-//;   my $pipeline = generate(  'FF_pipeline',  'Mult_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$pipeline_depth );
-    `$pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .clk(clk) , .reset(rst), .out({out1,out0}) );
+//;   if ($pipeline_depth>1){
+//;     my $pipeout = generate(  'FF_pipeline',  'Mult_pipeout',  Width=> 4*$width+4 , PipelineDepth=>$pipeline_depth-1, Retime=>"YES");
+    `$pipeout ->instantiate()` ( .in({multp_out1,multp_out0}) , .stall_in(stall_0), .clk(clk) , .reset(rst), .out({out1,out0}), .stall_out(stall_out) );
+//;   }
 //; } else {
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+   set_dont_retime [current_design] true
+   set_optimize_registers false -design [current_design]
+  */
+
     reg [`-$pipeline_depth-1`:0] enable;
     logic [`-$pipeline_depth-1`:0] next_enable;
-    logic [`2*$width+1`:0] out0_comb, out1_comb;
 
     assign next_enable = {enable[0], enable[`-$pipeline_depth-1`:1]};
+
+    DW03_pipe_reg #(`-$pipeline_depth`,1) dff_stall ( .A(stall) , .clk(clk) , .B(stall_out) ) ;
 
     always @(negedge clk)
       if (rst)
@@ -132,16 +148,13 @@ module `mname`(
         enable <= next_enable;
 
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-//;     if ($verif_mode =~ /ON/){
-   logic dumptolog_`$i`;
-//;     }
    logic [`$width-1`:0] a_`$i`,b_`$i`;       
 //;     if ($useInc=~ /YES/){
    logic ainc_`$i`, binc_`$i`;
 //;     }
 
     always @(posedge clk)
-    if (enable[`$i`])
+    if (enable[`$i`] & !stall)
     begin
       a_`$i`<=a;
       b_`$i` <= b;
@@ -149,18 +162,12 @@ module `mname`(
       ainc_`$i` <= ainc;
       binc_`$i` <= binc;
 //;     }
-//;     if ($verif_mode =~ /ON/){
-      dumptolog_`$i` <= dumptolog;
-//;     }
     end
 
    logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
 //;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, UseInc=>$useInc);
 
    `$Mul_obj->instantiate()` (
-//;     if ($verif_mode =~ /ON/){
-       .dumptolog(dumptolog_`$i`),
-//;     }
       .a(a_`$i`), .b(b_`$i`), 
 //;     if ($useInc=~ /YES/){
       .ainc(ainc_`$i`), .binc(binc_`$i`),
@@ -174,13 +181,10 @@ module `mname`(
   always_comb
     unique case (1'b1)
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-       enable[`$i`]: {out1_comb,out0_comb} = {multp`$i`_out1,multp`$i`_out0};
+       enable[`$i`]: {out1,out0} = {multp`$i`_out1,multp`$i`_out0};
 //;   } 
     endcase
 //; }
-
-  always @(posedge clk)
-    {out1,out0} <= {out1_comb,out0_comb};
 
 endmodule
 
