@@ -86,10 +86,12 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 open_mw_lib $MW_DESIGN_LIBRARY
 import_designs $DESIGN_NAME.$VT.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
 read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
-set_switching_activity -toggle_count 0.5 -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
-set_switching_activity -toggle_count 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
-set_switching_activity -toggle_count 0.2 -base_clock clk -static_probability 0.2 stall_pipeline
+set_switching_activity -toggle_rate 0.5  -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
+set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
+#set_switching_activity -toggle_rate 0.2  -base_clock clk -static_probability 0.2 stall_pipeline
 
+derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT
+derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -tie
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 
 if { [info exists ENABLE_MANUAL_PLACEMENT] } {
@@ -269,7 +271,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set port_size [sizeof_collection $b_ports];
 
 
-  if {$DESIGN_NAME=="FMA_unq1"} {
+  if { [ string equal $DESIGN_NAME "FMA_unq1" ] } {
 
     set c_ports [get_ports {c[*]}] 
     foreach_in_collection c_port $c_ports {
@@ -312,7 +314,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 }
 
 
-set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![$DESIGN_NAME=="FMA_unq1"]]; 
+set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_NAME "FMA_unq1" ]]; 
 
 if {$FixedHeightFloorPlan} {
   initialize_floorplan \
@@ -348,6 +350,13 @@ set core_height [expr $die_area_maxY-$die_area_minY];
 
 # Power Network Synthesis
 set VOLTAGE_SUPPLY [regsub "v" $Voltage "."]
+if {$TLUPLUS_MIN_FILE == ""} {set TLUPLUS_MIN_FILE $TLUPLUS_MAX_FILE}
+
+set_tlu_plus_files \
+     -max_tluplus $TLUPLUS_MAX_FILE \
+     -min_tluplus $TLUPLUS_MIN_FILE \
+     -tech2itf_map $MAP_FILE               ;# set the tlu plus files
+
 synthesize_fp_rail -power_budget 1000 -voltage_supply $VOLTAGE_SUPPLY -nets "${MW_POWER_NET} ${MW_GROUND_NET}" -synthesize_power_plan
 
 
