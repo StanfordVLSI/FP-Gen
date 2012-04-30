@@ -311,9 +311,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   }
 }
 
-# BROKEN
-#set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_NAME "FMA_unq1" ]]; 
-set FixedHeightFloorPlan 0 
+
+if { [info exists ENABLE_MANUAL_PLACEMENT] } {
+   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_NAME "FMA_unq1" ]]; 
+} else {
+   set FixedHeightFloorPlan 0; 
+}
+
+
 
 if { ![info exists core_utilization_ratio] } {
     set core_utilization_ratio 0.5
