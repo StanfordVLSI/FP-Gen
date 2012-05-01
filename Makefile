@@ -259,11 +259,11 @@ endif
 ##### FLAGS FOR IBM's FPGEN
 
 FPGEN_SEED := 12345
-FPGEN_CLUSTER_SIZE := 10
+FPGEN_CLUSTER_SIZE := 100
 FPGEN_CLUSTER_INDEX := 0
 FPGEN_TYPE := fmadd
 COVERAGE_MODEL := ch-5-1-2-3-All-Exponents
-FPDEF_FILE := testVectors/GenericTP/$(COVERAGE_MODEL)/fpdef/$(COVERAGE_MODEL).fpdef
+FPDEF_FILE := $(DESIGN_HOME)/testVectors/GenericTP/$(COVERAGE_MODEL)/fpdef/$(COVERAGE_MODEL).fpdef
 FPRES_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpres
 FPLOG_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fplog
 TESTVEC_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpvec
@@ -348,6 +348,9 @@ testVectors/$(FPRES_FILE):
 	@echo ""
 	@echo Now Running IBM\'s fpgen tool, generating $(FPRES_FILE)
 	@echo ==================================================
+	if test ! -d "testVectors"; then 	\
+		mkdir testVectors;	\
+	fi
 	fpgen $(FPDEF_FILE) $(FPGEN_FLAGS)
 
 
@@ -355,7 +358,7 @@ testVectors/$(TESTVEC_FILE): testVectors/$(FPRES_FILE)
 	@echo ""
 	@echo Now Converting testVectors/$(FPRES_FILE)
 	@echo ==================================================
-	scripts/converter.pl testVectors/$(FPRES_FILE)
+	$(DESIGN_HOME)/scripts/converter.pl testVectors/$(FPRES_FILE)
 
 
 
@@ -482,3 +485,4 @@ cleanall: clean clean_synthesis
 	\rm -f *.v
 	\rm -f *.pm
 	\rm -f $(GENESIS_VLOG_LIST)
+	\rm -fr verif_work/
