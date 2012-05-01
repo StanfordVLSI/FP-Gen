@@ -28,6 +28,17 @@
  * ****************************************************************************/
 //; # Perl Libraries
 //; use POSIX qw(ceil); # For ceiling rounding math
+
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off.  !IGNORE!" ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off. !IGNORE! ");
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -48,9 +59,26 @@
 //; $useInc = ($useInc =~ /YES/)? 1:0;
 //;
 //; # Multi precision mode
-//; my $useMP = parameter(Name=>'UseMP', Val=>'YES', List=>@incOpts,
+//; my $useMP = parameter(Name=>'UseMP', Val=>'NO', List=>@incOpts,
 //; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
 //; $useMP = ($useMP =~ /YES/)? 1:0;
+
+//; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'YES', List=>@incOpts,
+//; 			  Doc=>"Use parallel MultiplierP unit"); 
+//; $enableMultiplePumping = ($enableMultiplePumping =~ /YES/)? 1:0;
+//;
+//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>2,
+//;                       Doc=>"MultiplierP Part Pipeline depth");
+//; my $add_pipeline_depth = parameter(Name=>'AddPipelineDepth', Val=>2,
+//;                       Doc=>"Adder Part Pipeline depth");
+//; my $total_pipeline_depth = $mulp_pipeline_depth +  $add_pipeline_depth;
+//;
+//; if ($enableMultiplePumping) {
+//;   if ($mulp_pipeline_depth>1 &&  $add_pipeline_depth<1) {
+//;     self->error( "Multiple pumped multiplier needs flip flops afterwards" ) ;
+//;   }
+//;   $mulp_pipeline_depth = -$mulp_pipeline_depth;
+//; }
 //;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
@@ -69,40 +97,47 @@ module `mname`(
     input logic                   mp_mode,
    //; }
 	       
-    input logic clk ,
-    input logic rst ,
-
+    input logic clk , rst , stall,
 
    //; if ($useInc){
     input logic 		  ainc, binc,
    //; }
-    output logic [`2*$width`:0] out		  
+    output logic [`2*$width`:0] out,
+    output logic stall_out		  
 		    );
 
 //; if( $DW_mode eq 'ON' ){
+
+//;   if ($total_pipeline_depth>0) {
+  logic [`$width-1`:0]    a_in,b_in;
+//;     if ($total_pipeline_depth>1) {
+  logic [`$width-1`:0]    a_middle, b_middle;
+  logic stall_middle;
+//;     my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>1, Retime=>"NO");
+  `$pipein ->instantiate()` ( .in({a,b}) , .stall_in(stall), .clk(clk) , .reset(rst), .out({a_middle, b_middle}), .stall_out(stall_middle) );
+//;     my $piperest = generate(  'FF_pipeline',  'piperest',  Width=> 2*$width , PipelineDepth=>$total_pipeline_depth-1, Retime=>"YES");
+  `$piperest ->instantiate()` ( .in({a_middle, b_middle}) , .stall_in(stall_middle), .clk(clk) , .reset(rst), .out({a_in, b_in}), .stall_out(stall_out) );
+//;     } else {
+//;     my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>1, Retime=>"NO");
+  `$pipein ->instantiate()` ( .in({a,b}) , .stall_in(stall), .clk(clk) , .reset(rst), .out({a_in, b_in}), .stall_out(stall_out) );
+//;     }
+  DW02_mult #( `$width` , `$width` ) U1 ( .A(a_in), .B(b_in), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]));
+//;   } else {
+  DW02_mult #( `$width` , `$width` ) U1 ( .A(a), .B(b), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]));
+//;   }
  
-   DW02_mult #( `$width` , `$width` )
-   U1 ( .A(a), .B(b), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]) );
-   
+  assign out[`2*$width`] = 0;  
 //; } elsif( $DW_mode eq 'OFF' ){
 
 
 /* SUM/CARRY MULTIPLIER */
    
-   logic [`2*$width+1`:0] 	  multp_out0, multp_out1; // sign extended by 2 because of booth encoding
-   //; my $width_sub = 24;
-   //; my $Mul_obj;
-   //;
-   //; if ($useMP){
-   //;   $Mul_obj = generate('MultiplierP_MP', 'MultP', Width=>$width, WidthSub=>$width_sub, UseInc=>($useInc)?"YES":"NO");
-   //; }else {
-   //;   $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>($useInc)?"YES":"NO");
-   //; }
+   logic [`2*$width+1`:0] multp_out0, multp_out1, pp0, pp1; // sign extended by 2 because of booth encoding
+
+   //; my $Mul_obj= generate('Pipelined_MultiplierP', 'MultP', Width=>$width, PipelineDepth => $mulp_pipeline_depth, UseInc=>($useInc)?"YES":"NO", UseMP=>($useMP)?"YES":"NO");
+
    `$Mul_obj->instantiate()` 
      (
-      //; if ($verif_mode =~ /ON/){
-       .dumptolog(dumptolog),
-      //; }
       .a(a), .b(b), 
    //; if ($useMP){
       .mp_mode(mp_mode),
@@ -110,10 +145,27 @@ module `mname`(
       //; if ($useInc){
       .ainc(ainc), .binc(binc),
       //; }
-      .out0(multp_out0), .out1(multp_out1)
+      .stall(stall), .clk(clk) , .rst(rst),
+      .out0(multp_out0), .out1(multp_out1),
+      .stall_out(stall_mulp)
       );
 
-//   logic [`2*$width`:0] 	  out_mp;
+//;   if ($add_pipeline_depth>0) {
+//;     if ($enableMultiplePumping) {
+   logic [`2*$width+1`:0] out1, out0;
+   logic stall_add;
+//;       my $add1_pipeline = generate(  'FF_pipeline',  'add1_pipeline',  Width=> 4*$width+4 , PipelineDepth=>1, Retime=>"NO");
+    `$add1_pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .stall_in(stall_mulp), .clk(clk) , .reset(rst), .out({out1, out0}), .stall_out(stall_add) );
+//;       my $add2_pipeline = generate(  'FF_pipeline',  'add2_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$add_pipeline_depth-1, Retime=>"YES");
+    `$add2_pipeline ->instantiate()` ( .in({out1, out0}) , .stall_in(stall_add), .clk(clk) , .reset(rst), .out({pp1,pp0}), .stall_out(stall_out) );
+//;     } else {
+//;       my $add_pipeline = generate(  'FF_pipeline',  'add_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$add_pipeline_depth, Retime=>"YES");
+    `$add_pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .stall_in(stall_mulp), .clk(clk) , .reset(rst), .out({pp1,pp0}), .stall_out(stall_out) );
+//;     }
+//;   } else {
+   assign pp0=multp_out0;
+   assign pp1=multp_out1;
+//;   }
    
 /* FINAL SUMMATION */  
    //; my $adderInst = generate( 
@@ -124,33 +176,12 @@ module `mname`(
    //;                            GroupName=>'PartialProductSum' 
    //;                          );
    `$adderInst->instantiate()` (   
-				   .a(  multp_out0[`2*$width`:0]  ) , 
-				   .b(  multp_out1[`2*$width`:0]  ) , 
+				   .a(  pp0[`2*$width`:0]  ) , 
+				   .b(  pp1[`2*$width`:0]  ) , 
 				   .ci(1'b0) , 
 				   //.s(  out_mp  ) 
 				   .s(  out  ) 
 			       );
-
-//;my $width_sub = 24;
-
-//logic [`2*$width_sub`:0] 	  out_mp_ac;
-//logic [`2*$width_sub`:0] 	  out_mp_bd;
-
-//   assign out_mp_ac = out_mp[`2*$width_sub`:0];
-//   assign out_mp_bd = out_mp[`2*$width-1`:`2*$width-2*$width_sub-1`];
-
-
-
-
-
-
-
-   
-   
-//; #end $DW_mode eq 'OFF'
-//; } else {
-//;   self->error( "Not a legal case" ) ;
-//; }
 
 //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
@@ -159,5 +190,12 @@ module `mname`(
 	$display ("`$self->get_instance_path()`: multp_out0=%h, multp_out1=%h, bit=%d", multp_out0, multp_out1,`2*$width+2`);
      end
  //; }
+   
+//; #end $DW_mode eq 'OFF'
+//; } else {
+//;   self->error( "Not a legal case" ) ;
+//; }
+
+
 endmodule
 
