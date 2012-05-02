@@ -61,23 +61,24 @@ ifeq ($(DESIGN_NAME),FMA)
   endif
 
   over_params =   
+  over_params1 =   
+  over_params2 =   
 
   ifdef  PIPE_CNT
    FORCE_PARAMS = 1
-   over_params += \
-                 $(PIPELINE_PARAM) $(PIPE_CNT) \\n\
-                 $(RETIME_PARAM) $(PIPE_CNT) \\n
+   over_params1 = $(PIPELINE_PARAM) $(PIPE_CNT) \\n$(RETIME_PARAM) $(RETIME_STATUS) \\n
   endif
 
   ifeq ($(DW_MODE),1) 
     DW_MODE_STRING ?= ON
     INC_MODE_STRING ?= NO
     FORCE_PARAMS = 1
-    over_params += $(INC_PARAM) $(INC_MODE_STRING) \\n$(DW_PARAM) $(DW_MODE_STRING) \\n
+    over_params2 = $(INC_PARAM) $(INC_MODE_STRING) \\n$(DW_PARAM) $(DW_MODE_STRING) \\n
   else
     DW_MODE_STRING ?= "OFF"
   endif
 
+  over_params = $(over_params1)$(over_params2)
 
 endif 
 
@@ -321,7 +322,7 @@ ifeq ($(FORCE_PARAMS),1)
 	@echo ==================================================
 	@echo -e $(over_params) > tmp_cfg.design
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
-	setGenCfg.pl INPUT_XML=small_$(GENESIS_HIERARCHY) OUTPUT_XML=small_$(GENESIS_TMP_HIERARCHY) DESIGN_FILE=tmp_cfg.design
+	setGenCfg.pl -S INPUT_XML=small_$(GENESIS_HIERARCHY) OUTPUT_XML=small_$(GENESIS_TMP_HIERARCHY) DESIGN_FILE=tmp_cfg.design
 	Genesis2.pl $(GENESIS_GEN_FLAGS2) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
 	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
 else
