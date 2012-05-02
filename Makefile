@@ -49,13 +49,36 @@ ifeq ($(DESIGN_NAME),FMA)
   MOD_NAME ?= FMA
   TOP_NAME ?= top_FMA
   ROLLUP_TARGET ?= FMA_Rollup.target
-  PIPELINE_PARAM ?= "TOP.top_FMA.FMA.PipelineDepth PipelineDepth"
-  RETIME_PARAM ?= "TOP.top_FMA.FMA.Retiming Retiming"
+  PIPELINE_PARAM ?= TOP.top_FMA.FMA.PipelineDepth PipelineDepth
+  RETIME_PARAM ?= TOP.top_FMA.FMA.Retiming Retiming
+  DW_PARAM ?= TOP.top_FMA.FMA.Designware_MODE Designware_MODE
+  INC_PARAM ?= TOP.top_FMA.FMA.UseInc UseInc
+
   ifeq ($(PIPE_CNT),0)
     RETIME_STATUS ?= 0
   else
     RETIME_STATUS ?= 1
   endif
+
+  over_params =   
+
+  ifdef  PIPE_CNT
+   FORCE_PARAMS = 1
+   over_params += \
+                 $(PIPELINE_PARAM) $(PIPE_CNT) \\n\
+                 $(RETIME_PARAM) $(PIPE_CNT) \\n
+  endif
+
+  ifeq ($(DW_MODE),1) 
+    DW_MODE_STRING ?= ON
+    INC_MODE_STRING ?= NO
+    FORCE_PARAMS = 1
+    over_params += $(INC_PARAM) $(INC_MODE_STRING) \\n$(DW_PARAM) $(DW_MODE_STRING) \\n
+  else
+    DW_MODE_STRING ?= "OFF"
+  endif
+
+
 endif 
 
 ifeq ($(DESIGN_NAME),Multiplier)
@@ -292,12 +315,11 @@ gen: $(GENESIS_VLOG_LIST)
 # files (_unqN.v) from the genesis (.vp) program.
 # Use "make GEN=<genesis2_gen_flags>" to add elaboration time flags
 $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
-ifdef PIPE_CNT
+ifeq ($(FORCE_PARAMS),1)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	@echo $(PIPELINE_PARAM) $(PIPE_CNT) > tmp_cfg.design
-	@echo $(RETIME_PARAM) $(RETIME_STATUS) >> tmp_cfg.design
+	@echo -e $(over_params) > tmp_cfg.design
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
 	setGenCfg.pl INPUT_XML=small_$(GENESIS_HIERARCHY) OUTPUT_XML=small_$(GENESIS_TMP_HIERARCHY) DESIGN_FILE=tmp_cfg.design
 	Genesis2.pl $(GENESIS_GEN_FLAGS2) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)

@@ -110,6 +110,8 @@ check_design > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.check
 
 set link_library [set ${VT}_0v8_target_libs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.timing.rpt
+report_timing -loops > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.timing_loops.rpt
+report_timing -loops
 report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.power.rpt
 report_qor > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.qor.rpt
 
