@@ -17,6 +17,7 @@ RUN_NAME = $(VT)_$(Voltage)_$(target_delay)_p$(PIPE_CNT)
 COMMAND_STRING =  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET); "
 OPTIMIZED_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET); "
 
+dc: $(RUN_NAME)/log/dc_$(RUN_NAME).log
 all: $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log $(RUN_NAME)/log/icc_$(RUN_NAME).log
 
 #-64bit

@@ -394,8 +394,9 @@ OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set V
 
 # DC & ICC Run rules:
 ############################
-.PHONY: run_synthesis
+.PHONY: run_synthesis run_dc
 run_synthesis: log/syn_$(RUN_NAME).log
+run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
 
 SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
@@ -416,6 +417,10 @@ RUN_SYNTHESIS_FLAGS:= \
 log/syn_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
 	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee  syn_bb.log
+
+synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
+	mkdir -p log
+	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee  syn_dc.log
 
 clean_synthesis:
 	rm -rf synthesis/svt_*v*_*.*

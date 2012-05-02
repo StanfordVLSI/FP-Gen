@@ -13,14 +13,14 @@ module load synopsys_edk
 module load icc
 module load pts
 module load starrc
-
+module load numbers 
 
 export SNPSLMD_QUEUE=true
 export SNPS_MAX_WAITTIME=7200
 export SNPS_MAX_QUEUETIME=7200
 
 
-export SNPSLMD_LICENSE_FILE=26585\@vlsi,26585\@omni,26585\@shimbala:27000\@cadlic0   
+#export SNPSLMD_LICENSE_FILE=26585\@vlsi.stanford.edu,26585\@omni.stanford.edu,27000\@cadlic0.stanford.edu   
 
 
 
