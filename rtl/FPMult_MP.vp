@@ -1,0 +1,393 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FPMult.vp#18 $
+ ** $DateTime: 2012/04/21 22:50:42 $
+ ** $Change: 10431 $
+ ** $Author: tema8 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * A floating point multiplier that takes two floating point number A, B and 
+ * produces the result AxB in full precision without any truncation. 
+ * The output may be used for constructing a cascade FMA or rounded to 
+ * input precision to construct a FP multiplier
+ * 
+ * 
+ * Parameters:
+ * * FractionWidth, ExponentWidth, EnableDenormals
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 01, 2011   shacham   init version - ported Sameh's original code to 
+ *                         genesis
+ * Apr 21, 2011  tema8     added multi precision
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)  !FUNCTIONAL!");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
+
+//; my $frac_width_sub = parameter(Name=>'FractionWidthSub', Val=>23, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Single, 23 bit)  !FUNCTIONAL!");
+//; my $exp_width_sub = parameter(Name=>'ExponentWidthSub', Val=>8, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Single, 8 bit)  !FUNCTIONAL!");
+//; my $dw   = parameter(Name=>'DesignWare', Val=>'NO' , List=>['YES','NO'] ,
+//;                      Doc=>'Use the designware implementation of FPMult documented !IGNORE!' );  #JB- ignore until implementd
+//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
+//; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
+//; 			      "or Fused? (Pick:Cascade/Fused)  !IGNORE!"); #JB- ignoring for now...
+//; my $useInc = parameter(Name=>'useInc', Val=>1, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//; # Multi precision mode
+//; my $useMP = parameter(Name=>'UseMP', Val=>1, List=>[1, 0],
+//; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//; my $floating_digits= parameter(Name=>'FloatingDigits', Val=>1,  List=>[1,2],
+//; 			   Doc=>"Number of digits before floating point");
+//;
+//; # And some local variables
+//; my $shift_width = CeilOfLog2($frac_width+1) + 1;
+//; my $product_width = 2 * $frac_width + 2;
+//;
+//; my $product_width_sub = 2 * $frac_width_sub + 2;
+//; my $shift_width_sub = CeilOfLog2($frac_width_sub+1) + 1;
+
+module `mname`(
+  //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+  //; }
+    input logic [`$exp_width + $frac_width`:0] A, B,
+  //; if ($useInc){
+    input logic 			      IncA, IncB,
+  //; }	
+	       
+   //; if ($useMP){
+    input logic                                mp_mode,
+    output logic 			       Sign_MP_AC, NAN_MP_AC, Inf_MP_AC, Zero_MP_AC, RSticky_MP_AC,
+    output logic [`$exp_width_sub + 1`:0]      Exp_MP_AC,
+    output logic [`$product_width_sub - 1`: 0] Man_MP_AC,
+
+    output logic 			       Sign_MP_BD, NAN_MP_BD, Inf_MP_BD, Zero_MP_BD, RSticky_MP_BD,
+    output logic [`$exp_width_sub + 1`:0]      Exp_MP_BD,
+    output logic [`$product_width_sub - 1`: 0] Man_MP_BD,
+   //; }
+	       
+    output logic 			      SignAB, NANAB, InfAB, ZeroAB, RStickyAB,
+    output logic [`$exp_width + 1`:0] 	      ExpAB,
+    output logic [`$product_width - 1`: 0]    ManAB
+	       );
+   
+   logic [`$frac_width`:0] 		      ManA, ManB;
+   logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
+   //; if ( ! $useInc){
+   logic 				      IncA, IncB;
+   assign IncA = 1'b0;
+   assign IncB = 1'b0;
+   //; }	
+
+   logic [`$product_width-1`: 0] 	      ManAB_unnormalized, ManAB_normalized;
+   logic [`$product_width_sub-1`: 0] 	      Man_MP_AC_unnormalized, Man_MP_BD_unnormalized;
+   
+   
+   //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger
+   logic [`$product_width`: 0] 		      ManAB_unnormalized_long;
+   
+
+//   logic 				      RStickyAB_int, ManAB_normalized_nextbit;
+  
+   
+
+    logic [`$frac_width_sub`:0] 	 Man_MP_a, Man_MP_c;
+    logic [`$exp_width_sub - 1`:0] 	 Exp_MP_a, Exp_MP_c;
+
+
+    logic [`$shift_width - 1`:0] LZD_A, LZD_B;
+    //logic [`$frac_width`:0] 	 ManA, ManB;
+    //logic 			 SignAB, NANAB, InfAB;
+   
+   
+    //DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
+    //DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
+    
+   //; my $ExtraSignals_obj = generate('FPMultExtraSinals', 'FPMultExtraSignals_inst', FractionWidth=>$frac_width, ExponentWidth=>$exp_width );
+`$ExtraSignals_obj->instantiate()` 
+     (
+      .A(A), .B(B),
+      .IncA(IncA), .IncB(IncB),
+      .LZD_A(LZD_A), .LZD_B(LZD_B),
+      .ManA(ManA), .ManB(ManB),
+      .ExpA(ExpA), .ExpB(ExpB),
+      .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB)
+      );
+
+/////////////////////////////////////////////////////////////////////
+
+    logic [`$shift_width - 1`:0] LZD_MP_a, LZD_MP_c;
+    //logic [`$frac_width_sub`:0] 	 Man_MP_a, Man_MP_c;
+    //logic [`$exp_width_sub - 1`:0] 		      Exp_MP_a, Exp_MP_c;
+
+   //; my $ExtraSignals_obj = generate('FPMultExtraSinals', 'FPMultExtraSignals_ac', FractionWidth=>$frac_width_sub, ExponentWidth=>$exp_width_sub );
+`$ExtraSignals_obj->instantiate()` 
+     (
+      .A(A[`$exp_width_sub+$frac_width_sub`:0]), .B(B[`$exp_width_sub+$frac_width_sub`:0]),
+      .IncA(IncA), .IncB(IncB),
+      .LZD_A(LZD_MP_a), .LZD_B(LZD_MP_c),
+      .ManA(Man_MP_a), .ManB(Man_MP_c),
+      .ExpA(Exp_MP_a), .ExpB(Exp_MP_c),
+      .SignAB(Sign_MP_AC), .NANAB(NAN_MP_AC), .InfAB(Inf_MP_AC), .ZeroAB(Zero_MP_AC)
+      );
+
+
+
+
+
+    logic [`$shift_width - 1`:0]    LZD_MP_b, LZD_MP_d;
+    logic [`$frac_width_sub`:0]     Man_MP_b, Man_MP_d;
+    logic [`$exp_width_sub - 1`:0]  Exp_MP_b, Exp_MP_d;
+
+   //; my $ExtraSignals_obj = generate('FPMultExtraSinals', 'FPMultExtraSignals_bd', FractionWidth=>$frac_width_sub, ExponentWidth=>$exp_width_sub );
+`$ExtraSignals_obj->instantiate()` 
+     (
+      .A(A[`$exp_width+$frac_width`:`$exp_width_sub+$frac_width_sub+1`]), .B(B[`$exp_width+$frac_width`:`$exp_width_sub+$frac_width_sub+1`]),
+      .IncA(IncA), .IncB(IncB),
+      .LZD_A(LZD_MP_b), .LZD_B(LZD_MP_d),
+      .ManA(Man_MP_b), .ManB(Man_MP_d),
+      .ExpA(Exp_MP_b), .ExpB(Exp_MP_d),
+      .SignAB(Sign_MP_BD), .NANAB(NAN_MP_BD), .InfAB(Inf_MP_BD), .ZeroAB(Zero_MP_BD)
+      );
+
+
+
+   
+   logic   [`$frac_width`:0] 		      ManA_mp, ManB_mp;
+   assign ManA_mp = {Man_MP_b, {`$frac_width-2*$frac_width_sub-1`{1'b0}}   ,Man_MP_a};
+   assign ManB_mp = {Man_MP_d, {`$frac_width-2*$frac_width_sub-1`{1'b0}}   ,Man_MP_c};
+
+
+////////////////////////////////////////////////////////////////////////////
+
+
+   //; my $ExpMult_ac_obj = generate('ExpMult', 'ExpMult_ac_inst', FractionWidth=>$frac_width_sub, FractionWidthSub=>$frac_width_sub, ExponentWidth=>$exp_width_sub, ExponentWidthSub => $exp_width_sub, UseInc=>$useInc, EnableDenormals=>$enable_denormals, FloatingDigits => $floating_digits );
+
+   logic [`$shift_width + 1`:0]      shiftAmount_ac;
+   
+  
+`$ExpMult_ac_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+  //; if ($useInc){
+      .IncA(IncA), .IncB(IncB),
+  //; }	
+     .mp_mode(1'b0),
+      
+    //.ManA(ManA), .ManB(ManB),
+    .LZD_A(LZD_MP_a), .LZD_B(LZD_MP_c),
+    .ExpA (Exp_MP_a), .ExpB (Exp_MP_c),
+    .ZeroAB(Zero_MP_AC),
+    .noShift(noShift_ac),
+    .shiftAmount(shiftAmount_ac),
+   
+    .ExpAB(Exp_MP_AC)
+      );
+
+
+   //; my $ExpMult_bd_obj = generate('ExpMult', 'ExpMult_bd_inst', FractionWidth=>$frac_width_sub, FractionWidthSub=>$frac_width_sub, ExponentWidth=>$exp_width_sub, ExponentWidthSub => $exp_width_sub, UseInc=>$useInc, EnableDenormals=>$enable_denormals, FloatingDigits => $floating_digits );
+
+   logic [`$shift_width + 1`:0]      shiftAmount_bd;
+   
+  
+`$ExpMult_bd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+  //; if ($useInc){
+      .IncA(IncA), .IncB(IncB),
+  //; }	
+     .mp_mode(1'b0),
+      
+    //.ManA(ManA), .ManB(ManB),
+    .LZD_A(LZD_MP_b), .LZD_B(LZD_MP_d),
+    .ExpA (Exp_MP_b), .ExpB (Exp_MP_d),
+    .ZeroAB(Zero_MP_BD),
+    .noShift(noShift_bd),
+    .shiftAmount(shiftAmount_bd),
+   
+    .ExpAB(Exp_MP_BD)
+      );
+   
+
+//////////////////////#################///////////////////////////////////////
+   
+   
+   //; my $ExpMult_obj = generate('ExpMult', 'ExpMult_inst', FractionWidth=>$frac_width, FractionWidthSub=>$frac_width_sub, ExponentWidth=>$exp_width, ExponentWidthSub => $exp_width_sub, UseInc=>$useInc, EnableDenormals=>$enable_denormals, FloatingDigits => $floating_digits );
+
+   logic [`$shift_width + 1`:0]      shiftAmount;
+   
+`$ExpMult_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+  //; if ($useInc){
+      .IncA(IncA), .IncB(IncB),
+  //; }	
+     .mp_mode(mp_mode),
+      
+    //.ManA(ManA), .ManB(ManB),
+    .LZD_A(mp_mode?LZD_MP_a:LZD_A), .LZD_B(mp_mode?LZD_MP_c:LZD_B),
+    .ExpA (mp_mode?Exp_MP_a:ExpA), .ExpB (mp_mode?Exp_MP_c:ExpB),
+    .ZeroAB(mp_mode?Zero_MP_AC:ZeroAB),
+    .noShift(noShift),
+    .shiftAmount(shiftAmount),
+   
+    .ExpAB(ExpAB)
+      );
+
+logic [`2*$product_width - 1` : 0] ManAB_shifted;
+
+   
+logic [`2*$product_width_sub - 1` : 0] Man_MP_AC_shifted;
+logic [`2*$product_width_sub - 1` : 0] Man_MP_BD_shifted;
+
+//; if ($enable_denormals=~ /YES/i){
+   // enable_denormals = YES
+    assign Man_MP_AC_shifted = { Man_MP_AC_unnormalized , {(`$product_width_sub`){1'b0}} }>>shiftAmount_ac;
+    assign Man_MP_BD_shifted = { Man_MP_BD_unnormalized , {(`$product_width_sub`){1'b0}} }>>shiftAmount_bd;
+
+                                                                                      //Don't know why need +2, but it makes things work
+   //assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>(shiftAmount-mp_mode?`$frac_width-$frac_width_sub+2`:0);
+
+//Need a Mux for correct noShift
+   assign ManAB_shifted = { (mp_mode?{`$product_width-$product_width_sub`{1'b0}}:ManAB_unnormalized[`$product_width-1`:`$product_width_sub`]),ManAB_unnormalized[`$product_width_sub-1`: 0] , {(`$product_width`){1'b0}} }>>(shiftAmount);
+   //assign ManAB_shifted = { ManAB_unnormalized , {(`$product_width`){1'b0}} }>>(shiftAmount);
+   //assign Man_MP_AC = ManAB[`$product_width -1`:0];
+   
+   //;  if ($floating_digits==1) {
+    assign noShift_ac = Man_MP_AC_shifted[`$product_width_sub + $frac_width_sub`];
+    assign Man_MP_AC = noShift_ac? Man_MP_AC_shifted[`$product_width_sub + $frac_width_sub`:`$frac_width_sub+1`] : Man_MP_AC_shifted[`$product_width_sub + $frac_width_sub`:`$frac_width_sub`];
+    assign RSticky_MP_AC = |Man_MP_AC_shifted[`$frac_width_sub-1`:0]  | (noShift_ac & Man_MP_AC_shifted[`$frac_width_sub`] ) |  ( Man_MP_AC==0 & ~Zero_MP_AC);
+
+    assign noShift_bd = Man_MP_BD_shifted[`$product_width_sub + $frac_width_sub`];
+    assign Man_MP_BD = noShift_bd? Man_MP_BD_shifted[`$product_width_sub + $frac_width_sub`:`$frac_width_sub+1`] : Man_MP_BD_shifted[`$product_width_sub + $frac_width_sub`:`$frac_width_sub`];
+    assign RSticky_MP_BD = |Man_MP_BD_shifted[`$frac_width_sub-1`:0]  | (noShift_bd & Man_MP_BD_shifted[`$frac_width_sub`] ) |  ( Man_MP_BD==0 & ~Zero_MP_BD);
+   
+    assign noShift = mp_mode ? ManAB_shifted[`$product_width_sub + $frac_width_sub`]: ManAB_shifted[`$product_width + $frac_width`];
+    assign ManAB =mp_mode ?( noShift? ManAB_shifted[`$product_width + $frac_width_sub`:`$frac_width_sub+1`] : ManAB_shifted[`$product_width + $frac_width_sub`:`$frac_width_sub`]) :
+( noShift? ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`] : ManAB_shifted[`$product_width + $frac_width`:`$frac_width`]);
+    assign RStickyAB = |ManAB_shifted[`$frac_width-1`:0]  | (noShift & ManAB_shifted[`$frac_width`] ) |  ( ManAB==0 & ~ZeroAB);
+   //;  } else {
+    assign noShift_ac = 0;
+    assign Man_MP_AC = Man_MP_AC_shifted[`$product_width_sub + $frac_width_sub`:`$frac_width_sub+1`];
+    assign RSticky_MP_AC = |Man_MP_AC_shifted[`$frac_width_sub`:0] | ( Man_MP_AC==0 & ~Zero_MP_AC);
+
+    assign noShift_bd = 0;
+    assign Man_MP_BD = Man_MP_BD_shifted[`$product_width_sub + $frac_width_sub`:`$frac_width_sub+1`];
+    assign RSticky_MP_BD = |Man_MP_BD_shifted[`$frac_width_sub`:0] | ( Man_MP_BD==0 & ~Zero_MP_BD);
+   
+    assign noShift = 0;
+    assign ManAB =mp_mode ?( ManAB_shifted[`$product_width + $frac_width_sub`:`$frac_width_sub+1`]) :
+                           ( ManAB_shifted[`$product_width + $frac_width`:`$frac_width+1`]);
+    assign RStickyAB = |ManAB_shifted[`$frac_width`:0] | ( ManAB==0 & ~ZeroAB);
+   //;   }
+//; }else{ 
+          
+   // enable_denormals = NO
+   assign RSticky_MP_AC = 0;
+   assign RSticky_MP_BD = 0;
+   assign RStickyAB = 0;
+   //;  if ($floating_digits==1) {
+   assign noShift_ac = Man_MP_AC_unnormalized[`$product_width_sub-1`];
+   assign noShift_bd = Man_MP_BD_unnormalized[`$product_width_sub-1`];
+   assign noShift =  mp_mode ? ManAB_unnormalized[`$product_width_sub-1`+51] : ManAB_unnormalized[`$product_width-1`];
+   
+   assign Man_MP_AC= noShift_ac? Man_MP_AC_unnormalized : {Man_MP_AC_unnormalized[`$product_width_sub-2`:0],1'b0};
+   assign Man_MP_BD= noShift_bd? Man_MP_BD_unnormalized : {Man_MP_BD_unnormalized[`$product_width_sub-2`:0],1'b0};
+   assign ManAB= noShift? ManAB_unnormalized : {ManAB_unnormalized[`$product_width-2`:0],1'b0};
+   //;  } else {
+   assign noShift_ac = 0;
+   assign noShift_bd = 0;
+   assign noShift = 0;
+
+   //assign Man_MP_AC = Man_MP_AC_unnormalized;
+   assign Man_MP_BD = Man_MP_BD_unnormalized;
+   assign ManAB = ManAB_unnormalized;
+   //;  }
+//; }
+
+
+
+
+   
+
+   //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>($useInc)?"YES":"NO", UseMP=>($useMP)?"YES":"NO");
+   `$Mul_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+      .a(mp_mode?ManA_mp:ManA), .b(mp_mode?ManB_mp:ManB), 
+	       
+   //; if ($useMP){
+     .mp_mode(mp_mode),
+   //; }
+	//; if ($useInc){
+      .ainc(IncA), .binc(IncB),
+      //; }
+      .out(ManAB_unnormalized_long)
+      );
+
+   //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger, this case is ignored because IncA and IncB are mutually exclusive
+   assign ManAB_unnormalized = ManAB_unnormalized_long[`$product_width`-1:0];
+   
+
+   assign Man_MP_AC_unnormalized = ManAB_unnormalized_long[`$product_width_sub`-1:0];
+   assign Man_MP_BD_unnormalized = ManAB_unnormalized_long[`$product_width-1`-1:`$product_width-1-$product_width_sub`];
+  
+
+  
+
+
+
+//; if ($verif_mode =~ /ON/){
+   always @(posedge dumptolog)
+     begin
+        assert ( ~ (IncA & IncB)) else $display("`$self->get_instance_path()`: ERROR: IncA (%b) and IncB (%b) can't be asserted simultaneaously ", IncA, IncB);
+	//$display ("`$self->get_instance_path()`: ZeroExpA=0x%h ZeroA=0x%h InfA=0x%h ExpA=%h ManA=%h, SigA=%h IncA=0x%h",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
+	//$display ("`$self->get_instance_path()`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB);
+	//$display ("`$self->get_instance_path()`: ExpAB=%h , ManAB=%h, SignAB=%h, NANAB=%h, InfAB=%h, ZeroAB=%h, RStickyAB=%h",ExpAB, ManAB, SignAB, NANAB, InfAB, ZeroAB, RStickyAB);
+	//$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
+	//$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h ManAB_shifted=%h shiftAmount=%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long, ManAB_shifted, shiftAmount);
+	//$display ("`$self->get_instance_path()`: Eab_ps0=%h Eab_ps1=%h Eab_ps2=%h Eab_ps3=%h Eab_ps4=%h Eab_ps5=%h", Eab_ps0, Eab_ps1, Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5);
+	//$display ("`$self->get_instance_path()`: noShift =0x%h ExpAB0 =%h ExpAB1 =%h",noShift, ExpAB0, ExpAB1);
+	$display ("`$self->get_instance_path()`: ZeroAB=0x%h InfAB=0x%h NANAB=0x%h RStickyAB=0x%h",ZeroAB, InfAB, NANAB, RStickyAB);
+	//$display ("`$self->get_instance_path()`: NANorInfAplusInc=%d, zeroSigAplusInc=%d, NANAplusInc=%d, NANBplusInc=%d, InfAplusInc=%d, ZeroBplusInc=%d, InfBplusInc=%d, ZeroAplusInc=%d, NANAB=%d",NANorInfAplusInc,zeroSigAplusInc,NANAplusInc, NANBplusInc, InfAplusInc, zeroBplusInc, InfBplusInc, zeroAplusInc, NANAB);
+     end
+ //; }
+
+endmodule : `mname`

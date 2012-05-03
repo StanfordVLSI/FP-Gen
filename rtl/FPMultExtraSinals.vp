@@ -1,0 +1,120 @@
+/* *****************************************************************************
+ * Description:
+ * A floating point multiplier that takes two floating point number A, B and 
+ * produces the result AxB in full precision without any truncation. 
+ * The output may be used for constructing a cascade FMA or rounded to 
+ * input precision to construct a FP multiplier
+ * 
+ * 
+ * Parameters:
+ * * FractionWidth, ExponentWidth, EnableDenormals
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Oct 01, 2011   shacham   init version - ported Sameh's original code to 
+ *                         genesis
+ * Apr 21, 2011  tema8     added multi precision
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $useInc = parameter(Name=>'useInc', Val=>1, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//;
+//; # And some local variables
+//; my $shift_width = CeilOfLog2($frac_width+1) + 1;
+//; my $product_width = 2 * $frac_width + 2;
+//;
+
+module `mname`(
+    input logic [`$exp_width + $frac_width`:0] A, B,
+    input logic 			      IncA, IncB,
+	       
+    output logic [`$shift_width - 1`:0] LZD_A, LZD_B,
+    output logic [`$frac_width`:0] 		      ManA, ManB,
+    output logic [`$exp_width - 1`:0] 		      ExpA, ExpB,
+    output logic 			      SignAB, NANAB, InfAB, ZeroAB
+	       
+	       );
+
+
+   logic [`$frac_width - 1`:0] 		      SigA, SigB;
+   logic 				      NANorInfA, NANorInfB, zeroSigA, zeroSigB, InfA;
+   logic 				      InfB, NANA, NANB, SignA, SignB, ZeroExpA, ZeroExpB;
+   logic 				      ZeroA, ZeroB, co_dummy0, co_dummy1, co_dummy2;
+   logic 				      co_dummy3, co_dummy4, noShift, denormalAB;
+
+   logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
+
+   logic 				      noShiftRight;
+ 
+
+   assign SigA  = A[`$frac_width - 1` : 0 ];
+   assign SigB  = B[`$frac_width - 1` : 0 ];
+   assign ZeroExpA  =  (A[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
+   assign ZeroExpB  =  (B[`$exp_width + $frac_width - 1`:`$frac_width`] == `$exp_width`'b0)? 1'b1:1'b0;
+   assign ExpA  = { A[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpA | A[`$frac_width`] }; // convert denormals exponents to normal
+   assign ExpB  = { B[`$exp_width + $frac_width - 1` : `$frac_width + 1` ] , ZeroExpB | B[`$frac_width`] }; // convert denormals exponents to normal
+   assign SignA = A[ `$exp_width + $frac_width` ];
+   assign SignB = B[ `$exp_width + $frac_width` ];
+   
+   assign NANorInfA =  ExpA=={(`$exp_width`){1'b1}};
+   assign NANorInfB =  ExpB=={(`$exp_width`){1'b1}};
+   assign zeroSigA  =  SigA==0;
+   assign zeroSigB  =  SigB==0;
+   assign ZeroA     =  zeroSigA & ZeroExpA;
+   assign ZeroB     =  zeroSigB & ZeroExpB;
+   assign InfA      =  zeroSigA & NANorInfA;
+   assign InfB      =  zeroSigB & NANorInfB;
+   assign NANA      = ~zeroSigA & NANorInfA;
+   assign NANB      = ~zeroSigB & NANorInfB;
+   assign MaxA      =  ExpA=={{(`$exp_width-1`){1'b1}},1'b0} && SigA=={(`$frac_width`){1'b1}};
+   assign MaxB      =  ExpB=={{(`$exp_width-1`){1'b1}},1'b0} && SigB=={(`$frac_width`){1'b1}};
+
+   assign NANorInfAplusInc = NANorInfA | (IncA & MaxA);
+   assign NANorInfBplusInc = NANorInfB | (IncB & MaxB);
+   assign zeroSigAplusInc = (zeroSigA & ~(IncA & ~InfA & ~NANA)) | (IncA & MaxA);
+   assign zeroSigBplusInc = (zeroSigB & ~(IncB & ~InfB & ~NANB)) | (IncB & MaxB);
+   assign zeroAplusInc = zeroSigAplusInc & ZeroExpA;
+   assign zeroBplusInc = zeroSigBplusInc & ZeroExpB;
+   assign InfAplusInc =  zeroSigAplusInc & NANorInfAplusInc;
+   assign InfBplusInc =  zeroSigBplusInc & NANorInfBplusInc;
+   assign NANAplusInc = ~zeroSigAplusInc & NANorInfAplusInc;
+   assign NANBplusInc = ~zeroSigBplusInc & NANorInfBplusInc;
+   
+  assign NANAB = NANAplusInc | NANBplusInc | (InfAplusInc & zeroBplusInc) | (InfBplusInc & zeroAplusInc);
+ 
+  assign InfAB = (InfBplusInc | InfAplusInc) & ~NANAB ;
+
+
+  assign ManA = { ~ZeroExpA , SigA };
+  assign ManB = { ~ZeroExpB , SigB };
+
+    //logic [`$shift_width - 1`:0] LZD_A, LZD_B;
+   
+    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
+    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
+
+
+  assign ZeroAB = zeroAplusInc | zeroBplusInc;
+  assign SignAB = SignA ^ SignB;
+
+
+endmodule : `mname`

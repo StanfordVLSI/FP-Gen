@@ -1,0 +1,210 @@
+/* *****************************************************************************
+ * Description:
+ * Encapsulates logic for exponent and shift value.
+ * In MultiPrecision mode one of the blocks will be reused, so it has
+ * extra logic to handle this case. If mp_mode=1 the block will behave
+ * as if $exp_width parammeter was set to $exp_width_sub
+ * 
+ * 
+ * Parameters:
+ * * FractionWidth, ExponentWidth, EnableDenormals
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * Apr 28, 2012  tema8     initial version - move Exponent part from FPMult
+ *                         to separate module
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $frac_width_sub = parameter(Name=>'FractionWidthSub', Val=>23, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Single, 23 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $exp_width_sub = parameter(Name=>'ExponentWidthSub', Val=>8, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Single, 8 bit)");
+//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
+//; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
+//; 			      "or Fused? (Pick:Cascade/Fused)  !IGNORE!"); #JB- ignoring for now...
+//; my $useInc = parameter(Name=>'UseInc', Val=>1, List=>[1, 0],
+//; 			   Doc=>"Inputs A has an increment signal");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//; my $floating_digits= parameter(Name=>'FloatingDigits', Val=>1,  List=>[1,2],
+//; 			   Doc=>"Number of digits before floating point");
+//;
+//; # And some local variables
+//; my $shift_width = CeilOfLog2($frac_width+1) + 1;
+//; my $shift_width_sub = CeilOfLog2($frac_width_sub+1) + 1;
+//; my $product_width = 2 * $frac_width + 2;
+//; my $product_width_sub = 2 * $frac_width_sub + 2;
+//;
+module `mname`(
+  //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+  //; }
+  //; if ($useInc){
+    input logic 			      IncA, IncB,
+  //; }	
+	       
+    input logic mp_mode,
+	       
+    input logic [`$shift_width - 1`:0] LZD_A, LZD_B,
+    input logic [`$exp_width - 1`:0] 		      ExpA, ExpB,
+
+
+    input logic                                       ZeroAB,
+    input logic                                       noShift,
+	       
+    output logic [`$shift_width + 1`:0]       shiftAmount,
+    output logic [`$exp_width + 1`:0] 	      ExpAB
+	       
+	       );
+
+   logic [`$exp_width + 1`:0] 		      Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
+
+   
+
+   logic [`$exp_width_sub + 1`:0] 		      bias_offset_sub;
+   // BIAS = {($exp_width-1){1'b1}} = {(`$exp_width-1`){1'b1}}
+   assign bias_offset_sub = - {(`$exp_width_sub-1`){1'b1}}; // sign extend the bias to be exp_width+2=`$exp_width`+2 wide
+
+   logic [`$exp_width + 1`:0] bias_offset;
+   assign bias_offset = mp_mode ? { {`$exp_width-$exp_width_sub`{1'b0}} , bias_offset_sub} : (- {(`$exp_width-1`){1'b1}});
+
+   
+   
+  // Eab = Ea + Eb - BIAS - LZD_A - LZD_B
+
+   // If $useInc==1: sign extend the exponents by 2 bits since the maximum positive result is:
+   //         2^($exp_width+1) - 2^($exp_width-1) - 1 = 2^(`$exp_width+1`) - 2^(`$exp_width-1`) - 1
+   // and the minimum negative result is: 
+   //         - 2^($exp_width-1) + 1 = - 2^(`$exp_width-1`) + 1
+
+  DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
+					.ci(1'b0), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
+
+
+
+
+//; if ($enable_denormals=~ /YES/i){
+   // enable_denormals = YES
+    logic [`$exp_width + 1`:0] Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5, Eab_1_ps0;
+    logic [`$exp_width + 1`:0] Eab_1_ps1, ExpAB_1, denormalShiftConst, SHD_ps0, SHD_ps1, SHD_wide;
+//;#    logic [`$shift_width - 1`:0] LZD_A, LZD_B, normalShiftConst, SHN_ps0, SHN_ps1, SHN;
+    logic [`$shift_width - 1`:0] normalShiftConst, SHN_ps0, SHN_ps1, SHN;
+//    logic [`$shift_width + 1`:0] shiftAmount;
+    logic co_dummy5, co_dummy6, co_dummy7;
+
+//;#    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
+//;#    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
+
+    DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0),.b(Eab_ps1),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A}),
+					  .ci(1'b1), .carry(Eab_ps2), .sum(Eab_ps3), 
+					  .co(co_dummy1) );
+    DW01_csa #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2),.b(Eab_ps3),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
+					  .ci(1'b1), .carry(Eab_ps4), .sum(Eab_ps5), 
+					  .co(co_dummy2) );
+    DW01_csa #(`$exp_width`+2) EAB_1_CSA (.a(Eab_ps2),.b(Eab_ps3),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
+					  .ci(1'b0), .carry(Eab_1_ps0), .sum(Eab_1_ps1), 
+					  .co(co_dummy7) );
+
+    assign ExpAB_1 = Eab_1_ps0 + Eab_1_ps1; // ExpAB - 1
+   
+   //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
+   `$ExpAdd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+
+
+    //Normal Shift Amount = `$frac_width` + 1 - LZD_A - LZD_B = `$frac_width` + 3 + ~LZD_A + ~LZD_B
+    assign normalShiftConst = mp_mode ? `$frac_width_sub` + 3 : `$frac_width` + 3;
+    //assign normalShiftConst = `$frac_width` + 3;
+    DW01_csa #(`$shift_width`) SHN_CSA (.a(~LZD_A),.b(~LZD_B),.c(normalShiftConst),.ci(1'b0), .carry(SHN_ps0), .sum(SHN_ps1), .co(co_dummy5) );
+    assign SHN = SHN_ps0 + SHN_ps1;
+
+    //Denormal Shift Amount = `$frac_width` + 1 + 1 - Eab_ps0 - Eab_ps1 = `$frac_width` + 4 + ~Eab_ps0 + ~Eab_ps1
+    assign denormalShiftConst = mp_mode ? `$frac_width_sub` + 4 : `$frac_width` + 4;
+    //assign denormalShiftConst = `$frac_width` + 4;
+    DW01_csa #(`$exp_width`+2) SHD_CSA (.a(~Eab_ps0),.b(~Eab_ps1),.c(denormalShiftConst),.ci(1'b0), .carry(SHD_ps0), .sum(SHD_ps1), .co(co_dummy6) );
+    assign SHD_wide = SHD_ps0 + SHD_ps1;
+
+    assign denormalAB = mp_mode ? ExpAB_1[`$exp_width_sub`+1] : ExpAB_1[`$exp_width`+1];
+
+//[`$shift_width - 1`:0]
+   logic  shiftAmount_sel;
+   assign shiftAmount_sel = mp_mode ? (|SHD_wide[`$exp_width_sub`+1:`$shift_width_sub+2`]) : (|SHD_wide[`$exp_width`+1:`$shift_width+2`]);
+   //assign shiftAmount_sel = mp_mode ? (|SHD_wide[`$exp_width_sub`+1:`$shift_width+2`]) : (|SHD_wide[`$exp_width`+1:`$shift_width+2`]);
+   
+   
+  //;if($exp_width < $shift_width+1){
+    //assign shiftAmount = (denormalAB? SHD_wide[`$shift_width+1`:0] : {1'b0,SHN}) + (mp_mode?`$product_width-$product_width_sub`:1'b0);
+    assign shiftAmount = mp_mode?( (denormalAB? SHD_wide[`$shift_width_sub+1`:0] : {1'b0,SHN[`$shift_width_sub - 1`:0]}) + `$product_width-$product_width_sub` ):
+			 (denormalAB? SHD_wide[`$shift_width+1`:0] : {1'b0,SHN});
+    //assign shiftAmount = (denormalAB? SHD_wide[`$shift_width+1`:0] : {1'b0,SHN});
+  //;}else{
+    //assign shiftAmount = (denormalAB? (shiftAmount_sel ? {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) 
+    //                               : {1'b0,SHN}) + (mp_mode?`$product_width-$product_width_sub`:1'b0);
+    assign shiftAmount =  mp_mode?( (denormalAB? (shiftAmount_sel ? {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width_sub+1`:0]) : {1'b0,SHN[`$shift_width_sub - 1`:0]}) + `$product_width-$product_width_sub`) :
+                           (denormalAB? (shiftAmount_sel ? {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) : {1'b0,SHN});
+   
+    //assign shiftAmount = (denormalAB? (shiftAmount_sel ? {(`$shift_width+2`){1'b1}}:SHD_wide[`$shift_width+1`:0]) 
+    //                               : {1'b0,SHN}) ;
+  //;}
+
+
+
+//; }else{ 
+          
+   // enable_denormals = NO
+   assign denormalAB = 0;
+
+   //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
+   `$ExpAdd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4)
+      );
+
+//; }
+
+
+
+//;  if ($floating_digits==1) {
+  assign ExpAB = ZeroAB? 0 : ( noShift? ExpAB1 : (denormalAB?1:ExpAB0));
+//; } else {
+  assign ExpAB = ZeroAB? 0 :  (denormalAB?1:ExpAB0);
+//; }
+
+
+
+
+
+endmodule : `mname`
