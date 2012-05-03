@@ -8,7 +8,7 @@ my $fpgen_size = 1000;
 my $fpgen_index = 0;
 my $fpgen_seed = int (rand( 10000));
 my $fpgen_type = "fmadd";
-my $fpgen_model = "ch-5-1-2-3-All-Exponents";
+my $fpgen_model = "ch-5-1-2-3-All-Exponents.fpdef";
 
 my $tag = sprintf( "%03x" , int( rand( 4095 ) ) ) ;
 
@@ -17,7 +17,14 @@ my $verif_dir = $home_dir . "/verif_work/";
 my $work_dir = $verif_dir . "batch_". $tag . "/";
 
 
-
+GetOptions(
+    'xml=s'     =>      \$xml,
+    'number=i'	=>	\$fpgen_size,
+    'index=i'	=>	\$fpgen_index,
+    'seed=i'	=>	\$fpgen_seed,
+    'type=s'	=>	\$fpgen_type,
+    'model=s'   =>      \$fpgen_model,
+);
 
 # go into work dir
 mkdir("$verif_dir");
@@ -27,6 +34,16 @@ mkdir("$work_dir"."log/");
 print "Entering $work_dir\n";
 
 my $make_flags = "GENESIS_CFG_XML=$home_dir/$xml DESIGN_NAME=FMA FPGEN_SEED=$fpgen_seed FPGEN_CLUSTER_SIZE=$fpgen_size FPGEN_CLUSTER_INDEX=$fpgen_index FPGEN_TYPE=$fpgen_type COVERAGE_MODEL=$fpgen_model";
+
+print "=================================================\n";
+print "=====          Begin Simulation Task        =====\n";
+print "=================================================\n\n";
+print "Configuration:    $xml\n";
+print "Number of tests:  $fpgen_size\n";
+print "Index of cluster: $fpgen_index\n";
+print "Random Seed:      $fpgen_seed\n";
+print "Type of Op:       $fpgen_type\n";
+print "FP-Gen model:     $fpgen_model\n\n";
 
 print "Begin Genesis compile phase.\n";
 `make -f $home_dir/Makefile clean comp $make_flags >log/comp.log 2>&1`;
@@ -60,7 +77,7 @@ $line = 0;
 open(LOGFILE, "log/fpgen.log") or die "Can not find log/fpgen.log";
 while(<LOGFILE>){
     $line++;
-    if($_ =~ m/Error/){
+    if($_ =~ m/[Error|FAILED]/){
 	print "Error found in log/fpgen.log: Line $line\n";
 	print "=============================\n";
 	print "$_\n";
