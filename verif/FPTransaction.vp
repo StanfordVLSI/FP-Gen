@@ -168,8 +168,15 @@ class `mname`;
       if(Exponent == `$exp_width`'b0) begin
 	 if (Fraction == `$frac_width`'b0)
 	   TransType = Zero;
+	 // since we DO care about distinctions within the dnorm range!!!
+	 else if(Fraction ==  {1'b1, `$frac_width-1`'b0})
+	   TransType = Denorm100;
+	 else if(Fraction =={(`$frac_width`){1'b1}})
+	   TransType = DenormFFF;
+	 else if(Fraction =={`$frac_width-1`'b0, 1'b1})
+	   TransType = Denorm001;
 	 else
-	   TransType = DenormRnd; // since we don't care about distinctions within the dnorm range
+	   TransType = DenormRnd;
       end
       
       else if(Exponent == {(`$exp_width`){1'b1}}) begin
@@ -187,7 +194,22 @@ class `mname`;
 	    end	    
 	 end // else: !if(Fraction == `$frac_width`'b0)
       end // if (Exponent == {(`$exp_width`){1'b1}})
-
+      // if it is actually Max
+      else if((Fraction == {(`$frac_width`){1'b1}}) && (Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0}))  begin
+	 TransType = Max;
+      end
+      // if it is actually Min
+      else if((Fraction == `$frac_width`'b0) && (Exponent == `$exp_width`'b1))  begin
+	 TransType = Min;
+      end
+      // if it is actually One
+      else if((Fraction == `$frac_width`'b0) && (Exponent ==  {  1'b0, {(`$exp_width-1`){1'b1}}  }))  begin
+	 TransType = One;
+      end
+      // if it is actually PointOneOneOne
+      else if((Fraction ==  {(`$frac_width`){1'b1}} ) && (Exponent ==  {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0}))  begin
+	 TransType = PointOneOneOne;
+      end
       else begin
 	 TransType = Random; // since we don't care about distinctions within the allowed range
       end // else: !if(Exponent == {(`$exp_width`){1'b1}})
@@ -348,7 +370,10 @@ class `mname`;
       (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
       (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
       (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
-      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 };
+      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 
+					  && Fraction != {1'b1, `$frac_width-1`'b0} 
+					  && Fraction != {(`$frac_width`){1'b1}} 
+					  && Fraction != {`$frac_width-1`'b0, 1'b1} };
       (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
       (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
       (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
@@ -374,9 +399,34 @@ class `mname`;
       (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
       (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
       (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
-      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
+      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };//not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
    }
-       
+
+   //workaround for the bug of Random TransType
+   function void post_randomize;
+      if (TransType == Random) begin
+	 
+	 // if it is actually Max
+	 if((Fraction == {(`$frac_width`){1'b1}}) && (Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0}))  begin
+	    TransType = Max;
+	 end
+	  // if it is actually Min
+	 if((Fraction == `$frac_width`'b0) && (Exponent == `$exp_width`'b1))  begin
+	    TransType = Min;
+	 end
+	 // if it is actually One
+	 if((Fraction == `$frac_width`'b0) && (Exponent ==  {  1'b0, {(`$exp_width-1`){1'b1}}  }))  begin
+	    TransType = One;
+	 end
+	 // if it is actually PointOneOneOne
+	 if((Fraction ==  {(`$frac_width`){1'b1}} ) && (Exponent ==  {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0}))  begin
+	    TransType = PointOneOneOne;
+	 end
+      end    
+   endfunction // if
+
+
+   
    constraint order1 { 
       solve TransType before Fraction, Exponent, Sign, Inc;
    }
