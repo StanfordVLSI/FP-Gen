@@ -367,7 +367,7 @@ $(EXECUTABLE):	$(VERILOG_FILES) $(GENESIS_VLOG_LIST)
 
 fpgen: testVectors/$(FPRES_FILE)
 
-testVectors/$(FPRES_FILE):
+testVectors/$(FPRES_FILE):$(FPDEF_FILE)
 	@echo ""
 	@echo Now Running IBM\'s fpgen tool, generating $(FPRES_FILE)
 	@echo ==================================================
@@ -498,7 +498,6 @@ clean: genesis_clean
 	\rm -rf top.v
 	\rm -rf top_FMA.v
 	\rm -f graph_*.m
-	cd testVectors;rm -f *.fplog *.fpres *.fpvec
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
 endif
@@ -514,3 +513,4 @@ cleanall: clean clean_synthesis
 	\rm -f *.pm
 	\rm -f $(GENESIS_VLOG_LIST)
 	\rm -fr verif_work/
+	cd testVectors;rm -f *.fplog *.fpres *.fpvec *.log
