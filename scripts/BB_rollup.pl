@@ -299,15 +299,26 @@ foreach my $file ( @files ) {
     my $optimized_dynamic_energy ;
 
     if( $options{p} ){
-     $mapped_dynamic_energy    = $mapped_dynamic_power    * ($Target_Delay/1000.0) ;
-     $routed_dynamic_energy    = $routed_dynamic_power    * ($Target_Delay/1000.0) ;
-     $optimized_dynamic_energy = $optimized_dynamic_power * ($Target_Delay/1000.0) ;
+     $mapped_dynamic_energy    = $mapped_dynamic_power    * ($Target_Delay/1000.0) ; #pJ
+     $routed_dynamic_energy    = $routed_dynamic_power    * ($Target_Delay/1000.0) ; #pJ
+     $optimized_dynamic_energy = $optimized_dynamic_power * ($Target_Delay/1000.0) ; #pJ
     } else {
      $mapped_dynamic_energy    = $mapped_dynamic_power ;
      $routed_dynamic_energy    = $routed_dynamic_power  ;
      $optimized_dynamic_energy = $optimized_dynamic_power  ;
     }
 
+    my $mapped_throughput = 1.0 / $mapped_delay ;  #Result in ops per nS
+    my $routed_throughput = 1.0 / $routed_delay ;  #Result in ops per nS
+    my $optimized_throughput = 1.0 / $optimized_delay ; #Result in ops per nS
+
+    my $mapped_throughput_Density = 1.0 / ( $mapped_delay * $mapped_core_area );  #Result in ops per nS per sqmm
+    my $routed_throughput_Density = 1.0 / ( $routed_delay * $routed_core_area );  #Result in ops per nS per sqmm
+    my $optimized_throughput_Density = 1.0 / ( $optimized_delay * $optimized_core_area );  #Result in ops per nS per sqmm
+
+    my $mapped_energy_per_op = $mapped_dynamic_energy + $optimized_leakage_power * ($Target_Delay/1000.0); #pJ/op
+    my $routed_energy_per_op = $routed_dynamic_energy + $optimized_leakage_power * ($Target_Delay/1000.0); #pJ/op
+    my $optimized_energy_per_op = $optimized_dynamic_energy + $optimized_leakage_power * ($Target_Delay/1000.0); #pJ/op
 
     #RP RESULTS
     print TARGET "INFO_VT:$VT\n" ;
@@ -348,6 +359,22 @@ foreach my $file ( @files ) {
     print TARGET "COST_Routed_Leak_Power:$routed_leakage_power\n" ;
     print TARGET "COST_Optimized_Leak_Power:$optimized_leakage_power\n";
     print TARGET "COST_Leak_Power:$optimized_leakage_power\n";
+
+    print TARGET "COST_Mapped_Energy_per_Operation:$mapped_energy_per_op\n";
+    print TARGET "COST_Routed_Energy_per_Operation:$routed_energy_per_op\n";
+    print TARGET "COST_Optimized_Energy_per_Operation:$optimized_energy_per_op\n";
+    print TARGET "COST_Energy_per_Operation:$optimized_energy_per_op\n";
+
+    print TARGET "PERF_Mapped_Throughput:$mapped_throughput\n";
+    print TARGET "PERF_Routed_Throughput:$routed_throughput\n";
+    print TARGET "PERF_Optimized_Throughput:$optimized_throughput\n";
+    print TARGET "PERF_Throughput:$optimized_throughput\n";
+
+    print TARGET "PERF_Mapped_Throughput_Density:$mapped_throughput_Density\n";
+    print TARGET "PERF_Routed_Throughput_Density:$routed_throughput_Density\n";
+    print TARGET "PERF_Optimized_Throughput_Density:$optimized_throughput_Density\n";
+    print TARGET "PERF_Throughput_Density:$optimized_throughput_Density\n";
+
     print TARGET "INFO_Suggest_Delay:$optimized_delay\n";
     print TARGET "INFO_Mapped_Comb_Cell_Count:$mapped_comb_cell_count\n";
     print TARGET "INFO_Mapped_Seq_Cell_Count:$mapped_seq_cell_count\n";
@@ -393,6 +420,23 @@ foreach my $file ( @files ) {
     print TARGET "COST_Routed_Leak_Power:$routed_leakage_power\n" ;
     print TARGET "COST_Optimized_Leak_Power:$optimized_leakage_power\n";
     print TARGET "COST_Leak_Power:$routed_leakage_power\n";
+
+    print TARGET "COST_Mapped_Energy_per_Operation:$mapped_energy_per_op\n";
+    print TARGET "COST_Routed_Energy_per_Operation:$routed_energy_per_op\n";
+    print TARGET "COST_Optimized_Energy_per_Operation:$optimized_energy_per_op\n";
+    print TARGET "COST_Energy_per_Operation:$routed_energy_per_op\n";
+
+    print TARGET "PERF_Mapped_Throughput:$mapped_throughput\n";
+    print TARGET "PERF_Routed_Throughput:$routed_throughput\n";
+    print TARGET "PERF_Optimized_Throughput:$optimized_throughput\n";
+    print TARGET "PERF_Throughput:$routed_throughput\n";
+
+    print TARGET "PERF_Mapped_Throughput_Density:$mapped_throughput_Density\n";
+    print TARGET "PERF_Routed_Throughput_Density:$routed_throughput_Density\n";
+    print TARGET "PERF_Optimized_Throughput_Density:$optimized_throughput_Density\n";
+    print TARGET "PERF_Throughput_Density:$routed_throughput_Density\n";
+
+
     print TARGET "INFO_Suggest_Delay:$optimized_delay\n";
     print TARGET "INFO_Mapped_Comb_Cell_Count:$mapped_comb_cell_count\n";
     print TARGET "INFO_Mapped_Seq_Cell_Count:$mapped_seq_cell_count\n";

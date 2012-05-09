@@ -30,6 +30,8 @@ ifndef DESIGN_NAME
   $(warning WARNING: Running with default design.  DESIGN_NAME=$(DESIGN_NAME))
 endif
 
+SYN_CLK_PERIOD ?= 1.5
+
 ifeq ($(DESIGN_NAME),MultiplierP)
   INST_NAME ?= MultiplierP
   MOD_NAME ?= MultiplierP
@@ -77,6 +79,7 @@ ifeq ($(DESIGN_NAME),FMA)
   else
     DW_MODE_STRING ?= "OFF"
   endif
+
 
   over_params = $(over_params1)$(over_params2)
 
@@ -229,7 +232,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-full64						\
 				+v2k						\
 				-debug_pp					\
-				-timescale=1ns/1ns				\
+				-timescale=1ps/1ps				\
 				+noportcoerce         				\
 				-ld $(VCS_CC) -debug_pp				\
 				-top $(TOP_MODULE)				\
@@ -242,7 +245,9 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 				-l $(EXECUTABLE).log					\
 				+vpdbufsize+100					\
-				+vpdfileswitchsize+100
+				+vpdfileswitchsize+100                          \
+                                +clk_period=$(SYN_CLK_PERIOD)
+
 endif 
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
@@ -274,7 +279,7 @@ VERILOG_COMPILE_FLAGS := 	-source -sv					\
 VERILOG_SIMULATION_FLAGS := 	-c						\
 				$(TOP_MODULE)					\
 				-capacity					\
-				-do "run -all; quit"
+				-do "run -all; quit"  
 
 endif 
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
@@ -398,6 +403,7 @@ run_wave: $(EXECUTABLE)
 run: $(EXECUTABLE)
 	@echo ""
 	@echo Now Running $(EXECUTABLE)
+	@echo CLK $(SYN_CLK_PERIOD)
 	@echo ==================================================
 	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
 
@@ -421,7 +427,6 @@ OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set V
 run_synthesis: log/syn_$(RUN_NAME).log
 run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
 
-SYN_CLK_PERIOD ?= 1.5
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
 VT ?= svt
@@ -498,6 +503,7 @@ clean: genesis_clean
 	\rm -rf top.v
 	\rm -rf top_FMA.v
 	\rm -f graph_*.m
+	cd testVectors;rm -f *.fplog *.fpres *.fpvec *.log
 ifdef SIM_ENGINE
 	\rm -rf $(EXECUTABLE).*
 endif
@@ -513,4 +519,3 @@ cleanall: clean clean_synthesis
 	\rm -f *.pm
 	\rm -f $(GENESIS_VLOG_LIST)
 	\rm -fr verif_work/
-	cd testVectors;rm -f *.fplog *.fpres *.fpvec *.log

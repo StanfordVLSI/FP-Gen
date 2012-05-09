@@ -68,6 +68,10 @@ if {$target_delay==-1} {
   set target_delay max
 }
 
+if { [file exists ../../top.saif] } {
+  saif_map -start
+}
+
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set MW_DESIGN_LIBRARY ${DESIGN_NAME}_${VT}_${target_delay}_optimized_LIB
 } else {
@@ -86,8 +90,8 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 open_mw_lib $MW_DESIGN_LIBRARY
 import_designs $DESIGN_NAME.$VT.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
 read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
-set_switching_activity -toggle_rate 0.5  -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
-set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
+#set_switching_activity -toggle_rate 0.5  -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
+#set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
 #set_switching_activity -toggle_rate 0.2  -base_clock clk -static_probability 0.2 stall_pipeline
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
@@ -347,6 +351,15 @@ if {$FixedHeightFloorPlan} {
   	-top_io2core $io2core \
   	-start_first_row
 }
+
+if { [file exists ../../top.saif] } {
+  read_saif -auto_map_names -instance top_FMA/FMA -input ../../top.saif -verbose
+  report_saif 
+  propagate_switching_activity -effort high -verbose
+  report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
+  write_saif -output ../../icc_out.saif 
+}
+
 
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
