@@ -28,9 +28,9 @@
  * 
  *  Retiming Diagram 
  *
- *   Pin-In --->  [ pipeIn ] --> [pipeRetime0] --> [pipeRetime1] .... --> [pipeRetimeN] --> (FMA Design) --> [ pipeOut ] ---> Pin-Out
- *                    |                 |             |           |           |                                   |
- *   clk ---------------------------------------------------------------------------------------------------------
+ *   Pin-In --->  [ pipeIn ] --> [pipeRetime0] --> [pipeRetime1] .... --> [pipeRetimeN] --> (FMA Design) ---> Pin-Out
+ *                    |                 |             |           |           |                            
+ *   clk -------------------------------------------------------------------------------------------------
  * 
  *   NOTES:
  *     pipeIn and and pipeOut are fixed and will not be retimed. 
@@ -38,7 +38,7 @@
  * 
  * Parameters:
  * ------------
- * * FractionWidth, ExponentWidth, EnableDenormals, useInc
+ * * FractionWidth, ExponentWidth, EnableDenormals, PipelineDepth, EnableForwarding
  * 
  * 
  * Change bar:
@@ -52,7 +52,7 @@
  * PARAMETERIZATION
  * ****************************************************************************/
 //; # Perl Libraries
-//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; use POSIX qw(ceil floor log); # For ceiling rounding and log math
 //; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
 //;
 //; # get some values from the top
@@ -84,8 +84,22 @@
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>1, List=>[ 0,1,2,3,4,5,6,7 ] ,
+//; my $enable_forwarding ;
+//; if( $desinware_mode eq 'OFF' ){
+//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
+//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//; } elsif($desinware_mode eq 'ON'){
+//;     $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['NO'],
+//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//; }
+//;
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) ,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor(3*$pipeline_depth/7), Min=>0, 
+//;                       Max=> (($enable_forwarding =~ /YES/)?$pipeline_depth-1:$pipeline_depth) ,
+//;                       Doc=>"Pipeline depth of the multiplier tree !FUNCTIONAL!");
+//; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
+//; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
 //; my $retiming ;
 //; if( $pipeline_depth > 1 ){
 //;   $retiming = parameter(Name=>'Retiming', Val=>1, List=>[ 0, 1 ] , 
@@ -102,312 +116,153 @@
 //;                       Doc=>"Retiming Should Force Multp to one cycle !IMPLEMENTATION!");
 //; } 
 //;
-//; my $useInc ;
-//; if( $desinware_mode eq 'OFF' ){
-//;     $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
-//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
-//; } elsif($desinware_mode eq 'ON'){
-//;     $useInc = parameter(Name=>'UseInc', Val=>'NO', List=>['NO'],
-//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
-//; }
-//;
 //; # And some local variables
-//; # $useInc = ($useInc =~ /YES/)? 1:0;
 //; my $product_width = 2 * $frac_width + 2;
 //; my $wide_width = 4 * $frac_width  + 7; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)
-//; my $shift_width = CeilOfLog2($wide_width);
-//; my $lza_width = $wide_width - $frac_width - 1;
-//; my $lza_enc_width = CeilOfLog2($lza_width) + 1;
 //;
 
 module `mname` (
    //; if ($verif_mode =~ /ON/){
     input logic 				dumptolog,
    //; }
-    input logic [`$exp_width + $frac_width`:0] 	a, b, c,
-    input logic 				ainc, binc, cinc,
+   input logic [`$exp_width + $frac_width`:0] 	a, b, c,
+   //; if ($enable_forwarding =~ /YES/){
+    input logic 				forward_a, forward_b, forward_c,
+   //; }
     input logic [2:0] 				rnd,
 
    //; if ($pipeline_depth>0){
-    input logic 				clk, reset, stall_pipeline, SI, SCAN_ENABLE, test_mode,
-    output logic 				SO,
+    input logic 				clk, reset, valid_in, stall, SI, SCAN_ENABLE, test_mode,
+    output logic 				valid_out, SO,
    //; } else {
     input logic 				clk, reset,
    //; }
 		
     output logic [`$exp_width + $frac_width`:0] z,
-    output logic 				zinc,
-    output logic [7:0] 				status
+    output logic [7:0] status
            );
 
   /* synopsys dc_tcl_script_begin
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
   */
-
-   logic [`$exp_width + $frac_width`:0] imd1_z , imd2_z;
-   logic 			     imd1_zinc , imd2_zinc; 
-   logic [7:0] 			     imd1_status , imd2_status ;
    
-
-   
-   logic [`$exp_width + $frac_width`:0] imd_a, imd_b, imd_c ;
-   logic 				imd_ainc, imd_binc, imd_cinc;
-   logic [2:0] 				imd_rnd;
-   
-   logic [`$exp_width + $frac_width`:0] r_a, r_b, r_c ;
-   logic 				r_ainc, r_binc, r_cinc;
-   logic [2:0] 				r_rnd;
-  
-
-//; ###################################
-//; #FLOP INPUTS OF BLOCK
-//; ###################################
-//; if($pipeline_depth>0){
-//;   my $pipeIn = generate(  'dff', 
-//;                            'pipeIn', 
-//;                             Width=> (( $exp_width + $frac_width + 1 )*3 + 6) ,
-//;                             PipelineDepth=>1 ,
-//;                             Retime=>"NO" );
-  `$pipeIn->instantiate()` ( .in({a,b,c,ainc,binc,cinc,rnd}) , .clk(clk) , .reset(reset), .out({r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd}) );
-//; } else {
-   assign {r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd} = {a,b,c,ainc,binc,cinc,rnd};
-//; }
-
-//; ###################################
-//; #Retime Flops
-//; ###################################
-//;   my $pipeR = generate(  'dff', 
-//;                           'pipeRetime', 
-//;                            Width=> (( $exp_width + $frac_width + 1 )*3 + 6) ,
-//;                            PipelineDepth=>(($pipeline_depth-1)>0?($pipeline_depth-1):0) ,
-//;                            Retime=>"YES" );
-  `$pipeR->instantiate()` ( .in({r_a,r_b,r_c,r_ainc,r_binc,r_cinc,r_rnd}) , .clk(clk) , .reset(reset), .out({imd_a,imd_b,imd_c,imd_ainc,imd_binc,imd_cinc,imd_rnd}) );
-
-
- 
-
-   
-
    
 //; if( $desinware_mode eq 'ON' ){
+  logic [`$exp_width + $frac_width`:0] 	a2, b2, c2;
+  logic [2:0] 				rnd2;
+
+//;   if($pipeline_depth > 0 ){
+//;    my $fma_pipe = generate('Pinned_pipeline','fma_pipe', 
+//;                         Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth);
+
+  `$fma_pipe ->instantiate()` ( .in({a,b,c, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({a2,b2,c2, rnd2}), .valid_out(valid_out) );
+//;   } else {
+  assign {a2,b2,c2, rnd2} = {a,b,c, rnd};
+//;   }
 
    DW_fp_mac #( `$frac_width` , `$exp_width` , `$enable_denormals eq 'YES' ?1:0` ) U1 (
-									       .a(imd_a),
-									       .b(imd_b),
-									       .c(imd_c),
-									       .rnd(imd_rnd),
-									       .z(imd1_z),
-									       .status(imd1_status) );
+									       .a(a2), .b(b2), .c(c2), .rnd(rnd2),
+									       .z(z), .status(status) );
    
    
 //; } elsif( $desinware_mode eq 'OFF'  ) {
-  wire [`$frac_width`:0] ManResult;
-  wire [`$frac_width-1`:0] SigA, SigB, SigC;
-  wire [`$frac_width`:0] ManA, ManB, ManC;
-  wire [`$shift_width-1`:0] RshiftAmt;
-  wire [`$lza_enc_width-1`:0] LshiftAmt;
-  wire [`$lza_width-1`:0] lza_override_mask;
-  wire [`$exp_width-1`:0] ExpA, ExpB, ExpC, ExpResult;
-  wire [`$exp_width + $frac_width`:0] FMA_Result;
-  wire SignA, SignB, SignC;
-  wire ManLSB, Guard, Sticky, IncExp,IncExpFromLZA, LZA_wrong, RoundInc, SignResult,SignInfinity;
+    logic [`$exp_width + $frac_width`:0] z_preInc,z_preIncm;
+    logic [`$product_width+1`:0] AB_pp0, AB_pp1, AB_pp0m, AB_pp1m;
+    logic SignAB, NANAB, InfAB, ZeroAB, SignABm, NANABm, InfABm, ZeroABm;
+    logic [`$wide_width-1`:0] shifted_C, shifted_Cm;
+    logic SignC, NANC, InfC, ZeroC, RStickyC, SignCm, NANCm, InfCm, ZeroCm, RStickyCm;
+    logic [`$exp_width+1`:0] ExpBase, ExpBasem;
+    logic [2:0] rndm;
+    logic [7:0] statusm;
+    logic IncZ, IncZm, valid_middle, valid_r, valid_inc;
 
-  wire denormA, denormB, denormC, denormResult, NANorInfA, NANorInfB, NANorInfC, zeroSigA, zeroSigB, zeroSigC, zeroManResult, IncCarryOut;
-  wire InfA, InfB, InfC, InfFromInput, NANA, NANB, NANC, ZeroA, ZeroB, ZeroC, ZeroResult;
-  wire SignProduct, SignSpecial, ResultIsInfinity, ResultIsC, ResultIsFMA, ResultExactZero;
-  wire FV_exp, FU_exp;
-  wire FX, FV, FU, FI, Tiny;
-  wire RndMaxNum, MaxNum;
-      logic 				      zeroSigAplusInc, zeroSigBplusInc, zeroAplusInc, zeroBplusInc, InfAplusInc, InfBplusInc, NANAplusInc, NANBplusInc, NANorInfAplusInc, NANorInfBplusInc, MaxA, MaxB;
+//; my $fma_mulshift = generate('FMA_MulShift','MulShift', FractionWidth=> $frac_width , ExponentWidth=> $exp_width,
+//;                          EnableDenormals=> $enable_denormals, EnableForwarding=> $enable_forwarding,
+//;                          EnableMultiplePumping=> $enableMultiplePumping, PipelineDepth=> $mulp_pipeline_depth);
 
-  assign SignA = imd_a[`$exp_width + $frac_width`];
-  assign SignB = imd_b[`$exp_width + $frac_width`];
-  assign SignC = imd_c[`$exp_width + $frac_width`];
+  `$fma_mulshift->instantiate()` (
+   //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+   //; }
+       .a_in(a), .b_in(b), .c_in(c),
+   //; if ($enable_forwarding =~ /YES/){
+       .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
+   //; }
+       .z_preInc(z_preInc), .z_final(z), .IncZ(IncZ),
+       .clk(clk) , .reset(reset), .valid_in(valid_in), .stall(stall),
+       .AB_pp0(AB_pp0), .AB_pp1(AB_pp1), .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
+       .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), .RStickyC(RStickyC), 
+       .ExpBase(ExpBase),
+       .valid_out(valid_middle) );
 
-  assign ExpA = imd_a[`$exp_width + $frac_width -1`:`$frac_width`];
-  assign ExpB = imd_b[`$exp_width + $frac_width -1`:`$frac_width`];
-  assign ExpC = imd_c[`$exp_width + $frac_width -1`:`$frac_width`];
+//;  my $add_bus_width = $exp_width + 2*$product_width + $wide_width + 15;
+//;  my $add_pipeline_depth = $pipeline_depth-$mulp_pipeline_depth-1;
+//;  $add_pipeline_depth = $add_pipeline_depth<0? 0 : $add_pipeline_depth;
+//;  my $add_pipe = ($enableMultiplePumping =~ /YES/)?
+//;         generate('Pinned_pipeline', 'add_pipe', Width=> $add_bus_width , PipelineDepth=> $add_pipeline_depth)
+//;       : generate('FF_pipeline', 'add_pipe', Width=> $add_bus_width, PipelineDepth=> $add_pipeline_depth, Retime=> 'YES');
 
-  assign denormA = ExpA == 0;
-  assign denormB = ExpB == 0;
-  assign denormC = ExpC == 0;
-
-  assign SigA = imd_a[`$frac_width -1`:0];
-  assign SigB = imd_b[`$frac_width -1`:0];
-  assign SigC = imd_c[`$frac_width -1`:0];
-
-  assign Tiny = denormResult & ~ZeroResult;
-  //assign Tiny = 0;
-  assign imd1_status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
-
-  assign zeroSigA = SigA==0;
-  assign zeroSigB = SigB==0;
-  assign zeroSigC = SigC==0;
-  assign zeroManResult = ManResult==0;
-
-  assign NANorInfA =  ExpA == {(`$exp_width`){1'b1}};
-  assign NANorInfB =  ExpB == {(`$exp_width`){1'b1}};
-  assign NANorInfC =  ExpC == {(`$exp_width`){1'b1}};
-
-  assign InfA = zeroSigA & NANorInfA;
-  assign InfB = zeroSigB & NANorInfB;
-  assign InfC = zeroSigC & NANorInfC;
-  
-
-  assign NANA = ~zeroSigA & NANorInfA;
-  assign NANB = ~zeroSigB & NANorInfB;
-  assign NANC = ~zeroSigC & NANorInfC;
+  `$add_pipe ->instantiate()` (
+       .in({AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC, RStickyC, ExpBase}) , 
+       .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
+       .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, RStickyCm, ExpBasem}),
+       .valid_out(valid_inc) );
 
 
-   assign MaxA      =  ExpA=={{(`$exp_width-1`){1'b1}},1'b0} && SigA=={(`$frac_width`){1'b1}};
-   assign MaxB      =  ExpB=={{(`$exp_width-1`){1'b1}},1'b0} && SigB=={(`$frac_width`){1'b1}};
-   
-   assign NANorInfAplusInc = NANorInfA | (imd_ainc & MaxA);
-   assign NANorInfBplusInc = NANorInfB | (imd_binc & MaxB);
-   assign zeroSigAplusInc = (zeroSigA & ~(imd_ainc & ~InfA & ~NANA)) | (imd_ainc & MaxA);
-   assign zeroSigBplusInc = (zeroSigB & ~(imd_binc & ~InfB & ~NANB)) | (imd_binc & MaxB);
-   assign ZeroAplusInc = zeroSigAplusInc & denormA;
-   assign ZeroBplusInc = zeroSigBplusInc & denormB;
-   assign InfAplusInc =  zeroSigAplusInc & NANorInfAplusInc;
-   assign InfBplusInc =  zeroSigBplusInc & NANorInfBplusInc;
-   assign NANAplusInc = ~zeroSigAplusInc & NANorInfAplusInc;
-   assign NANBplusInc = ~zeroSigBplusInc & NANorInfBplusInc;
+//;  if ($pipeline_depth>1) {
+//;    my $rnd_pipe = generate('Pinned_pipeline','fma_pipe', Width=> 3, PipelineDepth=> $pipeline_depth-1);
 
-  assign InfFromInput = InfAplusInc | InfBplusInc | InfC;
-   
-  assign ManA = { ~denormA , SigA};
-  assign ManB = { ~denormB , SigB};
-  assign ManC = { ~denormC , SigC};
-  assign ZeroA = zeroSigA & denormA;
-  assign ZeroB = zeroSigB & denormB;
-  assign ZeroC = zeroSigC & denormC;
+  `$rnd_pipe ->instantiate()` (
+       .in(rnd) , 
+       .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+       .out(rndm),
+       .valid_out(valid_r) );
+//;  } else {
+  assign rndm = rnd;
+//;  }
 
-  assign ZeroResult = zeroManResult & denormResult;
+//;  my $fma_add = generate('FMA_Add','add', FractionWidth=> $frac_width , ExponentWidth=> $exp_width,
+//;                     EnableDenormals=> $enable_denormals);
 
-  assign SignProduct = SignA ^ SignB;
-  assign SignInfinity = InfC ? SignC : SignProduct;
-  assign SignSpecial = SignC & (~ZeroC | SignProduct);
-
-//; my $fma_exp_obj = generate('FMA_Exp', 'FMA_EXP0', FractionWidth=>$frac_width 
-//;                                                 , ExponentWidth=>$exp_width
-//;                                                 , EnableDenormals=>$enable_denormals
-//;                                                 , UseInc => $useInc);
-  `$fma_exp_obj->instantiate()` (
-				 .ExpA(ExpA),
-				 .ExpB(ExpB),
-				 .ExpC(ExpC),
-				 .denormA(denormA),
-				 .denormB(denormB),
-				 .denormC(denormC),
-				 .ZeroC(ZeroC),
-				 .RshiftAmt(RshiftAmt),
-				 .lza_override_mask(lza_override_mask),
-				 .LshiftAmt(LshiftAmt),
-				 .IncExp(IncExp),
-				 .denormResult(denormResult),
-				 .ResultExactZero(ResultExactZero),
-				 .ExpResult(ExpResult),
-				 .FV(FV_exp)
-				 //; if ($verif_mode =~ /ON/){
-				  , .dumptolog(dumptolog)
-				 //; }
-				 );
-
-//; my $fma_man_obj = generate('FMA_Man', 'FMA_MAN0', FractionWidth=>$frac_width 
-//;                                                 , ExponentWidth=>$exp_width
-//;                                                 , EnableDenormals=>$enable_denormals
-//;                                                 , UseInc => $useInc);
-  `$fma_man_obj->instantiate()`  (  .ManA(ManA), 
-				    .ManB(ManB), 
-				    //; if ($useInc eq 'YES'){
-				    .IncA(imd_ainc),		     
-				    .IncB(imd_binc),
-				    //; }
-			      	    .ManC(ManC), 
-				    .SignA(SignA), 
-				    .SignB(SignB), 
-				    .SignC(SignC), 
-				    .RshiftAmt(RshiftAmt), 
-				    .lza_override_mask(lza_override_mask), 
-				    .LshiftAmt(LshiftAmt), 
-				    .Result(ManResult), 
-				    .SignResult(SignResult), 
-				    .ResultExactZero(ResultExactZero), 
-				    .LSB(ManLSB), 
-				    .Guard(Guard), 
-				    .Sticky(Sticky), 
-				    .IncExp(IncExp)
-				    //; if ($verif_mode =~ /ON/){
-				    , .dumptolog(dumptolog)
-				    //; }
-				    );
-
-//; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
-  `$rnd_obj->instantiate()` (.rnd(imd_rnd), .Sign(SignResult), .LSB(ManLSB), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
-  assign denormResult = ~ManResult[`$frac_width`];
-  assign FMA_Result = {SignResult, ExpResult, ManResult[`$frac_width -1`:0]};		   
-  
+  `$fma_add->instantiate()` (
+      //; if ($verif_mode =~ /ON/){
+    .dumptolog(dumptolog),
+   //; }
+    .AB_pp0(AB_pp0m), .AB_pp1(AB_pp1m), .SignAB(SignABm), .NANAB(NANABm), .InfAB(InfABm), .ZeroAB(ZeroABm),
+    .shifted_C(shifted_Cm), .SignC(SignCm), .NANC(NANCm), .InfC(InfCm), .ZeroC(ZeroCm), 
+    .ExpBase(ExpBasem), .rnd(rndm),
+    .z(z_preIncm), .zinc(IncZm), .status(statusm) );
 
 
-  assign FX = (ResultIsFMA & (Guard | Sticky)) | FV;
-  assign FI = NANAplusInc | NANBplusInc | NANC | ((InfAplusInc | InfBplusInc) & InfC & (SignProduct!=SignC)) | (InfAplusInc & ZeroBplusInc) | (InfBplusInc & ZeroAplusInc);
-  assign FV = FV_exp & ~InfFromInput & ~FI & ~ResultIsC ;
-  assign FU = ZeroResult & FX & ResultIsFMA;
+//;  if ($pipeline_depth-$mulp_pipeline_depth>0) {
+//;    my $inc_pipe = $enable_forwarding =~ /YES/?
+//;           generate('Pinned_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1)
+//;          :generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1, Retime=> 'YES');
+  `$inc_pipe ->instantiate()` (
+       .in({z_preIncm,IncZm, statusm}) , 
+       .valid_in(valid_inc), .clk(clk) , .stall(stall), .reset(reset), 
+       .out({z_preInc,IncZ,status}),
+       .valid_out(valid_out) );
+//;  } else {
+  assign {z_preInc, IncZ, status} = {z_preIncm,IncZm, statusm};
+//;  }
 
 
-  assign ResultIsInfinity = ( InfFromInput | FV) & ~FI;
-  assign ResultIsC = (ZeroAplusInc | ZeroBplusInc) & ~InfFromInput   & ~FI;
-  assign ResultIsFMA = ~ResultIsC   & ~ResultIsInfinity   & ~FI;
 
-  assign MaxNum =  FV & RndMaxNum; 
+//;  my $fma_increment = generate('FPIncrementer','Incrementer', FractionWidth=> $frac_width , ExponentWidth=> $exp_width );
 
-  assign {imd1_zinc,imd1_z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width -1`){1'b0}}}
-              : ResultIsInfinity ? {1'b0,SignInfinity,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
-                                    : ResultIsC ? {1'b0,SignSpecial,ExpC, ManC[`$frac_width -1`:0]} : {RoundInc, FMA_Result};
-//; if ($verif_mode =~ /ON/){
-  // synopsys translate_off
-  always @(posedge dumptolog)
-  begin
-    $display ("denormA=%b ZeroA=%b InfA=%b ManA=%h",denormA, ZeroA, InfA, ManA);
-    $display ("denormB=%b ZeroB=%b InfB=%b ManB=%h",denormB, ZeroB, InfB, ManB);
-    $display ("denormC=%b ZeroC=%b InfC=%b ManC=%h",denormC, ZeroC, InfC, ManC);
-    $display ("IncZ=%b SignZ=%b ExpZ=%h SigZ=%h",zinc,z[`$exp_width + $frac_width`],z[`$exp_width + $frac_width -1`:`$frac_width`],z[`$frac_width -1`:0]);
-    $display ("ResultIsInfinity =%b , ResultIsC =%b ,ResultIsFMA =%b",ResultIsInfinity, ResultIsC,ResultIsFMA);
-    $display ("FU =%b , FV =%b ,FI =%b ,FX =%b",FU, FV , FI,FX);
-    $display ("ZeroResult=%b ,zeroManResult=%b ,denormResult=%b", ZeroResult,zeroManResult,denormResult);
-  end
-  // synopsys translate_on
-//; }
+  `$fma_increment->instantiate()` (
+   //; if ($verif_mode =~ /ON/){
+    .dumptolog(dumptolog),
+   //; }
+    .a(z_preInc), .ainc(IncZ), .out(z) );
+
+
+
+
 //; } #End Not Designware Loop
-
-
-   
-//; if( 0 ){
-//;   my $pipeline_obj = generate(  'dff', 
-//;                                 'retimingFlops', 
-//;                                  Width=> $exp_width + $frac_width+2 + 8 ,
-//;                                  PipelineDepth=>($pipeline_depth-1) ,
-//;                                  Retime=>"YES" );
-//  `$pipeline_obj->instantiate()` ( .in({imd1_zinc,imd1_z,imd1_status}) , .clk(clk) , .reset(reset), .out({imd2_zinc,imd2_z,imd2_status}) );
-//; } else {
-  assign {imd2_zinc,imd2_z,imd2_status} = {imd1_zinc,imd1_z,imd1_status};
-//; }
-   
-//; ###################################
-//; #FLOP OUTPUTS OF BLOCK
-//; ###################################
-//; if($pipeline_depth>0){
-//;   my $pipeOut = generate(  'dff', 
-//;                            'pipeOut', 
-//;                             Width=> $exp_width + $frac_width+2 + 8 ,
-//;                             PipelineDepth=>1 ,
-//;                             Retime=>"NO" );
-  `$pipeOut->instantiate()` ( .in({imd2_zinc,imd2_z,imd2_status}) , .clk(clk) , .reset(reset), .out({zinc,z,status}) );
-//; } else {
-  assign {zinc,z,status} = {imd2_zinc,imd2_z,imd2_status};
-//; }
-
    
 endmodule
 

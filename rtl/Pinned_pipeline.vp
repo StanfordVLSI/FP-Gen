@@ -1,0 +1,72 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/Pinned_pipeline.vp#1 $
+ ** $DateTime: 2012/02/20 23:29:51 $
+ ** $Change: 10128 $
+ ** $Author: sameh $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * pipeline pinned either at first or last stage
+ * 
+ * 
+ * Parameters:
+ * * Width
+ * * Pipeline depth
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * March 23, 2012   Sameh   init version - ported Sameh's original code to 
+ *                          genesis
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # module parameters
+//; my $width = parameter(Name=>'Width', Val=>64, Min=>1, Step=>1,
+//;                       Doc=>"Signal bit widths");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Step=>1, Min=>0,
+//;                       Doc=>"Pipeline depth");
+//; my $pin_forward = parameter( Name=>'PinForward' , Val=>'YES' , List=>[ 'YES' , 'NO' ] , Doc=>"Pin the first stage or if not last stage" ) ;
+//; my $pipein_depth = ($pin_forward =~ /YES/)? 1 : $pipeline_depth-1 ;
+//; my $pipein_retime = ($pin_forward =~ /YES/)? 'NO' : 'YES';
+//; my $piperest_depth = ($pin_forward =~ /YES/)? $pipeline_depth-1 : 1 ;
+//; my $piperest_retime = ($pin_forward =~ /YES/)? 'YES' : 'NO';
+
+module `mname` (
+  input logic [`$width-1`:0] in,
+  input logic valid_in,
+  input logic clk, stall, reset, 
+  output logic [`$width-1`:0] out,
+  output logic valid_out
+               );
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
+
+//; if ($pipeline_depth>1) {
+  logic [`$width-1`:0] middle;
+  logic valid_middle;
+//;   my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> $width  , PipelineDepth => $pipein_depth, Retime=>$pipein_retime);
+  `$pipein ->instantiate()` ( .in(in) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), .out(middle), .valid_out(valid_middle) );
+//;   my $piperest = generate(  'FF_pipeline',  'piperest',  Width=> $width  , PipelineDepth => $piperest_depth, Retime=>$piperest_retime);
+  `$piperest ->instantiate()` ( .in(middle) , .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), .out(out), .valid_out(valid_out) );
+
+//; } elsif ($pipeline_depth>0) {
+//;   my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> $width  , PipelineDepth=>1, Retime=>"NO");
+  `$pipein ->instantiate()` ( .in(in) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), .out(out), .valid_out(valid_out) );
+//; } else {
+  assign out = in;
+  assign stall_out = stall_in;
+//; }
+  
+endmodule
+
+
+

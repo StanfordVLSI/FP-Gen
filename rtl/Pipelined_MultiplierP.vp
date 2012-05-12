@@ -28,17 +28,6 @@
  * ****************************************************************************/
 //; # Perl Libraries
 //; use POSIX qw(ceil); # For ceiling rounding math
-
-//; my $verif_mode = parameter(Name=>'VERIF_MODE',
-//;                            Val=>'ON', List=>['ON','OFF'],
-//;                            Doc=>"Verification mode determines whether or not ".
-//;                                 "monitors and drivers are on. Possible values ".
-//;                                 "are ON or Off.  !IGNORE!" ); 
-//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
-//;                            Val=>'OFF', List=>['ON','OFF'],
-//;                            Doc=>"Synthesis mode determines whether or not ".
-//;                                 "special synthesis constructs are used. ".
-//;                                 "Possible values are ON or Off. !IGNORE! ");
 //;
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
@@ -60,9 +49,11 @@
 
    
 module `mname`(
-
+   //; if ($verif_mode =~ /ON/){
+    input logic 				dumptolog,
+   //; }
     input logic [`$width-1`:0] 	  a,b,
-    input logic 		  clk , rst, stall,
+    input logic valid_in, clk , reset, stall,
 //; if ($useMP=~ /YES/){
     input logic                   mp_mode,
 //; }	       
@@ -70,14 +61,16 @@ module `mname`(
     input logic 		  ainc, binc,
 //; }	    
     output logic [`2*$width+1`:0] out0,out1, // sign extended by 2 because of booth encoding
-    output logic stall_out
+    output logic valid_out
 		    );
 
 //; if ($pipeline_depth==0){
 //;   my $Mul_obj = generate($multP_module_name, 'MultP', Width=>$width, UseInc=>$useInc);
 
    `$Mul_obj->instantiate()` (
-
+//; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+//; }
       .a(a), .b(b),
 //;   if ($useMP=~ /YES/){
       .mp_mode(mp_mode),
@@ -85,42 +78,35 @@ module `mname`(
 //;   if ($useInc=~ /YES/){
       .ainc(ainc), .binc(binc),
 //;   }
-      .clk(clk) , .rst(rst),
       .out0(out0), .out1(out1)
       );
+
 //; } elsif ($pipeline_depth>0){
 
+   //; if ( ! ($useInc=~ /YES/)){
+   logic IncA, IncB;
+   assign IncA = 0;
+   assign IncB = 0;
+   //; }
+   //; if ( ! ($useMP=~ /YES/)){
+   logic mp_mode;
+   assign mp_mode = 0;
+   //; }
+
    logic [`$width-1`:0] a_0,b_0;
-   logic stall_0;      
-//;   if ($useInc=~ /YES/){
-   logic ainc_0, binc_0;
-//;   }
-//;   if ($useMP=~ /YES/){
-   logic mp_mode_0;
-//;   }
+   logic ainc_0, binc_0, mp_mode_0;
    logic [`2*$width+1`:0] multp_out0, multp_out1; // sign extended by 2 because of booth encoding
 
-//;   if ($useInc=~ /YES/){
-//;      if ($useMP=~ /YES/){
-//;        my $pipein = generate(  'FF_pipeline',  'Mult_pipein',  Width=> 2*$width+3 , PipelineDepth=>1, Retime=>"NO");
-   `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .stall_in(stall), .clk(clk) , .reset(rst), 
-                               .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .stall_out(stall_0) );
-//;      } else {
-//;        my $pipein = generate(  'FF_pipeline',  'Mult_pipein',  Width=> 2*$width+2 , PipelineDepth=>1, Retime=>"NO");
-   `$pipein ->instantiate()` ( .in({a, ainc, b, binc}) , .stall_in(stall), .clk(clk) , .reset(rst), .out({a_0, ainc_0, b_0, binc_0}), .stall_out(stall_0) );
-//;      }
-//;   } else {
-//;      if ($useMP=~ /YES/){
-//;        my $pipein = generate(  'FF_pipeline',  'Mult_pipein',  Width=> 2*$width+1 , PipelineDepth=>1, Retime=>"NO");
-   `$pipein ->instantiate()` ( .in({a, b,mp_mode}) , .stall_in(stall), .clk(clk) , .reset(rst), 
-                               .out({a_0, b_0,mp_mode_0}), .stall_out(stall_0) );
-//;      } else {
-//;        my $pipein = generate(  'FF_pipeline',  'Mult_pipein',  Width=> 2*$width , PipelineDepth=>1, Retime=>"NO");
-   `$pipein ->instantiate()` ( .in({a, b}) , .clk(clk) , .stall_in(stall), .reset(rst), .out({a_0, b_0}), .stall_out(stall_0) );
-//;      }
-//;   }
+
+//;        my $pipein = generate(  'Pinned_pipeline',  'MultP_pipeline',  Width=> 2*$width+3 , PipelineDepth=>$pipeline_depth);
+   `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset), 
+                               .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .valid_out(valid_out) );
+
 //;   my $Mul_obj = generate($multP_module_name, 'MultP', Width=>$width, UseInc=>$useInc);
    `$Mul_obj->instantiate()` (
+//;   if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+//;   }
       .a(a_0), .b(b_0),
 //;   if ($useMP=~ /YES/){
       .mp_mode(mp_mode),
@@ -128,13 +114,9 @@ module `mname`(
 //;   if ($useInc=~ /YES/){
       .ainc(ainc_0), .binc(binc_0),
 //;   }
-      .clk(clk) , .rst(rst),
-      .out0(multp_out0), .out1(multp_out1)
+      .out0(out0), .out1(out1)
       );
-//;   if ($pipeline_depth>1){
-//;     my $pipeout = generate(  'FF_pipeline',  'Mult_pipeout',  Width=> 4*$width+4 , PipelineDepth=>$pipeline_depth-1, Retime=>"YES");
-    `$pipeout ->instantiate()` ( .in({multp_out1,multp_out0}) , .stall_in(stall_0), .clk(clk) , .reset(rst), .out({out1,out0}), .stall_out(stall_out) );
-//;   }
+
 //; } else {
 
   /* synopsys dc_tcl_script_begin
@@ -147,18 +129,21 @@ module `mname`(
     reg [`-$pipeline_depth-1`:0] enable;
     logic [`-$pipeline_depth-1`:0] next_enable;
 
+//; if (-$pipeline_depth>1){
     assign next_enable = {enable[0], enable[`-$pipeline_depth-1`:1]};
-
-    DW03_pipe_reg #(`-$pipeline_depth`,1) dff_stall ( .A(stall) , .clk(clk) , .B(stall_out) ) ;
+//; } else {
+    assign next_enable = enable[0];
+//; }
 
     always @(negedge clk)
-      if (rst)
+      if (reset)
         enable <= 1;
       else
         enable <= next_enable;
 
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-   logic [`$width-1`:0] a_`$i`,b_`$i`;       
+   logic [`$width-1`:0] a_`$i`,b_`$i`;
+   logic valid_`$i`;       
 //;     if ($useInc=~ /YES/){
    logic ainc_`$i`, binc_`$i`;
 //;     }
@@ -167,23 +152,30 @@ module `mname`(
 //;     }
 
     always @(posedge clk)
-    if (enable[`$i`] & !stall)
+    if (!stall & enable[`$i`])
     begin
-      a_`$i`<=a;
-      b_`$i` <= b;
+      valid_`$i` <= valid_in;
+      if (valid_in)
+      begin
+        a_`$i`<=a;
+        b_`$i` <= b;
 //;     if ($useInc=~ /YES/){
-      ainc_`$i` <= ainc;
-      binc_`$i` <= binc;
+        ainc_`$i` <= ainc;
+        binc_`$i` <= binc;
 //;     }
 //;     if ($useMP=~ /YES/){
-      mp_mode_`$i`<=mp_mode;
+        mp_mode_`$i`<=mp_mode;
 //;     }
+      end
     end
 
    logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
 //;     my $Mul_obj = generate($multP_module_name, "MultP_${i}", Width=>$width, UseInc=>$useInc);
 
    `$Mul_obj->instantiate()` (
+//;     if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+//;     }
       .a(a_`$i`), .b(b_`$i`),
 //;     if ($useMP=~ /YES/){
       .mp_mode(mp_mode_`$i`),
@@ -191,7 +183,6 @@ module `mname`(
 //;     if ($useInc=~ /YES/){
       .ainc(ainc_`$i`), .binc(binc_`$i`),
 //;     }
-      .clk(clk) , .rst(rst),
       .out0(multp`$i`_out0), .out1(multp`$i`_out1)
       );
 
@@ -200,7 +191,7 @@ module `mname`(
   always_comb
     unique case (1'b1)
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-       enable[`$i`]: {out1,out0} = {multp`$i`_out1,multp`$i`_out0};
+       enable[`$i`]: {valid_out,out1,out0} = {valid_`$i`, multp`$i`_out1,multp`$i`_out0};
 //;   } 
     endcase
 //; }

@@ -1,0 +1,88 @@
+
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FPIncrementer.vp#1 $
+ ** $DateTime: 2012/5/12 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * Incrementer: increments the significand by 1,
+ * 
+ * Parameters:
+ * ------------
+ * * FractionWidth, ExponentWidth
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!");
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$exp_width + $frac_width`:0] a,
+    input logic ainc,
+    output logic [`$exp_width + $frac_width`:0] out);
+	
+
+  wire [`$frac_width`:0] ManA, ManOut, ManInc;
+  wire [`$exp_width-1`:0] ExpA, ExpOut;
+  wire SignA, denormA, InfA, NANA, IncCarryOut, IncExp;
+  wire [`$exp_width + $frac_width`:0] OutInc;
+
+  assign SignA = a[`$exp_width + $frac_width`];
+  assign ExpA = a[`$exp_width + $frac_width-1`:`$frac_width`];
+
+  assign denormA = ~|ExpA;
+  assign ManA = { ~denormA , a[`$frac_width-1`:0]};
+
+  assign ManInc = ManA + 1;
+  assign IncCarryOut = & ManA;
+  assign ManOut = IncCarryOut ? {IncCarryOut,{(`$frac_width`){1'b0}}} : ManInc;
+  
+  assign IncExp = IncCarryOut | (denormA & ManInc[`$frac_width`]) ;
+  assign ExpOut = IncExp? ExpA+1 : ExpA;
+ 
+  assign OutInc = {SignA, ExpOut,ManOut[`$frac_width-1`:0]   };
+
+
+  assign out = ainc? OutInc: a;
+
+// synopsys translate_off
+always @(posedge dumptolog)
+begin
+    $display ("ExpOut=%h ManOut=%h OutInc=%h",ExpOut, ManOut, OutInc);
+end
+// synopsys translate_on
+	
+endmodule
+

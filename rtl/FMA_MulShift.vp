@@ -1,0 +1,262 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FMA_MulShift.vp#1 $
+ ** $DateTime: 2012/5/9 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * Upper part of FMA datapath including multiplier tree and shifting
+ *  
+ * 
+  * Parameters:
+ * * FractionWidth, ExponentWidth, EnableDenormals, EnableForwarding, PipelineDepth, EnableMultiplePumping
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52,  Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES',  List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//;
+//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
+//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>2, List=>[ 0,1,2,3,4,5,6,7 ] ,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'YES', List=>['YES', 'NO'],
+//; 			  Doc=>"Use parallel MultiplierP unit");
+//;
+//; # And some local variables
+//; my $product_width = 2 * $frac_width + 2;
+//; my $wide_width = 4 * $frac_width  + 7; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)  NEED ONE MORE BIT FOR DENORM times NORM CORNER CASE
+//; my $shift_width = CeilOfLog2($wide_width);
+//; my $SHIFT_CONST = $frac_width + 4; # frac_width+1 for fraction, 2 for separator bit, 1 for the extra digit before fractional bit
+//; my $BIAS = sprintf("{(%d){1'b1}} ", $exp_width-1);
+//;
+
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$exp_width + $frac_width`:0] 	a_in, b_in, c_in,
+   //; if ($enable_forwarding =~ /YES/){
+    input logic forward_a, forward_b, forward_c,
+   //; }
+    input logic [`$exp_width + $frac_width`:0] z_preInc, z_final,
+    input logic IncZ,
+    input logic  clk , reset, valid_in, stall,
+    output logic [`$product_width+1`:0] AB_pp0, AB_pp1,
+    output logic SignAB, NANAB, InfAB, ZeroAB,
+    output logic [`$wide_width-1`:0] shifted_C,
+    output logic SignC, NANC, InfC, ZeroC, RStickyC, 
+    output logic [`$exp_width+1`:0] ExpBase,
+    output logic valid_out);	
+
+
+  
+  logic [`$exp_width + $frac_width`:0] 	a, b, c, a0, b0, c0, c1;
+  logic forward_c0, ainc, binc, cinc, ainc0, binc0, cinc0, denormA, denormB, denormC, denormA0, denormB0, denormC0;
+  logic valid0, valid_exp, valid_r;
+
+//; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
+  assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
+  assign {b,binc} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
+  assign {c,cinc} = forward_c? {z_preInc,IncZ}:{c_in,1'b0};
+  assign c1 = forward_c0? z_final : c0;
+//; } else {
+  logic forward_c, forward_c0;
+  assign forward_c = 0;
+  assign {a,b,c,ainc,binc,cinc} = {a_in,b_in,c_in,3'b0};
+  assign c1 = c0;
+//; }
+
+//; if($pipeline_depth > 0 ){
+//;   my $pipeC1 = generate(  'Pinned_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+10  , PipelineDepth => 1);
+  `$pipeC1 ->instantiate()` ( .in({a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c}) ,
+                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                              .out({a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0}), .valid_out(valid0) );
+  
+//; } else {
+  assign {a0,b0,c0,ainc0,binc0,cinc0, denormA0, denormB0, denormC0, forward_c0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c};
+//; }
+
+  assign denormA = ~| a[`$exp_width + $frac_width -1`:`$frac_width`];
+  assign denormB = ~| b[`$exp_width + $frac_width -1`:`$frac_width`];
+  assign denormC = ~| c[`$exp_width + $frac_width -1`:`$frac_width`];
+   
+
+  /*Multiplier*/
+
+//; my $Mul_obj= generate('Pipelined_MultiplierP', 'MUL0', Width=>$frac_width+1, 
+//;                        PipelineDepth => ( ($enableMultiplePumping =~ /YES/)? -$pipeline_depth : $pipeline_depth), 
+//;                        UseInc=>$enable_forwarding, UseMP=>'NO');
+
+   `$Mul_obj->instantiate()` 
+     (
+      .a({ ~denormA , a[`$frac_width -1`:0]}), .b( { ~denormB , b[`$frac_width -1`:0]} ), 
+      //; if($enable_forwarding =~ /YES/){
+      .ainc( ainc ), .binc(binc),
+      //; }
+      .valid_in(valid_in),
+      .stall(stall), .clk(clk) , .reset(reset),
+      .out0(AB_pp0), .out1(AB_pp1),
+      .valid_out(valid_out)
+      );
+
+
+  /*Exponent Difference*/
+
+  wire [`$frac_width-1`:0] SigA0, SigB0, SigC0;
+  wire [`$exp_width-1`:0] ExpA0, ExpB0, ExpC0;
+  wire SignA0, SignB0, SignC0, SignAB0, zeroSigA0, zeroSigB0, zeroSigC0;
+  wire IncExpA0, IncExpB0, IncExpC0, NANorInfA0, NANorInfB0, NANorInfC0, InfA0, InfB0, InfC0;
+  wire NANA0, NANB0, NANC0, ZeroA0, ZeroB0, ZeroC0, NANAB0, InfAB0, ZeroAB0; 
+
+  assign SignA0 = a0[`$exp_width + $frac_width`];
+  assign SignB0 = b0[`$exp_width + $frac_width`]; 
+  assign SignC0 = c0[`$exp_width + $frac_width`];
+
+  assign ExpA0  = a0[`$exp_width + $frac_width -1`:`$frac_width`]; 
+  assign ExpB0  = b0[`$exp_width + $frac_width -1`:`$frac_width`]; 
+  assign ExpC0  = c0[`$exp_width + $frac_width -1`:`$frac_width`];
+
+  assign SigA0  = a0[`$frac_width -1`:0];
+  assign SigB0  = b0[`$frac_width -1`:0];
+  assign SigC0  = c0[`$frac_width -1`:0];
+
+  assign SignAB0 = SignA0 ^ SignB0;
+
+  assign zeroSigA0 = SigA0=={(`$frac_width`){ainc0}};
+  assign zeroSigB0 = SigB0=={(`$frac_width`){binc0}};
+  assign zeroSigC0 = SigC0=={(`$frac_width`){cinc0}};
+
+  assign IncExpA0 = ( zeroSigA0 & ainc0 ) ; 
+  assign IncExpB0 = ( zeroSigB0 & binc0 ) ; 
+  assign IncExpC0 = ( zeroSigC0 & cinc0 ) ;
+
+  assign NANorInfA0 = ( & ExpA0[`$exp_width - 1` : 1])  & ( ExpA0[0] | IncExpA0 )  ;
+  assign NANorInfB0 = ( & ExpB0[`$exp_width - 1` : 1])  & ( ExpB0[0] | IncExpB0 )  ;
+  assign NANorInfC0 = ( & ExpC0[`$exp_width - 1` : 1])  & ( ExpC0[0] | IncExpC0 )  ;
+
+  assign InfA0 = zeroSigA0 & NANorInfA0;
+  assign InfB0 = zeroSigB0 & NANorInfB0;
+  assign InfC0 = zeroSigC0 & NANorInfC0;
+  
+  assign NANA0 = ~zeroSigA0 & NANorInfA0;
+  assign NANB0 = ~zeroSigB0 & NANorInfB0;
+  assign NANC0 = ~zeroSigC0 & NANorInfC0;
+
+  assign ZeroA0 = zeroSigA0 & denormA0 & ~ainc0;
+  assign ZeroB0 = zeroSigB0 & denormB0 & ~binc0;
+  assign ZeroC0 = zeroSigC0 & denormC0 & ~cinc0;
+
+  assign NANAB0 = NANA0 | NANB0 | (InfA0 & ZeroB0) | (InfB0 & ZeroA0);
+  assign InfAB0 = (InfB0 | InfA0) & ~NANAB0 ;
+  assign ZeroAB0 = ZeroA0 | ZeroB0;
+
+  logic [`$exp_width+1`:0] pre_shift, ExpSum, ExpCarry, ExpAB, ExpBase0, RshiftSum, RshiftCarry, RshiftInitial;
+  logic [`$shift_width-1`:0] RshiftAmt, RshiftAmt2;
+  logic DummyCo1, DummyCo2, DummyCo3, DummyCo4, ExpResultIsC;
+
+  /* base exponent calculation
+     ExpBase = ExpResultIsC? ExpC : ExpA + ExpB - BIAS + SHIFT_CONST;
+  */     
+  assign pre_shift = `$SHIFT_CONST` -`$BIAS`; 
+  DW01_csa #(`$exp_width+2`) CSA0 (.a({2'b0,ExpA0}),.b({2'b0,ExpB0}),.c(pre_shift),.ci(denormA0), 
+                                   .carry(ExpCarry), .sum(ExpSum), .co(DummyCo1) );
+
+  DW01_add #(`$exp_width+2`) Add_ExpAB (.A(ExpSum), .B(ExpCarry), .CI(denormB0), .SUM(ExpAB), .CO(DummyCo2) );
+  assign ExpBase0 = ExpResultIsC? {2'b0,ExpC0} : ExpAB;
+
+//; if($pipeline_depth > 1 ){
+//;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> $exp_width+10 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
+  `$pipeMisc ->instantiate()` ( .in({ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0}) ,
+                                .valid_in(valid0), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC}),
+                                .valid_out(valid_exp) );
+//; } else {
+  assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0};
+//; }
+
+  /* Aligner*/
+
+  /*RshiftAmt calculation
+    RshiftAmt = ExpA + ExpB - ExpC - BIAS + SHIFT_CONST
+    and has a maximum of 225 and minimum of 0, therefore we need to sign extend it by 2 bits to correctly determine the shift amount
+  */
+
+  DW01_csa #(`$exp_width+2`) CSA1(.a({2'b11,~ExpC0}), .b(ExpCarry), .c(ExpSum), .ci( ~(IncExpC0|denormC0) ),
+                                  .carry(RshiftCarry),.sum(RshiftSum),.co(DummyCo3));
+
+  DW01_add #(`$exp_width+2`) Add_RShift (.A(RshiftSum), .B(RshiftCarry), .CI(denormB0), .SUM(RshiftInitial), .CO(DummyCo4) );
+
+  assign ExpResultIsC = RshiftInitial[`$exp_width+1`] | ZeroAB0; //no right shift and C is not zero
+//; if( $exp_width >= $shift_width ){
+  assign RshiftAmt = ExpResultIsC?
+                         0:
+                         (RshiftInitial[`$exp_width`:`$shift_width`]==0) ? RshiftInitial[`$shift_width-1`:0] : {(`$shift_width`){1'b1}};
+//; } else {
+  assign RshiftAmt = ExpResultIsC? 0 : RshiftInitial[`$shift_width-1`:0] ;
+//; }
+
+  logic [`$frac_width`:0] ManC1, ManC2;
+
+  assign ManC1 = { (IncExpC0|~denormC0) , c1[`$frac_width -1`:0]};
+//; if($pipeline_depth > 1 ){
+//;   my $align_pipe = ($enable_forwarding =~ /YES/)?
+//;      generate('Pinned_pipeline','align_pipe', Width=> $frac_width+$shift_width+1, PipelineDepth=> $pipeline_depth-1)
+//;    : generate('FF_pipeline','align_pipe', Width=> $frac_width+$shift_width+1, PipelineDepth=> $pipeline_depth-1, Retime=> 'YES');
+  `$align_pipe ->instantiate()` ( .in({ManC1,RshiftAmt}) , .valid_in(valid0), .clk(clk) , .stall(stall), .reset(reset), 
+                            .out({ManC2,RshiftAmt2}), .valid_out(valid_r) );
+//; } else {
+  assign {ManC2,RshiftAmt2} = {ManC1,RshiftAmt};
+//; }
+
+  logic [`$wide_width-1`:0] wide_C;
+
+  assign wide_C = {1'b0, ManC2, {(`$wide_width-$frac_width-2`){1'b0}}};
+  assign shifted_C = wide_C >> RshiftAmt2;
+
+
+
+//; if ($verif_mode =~ /ON/){
+	// synopsys translate_off
+	always @(posedge dumptolog)
+	begin
+		$display ("AB_pp0      = %b", AB_pp0);
+		$display ("AB_pp1      = %b",AB_pp1);
+                $display ("ExpBase= %b", ExpBase);
+                $display ("shifted_C= %b", shifted_C);
+	end
+	// synopsys translate_on
+//; }
+
+endmodule
+
+

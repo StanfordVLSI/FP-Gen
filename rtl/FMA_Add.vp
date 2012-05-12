@@ -1,0 +1,247 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/FMA_add.vp#1 $
+ ** $DateTime: 2011/12/24 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * lower part of FMA datapath including adder, LZA and normalizer
+ *  
+ * 
+  * Parameters:
+ * * FractionWidth, ExponentWidth, EnableDenormals, PipelineDepth
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO)");
+//;
+//; # And some local variables
+//; my $denorm = ($enable_denormals =~ /YES/)? 1:0;
+//; my $product_width = 2 * $frac_width + 2;
+//; my $wide_width = 4 * $frac_width  + 7; # 1 sign bit + (frac_width+1) + 2 guard bits + (2*frac_width+2) + (frac_width+1)
+//; my $shift_width = CeilOfLog2($wide_width);
+//; my $lza_width = $wide_width - $frac_width;
+//; my $lza_enc_width = CeilOfLog2($lza_width) + 1;
+//;
+
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic dumptolog,
+   //; }
+    input logic [`$product_width+1`:0] AB_pp0, AB_pp1,
+    input logic SignAB, NANAB, InfAB, ZeroAB,
+    input logic [`$wide_width-1`:0] shifted_C,
+    input logic SignC, NANC, InfC, ZeroC, 
+    input logic [`$exp_width+1`:0] ExpBase,
+    input logic [2:0] rnd,
+    output logic [`$exp_width + $frac_width`:0] z,
+    output logic zinc,
+    output logic [7:0] status);	
+
+
+  logic [`$wide_width-1`:0] final_C;
+  logic [`$frac_width+1`:0] C_upper_0, C_upper_1;
+  logic KillCarry, subtract, co_middle, co0, co1, SumSign, IncCarryOut, mostSticky;
+  logic [`$product_width+3`:0] C_middle, ps0, ps1 , MiddleSum0, MiddleSum1;
+  logic [`$lza_width`:0] Sum0, Sum1, FinalSum, ShiftedResult;
+  logic [`$lza_width+1`:0] LZA_ps0, LZA_ps1;
+  logic [`$lza_width-1`:0] lza_mask;
+  logic [`$lza_enc_width-1`:0] LshiftAmt;
+  logic [`$frac_width`:0] ManResult;
+  logic RSticky, ResultIsInfinity, ResultIsFMA, ResultExactZero;
+  logic FV_exp, FU_exp, FX, FV, FU, FI, Tiny, RndMaxNum, MaxNum;
+
+  assign subtract = SignAB ^ SignC;
+  assign KillCarry = AB_pp0[`$product_width+1`] | AB_pp1[`$product_width+1`];
+
+  assign RSticky = (|shifted_C[`$frac_width-2`:0]) | (~|shifted_C[`$wide_width-1`:`$frac_width-1`] & ~ZeroC); // the sticky bit is calculated from the non inverted version of C
+  assign final_C = subtract? ~shifted_C : shifted_C;
+  assign C_middle = final_C[`$product_width+$frac_width+2`:`$frac_width-1`];
+  assign C_upper_0 = final_C[`$wide_width-1`:`$product_width+$frac_width+3`];
+  assign C_upper_1 = C_upper_0 + 1;
+
+  /* Carry look around adder 
+     Pad a zero before the partial products for support for denormals
+     Use compound adder that produces sum and sum+1 and use the following logic to select the correct result 
+
+     subtract  RSticky SumSign    Sum
+     -------------------------------
+     0           X     X         Sum
+     1           0     0         Sum+1
+     1           0     1        ~Sum
+     1           1     0         Sum
+     1           1     1        ~Sum
+
+  */
+  DW01_csa #(`$product_width+4`) CSA0 (.a({AB_pp0,2'b0}),.b({AB_pp1,2'b0}),.c(C_middle),.ci(1'b0), .carry(ps0), .sum(ps1), .co(co_middle) );
+
+//; my $CAdd_obj = generate('CompoundAdder', 'CADD', Width=>($product_width+4), EnableCarryIn=>'OFF', ZeroWidth=>0);   
+  `$CAdd_obj->instantiate()` 
+     (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
+      .a(ps0), .b(ps1), .sum0(MiddleSum0), .co0(co0),  .sum1(MiddleSum1), .co1(co1));
+
+
+  assign Sum0 = { (co0 & (co_middle | ~KillCarry)? C_upper_1 : C_upper_0),MiddleSum0};
+  assign Sum1 = { (co1 & (co_middle | ~KillCarry)? C_upper_1 : C_upper_0),MiddleSum1};
+  assign SumSign = Sum0[`$lza_width`];
+
+  assign FinalSum = subtract? (SumSign?~Sum0:(RSticky?Sum0:Sum1)) : Sum0;
+
+  
+
+  /*MaxLshiftAmt calculation 
+    This calculation is only relevant if right shift has occured, which means the minimum resulting exponent will be 1
+    ------------------- 
+    1 =  ExpBase - MaxLShiftAmt
+    MaxLShiftAmt = ExpBase - 1
+
+  */
+
+  wire [(1<<`$shift_width`)-1 : 0] max_shift_dec;
+
+//; if( $exp_width >= $shift_width ){
+  DW_decode_en #(`$shift_width`) U1 ( .en(~|ExpBase[`$exp_width`:`$shift_width`])    // Disable if the exponent is big enough
+                                 , .a(ExpBase[`$shift_width-1`:0])
+                                 , .b(max_shift_dec) );
+//; } else {
+  DW_decode_en #(`$shift_width`) U1 ( .en(1'b1)    // Disable if the exponent is big enough
+                                 , .a(ExpBase[`$shift_width-1`:0])
+                                 , .b(max_shift_dec) );
+//; }
+
+   
+  //assign max_shift_mask= {max_shift_dec[manB_width+1:2],max_shift_dec[1] | max_shift_dec[0]};
+  assign lza_mask[`$lza_width-1`] = max_shift_dec[1] | max_shift_dec[0] | ExpBase[`$exp_width+1`]; //The mask has one at Expbase - 1 position
+  
+
+//; for (my $i=0 ; $i<$lza_width-1 ; $i++){
+  assign lza_mask[`$i`] = max_shift_dec[`$lza_width-$i`];//max_shift_dec[manB_width-i+1]; 
+//; }
+
+  /* Leading Zero Anticipator */
+//; my $lza_obj = generate('LZA', 'LZA0', Width=>$lza_width);
+  assign LZA_ps0 = { (KillCarry?C_upper_0:{(`$frac_width+2`){1'b0}}), co_middle , ps0};
+  assign LZA_ps1 = { (KillCarry?{~C_upper_0[`$frac_width+1`],~C_upper_0}:C_upper_0), ps1};
+  `$lza_obj->instantiate()`  ( .A(LZA_ps0), .B(LZA_ps1), .override_mask(lza_mask), .result_is_zero(ResultExactZero), .enc(LshiftAmt));
+
+
+  /* Normalizer */
+  logic IncExp, Guard, Sticky, LSB, RoundInc, ExpUnderflow, SignResult, SignInfinity, zeroManResult, denormResult, ZeroResult;
+
+  assign ShiftedResult = FinalSum << LshiftAmt;
+  assign IncExp = (LshiftAmt!=0) & ShiftedResult[`$lza_width`];
+  assign mostSticky = (| ShiftedResult[`$wide_width-2*$frac_width-3`:0]) | RSticky;
+  assign {ManResult, Guard, Sticky} = IncExp ? 
+             {ShiftedResult[`$wide_width-$frac_width`:`$wide_width-2*$frac_width-1`],mostSticky | ShiftedResult[`$wide_width-2*$frac_width-2`]}
+            :{ShiftedResult[`$wide_width-$frac_width`:`$wide_width-2*$frac_width-2`],mostSticky};
+  assign LSB = ManResult[0];
+  assign zeroManResult = ManResult==0;
+  assign denormResult = ~ManResult[`$frac_width`];
+  assign ZeroResult = zeroManResult & denormResult;
+
+
+
+  /*Exponent Calculation
+	  
+    ExpResult0 = ExpBase - LshiftAmt
+  */
+
+  logic [`$exp_width-1`:0] ExpResult1,ExpResult;
+  logic [`$exp_width+1`:0] ExpResult0 ;
+  assign ExpResult0 = ExpBase - LshiftAmt;
+  assign ExpResult1 = ExpResult0+1;
+  assign ExpResult = ExpUnderflow? {(`$exp_width`){1'b0}}: (IncExp ? ExpResult1 : ExpResult0);
+        
+  assign ExpUnderflow = ~ManResult[`$frac_width`] | ExpResult0[`$exp_width+1`];
+
+  /* Overflow flags
+  */
+
+  assign FV_exp =  !ExpResult0[`$exp_width+1`]
+                   & ( ExpResult0[`$exp_width`] || (ExpResult0[`$exp_width-1`:1]== {(`$exp_width-1`){1'b1}} & (IncExp | ExpResult0[0])) ) ;
+
+
+  /* sign calculations */
+
+  assign SignResult = ResultExactZero? SignAB & SignC : SignAB ^ SumSign;
+  assign SignInfinity = InfC ? SignC : SignAB;
+
+//; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
+  `$rnd_obj->instantiate()` (.rnd(rnd), .Sign(SignResult), .LSB(LSB), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
+
+
+  assign FX = (ResultIsFMA & (Guard | Sticky)) | FV;
+  assign FI = NANAB | NANC | (InfAB & InfC & (SignAB!=SignC));
+  assign FV = FV_exp & ~InfAB & ~InfC & ~FI ;
+  assign FU = ZeroResult & FX & ResultIsFMA;
+
+  assign Tiny = denormResult & ~ZeroResult;
+  assign ResultIsInfinity = ( InfAB | InfC | FV) & ~FI;
+  assign ResultIsFMA = ~ResultIsInfinity   & ~FI;
+
+  assign MaxNum =  FV & RndMaxNum; 
+
+  assign {zinc,z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width -1`){1'b0}}}
+              : ResultIsInfinity ? {1'b0,SignInfinity, {{(`$exp_width-1`){1'b1}}, ~MaxNum} , {(`$frac_width`){MaxNum}}}
+                                 : {RoundInc, SignResult, ExpResult, ManResult[`$frac_width -1`:0]};
+
+  assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
+
+//; if ($verif_mode =~ /ON/){
+	// synopsys translate_off
+	always @(posedge dumptolog)
+	begin
+		$display ("AB_pp0      = %b", AB_pp0);
+		$display ("AB_pp1      = %b",AB_pp1);
+		$display ("C_middle    = %b", C_middle);
+		$display ("KillCarry = %b co_middle = %b co0=%b", KillCarry, co_middle, co0);
+		$display ("final_C= %b", final_C);
+		$display ("C_upper_1= %b", {C_upper_1 ,MiddleSum0});
+		$display ("Sum0 = %b",Sum0);
+		$display ("FinalSum = %b", FinalSum);
+		$display ("ShiftedResult = %b", ShiftedResult);
+		$display ("lza_mask = %b LshiftAmt=%d IncExp=%b", lza_mask, LshiftAmt, IncExp);
+		$display ("ManResult = %b SignResult= %b ExpResult=%b",ManResult, SignResult, ExpResult);
+	end
+	// synopsys translate_on
+//; }
+
+endmodule
+
+

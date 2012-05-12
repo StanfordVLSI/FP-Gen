@@ -163,7 +163,7 @@ program automatic `mname` (
       // some simulation wire values initialization
       dumptolog = 1'b0;
 
-      reset=1'b0;
+      reset=1'b1;
       a = 0;
       b = 0;
       c = 0;
@@ -171,11 +171,13 @@ program automatic `mname` (
       binc = 1'b0;
       cinc = 1'b0;
       rnd = 3'b0;
+      #150; // 2 cycles of reset
+      reset=1'b0;
    end
 
    // every #(70+100*k), generate stimulus	
    initial begin
-      #70;
+      #270;
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 for (int i=0; i<num_trans; i++) begin
 	   // Assign values to the lines
@@ -223,9 +225,9 @@ program automatic `mname` (
    end // initial begin
    
    
-   // every #(130+100*$pipeline_depth+100*k), check results	
+   // every #(230+100*$pipeline_depth+100*k), check results	
    initial begin
-      #`130+100*$pipeline_depth`;
+      #`230+100*$pipeline_depth`;
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 for (int i=0; i<num_trans; i++) begin
 	   $display("\n%t: Transaction #%0d: ", $time, i);
