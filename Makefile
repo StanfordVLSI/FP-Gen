@@ -25,12 +25,17 @@ endif
 #########################################
 # tile is the top of the pre-processed hierarchy
 
+SYN_CLK_PERIOD ?= 1.5
+
+PARAM_STRING ?= 
+SAIF_MODE ?= 0
+SYNTH_PARAM_STRING ?= 
+VERIF_PARAM_STRING ?= 
+
 ifndef DESIGN_NAME
   DESIGN_NAME:=MultiplierP
   $(warning WARNING: Running with default design.  DESIGN_NAME=$(DESIGN_NAME))
 endif
-
-SYN_CLK_PERIOD ?= 1.5
 
 ifeq ($(DESIGN_NAME),MultiplierP)
   INST_NAME ?= MultiplierP
@@ -51,10 +56,16 @@ ifeq ($(DESIGN_NAME),FMA)
   MOD_NAME ?= FMA
   TOP_NAME ?= top_FMA
   ROLLUP_TARGET ?= FMA_Rollup.target
-  PIPELINE_PARAM ?= TOP.top_FMA.FMA.PipelineDepth PipelineDepth
-  RETIME_PARAM ?= TOP.top_FMA.FMA.Retiming Retiming
-  DW_PARAM ?= TOP.top_FMA.FMA.Designware_MODE Designware_MODE
-  INC_PARAM ?= TOP.top_FMA.FMA.UseInc UseInc
+
+  PIPELINE_PARAM ?= top_FMA.FMA.PipelineDepth
+  RETIME_PARAM ?= top_FMA.FMA.Retiming
+  DW_PARAM ?= top_FMA.FMA.Designware_MODE
+  INC_PARAM ?= top_FMA.FMA.UseInc
+  VERIF_PARAM_1 ?= top_FMA.FMA.VERIF_MODE
+  SYNTH_PARAM_1 ?= top_FMA.FMA.SYNTH_MODE
+  VERIF_PARAM_2 ?= top_FMA.VERIF_MODE
+  SYNTH_PARAM_2 ?= top_FMA.SYNTH_MODE
+  SAIF_PARAM ?= top_FMA.SAIF_MODE
 
   ifeq ($(PIPE_CNT),0)
     RETIME_STATUS ?= 0
@@ -67,21 +78,30 @@ ifeq ($(DESIGN_NAME),FMA)
   over_params2 =   
 
   ifdef  PIPE_CNT
-   FORCE_PARAMS = 1
-   over_params1 = $(PIPELINE_PARAM) $(PIPE_CNT) \\n$(RETIME_PARAM) $(RETIME_STATUS) \\n
+   over_params1 = $(PIPELINE_PARAM)=$(PIPE_CNT) $(RETIME_PARAM)=$(RETIME_STATUS)
   endif
 
   ifeq ($(DW_MODE),1) 
     DW_MODE_STRING ?= ON
     INC_MODE_STRING ?= NO
     FORCE_PARAMS = 1
-    over_params2 = $(INC_PARAM) $(INC_MODE_STRING) \\n$(DW_PARAM) $(DW_MODE_STRING) \\n
+    over_params2 = $(INC_PARAM)=$(INC_MODE_STRING) $(DW_PARAM)=$(DW_MODE_STRING)
   else
     DW_MODE_STRING ?= "OFF"
   endif
 
+  ifeq ($(SAIF_MODE),1)
+    VERIF_STRING := top_FMA.FMA.VERIF_MODE=OFF top_FMA.FMA.SYNTH_MODE=ON top_FMA.VERIF_MODE=OFF top_FMA.SYNTH_MODE=ON top_FMA.SAIF_MODE=ON
+    SYNTH_STRING := top_FMA.FMA.VERIF_MODE=OFF top_FMA.FMA.SYNTH_MODE=ON top_FMA.VERIF_MODE=OFF top_FMA.SYNTH_MODE=ON top_FMA.SAIF_MODE=ON
+  else
+    VERIF_STRING := top_FMA.FMA.VERIF_MODE=ON  top_FMA.FMA.SYNTH_MODE=OFF top_FMA.VERIF_MODE=ON  top_FMA.SYNTH_MODE=OFF top_FMA.SAIF_MODE=OFF
+    SYNTH_STRING := top_FMA.FMA.VERIF_MODE=OFF top_FMA.FMA.SYNTH_MODE=ON  top_FMA.VERIF_MODE=OFF top_FMA.SYNTH_MODE=ON  top_FMA.SAIF_MODE=OFF
+  endif	
 
-  over_params = $(over_params1)$(over_params2)
+  over_params = $(over_params1) $(over_params2)
+  PARAM_STRING += $(over_params)
+  SYNTH_PARAM_STRING += $(PARAM_STRING) $(SYNTH_STRING)
+  VERIF_PARAM_STRING += $(PARAM_STRING) $(VERIF_STRING)
 
 endif 
 
@@ -312,7 +332,7 @@ FPGEN_FLAGS := 	-o testVectors		\
 all: $(EXECUTABLE)
 
 # phony rules for verilog generation process
-.PHONY: gen genesis_clean
+.PHONY: gen gen2 genesis_clean
 gen: $(GENESIS_VLOG_LIST)
 
 # Genesis2 rules:
@@ -321,23 +341,10 @@ gen: $(GENESIS_VLOG_LIST)
 # files (_unqN.v) from the genesis (.vp) program.
 # Use "make GEN=<genesis2_gen_flags>" to add elaboration time flags
 $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
-ifeq ($(FORCE_PARAMS),1)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	@echo -e $(over_params) > tmp_cfg.design
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
-	setGenCfg.pl -S INPUT_XML=small_$(GENESIS_HIERARCHY) OUTPUT_XML=small_$(GENESIS_TMP_HIERARCHY) DESIGN_FILE=tmp_cfg.design
-	Genesis2.pl $(GENESIS_GEN_FLAGS2) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
-else
-	@echo ""
-	@echo Making $@ because of $?
-	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
-endif
-
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) -parameter $(VERIF_PARAM_STRING)
 
 genesis_clean:
 	@echo ""
@@ -347,6 +354,14 @@ genesis_clean:
 		tcsh genesis_clean.cmd;	\
 	fi
 	\rm -rf $(GENESIS_VLOG_LIST)
+
+gen_syn: genesis_clean  
+	@echo ""
+	@echo Elaborting for Synthesis Run
+	@echo ====================================================
+	rm *.v
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) -parameter $(SYNTH_PARAM_STRING)
+
 
 
 # VCS rules:
@@ -424,7 +439,7 @@ OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set V
 # DC & ICC Run rules:
 ############################
 .PHONY: run_synthesis run_dc
-run_synthesis: log/syn_$(RUN_NAME).log
+run_synthesis: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
 
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
@@ -442,13 +457,15 @@ RUN_SYNTHESIS_FLAGS:= \
                       MOD_NAME=$(MOD_NAME) 
                       PIPE_CNT=$(PIPE_CNT) 
 
-log/syn_$(RUN_NAME).log: $(EXECUTABLE)
-	mkdir -p log
-	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee  syn_bb.log
-
+#run_dc
 synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
-	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee  syn_dc.log
+	make -C synthesis -f Makefile clean dc $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log 
+
+#run_synthesis
+synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log: $(EXECUTABLE)
+	mkdir -p log
+	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log
 
 clean_synthesis:
 	rm -rf synthesis/svt_*v*_*.*
@@ -460,7 +477,7 @@ clean_synthesis:
 #Rollup Rules:
 ##############################
 
-.PHONY: rollup1  rollup2 rollup3
+.PHONY: rollup1  rollup2 rollup3 report_results
 rollup1: 
 	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
@@ -470,15 +487,19 @@ rollup2:
 rollup3: 
 	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+report_results:
+	cd synthesis ; perl report_results.pl ;
 
 #PipeLine Hack:
 ###############################
 
 #Eval Rules
 ##############################
-.PHONY: eval 
-eval: comp rollup1 run rollup2 run_synthesis rollup3
-
+.PHONY: eval eval2 eval3 eval4
+eval: gen comp rollup1 run rollup2 gen_syn run_synthesis rollup3 report_results
+eval2: gen comp run gen_syn run_synthesis
+eval3: gen comp run gen_syn run_dc rollup1 report_results
+eval4: gen comp run gen_syn run_dc
 
 # Cleanup rules:
 #####################

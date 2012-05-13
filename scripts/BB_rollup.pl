@@ -115,7 +115,7 @@ foreach my $file ( @files ) {
 	`grep slack $report_file | grep VIOLATED` and $design_timing_mapped_good = 0 ;
     }
     
-  my $mapped_core_area="";
+  my $mapped_core_area="-1";
   @report_files = <synthesis/$folder_name/reports/$design_name.${vt}.$target_delay.mapped.area.*>;
     scalar( @report_files ) or warn "Missing mapped area\n" ;
   foreach $report_file (@report_files) {
@@ -181,7 +181,7 @@ foreach my $file ( @files ) {
     `grep slack $report_file | grep VIOLATED` and $design_timing_routed_good = 0 ;
   }
 
-  my $routed_core_area="";
+  my $routed_core_area="-1";
   @report_files = <synthesis/$folder_name/reports/$design_name.${vt}.$target_delay.routed.area.*>;
     scalar( @report_files ) or warn "Missing routed area\n" ;
   foreach $report_file (@report_files) {
@@ -246,7 +246,7 @@ foreach my $file ( @files ) {
   }
 
 
-  my $optimized_core_area="";
+  my $optimized_core_area="-1";
   @report_files = <synthesis/$folder_name/reports/$design_name.optimized.${vt}.$target_delay.routed.area.*>;
     scalar( @report_files ) or warn "Missing optimized area\n" ;
   foreach $report_file (@report_files) {
