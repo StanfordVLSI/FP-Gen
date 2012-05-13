@@ -25,7 +25,7 @@ if { [file exists ../../top.saif] } {
   set_switching_activity -toggle_rate 2 -clock clk -static_probability 0.5 clk
   set_switching_activity -toggle_rate 0.5 -clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
   set_switching_activity -toggle_rate 0.01 -clock clk -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
-  set_switching_activity -toggle_rate 0.2 -clock clk -static_probability 0.2 valid_in
+  set_switching_activity -toggle_rate 0.2 -clock clk -static_probability 0.8 valid_in
 }
 
 
