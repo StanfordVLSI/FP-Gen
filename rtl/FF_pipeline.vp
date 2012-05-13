@@ -46,10 +46,10 @@ module `mname` (
    set_flatten true -effort high -phase true -design [current_design]
 //; #   https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/set_dont_retime.html
 //; if( $retime_Status eq 'YES' ){
-   set_dont_retime [current_design] false 
+   set_dont_retime [get_cells -filter {@is_sequential==true}] false 
    set_optimize_registers true -design [current_design]
 //; } elsif (  $retime_Status eq 'NO' ){
-   set_dont_retime [current_design] true
+   set_dont_retime [get_cells -filter {@is_sequential==true}] true
    set_optimize_registers false -design [current_design]
 //; } else {
 //;    self->error( "Unexpected branch condition in retiming elaboration...\n" ) ;   
@@ -61,13 +61,13 @@ module `mname` (
     reg valid_stages [0:`$pipeline_depth-1`];
 
     always @(posedge clk)
+    if (reset)
+      {valid_stages[0],stages[0]} <= 0;
+    else
     begin
-      if (reset) valid_stages[0] <= 0;
-      else valid_stages[0] <= valid_in;
-
+      valid_stages[0] <= valid_in;
       if (!stall & valid_in)
-        if (reset) stages[0] <= 0;
-        else stages[0] <= in ;
+        stages[0] <= in ;
     end
 
 //;   for (my $i=0; $i<$pipeline_depth-1; $i++){
@@ -76,12 +76,9 @@ module `mname` (
       {valid_stages[`$i+1`],stages[`$i+1`]} <= 0;
     else
     begin
-      if (reset) valid_stages[`$i+1`] <= 0;
-      else valid_stages[`$i+1`] <= valid_stages[`$i`];
-
+      valid_stages[`$i+1`] <= valid_stages[`$i`];
       if (!stall & valid_stages[`$i`])
-        if (reset) stages[`$i+1`] <= 0;
-        else stages[`$i+1`] <= stages [`$i`];
+        stages[`$i+1`] <= stages [`$i`];
     end
 
 //;   }

@@ -64,6 +64,14 @@ if {![info exists SmartRetiming]} {
   set SmartRetiming 0
 }
 
+if {![info exists MulpPipelineDepth]} {
+  set $MulpPipelineDepth 1
+}
+
+if {![info exists EnableMultiplePumping]} {
+  set $EnableMultiplePumping NO
+}
+
 set target_library [set ${VT}_${Voltage}_target_libs]
 
 set_host_options -max_cores 2

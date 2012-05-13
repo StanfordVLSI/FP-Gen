@@ -21,76 +21,59 @@ if { [file exists ../../top.saif] } {
   propagate_switching_activity -effort high -verbose
   report_saif
   #set_power_prediction true  
+} else {
+  set_switching_activity -toggle_rate 2 -clock clk -static_probability 0.5 clk
+  set_switching_activity -toggle_rate 0.5 -clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
+  set_switching_activity -toggle_rate 0.01 -clock clk -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
+  set_switching_activity -toggle_rate 0.2 -clock clk -static_probability 0.2 valid_in
 }
 
-set HEDGE 0.8
-set PATH_RATIO 0.8 
+
 
 if { $PipelineDepth > 0 } {
 
-    set CLK clk
-    set RST reset 
-
-    if { $Retiming } { 
-        ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
+  set HEDGE 0.8
+  set PATH_RATIO 0.8 
+  set CLK clk
+  set RST reset
+  
+  ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
        
-        if { $SmartRetiming } {
-           current_design MultiplierP_unq1
-           set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
-           compile_ultra -no_autoungroup
+  if { $Retiming && $SmartRetiming } {
+    current_design MultiplierP_unq1
+    set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
+    compile_ultra -no_autoungroup
+    current_design ${DESIGN_NAME}
+    #set_dont_touch [get_cells -hierarchical MUL0] true
+  }  
+
+  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
+  create_clock $CLK -period $CLK_PERIOD
+  set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
+  set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
+  set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
+
+  if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
+    set_multicycle_path $MulpPipelineDepth -from [get_cells MulShift/MUL0/* -filter {@is_sequential==true}]
+  }
 	
-
-	    current_design ${DESIGN_NAME}
-            #set_dont_touch [get_cells -hierarchical MUL0] true
-	}  
-
-	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
-	create_clock $CLK -period $CLK_PERIOD
-	set_output_delay [ expr $CLK_PERIOD*1/2 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-	set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-	set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
-		
-	set_optimize_registers true -design ${DESIGN_NAME}
+  if { $Retiming } { 	
+    set_optimize_registers true -design ${DESIGN_NAME}
  
-        # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/optimize_registers.html
-	#optimize_registers -no_compile -justification_effort high -check_design -verbose -print_critical_loop
-	# https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/compile_ultra.html?otSearchResultSrc=advSearch&otSearchResultNumber=15&otPageNum=1
-	compile_ultra -no_autoungroup -retime -no_seq_output_inversion -no_boundary_optimization -exact_map
- 
-	#Attempt to Recover the minimum clock period.
-	#balance_registers
+    # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/optimize_registers.html
+    #optimize_registers -no_compile -justification_effort high -check_design -verbose -print_critical_loop
+    # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/compile_ultra.html?otSearchResultSrc=advSearch&otSearchResultNumber=15&otPageNum=1
+    compile_ultra -no_autoungroup -retime -gate_clock
+  } else {
+    compile_ultra -no_autoungroup -gate_clock
+  }
 
-	#Reset Constraints for ICC
-	set CLK_PERIOD [expr double($target_delay)/1000]
-	create_clock $CLK -period $CLK_PERIOD
-	set_output_delay [ expr $CLK_PERIOD*1/2 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-	set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-	set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
-
-    } else {
-
-	#NO RETIMING
-        ## IGNORE set_output_delay and set_input_delay.  These constrainsts are arbitrary.
-        ##   they exist to suppress warnings and errors.  These should have no impact
-        ##   on the design if inputs and outpus are flopped.
-
-	#Hedged Constraints for DC
-	set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000] 
-	create_clock $CLK -period $CLK_PERIOD
-	set_output_delay [ expr $CLK_PERIOD*1/2 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-	set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-	set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
-		
-	compile_ultra -no_autoungroup
-
-	#Reset Constraints for ICC
-	set CLK_PERIOD [expr double($target_delay)/1000]
-	create_clock $CLK -period $CLK_PERIOD
-	set_output_delay [ expr $CLK_PERIOD*1/2 ] -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-	set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-	set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
-
-    }
+   #Reset Constraints for ICC
+  set CLK_PERIOD [expr double($target_delay)/1000]
+  create_clock $CLK -period $CLK_PERIOD
+  set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
+  set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
+  set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
  
 } else {
 

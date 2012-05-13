@@ -90,7 +90,7 @@ module `mname` (
   assign {c,cinc} = forward_c? {z_preInc,IncZ}:{c_in,1'b0};
   assign c1 = forward_c0? z_final : c0;
 //; } else {
-  logic forward_c, forward_c0;
+  logic forward_c;
   assign forward_c = 0;
   assign {a,b,c,ainc,binc,cinc} = {a_in,b_in,c_in,3'b0};
   assign c1 = c0;
