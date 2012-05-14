@@ -74,7 +74,7 @@ module `mname` (
     output logic [`$product_width+1`:0] AB_pp0, AB_pp1,
     output logic SignAB, NANAB, InfAB, ZeroAB,
     output logic [`$wide_width-1`:0] shifted_C,
-    output logic SignC, NANC, InfC, ZeroC, RStickyC, 
+    output logic SignC, NANC, InfC, ZeroC, 
     output logic [`$exp_width+1`:0] ExpBase,
     output logic valid_out);	
 

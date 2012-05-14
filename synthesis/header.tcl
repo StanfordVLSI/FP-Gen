@@ -49,7 +49,7 @@ if { [info exists ENABLE_MANUAL_PLACEMENT] } {
 }
 
 if { [file exists ../../gen_params.tcl] } {
-  source -echo ../../gen_params.tcl
+  source -echo -verbose ../../gen_params.tcl
 } 
 
 if {![info exists PipelineDepth]} {
@@ -65,11 +65,11 @@ if {![info exists SmartRetiming]} {
 }
 
 if {![info exists MulpPipelineDepth]} {
-  set $MulpPipelineDepth 1
+  set MulpPipelineDepth 1
 }
 
 if {![info exists EnableMultiplePumping]} {
-  set $EnableMultiplePumping NO
+  set EnableMultiplePumping NO
 }
 
 set target_library [set ${VT}_${Voltage}_target_libs]

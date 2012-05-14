@@ -22,18 +22,17 @@ if { [file exists ../../top.saif] } {
   report_saif
   #set_power_prediction true  
 } else {
-  set_switching_activity -toggle_rate 2 -clock clk -static_probability 0.5 clk
-  set_switching_activity -toggle_rate 0.5 -clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
-  set_switching_activity -toggle_rate 0.01 -clock clk -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
-  set_switching_activity -toggle_rate 0.2 -clock clk -static_probability 0.8 valid_in
+  set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
+  set_switching_activity -toggle_rate 0.5 -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
+  set_switching_activity -toggle_rate 0.01 -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
+  set_switching_activity -toggle_rate 0.2 -static_probability 0.8 valid_in
 }
 
-
+set HEDGE 0.8
+set PATH_RATIO 0.8 
 
 if { $PipelineDepth > 0 } {
 
-  set HEDGE 0.8
-  set PATH_RATIO 0.8 
   set CLK clk
   set RST reset
   
@@ -56,7 +55,6 @@ if { $PipelineDepth > 0 } {
   if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
     set_multicycle_path $MulpPipelineDepth -from [get_cells MulShift/MUL0/* -filter {@is_sequential==true}]
   }
-	
   if { $Retiming } { 	
     set_optimize_registers true -design ${DESIGN_NAME}
  

@@ -86,7 +86,7 @@
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //; my $enable_forwarding ;
 //; if( $desinware_mode eq 'OFF' ){
-//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
+//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //; } elsif($desinware_mode eq 'ON'){
 //;     $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['NO'],
@@ -98,7 +98,7 @@
 //; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor(3*$pipeline_depth/7), Min=>0, 
 //;                       Max=> (($enable_forwarding =~ /YES/)?$pipeline_depth-1:$pipeline_depth) ,
 //;                       Doc=>"Pipeline depth of the multiplier tree !FUNCTIONAL!");
-//; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
+//; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'YES', List=>['YES', 'NO'],
 //; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
 //; my $retiming ;
 //; if( $pipeline_depth > 1 ){
@@ -107,7 +107,7 @@
 //;   $retiming or $self->error( "Error: HACK-> Parameter may only be 1\n" ) ;
 //; } else {
 //;   $retiming = parameter(Name=>'Retiming', Val=>0, List=>[ 0, 1 ] ,
-//;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!");
+//;                       Doc=>"Should retiming be run in synthesis !FUNCTIONAL!");
 //;   $retiming and $self->error( "Error: HACK-> Parameter may only be 0\n" ) ;
 //; }
 //;
@@ -172,7 +172,7 @@ module `mname` (
     logic [`$product_width+1`:0] AB_pp0, AB_pp1, AB_pp0m, AB_pp1m;
     logic SignAB, NANAB, InfAB, ZeroAB, SignABm, NANABm, InfABm, ZeroABm;
     logic [`$wide_width-1`:0] shifted_C, shifted_Cm;
-    logic SignC, NANC, InfC, ZeroC, RStickyC, SignCm, NANCm, InfCm, ZeroCm, RStickyCm;
+    logic SignC, NANC, InfC, ZeroC, SignCm, NANCm, InfCm, ZeroCm;
     logic [`$exp_width+1`:0] ExpBase, ExpBasem;
     logic [2:0] rndm;
     logic [7:0] statusm;
@@ -193,11 +193,11 @@ module `mname` (
        .z_preInc(z_preInc), .z_final(z), .IncZ(IncZ),
        .clk(clk) , .reset(reset), .valid_in(valid_in), .stall(stall),
        .AB_pp0(AB_pp0), .AB_pp1(AB_pp1), .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
-       .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), .RStickyC(RStickyC), 
+       .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), 
        .ExpBase(ExpBase),
        .valid_out(valid_middle) );
 
-//;  my $add_bus_width = $exp_width + 2*$product_width + $wide_width + 15;
+//;  my $add_bus_width = $exp_width + 2*$product_width + $wide_width + 14;
 //;  my $add_pipeline_depth = $pipeline_depth-$mulp_pipeline_depth-1;
 //;  $add_pipeline_depth = $add_pipeline_depth<0? 0 : $add_pipeline_depth;
 //;  my $add_pipe = ($enableMultiplePumping =~ /YES/)?
@@ -205,9 +205,9 @@ module `mname` (
 //;       : generate('FF_pipeline', 'add_pipe', Width=> $add_bus_width, PipelineDepth=> $add_pipeline_depth, Retime=> 'YES');
 
   `$add_pipe ->instantiate()` (
-       .in({AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC, RStickyC, ExpBase}) , 
+       .in({AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}) , 
        .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
-       .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, RStickyCm, ExpBasem}),
+       .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem}),
        .valid_out(valid_inc) );
 
 
