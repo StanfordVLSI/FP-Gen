@@ -361,7 +361,7 @@ gen_syn: genesis_clean
 	@echo ====================================================
 	rm *.v
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) -parameter $(SYNTH_PARAM_STRING)
-
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
 
 
 # VCS rules:
