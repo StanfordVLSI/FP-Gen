@@ -33,11 +33,12 @@ SYNTH_PARAM_STRING ?=
 VERIF_PARAM_STRING ?= 
 
 ifndef DESIGN_NAME
-  DESIGN_NAME:=MultiplierP
+  DESIGN_NAME:=FMA
   $(warning WARNING: Running with default design.  DESIGN_NAME=$(DESIGN_NAME))
 endif
 
 ifeq ($(DESIGN_NAME),MultiplierP)
+  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
   INST_NAME ?= MultiplierP
   MOD_NAME ?= MultiplierP
   TOP_NAME ?= top
@@ -45,6 +46,7 @@ ifeq ($(DESIGN_NAME),MultiplierP)
 endif 
 
 ifeq ($(DESIGN_NAME),FPMult)
+  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
   INST_NAME ?= FPMult
   MOD_NAME ?= FPMult
   TOP_NAME ?= top_FPMult
@@ -106,6 +108,7 @@ ifeq ($(DESIGN_NAME),FMA)
 endif 
 
 ifeq ($(DESIGN_NAME),Multiplier)
+  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
   INST_NAME ?= Multiplier
   MOD_NAME ?= Multiplier
   TOP_NAME ?= top_Multiplier
@@ -113,6 +116,7 @@ ifeq ($(DESIGN_NAME),Multiplier)
 endif 
 
 ifeq ($(DESIGN_NAME),FPMult)
+  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
   INST_NAME ?= FPMult
   MOD_NAME ?= FPMult
   TOP_NAME ?= top_FPMult
@@ -120,6 +124,7 @@ ifeq ($(DESIGN_NAME),FPMult)
 endif 
 
 ifeq ($(DESIGN_NAME),adder)
+  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
   INST_NAME ?= adder
   MOD_NAME ?= adder
   TOP_NAME ?= top_adder
