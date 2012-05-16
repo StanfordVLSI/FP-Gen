@@ -114,7 +114,7 @@ module `mname` (
       //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
       //; }
-      .a(ps0), .b(ps1), .sum0(MiddleSum0), .co0(co0),  .sum1(MiddleSum1), .co1(co1));
+      .a(ps0), .b(ps1), .ci(1'b0), .sum0(MiddleSum0), .co0(co0),  .sum1(MiddleSum1), .co1(co1));
 
 
   assign Sum0 = { (co0 & (co_middle | ~KillCarry)? C_upper_1 : C_upper_0),MiddleSum0};

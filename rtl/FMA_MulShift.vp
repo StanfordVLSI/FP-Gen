@@ -119,6 +119,9 @@ module `mname` (
 
    `$Mul_obj->instantiate()` 
      (
+      //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+      //; }
       .a({ ~denormA , a[`$frac_width -1`:0]}), .b( { ~denormB , b[`$frac_width -1`:0]} ), 
       //; if($enable_forwarding =~ /YES/){
       .ainc( ainc ), .binc(binc),
