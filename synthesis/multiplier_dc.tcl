@@ -2,7 +2,7 @@
 # one example is running this from command line
 # dc_shell-xg-t -f multiplier_dc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1; set VT hvt; set Voltage 0v8" | tee -i multiplier_dc_optimized.log
 
-source -echo ../header.tcl
+source -echo -verbose ../header.tcl
 
 
 if { [file exists ../../top.saif] } {
@@ -40,7 +40,8 @@ if { $PipelineDepth > 0 } {
        
   if { $Retiming && $SmartRetiming } {
     current_design MultiplierP_unq1
-    set_max_delay [expr double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
+    set cycle_multiplier [expr ($EnableMultiplePumping == "YES" && $MulpPipelineDepth>1)? $MulpPipelineDepth: 1 ];
+    set_max_delay [expr double($cycle_multiplier)*double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
     compile_ultra -no_autoungroup
     current_design ${DESIGN_NAME}
     #set_dont_touch [get_cells -hierarchical MUL0] true
