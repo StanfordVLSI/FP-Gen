@@ -63,7 +63,7 @@ module `mname` (
   `$pipein ->instantiate()` ( .in(in) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), .out(out), .valid_out(valid_out) );
 //; } else {
   assign out = in;
-  assign stall_out = stall_in;
+  assign valid_oiut = valid_in;
 //; }
   
 endmodule
