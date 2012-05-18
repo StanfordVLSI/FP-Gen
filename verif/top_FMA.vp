@@ -62,6 +62,10 @@ module `mname` ();
    //; if ($pipeline_depth>0){
    logic stall, SI, SCAN_ENABLE, test_mode, SO, valid_out;
    //; }
+
+   //; if ($enable_forwarding =~ /YES/){
+   logic forward_a, forward_b, forward_c; 
+  //; }
 						  
    //; if ($verif_mode =~ /ON/){
    logic 				      dumptolog;
@@ -75,7 +79,7 @@ module `mname` ();
 			     //; }
 			     .a(a), .b(b), .c(c), .rnd(rnd),
                              //; if ($enable_forwarding =~ /YES/){
-                             .forward_a(1'b0), .forward_b(1'b0), .forward_c(1'b0),
+                             .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
                              //; }
    			     //; if ($pipeline_depth>0){
                              .clk(clk), .reset(reset), .valid_in(1'b1), .stall(1'b0),
@@ -95,23 +99,27 @@ module `mname` ();
    //; my $TestBench_obj = generate('TestBench_FMA', 'TestBench', 
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width,
+   //;                              EnableForwarding=>$enable_forwarding,
    //;                              PipelineDepth=>$pipeline_depth,
    //; 				    UseInc=>'NO',
    //;                              TestDenormals=>$enable_denormals);
    `$TestBench_obj->instantiate` (
-				// outputs:
-				.dumptolog(dumptolog),
-				.a(a), .b(b), .c(c), .rnd(rnd),
-   			     	//; if ($pipeline_depth>0){
-                            	.clk(clk), .reset(reset),
-			     	.stall_pipeline(stall_pipeline),  .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
-                             	.SO(SO), .SI(SI),
-   		            	 //; } else {
- 			    	 .clk(clk), .reset(reset),
-                            	 //; }
-				// inputs
-				.z(z), .zinc(zinc), .status(status)
-				);
+				  // outputs:
+				  .dumptolog(dumptolog),
+				  .a(a), .b(b), .c(c), .rnd(rnd),
+				  //; if ($enable_forwarding =~ /YES/){
+				  .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
+				  //; }
+   			     	  //; if ($pipeline_depth>0){
+                            	  .clk(clk), .reset(reset),
+			     	  .stall_pipeline(stall_pipeline),  .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
+                             	  .SO(SO), .SI(SI),
+   		            	  //; } else {
+ 			    	  .clk(clk), .reset(reset),
+                            	  //; }
+				  // inputs
+				  .z(z),  .status(status)
+				  );
    //; } # End of "if ($verif_mode..."
 
 

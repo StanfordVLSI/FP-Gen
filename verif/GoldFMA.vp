@@ -46,11 +46,31 @@ class `mname`;
    `$expectedResult_obj->instantiate` = new();
    
 
-   function bit CheckMultResult(`$typeRes` transRes);
+   function bit CheckMultResult(`$typeRes` transRes, `$typeA` transA, `$typeB` transB, `$typeC` transC, logic [2:0] rnd);
+
+      $write(  "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b\n ", $time,
+	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
+      $write(  "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b\n", $time,
+	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
+      $write(  "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
+	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);
+      transA.CalculateInc(); 
+      transB.CalculateInc();
+      transC.CalculateInc();
+      $write(  "%t: PostInc: TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b\n ", $time,
+	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
+      $write(  "%t:          TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b\n", $time,
+	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
+      $write(  "%t:          TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
+	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);
+      CalcGold(transA, transB, transC, rnd);
+      
+      // finally put it in your memory for a later check 
+      $display("%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h Inc=%1b", $time,
+	       Expected.TransType.name(), Expected.Sign, Expected.Exponent, Expected.Fraction, Expected.Inc);
       //$display("%t: RESULT: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
       //transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction);
 		transRes.CalculateInc(); 
-		Expected.CalculateInc();
       // First check flags:
       if (transRes.TransType == `$typeRes`::QuietNaN || transRes.TransType == `$typeRes`::SignalingNaN) begin
 	 if (Expected.TransType == `$typeRes`::QuietNaN || Expected.TransType == `$typeRes`::SignalingNaN)
@@ -89,27 +109,13 @@ class `mname`;
       logic 			      overflow = 0, underflow = 0;
 
       
-      $write(  "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b\n ", $time,
-	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
-      $write(  "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b\n", $time,
-	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
-      $write(  "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
-	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);      
+     
       
       // init all values:
       FracExpected = '0;
       ExpExpected = '0;
       SignExpected = '0;
-      transA.CalculateInc(); 
-      transB.CalculateInc();
-      transC.CalculateInc();
-      
-      $write(  "%t: PostInc: TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b\n ", $time,
-	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
-      $write(  "%t:          TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b\n", $time,
-	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
-      $write(  "%t:          TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
-	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);      
+     
       
       // First we calculate the expected sign, since it used in both regular and corner cases
       // plus x plus ==> plus; plus x minus ==> minus; minus x minus ==> minus; 
@@ -393,11 +399,8 @@ end
 	 end
       end // End of the "normal" case (no special input)
       
-      
+      Expected.CalculateInc();
 
-      // finally put it in your memory for a later check 
-      $display("%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h Inc=%1b", $time,
-	       Expected.TransType.name(), Expected.Sign, Expected.Exponent, Expected.Fraction, Expected.Inc);
    endfunction // CalcGold
    
    

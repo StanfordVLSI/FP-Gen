@@ -86,7 +86,7 @@
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //; my $enable_forwarding ;
 //; if( $desinware_mode eq 'OFF' ){
-//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
+//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //; } elsif($desinware_mode eq 'ON'){
 //;     $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['NO'],
@@ -263,7 +263,17 @@ module `mname` (
 
 
 //; } #End Not Designware Loop
-   
+
+
+
+   //; if ($verif_mode =~ /ON/){
+	// synopsys translate_off
+	always @(posedge dumptolog)
+	begin
+		$display ("z = %h", z);
+	end
+	// synopsys translate_on
+//; }
 endmodule
 
 
