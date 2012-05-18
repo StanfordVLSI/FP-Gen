@@ -221,26 +221,28 @@ module `mname` (
               : ResultIsInfinity ? {1'b0,SignInfinity, {{(`$exp_width-1`){1'b1}}, ~MaxNum} , {(`$frac_width`){MaxNum}}}
                                  : {RoundInc, SignResult, ExpResult, ManResult[`$frac_width -1`:0]};
 
-  assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
+   assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
 
-//; if ($verif_mode =~ /ON/){
-	// synopsys translate_off
-	always @(posedge dumptolog)
-	begin
-		$display ("AB_pp0      = %b", AB_pp0);
-		$display ("AB_pp1      = %b",AB_pp1);
-		$display ("C_middle    = %b", C_middle);
-		$display ("KillCarry = %b co_middle = %b co0=%b", KillCarry, co_middle, co0);
-		$display ("final_C= %b", final_C);
-		$display ("C_upper_1= %b", {C_upper_1 ,MiddleSum0});
-		$display ("Sum0 = %b",Sum0);
-		$display ("FinalSum = %b", FinalSum);
-		$display ("ShiftedResult = %b", ShiftedResult);
-		$display ("lza_mask = %b LshiftAmt=%d IncExp=%b", lza_mask, LshiftAmt, IncExp);
-		$display ("ManResult = %b SignResult= %b ExpResult=%b",ManResult, SignResult, ExpResult);
-	end
-	// synopsys translate_on
-//; }
+   //; if ($verif_mode =~ /ON/){
+   // synopsys translate_off
+   always @(posedge dumptolog)
+     begin
+	$display ("AB_pp0      = %b", AB_pp0);
+	$display ("AB_pp1      = %b",AB_pp1);
+	$display ("C_middle    = %b", C_middle);
+	$display ("KillCarry = %b co_middle = %b co0=%b", KillCarry, co_middle, co0);
+	$display ("final_C= %b", final_C);
+	$display ("C_upper_1= %b", {C_upper_1 ,MiddleSum0});
+	$display ("Sum0 = %b",Sum0);
+	$display ("FinalSum = %b", FinalSum);
+	$display ("ShiftedResult = %b", ShiftedResult);
+	$display ("lza_mask = %b LshiftAmt=%d IncExp=%b", lza_mask, LshiftAmt, IncExp);
+	$display ("ManResult = %b SignResult= %b ExpResult=%b",ManResult, SignResult, ExpResult);
+	$display ("ExpBase = %h ExpResult0 = %h LshiftAmt = %h ExpResult= %h", ExpBase, ExpResult0, LshiftAmt, ExpResult);
+	$display(" ExpUnderflow = %b FV_exp = %b FV = %b", ExpUnderflow, FV_exp, FV);
+     end
+   // synopsys translate_on
+   //; }
 
 endmodule
 

@@ -254,7 +254,7 @@ module `mname` (
 	begin
 		$display ("AB_pp0      = %b", AB_pp0);
 		$display ("AB_pp1      = %b",AB_pp1);
-                $display ("ExpBase= %b", ExpBase);
+                $display ("ExpBase= %h", ExpBase);
                 $display ("shifted_C= %b", shifted_C);
 	end
 	// synopsys translate_on
