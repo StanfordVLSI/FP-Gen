@@ -51,6 +51,13 @@
 //; my $seed = parameter(Name=>'Seed',Val=>12345, Min=>0, Step=>1,
 //;                      Doc=>"Seed for random values".
 //;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
+//; my $forward_cycle = $pipeline_depth-1;
+//; my $forward_cycle_a = parameter (Name=>'ForwardCycA', Val=>$forward_cycle, Min=>1, Max=>$pipeline_depth,
+//;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
+//; my $forward_cycle_b = parameter (Name=>'ForwardCycB', Val=>$forward_cycle, Min=>1, Max=>$pipeline_depth,
+//;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
+//; my $forward_cycle_c = parameter (Name=>'ForwardCycC', Val=>$forward_cycle, Min=>1, Max=>$pipeline_depth,
+//;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
 //;                                 
 //; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2;
 //; my $fp_width = $frac_width + $exp_width + 1;
@@ -60,7 +67,7 @@ program automatic `mname` (
 			   // signals to drive the design
     output logic [`$exp_width + $frac_width`:0] a, b, c,
     output logic [2:0] 				rnd,
-			   //; if ($enable_forwarding =~ /YES/){
+			   //; if ($enable_forwarding eq 'YES'){
     output logic 				forward_a, forward_b, forward_c,
 			   //; }			
    //; if ($pipeline_depth>0){
@@ -99,7 +106,7 @@ program automatic `mname` (
 				
    
    // Singals for pipeline output
-   logic [`$exp_width + $frac_width`:0] r_a, r_b, r_c, expected, r_expected,a_q[$], b_q[$], c_q[$], expected_q[$];
+   logic [`$exp_width + $frac_width`:0] r_a, r_b, r_c, expected, r_expected, a_q[$], b_q[$], c_q[$], expected_q[$];
 //   logic 				r_ainc, ainc_q[$], r_binc, binc_q[$], r_cinc, cinc_q[$];
    logic [2:0] 				r_rnd;
 
@@ -137,6 +144,7 @@ program automatic `mname` (
    //; 				    Architecture=>$arch,   
    //;                              TestDenormals=>$test_denormals);
    `$TransRes_obj->instantiate`;
+
    
    // Reference model
    //; my $GoldRef_obj = generate('GoldFMA', 'GoldRef', 
@@ -146,6 +154,22 @@ program automatic `mname` (
    //;                              FPTransRes_Ptr=>$TransRes_obj,
    //;                              TestDenormals=>$test_denormals);
    `$GoldRef_obj->instantiate`;
+
+
+   //; my $forward_A;
+   //; my $forward_B;
+   //; my $forward_C;
+   //; if ($enable_forwarding eq 'YES'){
+   // Random model for forwarding signal
+   //; $forward_A = generate('forward', 'ForwardA');
+   `$forward_A->instantiate()`;
+   //; $forward_B = generate('forward', 'ForwardB');
+   `$forward_B->instantiate()`; 
+   //; $forward_C = generate('forward', 'ForwardC');
+   `$forward_C->instantiate()`;
+   logic 				forward_a_q[$], forward_b_q[$], forward_c_q[$];
+   
+   //; }
    
    initial forever
     begin
@@ -165,6 +189,11 @@ program automatic `mname` (
       TransGenC = new();
       TransRes = new();
       GoldRef = new();
+      //; if ($enable_forwarding eq 'YES'){
+      `$forward_A->iname()` = new();
+      `$forward_B->iname()` = new();
+      `$forward_C->iname()` = new();
+      //; }
 
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
@@ -178,6 +207,11 @@ program automatic `mname` (
       // binc = 1'b0;
       //cinc = 1'b0;
       rnd = 3'b0;
+      //; if ($enable_forwarding eq 'YES'){
+      forward_a = 1'b0;
+      forward_b = 1'b0;
+      forward_c = 1'b0;
+      //; }
       #150; // 2 cycles of reset
       reset=1'b0;
    end
@@ -189,13 +223,71 @@ program automatic `mname` (
 	 for (int i=0; i<num_trans; i++) begin
 	    // Assign values to the lines
 	    dumptolog = 1'b0;
+	    //; if ($enable_forwarding eq 'YES'){
+	    `$forward_A->iname()`.randomize();
+	    `$forward_B->iname()`.randomize();
+	    `$forward_C->iname()`.randomize();
+	    //$display ("%t forward_A.forward = %d expected_q.size = %d forward_cycle_a = %d",$time, `$forward_A->iname()`.forward, expected_q.size(), `$forward_cycle_a`);
+	    if ( `$forward_A->iname()`.forward
+		// check the if there is result in pipeline for forwarding
+		&& expected_q.size() >= `$forward_cycle_a` ) begin
+	       forward_a = 1'b1;
+	       a = expected_q[`$pipeline_depth-$forward_cycle_a-1`];
+	       //; for (my $i=0; $i<$forward_cycle_a; $i++){
+	       //$display("%t expected_q[`$i`] = %h", $time, expected_q[`$i`]);
+	       //;}
+	       TransGenA.ForceSignExpFrac(a[`$fp_width-1`], a[`$fp_width -2`:`$frac_width`], a[`$frac_width -1`:0], 1'b0);
+	    end 
+	    else  begin
+	       forward_a = 1'b0;
+	       TransGenA.randomize();
+	       a[`$exp_width + $frac_width`] = TransGenA.Sign;
+	       a[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenA.Exponent;
+	       a[`$frac_width -1`:0] = TransGenA.Fraction;
+	    end // else: !if( `$forward_A->iname()`.forward...
+	    // store the forward_a signal in the queue
+	    forward_a_q = {forward_a_q, forward_a};
+	    
+	    if ( `$forward_B->iname()`.forward
+		// check the if there is result in pipeline for forwarding
+		&& expected_q.size() >= `$forward_cycle_b` ) begin
+	       forward_b = 1'b1;
+	       b = expected_q[`$pipeline_depth-$forward_cycle_b-1`];	       
+	       TransGenB.ForceSignExpFrac(b[`$fp_width-1`], b[`$fp_width -2`:`$frac_width`], b[`$frac_width -1`:0], 1'b0);
+	    end 
+	    else  begin
+	       forward_b = 1'b0;
+	       TransGenB.randomize();
+	       b[`$exp_width + $frac_width`] = TransGenB.Sign;
+	       b[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenB.Exponent;
+	       b[`$frac_width -1`:0] = TransGenB.Fraction;
+	    end // else: !if( `$forward_B->iname()`.forward...
+	    // store the forward_b signal in the queue
+	    forward_b_q = {forward_b_q, forward_b};
+	    
+	    if ( `$forward_C->iname()`.forward
+		// check the if there is result in pipeline for forwarding
+		&& expected_q.size() >= `$forward_cycle_c` ) begin
+	       forward_c = 1'b1;
+	       c = expected_q[`$pipeline_depth-$forward_cycle_c-1`];	       
+	       TransGenC.ForceSignExpFrac(c[`$fp_width-1`], c[`$fp_width -2`:`$frac_width`], c[`$frac_width -1`:0], 1'b0);
+	    end 
+	    else  begin
+	       forward_c = 1'b0;
+	       TransGenC.randomize();
+	       c[`$exp_width + $frac_width`] = TransGenC.Sign;
+	       c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
+	       c[`$frac_width -1`:0] = TransGenC.Fraction;
+	    end // else: !if( `$forward_C->iname()`.forward...
+	    // store the forward_a signal in the queue
+	    forward_c_q = {forward_c_q, forward_c};
+	    //; } else {
 	    TransGenA.randomize();
-	    TransGenB.randomize();
-	    TransGenC.randomize();
 	    a[`$exp_width + $frac_width`] = TransGenA.Sign;
 	    a[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenA.Exponent;
 	    a[`$frac_width -1`:0] = TransGenA.Fraction;
-	    //ainc = TransGenA.Inc;
+	    TransGenB.randomize();
+	    TransGenC.randomize();
 	    b[`$exp_width + $frac_width`] = TransGenB.Sign;
 	    b[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenB.Exponent;
 	    b[`$frac_width -1`:0] = TransGenB.Fraction;
@@ -204,6 +296,7 @@ program automatic `mname` (
 	    c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
 	    c[`$frac_width -1`:0] = TransGenC.Fraction;
 	    //cinc = TransGenC.Inc;
+	    //;}
 	    GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
 	    expected[`$exp_width + $frac_width`] = GoldRef.Expected.Sign;
 	    expected[`$exp_width + $frac_width -1`:`$frac_width`] = GoldRef.Expected.Exponent;
@@ -265,9 +358,22 @@ program automatic `mname` (
 	    TransGenB.ForceSignExpFrac(r_b[`$fp_width-1`], r_b[`$fp_width -2`:`$frac_width`], r_b[`$frac_width -1`:0], 1'b0);
 	    TransGenC.ForceSignExpFrac(r_c[`$fp_width-1`], r_c[`$fp_width -2`:`$frac_width`], r_c[`$frac_width -1`:0], 1'b0);
 	    // GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
-	    
+
+	    //; if ($enable_forwarding eq 'YES'){
+	    // Print the forwarding information
+	    if ( forward_a_q[0] )
+	      $display("%t A is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_a`);
+	    if ( forward_b_q[0] )
+	      $display("%t B is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_b`);
+	    if ( forward_c_q[0] )
+	      $display("%t C is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_c`);
+	    forward_a_q = forward_a_q[1:$];
+	    forward_b_q = forward_b_q[1:$];
+	    forward_c_q = forward_c_q[1:$];
+	    //; }
 	    // now check results... 
 	    if (! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd))
+	      
 	      begin
 		 dumptolog = 1'b1;
 		 #1;
@@ -275,7 +381,7 @@ program automatic `mname` (
 		 $finish(2);
 	      end
 	    else begin
-	       $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, expected);
+	       $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, r_expected);
 	    end
 	       #100;		// wait a clock cycle
     	    end // for (int i=0; i<num_trans; i++)

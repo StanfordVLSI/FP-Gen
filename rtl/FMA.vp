@@ -86,7 +86,7 @@
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //; my $enable_forwarding ;
 //; if( $desinware_mode eq 'OFF' ){
-//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
+//;     $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //; } elsif($desinware_mode eq 'ON'){
 //;     $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['NO'],
@@ -146,6 +146,9 @@ module `mname` (
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
   */
+
+
+
    
    
 //; if( $desinware_mode eq 'ON' ){
@@ -181,7 +184,10 @@ module `mname` (
 //; my $fma_mulshift = generate('FMA_MulShift','MulShift', FractionWidth=> $frac_width , ExponentWidth=> $exp_width,
 //;                          EnableDenormals=> $enable_denormals, EnableForwarding=> $enable_forwarding,
 //;                          EnableMultiplePumping=> $enableMultiplePumping, PipelineDepth=> $mulp_pipeline_depth);
-
+   always @(posedge clk) begin
+      if (forward_a)
+	$display( "%t z_preInc=%h z_preIncm=%h", $time, z_preInc, z_preIncm);
+   end
   `$fma_mulshift->instantiate()` (
    //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
@@ -190,7 +196,7 @@ module `mname` (
    //; if ($enable_forwarding =~ /YES/){
        .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
    //; }
-       .z_preInc(z_preInc), .z_final(z), .IncZ(IncZ),
+       .z_preInc(z_preIncm), .z_final(z), .IncZ(IncZm),
        .clk(clk) , .reset(reset), .valid_in(valid_in), .stall(stall),
        .AB_pp0(AB_pp0), .AB_pp1(AB_pp1), .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
        .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), 
