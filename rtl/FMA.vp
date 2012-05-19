@@ -184,10 +184,7 @@ module `mname` (
 //; my $fma_mulshift = generate('FMA_MulShift','MulShift', FractionWidth=> $frac_width , ExponentWidth=> $exp_width,
 //;                          EnableDenormals=> $enable_denormals, EnableForwarding=> $enable_forwarding,
 //;                          EnableMultiplePumping=> $enableMultiplePumping, PipelineDepth=> $mulp_pipeline_depth);
-   always @(posedge clk) begin
-      if (forward_a)
-	$display( "%t z_preInc=%h z_preIncm=%h", $time, z_preInc, z_preIncm);
-   end
+
   `$fma_mulshift->instantiate()` (
    //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
