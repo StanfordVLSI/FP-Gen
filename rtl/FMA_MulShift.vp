@@ -85,10 +85,6 @@ module `mname` (
   logic valid0, valid_exp, valid_r;
 
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
-   always @(posedge clk) begin
-      if (forward_a)
-	$display( "%t A is forwarded, val=%h", $time, a);
-   end
   assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
   assign {b,binc} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
   assign {c,cinc} = forward_c? {z_preInc,IncZ}:{c_in,1'b0};
