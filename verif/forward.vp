@@ -1,0 +1,34 @@
+/* *****************************************************************************
+ * Description:
+ * Random generator for fowarding signals
+ * 
+ * Parameters:
+ * * FractionWidth, ExponentWidth, Architecture
+ * 
+ *  
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * May 18, 2012  jingpu    init version
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//;  my  $weight = parameter(Name=>'Weight', Val=>20, Min=>0, Step=>1, Max=>100,
+//;	  		      Doc=>"Distribution weight for fowarding signal to be 1 (range is 0..100)");
+
+
+
+class `mname`;
+   rand bit forward;
+
+
+   constraint pick_forward{
+      forward dist {1 := `$weight`, 0 := `100-$weight`};
+   }
+
+endclass : `mname`
+   
