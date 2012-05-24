@@ -63,9 +63,6 @@ module `mname` ();
    logic stall, SI, SCAN_ENABLE, test_mode, SO, valid_out;
    //; }
 
-   //; if ($enable_forwarding =~ /YES/){
-   logic forward_a, forward_b, forward_c; 
-  //; }
 						  
    //; if ($verif_mode =~ /ON/){
    logic 				      dumptolog;
