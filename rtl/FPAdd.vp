@@ -13,7 +13,7 @@
  * 
  * 
  * Parameters:
- * * Width
+ * * FractionWidth, ExponentWidth, useInc, EnableDenormals
  * 
  * Change bar:
  * -----------
@@ -40,13 +40,15 @@
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
-//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
-//; 			   Doc=>"Inputs A has an increment signal");
+//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
+//; 			   Doc=>"allow forwarding of unrounded A unsing IncA signal");
 //;
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>3, List=>[ 0,1,2,3,4,5,6,7 ] ,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //;
 //; # And some local variables
 //; my $manA_width = $frac_width + 1;
@@ -60,36 +62,45 @@ module `mname` (
     input logic dumptolog,
   //; }
     input logic [`$exp_width + $frac_width`:0] A,
-  //; if ($useInc){
+  //; if ($enable_forwarding =~ /YES/){
     input logic IncA,
   //; }
     input logic [`$ExpB_width-1`:0] ExpB, ExpDifference,
     input logic [`$manB_width-1`:0] ManB,
-    input logic SignB, InfB, NANB, ZeroB, RStickyB, ResultIsClose, ExpB_gt_ExpA,
-    input logic [2:0] rnd, 
-    output logic [`$exp_width + $frac_width`:0] Z, 
-  //; if ($useInc){
+    input logic SignB, InfB, NANB, ZeroB, ResultIsClose, ExpB_gt_ExpA,
+    input logic [2:0] rnd,
+    input logic  clk , reset, valid_in, stall,
+
+    output logic [`$ExpB_width-1`:0] ExpZ_pp0, ExpZ_pp1, ExpZ_pp0_late, ExpZ_pp1_late,
+    output logic [`$exp_width + $frac_width`:0] Z,
     output logic IncZ,
-  //; }
     output [7:0] status,
-    output logic [`$ExpB_width-1`:0] ExpZ_pp0, ExpZ_pp1,
-    output logic ExpZDecrementWhenShifting, ShiftZ
+    output logic ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, ShiftZ,
+    output logic  valid_out
                );
 
   /* synopsys dc_tcl_script_begin
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
   */
+
+//; if ( $enable_forwarding =~ /NO/){
+  logic IncA;
+  assign IncA=0; 
+//; }
 	
   logic [`$frac_width-1`:0] SigA;
   logic [`$frac_width`:0] ManA, FarManSum , CloseManDiff, ManSum;
-  logic [`$ExpB_width-1`:0] ExpA , CloseExpbase, LShiftAmtWide;
+  logic [`$ExpB_width-1`:0] ExpA , ExpA_p1, CloseExpbase, FarExpbase, LShiftAmtWide;
   logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
-  logic [`$exp_width + $frac_width`:0] FinalSum;
-  logic SignA, ZeroExpA, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ;
+  logic [`$exp_width + $frac_width`:0] FinalSum, A_p1, A_p2;
+  logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ;
   logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract;
-  logic FX, FV, FU, FI, Tiny, FV_exp;
+  logic FX, FV, FU, FI, Tiny;
+  logic FI_p2, ResultIsInfinity_p2, ResultIsA_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2;
+  logic subtract_p, ResultIsClose_p, ResultIsA_p, ResultIsClose_p2;
   logic RndMaxNum, MaxNum;
+  logic valid_Result, valid_Result2, valid_A, valid_A2;
 
   assign SigA  = A[`$frac_width-1`: 0 ];
   assign ZeroExpA  =  ~|A[`$exp_width+$frac_width-1`:`$frac_width`];
@@ -97,78 +108,148 @@ module `mname` (
   assign ManA  = { ~ZeroExpA , SigA}; //add implicit 1 to normal floatin point significands
   assign SignA = A[ `$exp_width + $frac_width` ];
 
-  assign NANorInfA =   &ExpA[`$exp_width-1`:0]; // ExpA==111....11
-  assign zeroSigA  =  SigA==0 & ~IncA;
-  assign ZeroA     =  zeroSigA & ZeroExpA;
+  assign zeroSigA  =  SigA=={(`$frac_width`){IncA}};
+  assign IncExpA   =  zeroSigA & IncA ; 
+  assign NANorInfA =  ( & ExpA[`$exp_width - 1` : 1])  & ( ExpA[0] | IncExpA ) ; // ExpA==111....11
+  assign ZeroA     =  zeroSigA & ZeroExpA & ~IncA;
   assign InfA      =  zeroSigA & NANorInfA;
   assign NANA      = ~zeroSigA & NANorInfA;
 
-  assign subtract = SignA ^ SignB;
-
   
   assign FI = NANA | NANB | (InfA & InfB & (SignA!=SignB));
-  assign FX = ResultIsNotSpecial & (Guard | Sticky| FV_exp);
-  assign FV = FV_exp & ~ZeroB & ~InfA & ~InfB & ~FI;
-  assign FU = ZeroResult & FX;
-
-
-  assign ResultIsInfinity = ( InfA | InfB | FV) & ~FI;
+  assign ResultIsInfinity =   (InfA | InfB) & ~FI;
   assign ResultIsA = ZeroB & ~FI & ~IncA;
-  assign ResultIsNotSpecial = ~ResultIsA & ~ResultIsInfinity & ~FI;
+  assign ResultIsNotSpecial = (~ZeroB|IncA) & ~InfA & ~InfB & ~NANA & ~NANB;
+  assign SignInfinity = InfA ? SignA : SignB;
+  assign SignSpecial = SignA & (~ZeroA | SignB);
+  assign subtract = SignA ^ SignB;
+
+//;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> 5, PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipeMisc ->instantiate()` ( .in({FI, ResultIsInfinity, ResultIsNotSpecial, SignInfinity, SignSpecial}) ,
+                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({FI_p2, ResultIsInfinity_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2}),
+                                .valid_out(valid_out) );
+
+
+//;   my $pipeMisc2 = generate(  'FF_pipeline',  'pipe_misc_short',  Width=> 3, PipelineDepth => $pipeline_depth-1, Retime=>'YES');
+  `$pipeMisc2->instantiate()` ( .in({subtract, ResultIsClose, ResultIsA}) ,
+                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({subtract_p, ResultIsClose_p, ResultIsA_p}),
+                                .valid_out(valid_Result) );
+
+//;   my $pipeMisc3 = generate(  'FF_pipeline',  'pipe_misc_one',  Width=> 3+2*$ExpB_width, PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
+  `$pipeMisc3->instantiate()` ( .in({ResultIsClose_p, ResultIsA_p, ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting}) ,
+                                .valid_in(valid_Result), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({ResultIsClose_p2, ResultIsA_p2, ExpZ_pp0_late, ExpZ_pp1_late, ExpZDecrementWhenShifting_late}),
+                                .valid_out(valid_Result2) );
+
+
+
+// the A, far and close path are clock gated based on the used path. they get the mantissa result in N cycles and the exponent in N-1 cycles
+
+
+//;   my $pipeA = generate(  'Pinned_pipeline',  'pipe_A',  Width=> $exp_width + $frac_width+1, PipelineDepth => $pipeline_depth-1);
+  `$pipeA ->instantiate()` ( .in(A) , .valid_in(valid_in & ResultIsA), .clk(clk) , .stall(stall), .reset(reset), 
+                             .out(A_p1),
+                             .valid_out(valid_A) );
+
+  assign ZeroExpA_p1  =  ~|A_p1[`$exp_width+$frac_width-1`:`$frac_width`];
+  assign ExpA_p1  = { A_p1[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroExpA_p1 | A_p1[`$frac_width`] };
+
+//;   my $pipeA2 = generate(  'Pinned_pipeline',  'pipe_A2',  Width=> $exp_width + $frac_width+1, PipelineDepth => ($pipeline_depth>0?1:0));
+  `$pipeA2 ->instantiate()` ( .in(A_p1) , .valid_in(valid_A), .clk(clk) , .stall(stall), .reset(reset), 
+                             .out(A_p2),
+                             .valid_out(valid_A2) );
 
 //; my $FarPathAdd_obj = generate('FarPathAdd', 'FPA', 
 //;                               , FractionWidth => $frac_width
 //;                               , ExponentWidth => $exp_width
-//;                               , useInc => $useInc
+//;                               , PipelineDepth => $pipeline_depth
+//;                               , useInc => $enable_forwarding
 //;                               , EnableDenormals => $enable_denormals);
 
-  `$FarPathAdd_obj->instantiate()` (.ManA(ManA), .IncA(IncA), .ExpA(ExpA), .SignA(SignA), .ZeroA(ZeroA), .ManB(ManB), .ExpB(ExpB), .SignB(SignB), .ZeroB(ZeroB), .RStickyB(RStickyB),
-                         .ExpDifference(ExpDifference) , .ExpB_gt_ExpA(ExpB_gt_ExpA), .ManSum(FarManSum), .ExpSum(FarExpSum),
-                         .SignSum(SignFarSum), .ZeroSum(ZeroFarSum), .Guard(FarGuard), .Sticky(FarSticky) ,.Overflow(FarOverflow) , .ShiftExponent(FarShiftZ), .dumptolog(dumptolog));
+  `$FarPathAdd_obj->instantiate()` (.ManA_in(ManA), .ExpA_in(ExpA), .SignA_in(SignA), .ZeroA_in(ZeroA),
+  //; if ($enable_forwarding =~ /YES/){
+                                    .IncA_in(IncA),
+  //; }
+                                    .ManB_in(ManB), .ExpB_in(ExpB), .SignB_in(SignB), .ZeroB_in(ZeroB),
+                                    .ExpDifference_in(ExpDifference) , .ExpB_gt_ExpA_in(ExpB_gt_ExpA),
+                                    .valid_in(valid_in & ~ResultIsClose & ResultIsNotSpecial ), .stall(stall), .clk(clk) , .reset(reset),
+                                    .ManSum_out(FarManSum), .ExpSum_out(FarExpSum), .SignSum_out(SignFarSum), .ZeroSum_out(ZeroFarSum),
+                                    .Guard_out(FarGuard), .Sticky_out(FarSticky) ,.Overflow_out(FarOverflow) , .ShiftExponent_out(FarShiftZ), .Expbase(FarExpbase),
+                                    .valid_out(valid_far),
+  //; if ($verif_mode =~ /ON/){
+                                     .dumptolog(dumptolog)
+  //; }
+                                      );
 
 //; my $ClosePathSub_obj = generate('ClosePathSub', 'CPS', 
 //;                               , FractionWidth => $frac_width
 //;                               , ExponentWidth => $exp_width
-//;                               , useInc => $useInc);
+//;                               , PipelineDepth => $pipeline_depth
+//;                               , useInc => $enable_forwarding
+//;                               , EnableDenormals => $enable_denormals);
 
-  `$ClosePathSub_obj->instantiate()` ( .ManA(ManA), .IncA(IncA), .ExpA(ExpA), .SignA(SignA), .ManB(ManB), .ExpB(ExpB), .SignB(SignB),
-                         .RStickyB(RStickyB), .ManDiff(CloseManDiff), .Guard(CloseGuard), .Sticky(CloseSticky), .ExpDiff(CloseExpDiff),
-                         .Expbase(CloseExpbase), .LShiftAmtWide(LShiftAmtWide),
-                         .SignDiff(CloseDiffSign) , .ZeroDiff(ZeroCloseDiff), .LZA_wrong(CloseShiftZ), .dumptolog(dumptolog));
+  `$ClosePathSub_obj->instantiate()` ( .ManA_in(ManA), .ExpA_in(ExpA), .SignA_in(SignA),
+                                       .ManB_in(ManB), .ExpB_in(ExpB), .SignB_in(SignB),
+  //; if ($enable_forwarding =~ /YES/){
+                                       .IncA_in(IncA),
+  //; }
+                                       .valid_in(valid_in & ResultIsClose & ResultIsNotSpecial ),
+                                       .stall(stall), .clk(clk) , .reset(reset),
+                                       .ManDiff_out(CloseManDiff), .ExpDiff_out(CloseExpDiff),
+                                       .SignDiff_out(CloseDiffSign) , .ZeroDiff_out(ZeroCloseDiff),
+                                       .Guard_out(CloseGuard), .Sticky_out(CloseSticky),
+                                       .Expbase(CloseExpbase), .LShiftAmtWide(LShiftAmtWide), .LZA_wrong_out(CloseShiftZ),
+                                       .valid_out(valid_close),
+  //; if ($verif_mode =~ /ON/){
+                                       .dumptolog(dumptolog)
+  //; }
+                                      );
 
-  assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow, ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting, ShiftZ} = 
-                    ResultIsClose?
-                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, 1'b0       , CloseExpbase       , ~LShiftAmtWide             , 1'b0     , CloseShiftZ}
-                   :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, {2'b0,FarExpSum}   , {(`$ExpB_width`){1'b1}}, subtract , FarShiftZ};
+
+
+
+  assign {ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting} = ResultIsA_p? { {2'b0,ExpA_p1} , {(`$ExpB_width`){1'b1}} , 1'b0} :
+                                                       ResultIsClose_p?
+                                                             {CloseExpbase,~LShiftAmtWide,1'b0}
+                                                           : {FarExpbase , {(`$ExpB_width`){1'b1}} , subtract_p};
+
+  assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow , ShiftZ} = 
+                    ResultIsClose_p2?
+                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, 1'b0, CloseShiftZ}
+                   :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, FarShiftZ};
 
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
   `$rnd_obj->instantiate()` (.rnd(rnd), .Sign(SignResult), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
 
   assign denormResult= ~ManSum[`$frac_width`] ;
   assign FinalSum = {SignResult, ExpSum[`$exp_width-1`:1]   ,ExpSum[0]   & ManSum[`$frac_width`]   , ManSum[`$frac_width-1`:0]};
-  assign FV_exp = Overflow;
-  
+
+  assign FX = ResultIsNotSpecial_p2 & (Guard | Sticky| Overflow);
+  assign FV = Overflow & ResultIsNotSpecial_p2;
+  assign FU = ZeroResult & FX;
   assign MaxNum =  FV & RndMaxNum;
+
   //assign Tiny = denormResult & (FinalSum!=0);
   assign Tiny = 0;
 
-  assign SignInfinity = InfA ? SignA : SignB;
-  assign SignSpecial = SignA & (~ZeroA | SignB); 
 
-  assign status = {2'b0, FX, FV, Tiny, FI, ResultIsInfinity, ZeroResult};
 
-  assign {IncZ,Z} = FI ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width-1`){1'b0}}}
-              : ResultIsInfinity ? {1'b0, SignInfinity,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
-                                    : ResultIsA ? {1'b0,SignSpecial,A[`$exp_width + $frac_width - 1`:0]} : {RoundInc,FinalSum};
+  assign status = {2'b0, FX, FV, Tiny, FI_p2, ResultIsInfinity_p2, ZeroResult};
+
+  assign {IncZ,Z} = FI_p2 ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width-1`){1'b0}}}
+              : (ResultIsInfinity_p2|FV) ? {1'b0, SignInfinity_p2,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
+                                : ResultIsA_p2 ? {1'b0,SignSpecial_p2,A_p2[`$exp_width + $frac_width - 1`:0]} : {RoundInc,FinalSum};
 
 //; if ($verif_mode =~ /ON/){
   // synopsys translate_off
   always @(posedge dumptolog)
   begin
     $display ("`$self->get_instance_path()`: ZeroExpC=%b ZeroC=%b InfC=%b ExpC=%h ManC=%h, SigC=%h IncC=%b",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA);
-    $display ("`$self->get_instance_path()`: ExpDifference=%d ResultIsInfinity =%b , ResultIsA =%b ,ResultIsNotSpecial =%b, ResultIsClose=%b",ExpDifference, ResultIsInfinity, ResultIsA,ResultIsNotSpecial, ResultIsClose);
-    $display ("`$self->get_instance_path()`: FU =%b , FV =%b ,FI =%b ,FX =%b, LSB=%b, Guard=%b, Sticky=%b, RoundInc =%b FV_exp=%b Overflow=%b FarOverflow=%b",FU, FV , FI,FX, ManSum[0], Guard, Sticky, RoundInc, FV_exp,Overflow,FarOverflow);
-    $display ("`$self->get_instance_path()`: ManSum   =%h ExpSum   =%h FinalSum=%h Z=%h", ManSum,ExpSum, FinalSum, Z);
+    $display ("`$self->get_instance_path()`: ExpDifference=%d ResultIsInfinity_p2 =%b , ResultIsA_p2 =%b ,ResultIsNotSpecial_p2 =%b, ResultIsClose_p2=%b",ExpDifference, ResultIsInfinity_p2, ResultIsA_p2,ResultIsNotSpecial_p2, ResultIsClose_p2);
+    $display ("`$self->get_instance_path()`: FU =%b , FV =%b ,FI =%b ,FX =%b, LSB=%b, Guard=%b, Sticky=%b, RoundInc =%b Overflow=%b FarOverflow=%b",FU, FV , FI,FX, ManSum[0], Guard, Sticky, RoundInc,Overflow,FarOverflow);
+    $display ("`$self->get_instance_path()`: ManSum   =%h ExpSum   =%h FinalSum=%h IncZ=%b Z=%h", ManSum,ExpSum, FinalSum, IncZ, Z);
   end
   // synopsys translate_on
 //; }

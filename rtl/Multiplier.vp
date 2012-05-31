@@ -96,36 +96,25 @@ module `mname`(
    //; if ($useMP){
     input logic                   mp_mode,
    //; }
-	       
-    input logic clk , rst , stall,
+    input logic valid_in,	       
+    input logic clk , reset , stall,
 
    //; if ($useInc){
     input logic 		  ainc, binc,
    //; }
     output logic [`2*$width`:0] out,
-    output logic stall_out		  
+    output logic valid_out		  
 		    );
 
 //; if( $DW_mode eq 'ON' ){
-
-//;   if ($total_pipeline_depth>0) {
   logic [`$width-1`:0]    a_in,b_in;
-//;     if ($total_pipeline_depth>1) {
-  logic [`$width-1`:0]    a_middle, b_middle;
-  logic stall_middle;
-//;     my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>1, Retime=>"NO");
-  `$pipein ->instantiate()` ( .in({a,b}) , .stall_in(stall), .clk(clk) , .reset(rst), .out({a_middle, b_middle}), .stall_out(stall_middle) );
-//;     my $piperest = generate(  'FF_pipeline',  'piperest',  Width=> 2*$width , PipelineDepth=>$total_pipeline_depth-1, Retime=>"YES");
-  `$piperest ->instantiate()` ( .in({a_middle, b_middle}) , .stall_in(stall_middle), .clk(clk) , .reset(rst), .out({a_in, b_in}), .stall_out(stall_out) );
-//;     } else {
-//;     my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>1, Retime=>"NO");
-  `$pipein ->instantiate()` ( .in({a,b}) , .stall_in(stall), .clk(clk) , .reset(rst), .out({a_in, b_in}), .stall_out(stall_out) );
-//;     }
-  DW02_mult #( `$width` , `$width` ) U1 ( .A(a_in), .B(b_in), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]));
+//;   if ($total_pipeline_depth>0) {
+//;     my $pipein = generate(  'Pinned_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>$total_pipeline_depth);
+  `$pipein ->instantiate()` ( .in({a,b}) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), .out({a_in, b_in}), .valid_out(valid_out) );
 //;   } else {
-  DW02_mult #( `$width` , `$width` ) U1 ( .A(a), .B(b), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]));
+  assign {a_in,b_in} = {a,b};
 //;   }
- 
+  DW02_mult #( `$width` , `$width` ) U1 ( .A(a_in), .B(b_in), .TC( 1'b0 ), .PRODUCT(out[`2*$width-1`:0]));
   assign out[`2*$width`] = 0;  
 //; } elsif( $DW_mode eq 'OFF' ){
 
@@ -133,11 +122,15 @@ module `mname`(
 /* SUM/CARRY MULTIPLIER */
    
    logic [`2*$width+1`:0] multp_out0, multp_out1, pp0, pp1; // sign extended by 2 because of booth encoding
+   logic valid_mulp;
 
    //; my $Mul_obj= generate('Pipelined_MultiplierP', 'MultP', Width=>$width, PipelineDepth => $mulp_pipeline_depth, UseInc=>($useInc)?"YES":"NO", UseMP=>($useMP)?"YES":"NO");
 
    `$Mul_obj->instantiate()` 
      (
+   //; if ($verif_mode =~ /ON/){
+      .dumptolog(dumptolog),
+   //; }
       .a(a), .b(b), 
    //; if ($useMP){
       .mp_mode(mp_mode),
@@ -145,28 +138,23 @@ module `mname`(
       //; if ($useInc){
       .ainc(ainc), .binc(binc),
       //; }
-      .stall(stall), .clk(clk) , .rst(rst),
+      .valid_in(valid_in),
+      .stall(stall), .clk(clk) , .reset(reset),
       .out0(multp_out0), .out1(multp_out1),
-      .stall_out(stall_mulp)
+      .valid_out(valid_mulp)
       );
 
 //;   if ($add_pipeline_depth>0) {
-//;     if ($enableMultiplePumping) {
-   logic [`2*$width+1`:0] out1, out0;
-   logic stall_add;
-//;       my $add1_pipeline = generate(  'FF_pipeline',  'add1_pipeline',  Width=> 4*$width+4 , PipelineDepth=>1, Retime=>"NO");
-    `$add1_pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .stall_in(stall_mulp), .clk(clk) , .reset(rst), .out({out1, out0}), .stall_out(stall_add) );
-//;       my $add2_pipeline = generate(  'FF_pipeline',  'add2_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$add_pipeline_depth-1, Retime=>"YES");
-    `$add2_pipeline ->instantiate()` ( .in({out1, out0}) , .stall_in(stall_add), .clk(clk) , .reset(rst), .out({pp1,pp0}), .stall_out(stall_out) );
-//;     } else {
-//;       my $add_pipeline = generate(  'FF_pipeline',  'add_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$add_pipeline_depth, Retime=>"YES");
-    `$add_pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .stall_in(stall_mulp), .clk(clk) , .reset(rst), .out({pp1,pp0}), .stall_out(stall_out) );
-//;     }
+//;     my $add_pipeline = $enableMultiplePumping?
+//;                          generate(  'Pinned_pipeline',  'add_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$add_pipeline_depth)
+//;                        : generate(  'FF_pipeline',  'add_pipeline',  Width=> 4*$width+4 , PipelineDepth=>$add_pipeline_depth, Retime=>"YES");
+    `$add_pipeline ->instantiate()` ( .in({multp_out1,multp_out0}) , .valid_in(valid_mulp), .clk(clk) , .stall(stall), .reset(reset), .out({pp1,pp0}), .valid_out(valid_out) );
 //;   } else {
    assign pp0=multp_out0;
    assign pp1=multp_out1;
 //;   }
    
+   logic co_dummy;
 /* FINAL SUMMATION */  
    //; my $adderInst = generate( 
    //;                            'adder'  ,  
@@ -175,12 +163,13 @@ module `mname`(
    //;                            Orientation=>'L' ,
    //;                            GroupName=>'PartialProductSum' 
    //;                          );
-   `$adderInst->instantiate()` (   
+   `$adderInst->instantiate()` (
 				   .a(  pp0[`2*$width`:0]  ) , 
 				   .b(  pp1[`2*$width`:0]  ) , 
-				   .ci(1'b0) , 
+				   .ci(1'b0) ,
+                                   .clk(clk) , .rst(reset), 
 				   //.s(  out_mp  ) 
-				   .s(  out  ) 
+				   .s(  out  ), .co(co_dummy)
 			       );
 
 //; if ($verif_mode =~ /ON/){

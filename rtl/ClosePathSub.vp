@@ -40,7 +40,9 @@
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
-//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>3, List=>[ 0,1,2,3,4,5,6,7 ] ,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//; my $useInc = parameter(Name=>'useInc', Val=>'YES', List=>['YES', 'NO'],
 //; 			   Doc=>"Inputs A has an increment signal");
 //;
 //; # And some local variables
@@ -52,18 +54,50 @@ module `mname`(
  //; if ($verif_mode =~ /ON/){
   input logic dumptolog,
  //; }
-  input logic [`$manA_width-1`:0] ManA, 
-  //; if ($useInc){
-  input logic IncA,
+  input logic [`$manA_width-1`:0] ManA_in, 
+  //; if ($useInc =~ /YES/){
+  input logic IncA_in,
   //; }
-  input logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, 
-  input logic SignA, SignB, RStickyB,
-  input logic [`$manB_width-1`:0] ManB,
-  output logic [`$manA_width-1`:0] ManDiff, 
-  output logic Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff,
-  output logic [`$exp_width-1`:0] ExpDiff, 
-  output logic [`$ExtendedExp_width-1`:0] Expbase, LShiftAmtWide
+  input logic [`$ExtendedExp_width-1`:0] ExpA_in, ExpB_in, 
+  input logic SignA_in, SignB_in,
+  input logic [`$manB_width-1`:0] ManB_in,
+  input logic  clk , reset, valid_in, stall,
+  output logic [`$manA_width-1`:0] ManDiff_out, 
+  output logic Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out,
+  output logic [`$exp_width-1`:0] ExpDiff_out, 
+  output logic [`$ExtendedExp_width-1`:0] Expbase, LShiftAmtWide,
+  output logic  valid_out
               );
+
+
+  //; if (! ($useInc =~ /YES/) ){
+  logic IncA_in;
+  assign IncA_in = 0;
+  //; }
+
+  logic [`$manA_width-1`:0] ManA;
+  logic [`$manB_width-1`:0] ManB;
+  logic [`$ExtendedExp_width-1`:0] ExpA, ExpB; 
+  logic IncA, SignA, SignB, valid_middle;
+  logic [`$manA_width-1`:0] ManDiff;
+  logic [`$exp_width-1`:0] ExpDiff;
+  logic Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff;
+
+//;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
+//;                             Width=> $manA_width + $manB_width + 2*$ExtendedExp_width + 3,
+//;                             PipelineDepth => $pipeline_depth-1);
+  `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in}) ,
+                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB}),
+                               .valid_out(valid_middle) );
+
+//;   my $pipe_out = generate(  'FF_pipeline',  'pipe_out',
+//;                              Width=> $manA_width + $exp_width + 5,
+//;                              PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
+  `$pipe_out->instantiate()` ( .in({ManDiff, ExpDiff, Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff}) ,
+                                .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({ManDiff_out, ExpDiff_out, Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out}),
+                                .valid_out(valid_out) ); 
 
   logic [`$manB_width-1`:0] manA_wide;
   logic [`$exp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpDiff0, ExpDiff1, ExpDiff2;
@@ -106,16 +140,20 @@ module `mname`(
 //; my $Abs_diff_obj = generate('AbsoluteDifference', 'manDiff', 
 //;                                                 , Width =>$manB_width+2
 //;                                                 , LZA_enable => 'YES'
-//;                                                 , useInc => $useInc);
+//;                                                 , useInc => ($useInc =~ /YES/)?1:0 );
 
 
-  `$Abs_diff_obj->instantiate()` (.a(op1), .ainc(IncA), .b(op2), .rsticky_b(RStickyB), .absdiff(diff), .LZA_override_mask(max_shift_mask), .a_gt_b(a_gt_b),.LZA_count(LshiftAmt), .dumptolog(dumptolog)); // The shift amount
+  `$Abs_diff_obj->instantiate()` (.a(op1),
+  //; if ($useInc =~ /YES/) {
+                                  .ainc(IncA),
+  //; }
+                                  .b(op2), .rsticky_b(1'b0), .absdiff(diff), .LZA_override_mask(max_shift_mask), .a_gt_b(a_gt_b),.LZA_count(LshiftAmt), .dumptolog(dumptolog)); // The shift amount
 
   //normalization
 
   assign shiftedDiff = {1'b0,diff} << LshiftAmt;
   assign LZA_wrong = shiftedDiff[`$manB_width+2`];
-  assign mostSticky = (| shiftedDiff[`$manB_width-$manA_width-1`:0]) | RStickyB;
+  assign mostSticky = (| shiftedDiff[`$manB_width-$manA_width-1`:0]);
   assign {ManDiff, Guard, Sticky} = shiftedDiff[`$manB_width+2`] ? 
         {shiftedDiff[`$manB_width+2`:`$manB_width-$manA_width+2`],
          mostSticky | shiftedDiff[`$manB_width-$manA_width+1`] | shiftedDiff[`$manB_width-$manA_width`]}
@@ -123,7 +161,7 @@ module `mname`(
                           {shiftedDiff[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky | shiftedDiff[`$manB_width-$manA_width`]}
                          :{shiftedDiff[`$manB_width`:`$manB_width-$manA_width`],mostSticky};
 
-  assign ZeroDiff= (diff==0) & ~RStickyB;
+  assign ZeroDiff= (diff==0);
 
 
   //calculate Expbase - LShiftAmt + (0 | 1 | 2)
@@ -135,8 +173,11 @@ module `mname`(
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'CA', 
 //;                                                 , Width =>$exp_width);
 
-  `$CompoundAdder_obj->instantiate()` (.a(ExpDiff_pp0),
-                                   .b(ExpDiff_pp1),
+  `$CompoundAdder_obj->instantiate()` (
+            //; if ($verif_mode =~ /ON/){
+                                   .dumptolog(dumptolog),
+            //; }
+                                   .a(ExpDiff_pp0), .b(ExpDiff_pp1),
                                    .sum0(ExpDiff0), .co0(co_dummy0),
                                    .sum1(ExpDiff1), .co1(co_dummy1));
   assign ExpDiff2 = ExpDiff_pp0 + ExpDiff_pp1 + 2;

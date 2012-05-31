@@ -40,8 +40,10 @@
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)  !FUNCTIONAL!");
-//; my $useInc = parameter(Name=>'useInc', Val=>0, List=>[1, 0],
+//; my $useInc = parameter(Name=>'useInc', Val=>'YES', List=>['YES', 'NO'],
 //; 			   Doc=>"Inputs A has an increment signal");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>3, List=>[ 0,1,2,3,4,5,6,7 ] ,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
@@ -56,18 +58,48 @@ module `mname`(
  //; if ($verif_mode =~ /ON/){
   input logic dumptolog,
  //; }
-  input logic [`$manA_width-1`:0] ManA, 
-  //; if ($useInc){
-  input logic IncA,
+  input logic [`$manA_width-1`:0] ManA_in, 
+  //; if ($useInc =~ /YES/){
+  input logic IncA_in,
   //; }
-  input logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, ExpDifference, 
-  input logic SignA, SignB, ZeroA, ZeroB, RStickyB, ExpB_gt_ExpA,
-  input logic [`$manB_width-1`:0] ManB,
-  output logic [`$manA_width-1`:0] ManSum, 
-  output logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum,
-  output logic [`$exp_width-1`:0] ExpSum, 
-  output logic [`$ExtendedExp_width-1`:0] Expbase, LShiftAmtWide
+  input logic [`$ExtendedExp_width-1`:0] ExpA_in, ExpB_in, ExpDifference_in, 
+  input logic SignA_in, SignB_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in,
+  input logic [`$manB_width-1`:0] ManB_in,
+  input logic  clk , reset, valid_in, stall,
+  output logic [`$manA_width-1`:0] ManSum_out,
+  output logic [`$exp_width-1`:0] ExpSum_out, 
+  output logic Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out,
+  output logic [`$ExtendedExp_width-1`:0] Expbase,
+  output logic valid_out
               );
+
+  //; if (! ($useInc =~ /YES/) ){
+  logic IncA_in;
+  assign IncA_in = 0;
+  //; }
+  logic [`$manA_width-1`:0] ManA;
+  logic [`$manB_width-1`:0] ManB;
+  logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, ExpDifference;
+  logic IncA, SignA, SignB, ZeroA, ZeroB, ExpB_gt_ExpA, valid_middle;
+  logic [`$manA_width-1`:0] ManSum;
+  logic [`$exp_width-1`:0] ExpSum;
+  logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum;
+
+//;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
+//;                             Width=> $manA_width + $manB_width + 3*$ExtendedExp_width + 6,
+//;                             PipelineDepth => $pipeline_depth-1);
+  `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in}) ,
+                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpB_gt_ExpA}),
+                               .valid_out(valid_middle) );
+
+//;   my $pipe_out = generate(  'FF_pipeline',  'pipe_out',
+//;                              Width=> $manA_width + $exp_width + 6,
+//;                              PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
+  `$pipe_out->instantiate()` ( .in({ManSum, ExpSum, Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum}) ,
+                                .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
+                                .out({ManSum_out, ExpSum_out, Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out}),
+                                .valid_out(valid_out) ); 
 
   logic [`$shift_width-1`:0] LshiftAmtUnbounded, shift_amount;
   logic [`$manB_width-1`:0] biggerFraction, sum0, sum1;
@@ -102,7 +134,7 @@ module `mname`(
  
   // Divide the additions to 3 regions:
   // - Lower Part (manA_width): Use for sticky bit calculation Rsticky
-  assign RSticky= RStickyB | (ExpB_gt_ExpA & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
+  assign RSticky= (ExpB_gt_ExpA & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
 
   // - Middle Part (manB_width-manA_width-1): calculate sum using subtract& ~RSticky as an input
 
@@ -188,10 +220,15 @@ module `mname`(
                         {ExpSumCenter, sumCenter, guardCenter, stickyCenter, OverflowCenter, 1'b0}
                        :{ExpSumRight, sumRight, guardRight, stickyRight, OverflowRight, 1'b1} ));
 
+  assign Expbase = ExpSum;
+
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
+    $display ("`$self->get_instance_path()`: ManA=%h, IncA=%h, ManB=%h", ManA, IncA, ManB); 
+    $display ("`$self->get_instance_path()`: ExpA=%h, ExpB=%h, ExpDifference=%h",ExpA, ExpB, ExpDifference);
+    $display ("`$self->get_instance_path()`: SignA=%b, SignB=%b, ZeroA=%b, ZeroB=%b, ExpB_gt_ExpA=%b",SignA, SignB, ZeroA, ZeroB, ExpB_gt_ExpA); 
     $display ("`$self->get_instance_path()`: ExpSum=%h ManSum=%h Guard=%b Sticky=%b",ExpSum, ManSum, Guard, Sticky);
     $display ("`$self->get_instance_path()`: biggerFraction =%h ExpB_gt_ExpA=%h", biggerFraction,ExpB_gt_ExpA);
     $display ("`$self->get_instance_path()`: smallerFraction=%h shift_in=%h shift_amount=%d",smallerFraction, shift_in, shift_amount);

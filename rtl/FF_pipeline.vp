@@ -29,14 +29,21 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>64, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>0, Step=>1,
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>-1, Step=>1,
 //;                       Doc=>"Pipeline depth");
 //; my $retime_Status = parameter( Name=>'Retime' , Val=>'NO' , List=>[ 'YES' , 'NO' ] , Doc=>"Pipeline Is Retimeable" ) ;
+//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
+//; 	 		   Doc=>"Enable forwarding input to any stage in the pipeline");
 
 module `mname` (
   input logic [`$width-1`:0] in,
   input logic valid_in,
-  input logic clk, stall, reset, 
+  input logic clk, stall, reset,
+//; if ($pipeline_depth>0 && $enable_forwarding =~ /YES/) {
+  input logic [`$width-1`:0] forwarded_in,
+  input logic [`$pipeline_depth-1`:0] forward,
+  output logic [`$pipeline_depth-1`:0] forward_out,
+//; }
   output logic [`$width-1`:0] out,
   output logic valid_out
                );
@@ -58,6 +65,9 @@ module `mname` (
 
 //; if ($pipeline_depth>0) {
     reg [`$width-1`:0] stages [0:`$pipeline_depth-1`];
+//;   if ($enable_forwarding =~ /YES/){
+    reg [`$pipeline_depth-1`:0] forward_stages [0:`$pipeline_depth-1`];
+//;   }
     reg valid_stages [0:`$pipeline_depth-1`];
 
     always @(posedge clk)
@@ -67,7 +77,12 @@ module `mname` (
     begin
       valid_stages[0] <= valid_in;
       if (!stall & valid_in)
+//;   if ($enable_forwarding =~ /YES/){
+        stages[0] <= forward[0]? forwarded_in : in ;
+        forward_stages[0] <= forward;
+//;   } else {
         stages[0] <= in ;
+//;   }
     end
 
 //;   for (my $i=0; $i<$pipeline_depth-1; $i++){
@@ -78,16 +93,27 @@ module `mname` (
     begin
       valid_stages[`$i+1`] <= valid_stages[`$i`];
       if (!stall & valid_stages[`$i`])
+//;     if ($enable_forwarding =~ /YES/){
+        stages[`$i+1`] <= forward_stages[`$i`][`$i+1`]? forwarded_in : stages [`$i`];
+        forward_stages[`$i+1`] <= forward_stages[`$i`];
+//;     } else {
         stages[`$i+1`] <= stages [`$i`];
+//;     }
     end
 
 //;   }
 
     assign out = stages [`$pipeline_depth-1`];
     assign valid_out = valid_stages[`$pipeline_depth-1`];
+//;   if ($enable_forwarding =~ /YES/){
+    assign forward_out = forward_stages[`$pipeline_depth-1`];
+//;   }
 //; } else {
     assign out = in;
     assign valid_out = valid_in;
+//;   if ($enable_forwarding =~ /YES/){
+    assign forward_out = forward;
+//;   }
 //; }
   
 endmodule

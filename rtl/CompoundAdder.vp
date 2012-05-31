@@ -42,7 +42,9 @@ module `mname` (
     input dumptolog,
     //; }
     input [`$width-1`:0] a, b,
+    //; if ($enable_ci =~ /ON/) {
     input 	      ci,
+    //; }
     output 	      co0, co1,
     //; if ($zero_width > 0){
     output zero0, zero1,
@@ -98,7 +100,11 @@ module `mname` (
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
    begin
+   //;   if ($enable_ci =~ /ON/) {
       $display ("`$self->get_instance_path()`: a=%h b=%h ci=%b",a, b, ci);
+   //;   } else {
+      $display ("`$self->get_instance_path()`: a=%h b=%h",a, b);
+   //;   }
       $display ("`$self->get_instance_path()`: sum0=%h co0=%h",sum0, co0);
       $display ("`$self->get_instance_path()`: sum1=%h co1=%h",sum1, co1);
       //; if ($zero_width > 0){

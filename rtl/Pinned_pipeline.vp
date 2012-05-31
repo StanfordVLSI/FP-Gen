@@ -29,7 +29,7 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>64, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Step=>1, Min=>0,
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Step=>1, Min=>-1,
 //;                       Doc=>"Pipeline depth");
 //; my $pin_forward = parameter( Name=>'PinForward' , Val=>'YES' , List=>[ 'YES' , 'NO' ] , Doc=>"Pin the first stage or if not last stage" ) ;
 //; my $pipein_depth = ($pin_forward =~ /YES/)? 1 : $pipeline_depth-1 ;
