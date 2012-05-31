@@ -233,7 +233,7 @@ module `mname`(
     logic [`$shift_width`:0] shiftAmount_m;
     reg stalled;
 
-    assign normalize_ManAB = ZeroExpA | ZeroExpB;
+    assign normalize_ManAB = (ZeroExpA | ZeroExpB) & ~ZeroAB;
     assign stall_request = stalled? 0: normalize_ManAB ;
     assign stall = stall_request | stall_in;
     always @(posedge clk)
