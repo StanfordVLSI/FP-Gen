@@ -75,14 +75,17 @@ module `mname` (
       {valid_stages[0],stages[0]} <= 0;
     else
     begin
-      valid_stages[0] <= valid_in;
-      if (!stall & valid_in)
+      if (!stall) valid_stages[0] <= valid_in;
+      if (!stall & valid_in)   
 //;   if ($enable_forwarding =~ /YES/){
+      begin
         stages[0] <= forward[0]? forwarded_in : in ;
         forward_stages[0] <= forward;
+      end
 //;   } else {
         stages[0] <= in ;
 //;   }
+
     end
 
 //;   for (my $i=0; $i<$pipeline_depth-1; $i++){
@@ -91,14 +94,17 @@ module `mname` (
       {valid_stages[`$i+1`],stages[`$i+1`]} <= 0;
     else
     begin
-      valid_stages[`$i+1`] <= valid_stages[`$i`];
+      if (!stall) valid_stages[`$i+1`] <= valid_stages[`$i`];
       if (!stall & valid_stages[`$i`])
 //;     if ($enable_forwarding =~ /YES/){
+      begin
         stages[`$i+1`] <= forward_stages[`$i`][`$i+1`]? forwarded_in : stages [`$i`];
         forward_stages[`$i+1`] <= forward_stages[`$i`];
+      end
 //;     } else {
         stages[`$i+1`] <= stages [`$i`];
 //;     }
+
     end
 
 //;   }

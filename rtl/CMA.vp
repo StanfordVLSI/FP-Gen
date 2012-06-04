@@ -118,12 +118,13 @@ module `mname` (
   logic [`$product_width-1` : 0] ManAB;
   logic [`$ExtendedExp_width-1` : 0] ExpC_pp0_init, ExpC_pp1_init, ExpC_pp0, ExpC_pp1, ExpZ_pp0, ExpZ_pp1, ExpZ_pp0_late, ExpZ_pp1_late;
   logic [`$exp_width-1` : 0] ExpC;
-  logic stall, SignC_init, ExpCdec, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncZ, ZeroExpC;
+  logic stall, SignC_init, ExpCdec, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncZ, ZeroExpC, valid_rnd;
   logic valid_mul, valid_add, ShiftZ, ShiftC, SignZ;
   logic [`$mul_pipeline_depth-1`:0] forward_c_out, forward_c_out_dummy;
 
   logic [`$exp_width + $frac_width`:0] z_preInc, z_preIncm, c2, forwarded_c;
   logic [7:0] status_init;
+  logic [2:0] rnd_add;
 
 
   assign stall = stall_request | stall_in;
@@ -191,6 +192,12 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //; }
   assign SignC    = forwarded_c[ `$exp_width + $frac_width` ];
 
+//;   my $pipe_forward3 = generate(  'FF_pipeline',  'pipe_rnd_forward',
+//;                              Width=> 3,
+//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO');
+  `$pipe_forward3->instantiate()` ( .in(rnd) ,.valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out(rnd_add), .valid_out(valid_rnd) );
+
 //; my $ED_obj = generate('ExponentDifference', 'ED', ExponentWidth=>$exp_width);
   `$ED_obj->instantiate()` (.ExpA_pp0(ExpC_pp0), .ExpA_pp1(ExpC_pp1), .ExpADecrementWhenShifting(ExpCDecrementWhenShifting), .SignA(SignC), .ShiftA(ShiftC), 
                 .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpB_gt_ExpA(ExpB_gt_ExpA), .dumptolog(dumptolog));
@@ -207,7 +214,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //; if ($enable_forwarding =~ /YES/) {
                          .IncA(IncC),
 //; }
-                         .rnd(rnd),
+                         .rnd(rnd_add),
                         .SignB(SignAB), .ExpB(ExpAB), .ManB(ManAB), .InfB(InfAB), .NANB(NANAB), .ZeroB(ZeroAB),
                         .valid_in(valid_mul), .clk(clk) , .stall(stall), .reset(reset),
                         .Z(z_preInc), .IncZ(IncZ), .status(status_init), .dumptolog(dumptolog),

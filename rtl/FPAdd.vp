@@ -101,6 +101,7 @@ module `mname` (
   logic subtract_p, ResultIsClose_p, ResultIsA_p, ResultIsClose_p2;
   logic RndMaxNum, MaxNum;
   logic valid_Result, valid_Result2, valid_A, valid_A2;
+  logic [2:0] rnd_p2;
 
   assign SigA  = A[`$frac_width-1`: 0 ];
   assign ZeroExpA  =  ~|A[`$exp_width+$frac_width-1`:`$frac_width`];
@@ -124,10 +125,10 @@ module `mname` (
   assign SignSpecial = SignA & (~ZeroA | SignB);
   assign subtract = SignA ^ SignB;
 
-//;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> 5, PipelineDepth => $pipeline_depth, Retime=>'YES');
-  `$pipeMisc ->instantiate()` ( .in({FI, ResultIsInfinity, ResultIsNotSpecial, SignInfinity, SignSpecial}) ,
+//;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> 8, PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipeMisc ->instantiate()` ( .in({FI, ResultIsInfinity, ResultIsNotSpecial, SignInfinity, SignSpecial, rnd}) ,
                                 .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                                .out({FI_p2, ResultIsInfinity_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2}),
+                                .out({FI_p2, ResultIsInfinity_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2, rnd_p2}),
                                 .valid_out(valid_out) );
 
 
@@ -221,7 +222,7 @@ module `mname` (
                    :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, FarShiftZ};
 
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
-  `$rnd_obj->instantiate()` (.rnd(rnd), .Sign(SignResult), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
+  `$rnd_obj->instantiate()` (.rnd(rnd_p2), .Sign(SignResult), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
 
   assign denormResult= ~ManSum[`$frac_width`] ;
   assign FinalSum = {SignResult, ExpSum[`$exp_width-1`:1]   ,ExpSum[0]   & ManSum[`$frac_width`]   , ManSum[`$frac_width-1`:0]};

@@ -228,14 +228,17 @@ module `mname`(
       //; }
       .a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
 
-//; if($pipeline_depth > 0 ){
+    assign stall = stall_request | stall_in;
+
+//; if( $pipeline_depth > 0 ){
     logic [`$product_width-1`: 0] ManAB_unnormalized_m;
     logic [`$shift_width`:0] shiftAmount_m;
+    logic normalize_ManAB;
     reg stalled;
 
     assign normalize_ManAB = (ZeroExpA | ZeroExpB) & ~ZeroAB;
     assign stall_request = stalled? 0: normalize_ManAB ;
-    assign stall = stall_request | stall_in;
+    
     always @(posedge clk)
     if (reset)
       stalled <= 0;
@@ -250,6 +253,7 @@ module `mname`(
     assign ManAB_shifted = ManAB_unnormalized_m << shiftAmount_m; 
     assign ManAB_normalized = normalize_ManAB ? ManAB_shifted : ManAB_unnormalized;
 //; } else {
+    assign stall_request=0;
     assign ManAB_normalized = ManAB_unnormalized << shiftAmount;
 //; }
     
