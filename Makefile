@@ -56,7 +56,7 @@ endif
 ifeq ($(DESIGN_NAME),FMA)
   INST_NAME ?= FMA
   MOD_NAME ?= FMA
-  TOP_NAME ?= top_FMA
+  TOP_NAME ?= top_MulAdd
   ROLLUP_TARGET ?= FMA_Rollup.target
 
   PIPELINE_PARAM ?= top_FMA.FMA.PipelineDepth

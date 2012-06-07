@@ -132,7 +132,7 @@ module `mname` (
     input logic [2:0] 				rnd,
 
    //; if ($pipeline_depth>0){
-    input logic 				clk, reset, valid_in, stall, SI, SCAN_ENABLE, test_mode,
+    input logic 				clk, reset, valid_in, stall_in, SI, SCAN_ENABLE, test_mode,
     output logic 				valid_out, SO,
    //; } else {
     input logic 				clk, reset,
@@ -145,7 +145,7 @@ module `mname` (
   /* synopsys dc_tcl_script_begin
    set_ungroup [current_design] true
    set_flatten true -effort high -phase true -design [current_design]
-  */
+     */
 
 
 
@@ -159,7 +159,7 @@ module `mname` (
 //;    my $fma_pipe = generate('Pinned_pipeline','fma_pipe', 
 //;                         Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth);
 
-  `$fma_pipe ->instantiate()` ( .in({a,b,c, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+  `$fma_pipe ->instantiate()` ( .in({a,b,c, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall_in), .reset(reset), 
                                 .out({a2,b2,c2, rnd2}), .valid_out(valid_out) );
 //;   } else {
   assign {a2,b2,c2, rnd2} = {a,b,c, rnd};
@@ -194,7 +194,7 @@ module `mname` (
        .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
    //; }
        .z_preInc(z_preIncm), .z_final(z), .IncZ(IncZm),
-       .clk(clk) , .reset(reset), .valid_in(valid_in), .stall(stall),
+       .clk(clk) , .reset(reset), .valid_in(valid_in), .stall(stall_in),
        .AB_pp0(AB_pp0), .AB_pp1(AB_pp1), .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
        .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), 
        .ExpBase(ExpBase),
@@ -209,7 +209,7 @@ module `mname` (
 
   `$add_pipe ->instantiate()` (
        .in({AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}) , 
-       .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
+       .valid_in(valid_middle), .clk(clk) , .stall(stall_in), .reset(reset), 
        .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem}),
        .valid_out(valid_inc) );
 
@@ -219,7 +219,7 @@ module `mname` (
 
   `$rnd_pipe ->instantiate()` (
        .in(rnd) , 
-       .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+       .valid_in(valid_in), .clk(clk) , .stall(stall_in), .reset(reset), 
        .out(rndm),
        .valid_out(valid_r) );
 //;  } else {
@@ -245,7 +245,7 @@ module `mname` (
 //;          :generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1, Retime=> 'YES');
   `$inc_pipe ->instantiate()` (
        .in({z_preIncm,IncZm, statusm}) , 
-       .valid_in(valid_inc), .clk(clk) , .stall(stall), .reset(reset), 
+       .valid_in(valid_inc), .clk(clk) , .stall(stall_in), .reset(reset), 
        .out({z_preInc,IncZ,status}),
        .valid_out(valid_out) );
 //;  } else {

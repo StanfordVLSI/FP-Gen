@@ -90,21 +90,22 @@
 
 module `mname` (
    //; if ($verif_mode =~ /ON/){
-    input logic dumptolog,
+    input logic 				dumptolog,
    //; }
-    input logic [`$exp_width+$frac_width`:0]  a, b, c,
-    input logic [2:0] rnd,
+    input logic [`$exp_width+$frac_width`:0] 	a, b, c,
+    input logic [2:0] 				rnd,
 
   //; if ($enable_forwarding =~ /YES/){
-    input logic forward_a, forward_b,
+    input logic 				forward_a, forward_b,
   //;   if ($mul_pipeline_depth>0){
-    input logic [`$mul_pipeline_depth`:0] forward_c,
+    input logic [`$mul_pipeline_depth`:0] 	forward_c,
   //;   }
   //; }
-    input logic  clk , reset, valid_in, stall_in,
+    input logic 				clk , reset, valid_in, stall_in,SI, SCAN_ENABLE, test_mode,
+    output logic 				SO,
     output logic [`$exp_width + $frac_width`:0] z,
-    output logic [7:0] status,
-    output logic valid_out, stall_request
+    output logic [7:0] 				status,
+    output logic 				valid_out, stall_request
    );
 
 

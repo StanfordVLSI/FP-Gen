@@ -17,18 +17,36 @@
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//;  my  $weight = parameter(Name=>'Weight', Val=>20, Min=>0, Step=>1, Max=>100,
+//;  my  $weight = parameter(Name=>'Weight', Val=>30, Min=>0, Step=>1, Max=>100,
 //;	  		      Doc=>"Distribution weight for fowarding signal to be 1 (range is 0..100)");
+//; my $width = parameter(Name=>'Width', Val=>1, 
+//;                           Min=>1, Step=>1, 
+//;                           Doc=>"Width of the forwarding signal");
 
 
 
 class `mname`;
-   rand bit forward;
+   typedef enum {Zero, OneHot} SignalType;
+   rand SignalType forwardType;
+   rand int hotbit;
+   logic [`$width-1`:0] forward;
 
 
    constraint pick_forward{
-      forward dist {1 := `$weight`, 0 := `100-$weight`};
+      forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
    }
+
+   constraint pick_hotbit {
+      hotbit>=0 && hotbit<`$width`;
+   }
+
+   function void post_randomize;
+      forward = `$width`'b0;
+      if(forwardType == OneHot) begin
+	 forward[hotbit] = 1'b1;
+      end
+   endfunction 
+   
 
 endclass : `mname`
    
