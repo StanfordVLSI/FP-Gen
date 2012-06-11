@@ -54,11 +54,11 @@
 //;                      Doc=>"Seed for random values".
 //;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
 //; my $forward_cycle = $pipeline_depth-1;
-//; my $forward_cycle_a = parameter (Name=>'ForwardCycA', Val=>$forward_cycle, Min=>1, Max=>$pipeline_depth,
+//; my $forward_cycle_a = parameter (Name=>'ForwardCycA', Val=>$forward_cycle,  Max=>$pipeline_depth,
 //;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
-//; my $forward_cycle_b = parameter (Name=>'ForwardCycB', Val=>$forward_cycle, Min=>1, Max=>$pipeline_depth,
+//; my $forward_cycle_b = parameter (Name=>'ForwardCycB', Val=>$forward_cycle,  Max=>$pipeline_depth,
 //;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
-//; my $forward_cycle_c = parameter (Name=>'ForwardCycC', Val=>$forward_cycle, Min=>1, Max=>$pipeline_depth,
+//; my $forward_cycle_c = parameter (Name=>'ForwardCycC', Val=>$forward_cycle,  Max=>$pipeline_depth,
 //;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
 //;                                 
 //; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2;
@@ -87,6 +87,8 @@ program automatic `mname` (
 
    // Local variables and handles for controlling the simulation
    int 								       seed=`$seed`;
+   int 								       wave=0;
+   int 								       wave_delay=0;
    int 								       num_trans = `$num_trans`;
    int 								       dummy;
    string 							       vector_file = "`$vector_file`";
@@ -184,6 +186,18 @@ program automatic `mname` (
      end
 
    initial begin
+      #70;
+      if (wave) begin
+	 if(wave_delay) 
+	   #(100*wave_delay);
+	 $display("%t:\tStarting signal and memory wave capture",$time);
+	 $vcdpluson(0,        top_MulAdd);
+         //         levels  instance
+      end
+   end
+   
+
+   initial begin
       $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
       // some simulation control initialization
       get_command_line_args();
@@ -231,9 +245,6 @@ program automatic `mname` (
 	       `$forward_A->iname()`.randomize();
 	       `$forward_B->iname()`.randomize();
 	       `$forward_C->iname()`.randomize();
-	       $display ("%t forward_A.forward = %b ",$time, `$forward_A->iname()`.forward);
-	       $display ("%t forward_B.forward = %b ",$time, `$forward_B->iname()`.forward);
-	       $display ("%t forward_C.forward = %b ",$time, `$forward_C->iname()`.forward);
 	       
 	       if ( `$forward_A->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
@@ -457,10 +468,13 @@ program automatic `mname` (
       if ( $test$plusargs("Wave") ) 
 	begin
            $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
-           //         levels  instance
-           $vcdpluson(0,        top_MulAdd);
-	   $vcdplusmemon(0,     top_MulAdd);
-        end
+	   wave = 1;
+	end
+      if ( $test$plusargs("WaveDelay") ) 
+	begin
+	   $value$plusargs("WaveDelay=%d", wave_delay);
+	   $display("%t:\tRuntime input +DelayWave=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
+	end
       // find the seed for this run
       if ( $test$plusargs("Seed") ) 
 	begin

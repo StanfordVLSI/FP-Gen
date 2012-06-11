@@ -49,7 +49,11 @@ module `mname` ();
    //;    $FP_obj = generate('CMA', 'CMA');
    //;    $mul_pipeline_depth = $FP_obj->get_param('MulPipelineDepth');
    //;    $add_pipeline_depth = $FP_obj->get_param('AddPipelineDepth');
-   //;    $pipeline_depth = $mul_pipeline_depth + $add_pipeline_depth + 1;
+   //;    if ($mul_pipeline_depth>0) {
+   //;       $pipeline_depth = $mul_pipeline_depth + $add_pipeline_depth + 1;
+   //;    } else {  #$mul_pipeline_depth=0
+   //;       $pipeline_depth = $add_pipeline_depth;
+   //;    }
    //; }
    
    //; # Read what kind of DUT the user wanted so you can test it

@@ -12,3 +12,4 @@ module load FPGen
 module load numbers
 
 setenv VCS_CC gcc-4.4
+unsetenv DVE
