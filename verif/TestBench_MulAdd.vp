@@ -113,7 +113,6 @@ program automatic `mname` (
    
    // Singals for pipeline output
    logic [`$exp_width + $frac_width`:0] 			       r_a, r_b, r_c, expected, r_expected, a_q[$], b_q[$], c_q[$], expected_q[$];
-   //   logic 				r_ainc, ainc_q[$], r_binc, binc_q[$], r_cinc, cinc_q[$];
    logic [2:0] 							       r_rnd;
 
    logic 							       resultIsZero, expectIsZero;
@@ -173,7 +172,8 @@ program automatic `mname` (
    `$forward_B->instantiate()`; 
    //; $forward_C = generate('forward', 'ForwardC', Width=>$mul_pipeline_depth+1);
    `$forward_C->instantiate()`;
-   logic							       forward_a_q[$], forward_b_q[$], forward_c_q[$];
+   logic							       forward_a_q[$], forward_b_q[$];
+   logic  [`$mul_pipeline_depth`:0]                                    forward_c_q[$];
    
    //; }
    
@@ -376,8 +376,13 @@ program automatic `mname` (
 		 $display("%t A is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_a`);
 	       if ( forward_b_q[0] )
 		 $display("%t B is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_b`);
-	       if ( forward_c_q[0] )
-		 $display("%t C is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_c`);
+	       if ( |forward_c_q[0] ) begin
+		int hotbit;
+		for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
+			if (forward_c_q[0][k]) hotbit=k;
+		end
+		 $display("%t C is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_c`+hotbit);
+		end
 	       forward_a_q = forward_a_q[1:$];
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
