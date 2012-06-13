@@ -72,6 +72,7 @@ module `mname` (
     input logic  clk , reset, valid_in, stall,
 
     output logic [`$ExpB_width-1`:0] ExpZ_pp0, ExpZ_pp1, ExpZ_pp0_late, ExpZ_pp1_late,
+    output logic ExpZ_ci, ExpZ_ci_late,
     output logic [`$exp_width + $frac_width`:0] Z,
     output logic IncZ,
     output [7:0] status,
@@ -94,7 +95,7 @@ module `mname` (
   logic [`$ExpB_width-1`:0] ExpA , ExpA_p1, CloseExpbase_pp0, CloseExpbase_pp1, FarExpbase_pp0, FarExpbase_pp1;
   logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
   logic [`$exp_width + $frac_width`:0] FinalSum, A_p1, A_p2;
-  logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ;
+  logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ, CloseExpbase_ci;
   logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract;
   logic FX, FV, FU, FI, Tiny;
   logic FI_p2, ResultIsInfinity_p2, ResultIsA_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2;
@@ -138,10 +139,10 @@ module `mname` (
                                 .out({subtract_p, ResultIsClose_p, ResultIsA_p}),
                                 .valid_out(valid_Result) );
 
-//;   my $pipeMisc3 = generate(  'FF_pipeline',  'pipe_misc_one',  Width=> 3+2*$ExpB_width, PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
-  `$pipeMisc3->instantiate()` ( .in({ResultIsClose_p, ResultIsA_p, ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting}) ,
+//;   my $pipeMisc3 = generate(  'FF_pipeline',  'pipe_misc_one',  Width=> 2*$ExpB_width+4, PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
+  `$pipeMisc3->instantiate()` ( .in({ResultIsClose_p, ResultIsA_p, ExpZ_pp0, ExpZ_pp1, ExpZ_ci, ExpZDecrementWhenShifting}) ,
                                 .valid_in(valid_Result), .clk(clk) , .stall(stall), .reset(reset), 
-                                .out({ResultIsClose_p2, ResultIsA_p2, ExpZ_pp0_late, ExpZ_pp1_late, ExpZDecrementWhenShifting_late}),
+                                .out({ResultIsClose_p2, ResultIsA_p2, ExpZ_pp0_late, ExpZ_pp1_late, ExpZ_ci_late, ExpZDecrementWhenShifting_late}),
                                 .valid_out(valid_Result2) );
 
 
@@ -201,7 +202,8 @@ module `mname` (
                                        .ManDiff_out(CloseManDiff), .ExpDiff_out(CloseExpDiff),
                                        .SignDiff_out(CloseDiffSign) , .ZeroDiff_out(ZeroCloseDiff),
                                        .Guard_out(CloseGuard), .Sticky_out(CloseSticky),
-                                       .Expbase_pp0(CloseExpbase_pp0), .Expbase_pp1(CloseExpbase_pp1), .LZA_wrong_out(CloseShiftZ),
+                                       .Expbase_pp0(CloseExpbase_pp0), .Expbase_pp1(CloseExpbase_pp1), .Expbase_ci(CloseExpbase_ci),
+                                       .LZA_wrong_out(CloseShiftZ),
                                        .valid_out(valid_close),
   //; if ($verif_mode =~ /ON/){
                                        .dumptolog(dumptolog)
@@ -211,10 +213,10 @@ module `mname` (
 
 
 
-  assign {ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting} = ResultIsA_p? { {2'b0,ExpA_p1} , {(`$ExpB_width`){1'b1}} , 1'b0} :
+  assign {ExpZ_pp0, ExpZ_pp1, ExpZ_ci, ExpZDecrementWhenShifting} = ResultIsA_p? { {2'b0,ExpA_p1} , {(`$ExpB_width`){1'b1}} , 2'b0} :
                                                        ResultIsClose_p?
-                                                             {CloseExpbase_pp0, CloseExpbase_pp1,1'b0}
-                                                           : {FarExpbase_pp0 , FarExpbase_pp1 , subtract_p};
+                                                             {CloseExpbase_pp0, CloseExpbase_pp1, CloseExpbase_ci, 1'b0}
+                                                           : {FarExpbase_pp0 , FarExpbase_pp1 , 1'b0, subtract_p};
 
   assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow , ShiftZ} = 
                     ResultIsClose_p2?

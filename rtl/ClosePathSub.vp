@@ -65,7 +65,8 @@ module `mname`(
   output logic [`$manA_width-1`:0] ManDiff_out, 
   output logic Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out,
   output logic [`$exp_width-1`:0] ExpDiff_out, 
-  output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1, 
+  output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1,
+  output logic Expbase_ci, 
   output logic  valid_out
               );
 
@@ -108,6 +109,8 @@ module `mname`(
   logic [`$shift_width-1`:0] LshiftAmt;
   logic [(1<<`$shift_width`)-1 : 0] max_shift_dec;
 
+
+
   assign manA_wide = {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}}; //pad to the right with zeros for the mantissa
 
   assign ExpA_gt_ExpB_1 = ExpA[1] ^ ExpB[1]?  ~ExpA[0] &  ExpB[0] : ExpA[0] &  ~ExpB[0];
@@ -115,14 +118,16 @@ module `mname`(
   assign ExpB_gt_ExpA_1 = ExpA[1] ^ ExpB[1]?   ExpA[0] & ~ExpB[0] :~ExpA[0] &   ExpB[0];
   assign ExpB_gt_ExpA_2 = (ExpA[0] ~^ ExpB[0]) & (ExpA[2] ^ ExpB[2]?   ExpA[1] & ~ExpB[1] :~ExpA[1] &   ExpB[1]);
 
-  assign Expbase_pp0 = (ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB;
-  assign Expbase_pp1 = ~LShiftAmtWide;
+
 
   assign op1 = ExpB_gt_ExpA_2? {2'b0 , manA_wide}
                              : ExpB_gt_ExpA_1? {1'b0 ,manA_wide,IncA} : {manA_wide,IncA,IncA};
   assign op2 = ExpA_gt_ExpB_2? {2'b0 , ManB}
                              : ExpA_gt_ExpB_1? {1'b0 , ManB,1'b0} : {ManB,2'b0};
 
+  assign Expbase_pp0 = (ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB;
+  assign Expbase_pp1 = ~LShiftAmtWide;
+  assign Expbase_ci  = op2[`$manB_width+1`];
  
   //Subtraction + LZA
   
@@ -154,7 +159,7 @@ module `mname`(
   //normalization
 
   assign shiftedDiff = {1'b0,diff} << LshiftAmt;
-  assign LZA_wrong = shiftedDiff[`$manB_width+2`];
+  assign LZA_wrong = Expbase_ci? shiftedDiff[`$manB_width+2`] : shiftedDiff[`$manB_width+1`]; 
   assign mostSticky = (| shiftedDiff[`$manB_width-$manA_width-1`:0]);
   assign {ManDiff, Guard, Sticky} = shiftedDiff[`$manB_width+2`] ? 
         {shiftedDiff[`$manB_width+2`:`$manB_width-$manA_width+2`],

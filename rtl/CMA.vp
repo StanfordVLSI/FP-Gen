@@ -118,8 +118,9 @@ module `mname` (
   logic [`$ExtendedExp_width-1`:0] ExpDifference, ExpAB;
   logic [`$product_width-1` : 0] ManAB;
   logic [`$ExtendedExp_width-1` : 0] ExpC_pp0_init, ExpC_pp1_init, ExpC_pp0, ExpC_pp1, ExpZ_pp0, ExpZ_pp1, ExpZ_pp0_late, ExpZ_pp1_late;
+  logic ExpC_ci_init, ExpC_ci, ExpZ_ci, ExpZ_ci_late;
   logic [`$exp_width-1` : 0] ExpC;
-  logic stall, SignC_init, ExpCdec, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncZ, ZeroExpC, valid_rnd;
+  logic stall, SignC_init, ExpCdec, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncZ, ZeroExpC, valid_rnd, ExpC_ci;
   logic valid_mul, valid_add, ShiftZ, ShiftC, SignZ;
   logic [`$mul_pipeline_depth-1`:0] forward_c_out, forward_c_out_dummy;
 
@@ -151,25 +152,25 @@ assign ZeroExpC = ~| c[ `$exp_width + $frac_width - 1` :`$frac_width` ];
 assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroExpC | c[`$frac_width`] }; 
 
 //; if ($enable_forwarding =~ /YES/){
-  assign { ExpC_pp0_init, ExpC_pp1_init, ExpCdec} = forward_c[0]?
-                     {ExpZ_pp0_late , ExpZ_pp1_late , ExpZDecrementWhenShifting_late} 
-                   : {2'b0, ExpC, {(`$exp_width+2`){1'b1}} , 1'b0};
+  assign { ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec} = forward_c[0]?
+                     {ExpZ_pp0_late , ExpZ_pp1_late , ExpZ_ci_late, ExpZDecrementWhenShifting_late} 
+                   : {2'b0, ExpC, {(`$exp_width+2`){1'b1}} , 2'b0};
 //; } else  {
-  assign { ExpC_pp0_init, ExpC_pp1_init, ExpCdec} = {2'b0, ExpC, {(`$exp_width+2`){1'b1}} , 1'b0};
+  assign { ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec} = {2'b0, ExpC, {(`$exp_width+2`){1'b1}} , 2'b0};
 //; }
 
 //;   my $pipe_forward = generate(  'FF_pipeline',  'pipe_exp_forward',
-//;                              Width=> 2*$ExtendedExp_width+1,
+//;                              Width=> 2*$ExtendedExp_width+2,
 //;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO',
 //;                              EnableForwarding => $enable_forwarding);
-  `$pipe_forward->instantiate()` ( .in({ExpC_pp0_init, ExpC_pp1_init, ExpCdec}) ,
+  `$pipe_forward->instantiate()` ( .in({ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec}) ,
 //; if ($mul_pipeline_depth>0 && $enable_forwarding =~ /YES/) {
-                               .forwarded_in({ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting}),
+                               .forwarded_in({ExpZ_pp0, ExpZ_pp1, ExpZ_ci, ExpZDecrementWhenShifting}),
                                .forward(forward_c[`$mul_pipeline_depth`:1]),
                                .forward_out (forward_c_out),
 //; }
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                               .out({ExpC_pp0, ExpC_pp1, ExpCDecrementWhenShifting}),
+                               .out({ExpC_pp0, ExpC_pp1, ExpC_ci, ExpCDecrementWhenShifting}),
                                .valid_out(valid_ExpC) );
 
 
@@ -200,7 +201,8 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
                                .out(rnd_add), .valid_out(valid_rnd) );
 
 //; my $ED_obj = generate('ExponentDifference', 'ED', ExponentWidth=>$exp_width);
-  `$ED_obj->instantiate()` (.ExpA_pp0(ExpC_pp0), .ExpA_pp1(ExpC_pp1), .ExpADecrementWhenShifting(ExpCDecrementWhenShifting), .SignA(SignC), .ShiftA(ShiftC), 
+  `$ED_obj->instantiate()` (.ExpA_pp0(ExpC_pp0), .ExpA_pp1(ExpC_pp1), .ExpA_ci(ExpC_ci),
+                .ExpADecrementWhenShifting(ExpCDecrementWhenShifting), .SignA(SignC), .ShiftA(ShiftC), 
                 .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpB_gt_ExpA(ExpB_gt_ExpA), .dumptolog(dumptolog));
 
 
@@ -220,8 +222,8 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
                         .valid_in(valid_mul), .clk(clk) , .stall(stall), .reset(reset),
                         .Z(z_preInc), .IncZ(IncZ), .status(status_init), .dumptolog(dumptolog),
                         .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose),
-                        .ExpB_gt_ExpA(ExpB_gt_ExpA), .ExpZ_pp0(ExpZ_pp0), .ExpZ_pp1(ExpZ_pp1),
-                        .ExpZ_pp0_late(ExpZ_pp0_late), .ExpZ_pp1_late(ExpZ_pp1_late),
+                        .ExpB_gt_ExpA(ExpB_gt_ExpA), .ExpZ_pp0(ExpZ_pp0), .ExpZ_pp1(ExpZ_pp1), .ExpZ_ci(ExpZ_ci),
+                        .ExpZ_pp0_late(ExpZ_pp0_late), .ExpZ_pp1_late(ExpZ_pp1_late), .ExpZ_ci_late(ExpZ_ci_late),
                         .ExpZDecrementWhenShifting(ExpZDecrementWhenShifting), .ExpZDecrementWhenShifting_late(ExpZDecrementWhenShifting_late),
                         .ShiftZ(ShiftZ),
                         .valid_out(valid_add)  );

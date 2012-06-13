@@ -45,7 +45,8 @@ module `mname`(
  //; if ($verif_mode =~ /ON/){
   input logic dumptolog,
  //; }
-  input logic [`$ExtendedExp_width-1`:0] ExpA_pp0, ExpA_pp1, ExpB, 
+  input logic [`$ExtendedExp_width-1`:0] ExpA_pp0, ExpA_pp1, ExpB,
+  input logic ExpA_ci,
   input logic ExpADecrementWhenShifting, SignA, ShiftA,  SignB, 
   output logic [`$ExtendedExp_width-1`:0] ExpDifference,
   output logic ResultIsClose, ExpB_gt_ExpA);
@@ -54,9 +55,9 @@ module `mname`(
 
   logic co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
 
-  // ExpA_pp0 + ExpA_pp1 = ExpA - 1
+  // ExpA_pp0 + ExpA_pp1 + ExpA_ci = ExpA - 1
 
-  DW01_csa #(`$ExtendedExp_width`) CSA ( .a( ExpA_pp0), .b( ExpA_pp1), .c(~ExpB), .ci(1'b0), .sum(ExpDiff_pp0), .carry(ExpDiff_pp1), .co(co_dummy0 ));
+  DW01_csa #(`$ExtendedExp_width`) CSA ( .a( ExpA_pp0), .b( ExpA_pp1), .c(~ExpB), .ci(ExpA_ci), .sum(ExpDiff_pp0), .carry(ExpDiff_pp1), .co(co_dummy0 ));
 
 
  // ExpDiff_pp0 + ExpDiff_pp1 = (ExpA-1)  + ~ExpB = ExpA - ExpB - 2 
