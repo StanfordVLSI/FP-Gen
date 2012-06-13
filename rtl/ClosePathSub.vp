@@ -65,7 +65,7 @@ module `mname`(
   output logic [`$manA_width-1`:0] ManDiff_out, 
   output logic Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out,
   output logic [`$exp_width-1`:0] ExpDiff_out, 
-  output logic [`$ExtendedExp_width-1`:0] Expbase, LShiftAmtWide,
+  output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1, 
   output logic  valid_out
               );
 
@@ -82,6 +82,7 @@ module `mname`(
   logic [`$manA_width-1`:0] ManDiff;
   logic [`$exp_width-1`:0] ExpDiff;
   logic Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff;
+  logic [`$ExtendedExp_width-1`:0] LShiftAmtWide;
 
 //;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
 //;                             Width=> $manA_width + $manB_width + 2*$ExtendedExp_width + 3,
@@ -114,7 +115,8 @@ module `mname`(
   assign ExpB_gt_ExpA_1 = ExpA[1] ^ ExpB[1]?   ExpA[0] & ~ExpB[0] :~ExpA[0] &   ExpB[0];
   assign ExpB_gt_ExpA_2 = (ExpA[0] ~^ ExpB[0]) & (ExpA[2] ^ ExpB[2]?   ExpA[1] & ~ExpB[1] :~ExpA[1] &   ExpB[1]);
 
-  assign Expbase = (ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB;
+  assign Expbase_pp0 = (ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB;
+  assign Expbase_pp1 = ~LShiftAmtWide;
 
   assign op1 = ExpB_gt_ExpA_2? {2'b0 , manA_wide}
                              : ExpB_gt_ExpA_1? {1'b0 ,manA_wide,IncA} : {manA_wide,IncA,IncA};
@@ -124,12 +126,12 @@ module `mname`(
  
   //Subtraction + LZA
   
-  DW_decode_en #(`$shift_width`) U1 ( .en(~|Expbase[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
-                                 , .a(Expbase[`$shift_width-1`:0])
+  DW_decode_en #(`$shift_width`) U1 ( .en(~|Expbase_pp0[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
+                                 , .a(Expbase_pp0[`$shift_width-1`:0])
                                  , .b(max_shift_dec) );
 
   //assign max_shift_mask= {max_shift_dec[manB_width+1:2],max_shift_dec[1] | max_shift_dec[0]};
-  assign max_shift_mask[`$manB_width+1`] = max_shift_dec[1] | max_shift_dec[0]; //The mask has one at Expbase - 1 position
+  assign max_shift_mask[`$manB_width+1`] = max_shift_dec[1] | max_shift_dec[0]; //The mask has one at Expbase_pp0 - 1 position
   
 //; for (my $i=$manB_width ; $i>=0 ; $i--)
 //; {
@@ -164,10 +166,10 @@ module `mname`(
   assign ZeroDiff= (diff==0);
 
 
-  //calculate Expbase - LShiftAmt + (0 | 1 | 2)
+  //calculate Expbase_pp0 - LShiftAmt + (0 | 1 | 2)
   assign LShiftAmtWide = LshiftAmt;
-  assign ExpDiff_pp0 = {Expbase[`$exp_width-1`:1] ~^ LShiftAmtWide[`$exp_width-1`:1], Expbase[0]^LShiftAmtWide[0]};
-  assign ExpDiff_pp1 = {Expbase[`$exp_width-2`:1] & ~LShiftAmtWide[`$exp_width-2`:1], Expbase[0]|~LShiftAmtWide[0],1'b0};
+  assign ExpDiff_pp0 = {Expbase_pp0[`$exp_width-1`:1] ^ Expbase_pp1[`$exp_width-1`:1], Expbase_pp0[0] ^ ~Expbase_pp1[0]};
+  assign ExpDiff_pp1 = {Expbase_pp0[`$exp_width-2`:1] & Expbase_pp1[`$exp_width-2`:1], Expbase_pp0[0] | Expbase_pp1[0],1'b0};
 
 
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'CA', 
@@ -193,9 +195,9 @@ begin
     $display ("`$self->get_instance_path()`: op1=%b op2=%b ",op1, op2);
     $display ("`$self->get_instance_path()`: ExpB_gt_ExpA_1=%b, ExpB_gt_ExpA_2=%b, ExpA_gt_ExpB_1=%b, ExpA_gt_ExpB_2=%b",ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2);
     $display ("`$self->get_instance_path()`: ExpDiff=%h ManDiff=%h Guard=%b Sticky=%b SignDiff=%b",ExpDiff, ManDiff, Guard, Sticky, SignDiff);
-    $display ("`$self->get_instance_path()`: Expbase=%h, LShiftAmtWide=%d ExpDiff0=%h ExpDiff1=%h",Expbase, LShiftAmtWide, ExpDiff0, ExpDiff1);
+    $display ("`$self->get_instance_path()`: Expbase_pp0=%h, LShiftAmtWide=%d ExpDiff0=%h ExpDiff1=%h",Expbase_pp0, LShiftAmtWide, ExpDiff0, ExpDiff1);
     $display ("`$self->get_instance_path()`: diff=%h max_shift_mask=%h LshiftAmt=%d shiftedDiff=%h LZA_wrong=%b",diff, max_shift_mask, LshiftAmt, shiftedDiff, LZA_wrong);
-    $display ("`$self->get_instance_path()`: Expbase=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase,max_shift_dec,  SignA, SignB);
+    $display ("`$self->get_instance_path()`: Expbase_pp0=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase_pp0,max_shift_dec,  SignA, SignB);
 end
 // synopsys translate_on
 //; }

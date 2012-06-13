@@ -86,9 +86,9 @@ module `mname`(
   assign ExpB_gt_ExpA = ExpA_ExpB[`$ExtendedExp_width-1`];
 
 
-  assign ExpDiffDec = ExpB_gt_ExpA? ~ExpA_ExpB_2 : ExpA_ExpB_1;
-  assign ExpDiff    = ExpB_gt_ExpA? ~ExpA_ExpB_1 : ExpA_ExpB;
-  assign ExpDiffInc = ExpB_gt_ExpA? ~ExpA_ExpB   : ExpA_ExpB_plus1;
+  assign ExpDiffDec = ExpB_gt_ExpA? ~ExpA_ExpB_2 : ExpA_ExpB_1;      //  ExpB > ExpA ? ExpB-ExpA+1 : ExpA-ExpB-1
+  assign ExpDiff    = ExpB_gt_ExpA? ~ExpA_ExpB_1 : ExpA_ExpB;        //  ExpB > ExpA ? ExpB-ExpA   : ExpA-ExpB
+  assign ExpDiffInc = ExpB_gt_ExpA? ~ExpA_ExpB   : ExpA_ExpB_plus1;  //  ExpB > ExpA ? ExpB-ExpA-1 : ExpA-ExpB+1
 
   assign ExpDiffShifted =   ExpADecrementWhenShifting? ExpDiffDec : ExpDiffInc;
 

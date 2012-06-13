@@ -91,7 +91,7 @@ module `mname` (
 	
   logic [`$frac_width-1`:0] SigA;
   logic [`$frac_width`:0] ManA, FarManSum , CloseManDiff, ManSum;
-  logic [`$ExpB_width-1`:0] ExpA , ExpA_p1, CloseExpbase, FarExpbase, LShiftAmtWide;
+  logic [`$ExpB_width-1`:0] ExpA , ExpA_p1, CloseExpbase_pp0, CloseExpbase_pp1, FarExpbase_pp0, FarExpbase_pp1;
   logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
   logic [`$exp_width + $frac_width`:0] FinalSum, A_p1, A_p2;
   logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ;
@@ -177,7 +177,7 @@ module `mname` (
                                     .ExpDifference_in(ExpDifference) , .ExpB_gt_ExpA_in(ExpB_gt_ExpA),
                                     .valid_in(valid_in & ~ResultIsClose & ResultIsNotSpecial ), .stall(stall), .clk(clk) , .reset(reset),
                                     .ManSum_out(FarManSum), .ExpSum_out(FarExpSum), .SignSum_out(SignFarSum), .ZeroSum_out(ZeroFarSum),
-                                    .Guard_out(FarGuard), .Sticky_out(FarSticky) ,.Overflow_out(FarOverflow) , .ShiftExponent_out(FarShiftZ), .Expbase(FarExpbase),
+                                    .Guard_out(FarGuard), .Sticky_out(FarSticky) ,.Overflow_out(FarOverflow) , .ShiftExponent_out(FarShiftZ), .Expbase_pp0(FarExpbase_pp0), .Expbase_pp1(FarExpbase_pp1), 
                                     .valid_out(valid_far),
   //; if ($verif_mode =~ /ON/){
                                      .dumptolog(dumptolog)
@@ -201,7 +201,7 @@ module `mname` (
                                        .ManDiff_out(CloseManDiff), .ExpDiff_out(CloseExpDiff),
                                        .SignDiff_out(CloseDiffSign) , .ZeroDiff_out(ZeroCloseDiff),
                                        .Guard_out(CloseGuard), .Sticky_out(CloseSticky),
-                                       .Expbase(CloseExpbase), .LShiftAmtWide(LShiftAmtWide), .LZA_wrong_out(CloseShiftZ),
+                                       .Expbase_pp0(CloseExpbase_pp0), .Expbase_pp1(CloseExpbase_pp1), .LZA_wrong_out(CloseShiftZ),
                                        .valid_out(valid_close),
   //; if ($verif_mode =~ /ON/){
                                        .dumptolog(dumptolog)
@@ -213,8 +213,8 @@ module `mname` (
 
   assign {ExpZ_pp0, ExpZ_pp1, ExpZDecrementWhenShifting} = ResultIsA_p? { {2'b0,ExpA_p1} , {(`$ExpB_width`){1'b1}} , 1'b0} :
                                                        ResultIsClose_p?
-                                                             {CloseExpbase,~LShiftAmtWide,1'b0}
-                                                           : {FarExpbase , {(`$ExpB_width`){1'b1}} , subtract_p};
+                                                             {CloseExpbase_pp0, CloseExpbase_pp1,1'b0}
+                                                           : {FarExpbase_pp0 , FarExpbase_pp1 , subtract_p};
 
   assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow , ShiftZ} = 
                     ResultIsClose_p2?

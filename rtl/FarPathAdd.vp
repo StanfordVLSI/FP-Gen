@@ -69,7 +69,7 @@ module `mname`(
   output logic [`$manA_width-1`:0] ManSum_out,
   output logic [`$exp_width-1`:0] ExpSum_out, 
   output logic Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out,
-  output logic [`$ExtendedExp_width-1`:0] Expbase,
+  output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1,
   output logic valid_out
               );
 
@@ -80,7 +80,7 @@ module `mname`(
   logic [`$manA_width-1`:0] ManA;
   logic [`$manB_width-1`:0] ManB;
   logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, ExpDifference;
-  logic IncA, SignA, SignB, ZeroA, ZeroB, ExpB_gt_ExpA, valid_middle;
+  logic IncA, SignA, SignB, ZeroA, ZeroB, ExpB_gt_ExpA, valid_middle, ManB_overnormal;
   logic [`$manA_width-1`:0] ManSum;
   logic [`$exp_width-1`:0] ExpSum;
   logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum;
@@ -119,6 +119,7 @@ module `mname`(
 
 
   assign subtract = SignA ^ SignB;
+  assign ManB_overnormal = ExpB_gt_ExpA & ManB[`$manB_width-1`];
 
   // Calculate shift amount
   assign shift_amount = ExpDifference[`$ExtendedExp_width-1`:`$shift_width`]==0 ? ExpDifference[`$shift_width-1`:0] : `$manB_width`; //saturation logic
@@ -215,12 +216,13 @@ module `mname`(
       sumUpper[`$manA_width+3`]?
                {ExpSumUpperLeft, sumUpperLeft, guardUpperLeft, stickyUpperLeft, OverflowUpperLeft, 1'b1}
                :(sumUpper[`$manA_width+2`]?
-                    {ExpSumLeft, sumLeft, guardLeft, stickyLeft, OverflowLeft, 1'b1}
+                    {ExpSumLeft, sumLeft, guardLeft, stickyLeft, OverflowLeft, ~ManB_overnormal}
                    :(sumUpper[`$manA_width+1`] | ExpSumCenterIsOne?       //shift only if the exponent is greater than 1
-                        {ExpSumCenter, sumCenter, guardCenter, stickyCenter, OverflowCenter, 1'b0}
+                        {ExpSumCenter, sumCenter, guardCenter, stickyCenter, OverflowCenter, ManB_overnormal}
                        :{ExpSumRight, sumRight, guardRight, stickyRight, OverflowRight, 1'b1} ));
 
-  assign Expbase = ExpSum;
+  assign Expbase_pp0 = ExpSumCenter;
+  assign Expbase_pp1 = {(`$ExtendedExp_width`){~ManB_overnormal}};
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off
