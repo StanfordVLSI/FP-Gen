@@ -54,20 +54,31 @@ ifeq ($(DESIGN_NAME),FPMult)
 endif 
 
 ifeq ($(DESIGN_NAME),FMA)
-  INST_NAME ?= FMA
-  MOD_NAME ?= FMA
-  TOP_NAME ?= top_MulAdd
-  ROLLUP_TARGET ?= FMA_Rollup.target
+   DESIGN_WRAPPER = MulAdd
+   ARCHITECTURE_NAME = Fused
+endif
 
-  PIPELINE_PARAM ?= top_FMA.FMA.PipelineDepth
-  RETIME_PARAM ?= top_FMA.FMA.Retiming
-  DW_PARAM ?= top_FMA.FMA.Designware_MODE
-  INC_PARAM ?= top_FMA.FMA.UseInc
-  VERIF_PARAM_1 ?= top_FMA.FMA.VERIF_MODE
-  SYNTH_PARAM_1 ?= top_FMA.FMA.SYNTH_MODE
-  VERIF_PARAM_2 ?= top_FMA.VERIF_MODE
-  SYNTH_PARAM_2 ?= top_FMA.SYNTH_MODE
-  SAIF_PARAM ?= top_FMA.SAIF_MODE
+ifeq ($(DESIGN_NAME),CMA)
+   DESIGN_WRAPPER = MulAdd
+   ARCHITECTURE_NAME = Cascade
+endif 
+
+ifeq ($(DESIGN_WRAPPER),MulAdd)
+  INST_NAME ?= $(DESIGN_NAME)
+  MOD_NAME ?= $(DESIGN_NAME) 
+  TOP_NAME ?= top_MulAdd
+  ROLLUP_TARGET ?= MulAdd_Rollup.target
+
+  ARCH_PARAM ?= $(TOP_NAME).Architecture
+  PIPELINE_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).PipelineDepth
+  RETIME_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).Retiming
+  DW_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).Designware_MODE
+  INC_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).UseInc
+  VERIF_PARAM_1 ?= $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE
+  SYNTH_PARAM_1 ?= $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE
+  VERIF_PARAM_2 ?= $(TOP_NAME).VERIF_MODE
+  SYNTH_PARAM_2 ?= $(TOP_NAME).SYNTH_MODE
+  SAIF_PARAM ?= $(TOP_NAME).SAIF_MODE
 
   ifeq ($(PIPE_CNT),0)
     RETIME_STATUS ?= 0
@@ -78,6 +89,8 @@ ifeq ($(DESIGN_NAME),FMA)
   over_params =   
   over_params1 =   
   over_params2 =   
+  over_params3 = $(ARCH_PARAM)=$(ARCHITECTURE_NAME)
+  over_params4 = 
 
   ifdef  PIPE_CNT
    over_params1 = $(PIPELINE_PARAM)=$(PIPE_CNT) $(RETIME_PARAM)=$(RETIME_STATUS)
@@ -93,14 +106,14 @@ ifeq ($(DESIGN_NAME),FMA)
   endif
 
   ifeq ($(SAIF_MODE),1)
-    VERIF_STRING := top_FMA.FMA.VERIF_MODE=OFF top_FMA.FMA.SYNTH_MODE=ON top_FMA.VERIF_MODE=OFF top_FMA.SYNTH_MODE=ON top_FMA.SAIF_MODE=ON
-    SYNTH_STRING := top_FMA.FMA.VERIF_MODE=OFF top_FMA.FMA.SYNTH_MODE=ON top_FMA.VERIF_MODE=OFF top_FMA.SYNTH_MODE=ON top_FMA.SAIF_MODE=ON
+    VERIF_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=OFF $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=ON $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON $(TOP_NAME).SAIF_MODE=ON
+    SYNTH_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=OFF $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=ON $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON $(TOP_NAME).SAIF_MODE=ON
   else
-    VERIF_STRING := top_FMA.FMA.VERIF_MODE=ON  top_FMA.FMA.SYNTH_MODE=OFF top_FMA.VERIF_MODE=ON  top_FMA.SYNTH_MODE=OFF top_FMA.SAIF_MODE=OFF
-    SYNTH_STRING := top_FMA.FMA.VERIF_MODE=OFF top_FMA.FMA.SYNTH_MODE=ON  top_FMA.VERIF_MODE=OFF top_FMA.SYNTH_MODE=ON  top_FMA.SAIF_MODE=OFF
+    VERIF_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=ON  $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=OFF $(TOP_NAME).VERIF_MODE=ON  $(TOP_NAME).SYNTH_MODE=OFF $(TOP_NAME).SAIF_MODE=OFF
+    SYNTH_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=OFF $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=ON  $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON  $(TOP_NAME).SAIF_MODE=OFF
   endif	
 
-  over_params = $(over_params1) $(over_params2)
+  over_params = $(over_params1) $(over_params2) $(over_params3)
   PARAM_STRING += $(over_params)
   SYNTH_PARAM_STRING += $(PARAM_STRING) $(SYNTH_STRING)
   VERIF_PARAM_STRING += $(PARAM_STRING) $(VERIF_STRING)
@@ -364,10 +377,12 @@ gen_syn: genesis_clean
 	@echo ""
 	@echo Elaborting for Synthesis Run
 	@echo ====================================================
-	rm *.v
+	rm -f *.v
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) -parameter $(SYNTH_PARAM_STRING)
 	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
+design_map: $(GENESIS_VLOG_LIST)
+	locDesignMap.pl TCL=/dev/null INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/nulll
 
 # VCS rules:
 #####################
@@ -527,7 +542,7 @@ clean: genesis_clean
 	\rm -rf ucli.key
 	\rm -rf *~
 	\rm -rf top.v
-	\rm -rf top_FMA.v
+	\rm -rf top_*.v
 	\rm -f graph_*.m
 	cd testVectors;rm -f *.fplog *.fpres *.fpvec *.log
 ifdef SIM_ENGINE

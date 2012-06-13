@@ -105,7 +105,7 @@ module `mname` ();
 			     //; }
                              //; }
    			     //; if ($pipeline_depth>0){
-                             .clk(clk), .reset(reset), .valid_in(1'b1), .stall_in(1'b0),			     
+                             .clk(clk), .reset(reset), .valid_in(1'b1),			     
 			     .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
                              .SO(SO), .SI(SI), .valid_out(valid_out),
    		             //; } else {
