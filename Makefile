@@ -41,7 +41,7 @@ ifeq ($(DESIGN_NAME),MultiplierP)
   $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
   INST_NAME ?= MultiplierP
   MOD_NAME ?= MultiplierP
-  TOP_NAME ?= top
+  TOP_NAME ?= top_MultiplierP
   ROLLUP_TARGET ?= MultiplierP_Rollup.target
 endif 
 
@@ -117,7 +117,7 @@ ifeq ($(DESIGN_WRAPPER),MulAdd)
   PARAM_STRING += $(over_params)
   SYNTH_PARAM_STRING += $(PARAM_STRING) $(SYNTH_STRING)
   VERIF_PARAM_STRING += $(PARAM_STRING) $(VERIF_STRING)
-
+  VERIF_PARAM_STRING = "-parameter $(VERIF_PARAM_STRING)"
 endif 
 
 ifeq ($(DESIGN_NAME),Multiplier)
@@ -362,7 +362,7 @@ $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) -parameter $(VERIF_PARAM_STRING)
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(VERIF_PARAM_STRING)
 
 genesis_clean:
 	@echo ""
