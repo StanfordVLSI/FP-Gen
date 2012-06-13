@@ -37,6 +37,10 @@
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; $useInc = ($useInc =~ /YES/)? 1:0;
 //;
+//; my $useMP = parameter(Name=>'UseMP', Val=>0, List=>[1, 0],
+//; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
+// $useMP = `$useMP`
+//;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
@@ -65,8 +69,10 @@ module `mname`(
     input logic 		  dumptolog,
    //; }
     input logic [`$width-1`:0] 	  a,b,
+   //; if ($useMP){
     input logic                   mp_mode,
- 
+    //; }	    
+
     input logic 		  clk ,
     input logic 		  rst ,
 	       
@@ -85,8 +91,16 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
 /* BOOTH ENCODING
 */
    //; # First we generate the Booth module
-   //; my $Booth_obj = generate('Booth_MP', 'Booth_MP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
+   //;
+//;my $Booth_obj;
+   //;
+   //; if ($useMP){
+   //;     $Booth_obj = generate('Booth_MP', 'Booth_MP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
    //;				 UseInc=>($useInc)?"YES":"NO");
+   //; }else{
+   //;     $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
+   //;				 UseInc=>($useInc)?"YES":"NO");
+   //; }	    
    //;
    //; # Now we can extract some properties from it: How many partial products and of of what widths
    //; my $pp_count = $Booth_obj->get_param('PPCount');
@@ -95,7 +109,7 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
    //;
    //;    
    // Local signals for partial products
-   logic [`$pp_width-1`:0] 	  pp_mp [0:`$pp_count-1`] ;
+   logic [`$pp_width-1`:0] 	  pp [0:`$pp_count-1`] ;
 
    // Booth instance
    `$Booth_obj->instantiate` (
@@ -103,11 +117,13 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
 			      .dumptolog(dumptolog),
 			      //; }
 			      .x(a), .y(b),
+                              //; if ($useMP){
 			      .mp_mode(mp_mode),
+			      //; }
 			      //; if ($useInc){
 			      .xinc(ainc), .yinc(binc),
 			      //; }
-			      .pp(pp_mp)
+			      .pp(pp)
 			      );
 
 
@@ -123,17 +139,17 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
     * for every additional pp. The total is thus width = pp_width + booth*(pp_count-1).
     * (pp_width=`$pp_width`, pp_count=`$pp_count` and booth=`$booth`) */
    //; my $raw_out_w = $pp_width + $booth*($pp_count-1);
-    logic [`$raw_out_w-1`:0] RawOut0_mp,RawOut1_mp; 
+    logic [`$raw_out_w-1`:0] RawOut0,RawOut1; 
 								  
 
-   //; my $Tree_obj = generate("MultiplierTree", 'Tree_mp', PPWidth=>$pp_width, 
+   //; my $Tree_obj = generate("MultiplierTree", 'Tree', PPWidth=>$pp_width, 
    //;			        PPCount=>$pp_count, BoothType=>$booth,
    //;			        TreeType=>$tree);
    `$Tree_obj->instantiate()` (
  			  //; if ($verif_mode =~ /ON/){
 			  .dumptolog(dumptolog),
   			  //; }
-			  .pp(pp_mp), .out0(RawOut0_mp), .out1(RawOut1_mp)
+			  .pp(pp), .out0(RawOut0), .out1(RawOut1)
 			  );
 
   
@@ -157,8 +173,8 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
 
 
 
-    assign out0 = RawOut0_mp[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
-    assign out1 = RawOut1_mp[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    assign out0 = RawOut0[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
+    assign out1 = RawOut1[`2*$width+1+$booth+$booth*$useInc`:`$booth+$booth*$useInc`];
    //; }
 //; }
 endmodule

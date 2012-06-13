@@ -43,6 +43,8 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
+//; my $width_sub = parameter(Name=>'WidthSub', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Sub signal bit widths  !FUNCTIONAL!");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>-4,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //;
@@ -102,7 +104,7 @@ module `mname`(
    `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset), 
                                .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .valid_out(valid_out) );
 
-//;   my $Mul_obj = generate($multP_module_name, 'MultP', Width=>$width, UseInc=>$useInc);
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, UseInc=>$useInc, UseMP=>($useMP =~ /YES/));
    `$Mul_obj->instantiate()` (
 //;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
@@ -170,7 +172,7 @@ module `mname`(
     end
 
    logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
-//;     my $Mul_obj = generate($multP_module_name, "MultP_${i}", Width=>$width, UseInc=>$useInc);
+//;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, WidthSub=>$width_sub, UseInc=>$useInc, UseMP=>($useMP =~ /YES/));
 
    `$Mul_obj->instantiate()` (
 //;     if ($verif_mode =~ /ON/){

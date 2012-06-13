@@ -24,6 +24,12 @@
 //;                            Doc=>"Synthesis mode determines whether or not ".
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off.");
+//; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
+//;                           Doc=>"Number of test transactions to run ".
+//;                                "(can be overriden at runtime using the '+NumTrans=value' command line notation)");
+//; my $seed = parameter(Name=>'Seed',Val=>12345, Min=>0, Step=>1,
+//;                      Doc=>"Seed for random values".
+//;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
 
 
 module `mname` ();   
@@ -32,32 +38,134 @@ module `mname` ();
 
    //; # Read what kind of DUT the user wanted so you can test it
    //; my $BW     = $Inst_obj->get_param('Width');
+   //; my $BW_sub = $Inst_obj->get_param('WidthSub');
    //; my $useInc = $Inst_obj->get_param('UseInc') eq 'YES';
+   //; my $useMP  = $Inst_obj->get_param('UseMP');
+   //; my $booth  = $Inst_obj->get_param('BoothType');
    
+   //; my $Inst_obj_ac = generate('MultiplierP' , 'MultiplierP_ac', Width=>$BW_sub, UseMP=>0, BoothType=>$booth, UseInc=>$useInc?'YES':'NO'  );
+
    // local signals for DUT
-   logic [`$BW-1`:0]     a, b;
-   logic                 IncA , IncB ;
+   logic signed [`$BW-1`:0]     a, b;
+   logic                 IncA , IncB,mp_mode ;
    logic [`2*$BW+2-1`:0] pp0 , pp1 ;
-   					  
+   logic [`2*$BW+2-1`:0] out0 , out1 ;
+   logic [`2*$BW_sub+2-1`:0] out0_ac , out1_ac, out0_bd , out1_bd ;
+   logic [`2*$BW+2`:0] pp_sum ;
+   
+   logic [`2*$BW-1`:0]     expected;
+   logic [`2*$BW_sub-1`:0]     expected_ac, expected_bd;
+   logic [`2*$BW_sub-1`:0]     pp_sum_ac, pp_sum_bd;
+
+   logic [2:0] 		   compare;
+   assign compare[0] = (expected == pp_sum[`2*$BW-1`:0]);
+   assign compare[1] = (expected_ac == pp_sum_ac);
+   assign compare[2] = (expected_bd == pp_sum_bd);
+   
+
+   
+   assign pp_sum = pp0 + pp1;
+   assign pp_sum_ac = pp_sum[`2*$BW_sub-1`:0];
+   assign pp_sum_bd = pp_sum[`2*$BW+2-4`:`2*$BW+2-4-2*$BW_sub+1`];
+   
+   assign expected = out0 + out1;//a*b;
+   assign expected_ac = out0_ac + out1_ac;
+   assign expected_bd = out0_bd + out1_bd;
+
+
+DW02_multp #(`$BW`, `$BW`, `2*$BW+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .out0(out0), .out1(out1) );
+
+DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_ac ( .a(a[`$BW_sub-1`:0]), .b(b[`$BW_sub-1`:0]),.tc(1'b0), .out0(out0_ac), .out1(out1_ac) );
+DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_bd ( .a(a[`$BW-1`:`$BW-$BW_sub`]), .b(b[`$BW-1`:`$BW-$BW_sub`]),.tc(1'b0), .out0(out0_bd), .out1(out1_bd) );
+   
+
+					  
    //; if ($verif_mode =~ /ON/){
-   logic 		 dumptolog,
+   logic 		 dumptolog;
    //; }
+   // Local variables and handles for controlling the simulation
+   int 					seed=`$seed`;
+   int 					num_trans = `$num_trans`;
 
    // Instantiate the dut here
-   `$Inst_obj->instantiate()` (
+   `$Inst_obj->instantiate()`(
 			       //; if ($verif_mode =~ /ON/){
 			       .dumptolog(dumptolog),
 			       //; }
 
-				.a(a), 
-				.b(b),
+				.a({a[`$BW-1`:`$BW-$BW_sub`], mp_mode? `$BW-2*$BW_sub`'b0: a[`$BW-$BW_sub-1`:`$BW_sub`] ,a[`$BW_sub-1`:0]}), 
+				.b({b[`$BW-1`:`$BW-$BW_sub`], mp_mode? `$BW-2*$BW_sub`'b0: b[`$BW-$BW_sub-1`:`$BW_sub`] ,b[`$BW_sub-1`:0]}),
 				//; if ($useInc){
 				.ainc(IncA), 
 				.binc(IncB), 
 				//;}
+				//; if ($useMP){
+                                .mp_mode(mp_mode),
+				//;}
+
 				.out0(pp0),
 				.out1(pp1) 
 			      );
 
+
+   
+  
+   initial begin
+      $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
+     get_command_line_args();
+	    IncA = 1'b0;
+	    IncB = 1'b0;
+            a = `$BW`'b0;
+            b = `$BW`'b0;
+      
+	    mp_mode = 1'b0;
+      
+      
+       #20;
+	 for (int i=0; i<num_trans; i++) begin
+	    $write("\n%t: Transaction #%0d: ", $time, i);
+	    a = {$random(seed),$random(seed)};
+	    b = {$random(seed),$random(seed)};
+	    IncA = 1'b0;
+	    IncB = 1'b0;
+	    mp_mode = i%2;//1'b0;
+	    #1;
+
+	    //Compare results with DW.
+	    if((mp_mode & compare[1] & compare[2]) || (~mp_mode & compare[0]))
+	      $display("   PASS");
+	    else begin
+	      $display("   FAIL!!!");
+	       $finish;
+	       
+	    end
+	    #10;
+	    
+    	 end // for (int i=0; i<num_trans; i++)
+   end // initial begin
+
+   //-------------------------------------------------------------------------//
+   // general intialization procedure
+   task get_command_line_args;
+      // if this is a "+wave" run, it must record all signals
+      if ( $test$plusargs("Wave") ) 
+	begin
+           $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
+           //         levels  instance
+           $vcdpluson(0,        top_MultiplierP);
+	   $vcdplusmemon(0,     top_MultiplierP);
+        end
+      // find the seed for this run
+      if ( $test$plusargs("Seed") ) 
+	begin
+	   $value$plusargs("Seed=%d", seed);
+	   $display("%t:\tRuntime input +Seed=%d found",$time, seed);
+	end
+      if ( $test$plusargs("NumTrans") )
+	begin
+	   $value$plusargs("NumTrans=%d", num_trans);
+	   $display("%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
+	end
+   endtask // get_command_line_args
    
 endmodule : `mname`

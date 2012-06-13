@@ -124,7 +124,8 @@ module `mname`(
    logic [`2*$width+1`:0] multp_out0, multp_out1, pp0, pp1; // sign extended by 2 because of booth encoding
    logic valid_mulp;
 
-   //; my $Mul_obj= generate('Pipelined_MultiplierP', 'MultP', Width=>$width, PipelineDepth => $mulp_pipeline_depth, UseInc=>($useInc)?"YES":"NO", UseMP=>($useMP)?"YES":"NO");
+   //; my $width_sub = 24;
+   //; my $Mul_obj= generate('Pipelined_MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, PipelineDepth => $mulp_pipeline_depth, UseInc=>($useInc)?"YES":"NO", UseMP=>($useMP)?"YES":"NO");
 
    `$Mul_obj->instantiate()` 
      (

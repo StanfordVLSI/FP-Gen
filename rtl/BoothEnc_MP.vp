@@ -65,6 +65,9 @@
 //$encode_fanout = `$encode_fanout`
 
 
+// .........111|.0.........
+//-+-----+-----+---+-----
+
 module `mname` (
     input logic [`$width-1`:0]  x,
       //;   if ($booth>=3) {
@@ -79,6 +82,11 @@ module `mname` (
     output logic [`$width+$booth-1`:0]   pp,             // extend width by two: 1 bit for sign and ($booth-1) for shifting for 2^($booth-1) multiple
     output logic		    S
 		);
+//need modified y to prevent invertion in booth cell if y < 0;
+   logic [`$booth`:0] 		    y_mp;
+   assign y_mp[`$booth`]     = mp_mode?1'b0:y[`$booth`];
+   assign y_mp[`$booth-1`:0] = y[`$booth-1`:0];
+  
    
    logic [`$width+$booth-1`:0] 	    pp_int;
 
@@ -122,18 +130,39 @@ module `mname` (
    //;							      
    //;     if (($i-$booth+1)%$encode_fanout==0 || $mp_boundary == 1){
    //;       $j++;
-   //;       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
-   logic  [`(2**($booth-1))-1`:0] sel_x`$j`_int;
+   //;#       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
    logic  [`(2**($booth-1))-1`:0] sel_x`$j`;
-   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`_int));
+   //;#`$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`_int));
 
    //;if($mp_disable == 0) {
+   logic  [`(2**($booth-1))-1`:0] sel_x`$j`_int;
+
+   //;       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
+   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`_int));
    assign sel_x`$j` = sel_x`$j`_int;
+
+   
    //;} else {
-   //;    if((2**($booth-1))-1>2) {
-   assign sel_x`$j`[`(2**($booth-1))-1`:2] = sel_x`$j`_int[`(2**($booth-1))-1`:2];
-   //;    }
-   assign sel_x`$j`[1:0] = mp_mode ? 2'b11 : sel_x`$j`_int[1:0];
+
+   //;      if($j==0) {
+   logic  [`(2**($booth-1))-1`:0] sel_x`$j`_int;
+
+   //;       my $BoothSel_obj = generate('BoothSel', "Booth_sel_${j}", BoothType=>$booth);
+   `$BoothSel_obj->instantiate` ( .y(y), .sel_x(sel_x`$j`_int));
+
+//;#   //;          if((2**($booth-1))-1>2) {
+//;#   assign sel_x`$j`[`(2**($booth-1))-1`:2] = sel_x`$j`_int[`(2**($booth-1))-1`:2];
+//;#   //;          }
+//;#   assign sel_x`$j`[1:0] = {2{mp_mode}} | sel_x`$j`_int[1:0];//mp_mode ? 2'b11 : sel_x`$j`_int[1:0];
+   assign sel_x`$j` = {`2**($booth-1)`{mp_mode}} | sel_x`$j`_int;//mp_mode ? 2'b11 : sel_x`$j`_int[1:0];
+   
+   //;      }else{
+   //;       my $BoothSel_obj = generate('BoothSel_MP', "Booth_sel_${j}", BoothType=>$booth);
+   `$BoothSel_obj->instantiate` ( .y(y), .mp_mode(mp_mode), .sel_x(sel_x`$j`));
+   //;      }
+
+
+   
    //;}
    
    //;       if ($booth==2 && $j==0) {
@@ -167,7 +196,12 @@ module `mname` (
            .xn1(xn[`$i-1`]), .xn0(xn[`$i`]),
    //;     }
       .sel_x(sel_x`$j`),
-      .y(y) , .pp(pp_int[`$i-$booth+1`]));
+   //;     if ($booth>=3 && $mp_disable) {
+           .y(y_mp),
+   //;     }else {
+      .y(y) ,
+      //;     }
+	.pp(pp_int[`$i-$booth+1`]));
    //;   }
 
 
@@ -190,9 +224,14 @@ module `mname` (
   //;   }
 
    assign pp[`$width_sub+$booth-2`:0] = pp_int[`$width_sub+$booth-2`:0];
-   
+
+//;#for the ac case we need S
+//;if($mask_side==0){   
    assign pp[`$width_sub+$booth-1`] = mp_mode ? pp_int_sub : pp_int[`$width_sub+$booth-1`];
-   
+//;}else{
+   assign pp[`$width_sub+$booth-1`] = pp_int[`$width_sub+$booth-1`];
+//;}
+   //    
    assign pp[`$width+$booth-1`:`$width_sub+$booth`] = pp_int[`$width+$booth-1`:`$width_sub+$booth`];
 
 

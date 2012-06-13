@@ -96,6 +96,8 @@
 //
 // $extended_width=`$extended_width`, $extended_width_sub=`$extended_width_sub`
 //
+//;#$extended_width = 2*$extended_width_sub if ($extended_width < 2*$extended_width_sub);
+
 //;
 //; my $pp_count = ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
 //; $pp_count -=1 if ((!$useInc) && ($booth==1));
@@ -104,16 +106,19 @@
 //; $pp_count_sub -=1 if ((!$useInc) && ($booth==1));
 //;
 //; my $pp_count_mp = $pp_count;
-//; $pp_count_mp = 2*$pp_count_sub if (2*$pp_count_sub > $pp_count);
+//; $pp_count_mp = (2*$pp_count_sub+$useInc) if ((2*$pp_count_sub+$useInc) > $pp_count);
 //
-//$pp_count=`$pp_count+$useInc`, $pp_count_sub=`$pp_count_sub+$useInc`
+//$pp_count=`$pp_count+$useInc`, $pp_count_sub=`$pp_count_sub+$useInc`,  $pp_count_mp = `$pp_count_mp+$useInc`; `2*$pp_count_sub+$useInc`
 //
+
+//;# $pp_count = $pp_count_mp if ($pp_count < $pp_count_mp);
 //;
-//; my $pp_width = ($booth==1)? $width+2 : $width+3*$booth;
 //;
-//; my $pp_width_sub = ($booth==1)? $width_sub+2 : $width_sub+3*$booth;
+//; my $pp_width = ($booth==1)? ($width+2) : ($width+3*$booth);
+//;
+//; my $pp_width_sub = ($booth==1)? ($width_sub+2) : ($width_sub+3*$booth);
 //
-//$pp_width = `$pp_width`, $pp_width_sub = `$pp_width_sub`
+//$pp_width = `$pp_width`, $pp_width_sub = `$pp_width_sub`, `$width`+`3*$booth`:`$width_sub` `3*$booth`
 //
 //; my $pp_width_mp = $pp_width;
 //; $pp_width_mp = 2*$pp_width_sub if (2*$pp_width_sub > $pp_width);
@@ -121,15 +126,10 @@
 //; # Inform the world about the partial products properties
 //; parameter(Name=>'PPWidth', Val=>$pp_width, Force=>1, 
 //;           Doc=>"This is the calculated partial product width for Booth=$booth and Width=$width");
-//; parameter(Name=>'PPCount', Val=>$pp_count+$useInc, Force=>1, 
+//; parameter(Name=>'PPCount', Val=>$pp_count_mp+$useInc, Force=>1, 
 //;           Doc=>"This is the calculated number of partial products for Booth=$booth and Width=$width. ".
 //;                "Note that it includes a +1 to account for xinc and yinc");
 //;
-//;# parameter(Name=>'PPWidth_sub', Val=>$pp_width_sub, Force=>1, 
-//;#           Doc=>"This is the calculated partial product width for Booth=$booth and Width=$width");
-//;# parameter(Name=>'PPCount_sub', Val=>$pp_count_sub+$useInc, Force=>1, 
-//;#           Doc=>"This is the calculated number of partial products for Booth=$booth and Width=$width. ".
-//;#                "Note that it includes a +1 to account for xinc and yinc");
 //;
 //;my $pp_width_mp_initial = $width+$booth;
 //;$pp_width_mp_initial = 2*($width_sub+$booth) if (2*($width_sub+$booth)>($width+$booth));
@@ -146,34 +146,41 @@ module `mname`(
    //; if ($useInc){
     input 		 xinc, yinc,
    //; }
-    //output [`$pp_width-1`:0] pp [0:`$pp_count+$useInc-1`], // `$pp_count`+ `$useInc` to account for xinc and yinc
 
-    output [`$pp_width-1`:0] 	 pp [0:`$pp_count+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
+    output [`$pp_width-1`:0] 	 pp [0:`$pp_count_mp+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
 		);
 
    logic [`$pp_width_mp_initial-1`:0] initial_pp_mp [0:`$pp_count_mp-1`];
    logic [`$pp_count_mp-1`:0] 	 S_mp;
 
 //Asuming in MP mode x = {b,a}, y = {d,c}, x*y= {bc,ac} + {bd,ad,0} = {bd, bc+ad, ac }   
+   //////////////////////////
+//;#   logic [`$pp_width_sub-1`:0] 	 pp_ac [0:`$pp_count_sub+$useInc-1`];
+//;#   logic [`$pp_width_sub-1`:0] 	 pp_bd [0:`$pp_count_sub+$useInc-1`];
+//;#   //;     for (my $i=0; $i<=$pp_count_sub; $i++){
+//;#   assign pp_ac[`$i`] = pp[`$i`][`$pp_width_sub-1`:0];
+//;#   assign pp_bd[`$i`] = pp[`$i + $pp_count - $pp_count_sub`][`$pp_width-1`:`$pp_width-$pp_width_sub`];
+
+//;#   //;     }
+
    
-   
-   //assign mp_mode = 1'b1;//1'b0;//
+ ////////////
 
 
    
    //; if ($booth==1) {
-   //;   if ($useInc){
-   assign pp[0] = xinc ? {y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
-   assign pp[1] = yinc ? {1'b0, x, xinc} : `$pp_width`'b0; // add an extra x if yinc and an extra 1 if xinc AND yinc
-   //;     for (my $i=2; $i<=$pp_count; $i++){
-   assign pp[`$i`] = y[`$i-2`] ? {2'b0, x}: `$pp_width`'b0;
-   //;     }
-   //;   }
-   //;   else{ # i.e., no useInc...
-   //;     for (my $i=0; $i<$pp_count; $i++){
-   assign pp[`$i`] = y[`$i`] ?  {2'b0, x} : `$pp_width`'b0;
-   //;     }   
-   //;   }
+//;#    //;   if ($useInc){
+//;#    assign pp[0] = xinc ? {y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
+//;#    assign pp[1] = yinc ? {1'b0, x, xinc} : `$pp_width`'b0; // add an extra x if yinc and an extra 1 if xinc AND yinc
+//;#    //;     for (my $i=2; $i<=$pp_count; $i++){
+//;#    assign pp[`$i`] = y[`$i-2`] ? {2'b0, x}: `$pp_width`'b0;
+//;#    //;     }
+//;#    //;   }
+//;#    //;   else{ # i.e., no useInc...
+//;#    //;     for (my $i=0; $i<$pp_count; $i++){
+//;#    assign pp[`$i`] = y[`$i`] ?  {2'b0, x} : `$pp_width`'b0;
+//;#    //;     }   
+//;#    //;   }
    //;
    //; } # End of "if ($booth==1)..." 
    //; elsif ($booth>=2) {
@@ -181,37 +188,55 @@ module `mname`(
 
    //Mask out unused bits. Eventually this might be done in the higher module
    logic [`$width-1`:0] 	    x_mp;
-   //assign x_mp = {x[`$width-1`:`$width-$width_sub`],{`$width-2*$width_sub`{1'b0}},x[`$width_sub-1`:0]};
-   assign x_mp[`$width-1`           :`$width-$width_sub`] = x[`$width-1`:`$width-$width_sub`];
-   assign x_mp[`$width-$width_sub-1`:`$width_sub`       ] = mp_mode ?{`$width-2*$width_sub`{1'b0}}:x[`$width-$width_sub-1`:`$width_sub`];
-   assign x_mp[`$width_sub-1`       :0                  ] = x[`$width_sub-1`:0];
+   //assign x_mp[`$width-1`           :`$width-$width_sub`] = x[`$width-1`:`$width-$width_sub`];
+   //assign x_mp[`$width-$width_sub-1`:`$width_sub`       ] = mp_mode ?{`$width-2*$width_sub`{1'b0}}:x[`$width-$width_sub-1`:`$width_sub`];
+   //assign x_mp[`$width_sub-1`       :0                  ] = x[`$width_sub-1`:0];
    
+   assign x_mp = x;
+   
+//;my $extended_width_mp = $extended_width;
+//;$extended_width_mp = 2*$extended_width_sub if ($extended_width < 2*$extended_width_sub);
 
-   
-   logic [`$extended_width`-1:0] extended_y;
-   logic [`$extended_width`-1:0] extended_y_mp;
+   //logic [`$extended_width`-1:0] extended_y;
+   logic [`$extended_width_mp`-1:0] extended_y_mp;
    //;   if ($useInc) {
    // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
-   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
+   //assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
 
+//   assign extended_y_mp[24:0] = {y[23:0],yinc};
+//   //The following nastines is because  ( $width % $booth) = 1 for 53 and 2 for 24
+//   assign extended_y_mp[54:29] = mp_mode ? {{(2) {1'b0} },y[52:29]} : 
+//                                                                        {{(1) {1'b0} },y[52:26]};
+//   assign extended_y_mp[28] = mp_mode ? yinc : y[25];
+//   assign extended_y_mp[27:25] =  mp_mode ? {3{1'b0}}: y[24:24];
+ 
+   
    assign extended_y_mp[`$width_sub`:0] = {y[`$width_sub-1`:0],yinc};
    //The following nastines is because  ( $width % $booth) = 1 for 53 and 2 for 24
-   //;my $y_bd_start = $extended_width-$width_sub-($booth - ( $width_sub % $booth));
-   //;my $y_start_ind = $extended_width - $y_bd_start - ($booth - ( $width % $booth));
-   assign extended_y_mp[`$extended_width-1`:`$y_bd_start`] = mp_mode ? {{(`$booth - ( $width_sub % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub`]} : 
-                                                                        {{(`$booth - ( $width % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub-1`]};
-   assign extended_y_mp[`$y_bd_start-1`] = mp_mode ? yinc : y[`$width-$width_sub-2`];
-   assign extended_y_mp[`$y_bd_start-2`:`$width_sub+1`] =  mp_mode ? {`$y_bd_start-2-$width_sub-1+1`{1'b0}}: y[`$width-$width_sub-3`:`$width_sub`];
+   //;my $y_bd_start = $extended_width_mp-$width_sub-($booth - ( $width_sub % $booth));
+   //;##my $y_start_ind = $extended_width - $y_bd_start - ($booth - ( $width % $booth))+1;
+   //;#my $y_start_ind = $y_bd_start + (( $width_sub % $booth) - ( $width % $booth));
+   //;my $y_start_ind = $width-$width_sub + (( $width_sub % $booth) - ( $width % $booth)) + ($extended_width_mp-$extended_width);
+   //`$y_bd_start` ; `$extended_width` ; `($booth - ( $width % $booth))`
+     
+
+   assign extended_y_mp[`$extended_width_mp-1`:`$y_bd_start`] = mp_mode ? {{(`$booth - ( $width_sub % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub`]} : 
+                                                                        {{(`$booth - ( $width % $booth) + $extended_width_mp-$extended_width `) {1'b0} },y[`$width-1`:`$y_start_ind`]};
+   assign extended_y_mp[`$y_bd_start-1`] = mp_mode ? yinc : y[`$y_start_ind-1`];
+   assign extended_y_mp[`$y_bd_start-2`:`$width_sub+1`] =  mp_mode ? {`$y_bd_start-2-$width_sub`{1'b0}}: y[`$y_start_ind-2`:`$width_sub`];
 
    //;   }else{
-   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,1'b0};  //sign extension guarantees positive last partial product
+   //assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,1'b0};  //sign extension guarantees positive last partial product
    
    assign extended_y_mp[`$width_sub`:0] = {y[`$width_sub-1`:0],1'b0};
    //The following nastines is because  ( $width % $booth) = 1 for 53 and 2 for 24
    //;my $y_bd_start = $extended_width-$width_sub-($booth - ( $width_sub % $booth));
-   assign extended_y_mp[`$extended_width-1`:`$y_bd_start`] = {{(`$booth - ( $width_sub % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub`]};
-   assign extended_y_mp[`$y_bd_start-1`] = mp_mode ? 1'b0 : y[`$width-$width_sub-1`];
-   assign extended_y_mp[`$y_bd_start-2`:`$width_sub+1`] =  mp_mode ? {`$y_bd_start-2-$width_sub-1+1`{1'b0}}: y[`$width-$width_sub-2`:`$width_sub`];
+   //;my $y_start_ind = $extended_width - $y_bd_start - ($booth - ( $width % $booth))+1;
+   //;
+   assign extended_y_mp[`$extended_width-1`:`$y_bd_start`] = mp_mode ? {{(`$booth - ( $width_sub % $booth) `) {1'b0} },y[`$width-1`:`$width-$width_sub`]} : 
+                                                                        {{(`$booth - ( $width % $booth) `) {1'b0} },y[`$width-1`:`$y_start_ind`]};
+   assign extended_y_mp[`$y_bd_start-1`] = mp_mode ? yinc : y[`$y_start_ind-1`];
+   assign extended_y_mp[`$y_bd_start-2`:`$width_sub+1`] =  mp_mode ? {`$y_bd_start-2-$width_sub-1+1`{1'b0}}: y[`$y_start_ind-2`:`$width_sub`];
 
     //;   }
    
@@ -249,15 +274,27 @@ module `mname`(
 			    .x(x), .x7(x7));
    //;   }
 
+   //; my $y_bd_shift =$extended_width_mp - $extended_width;
    
    // Instantiate the booth `$booth` encoders
-   //;   for(my $i=0; $i < $pp_count_mp; $i++){
+   //;my $y_ind_offset = 0;
+   //;#   for(my $i=0; $i < $pp_count_mp; $i++){
+   //;   for(my $i=0; $i < $pp_count; $i++){
    //;     my $mask_side = 3;
    //;     $mask_side = 0 if($i<$pp_count_sub);
    //;     $mask_side = 1 if($i>=$pp_count_mp-$pp_count_sub);
    //;
-   //;     my $BoothEnc_mp_obj = generate('BoothEnc_MP', "BoothEnc_mp_u$i", BoothType=>$booth, Width=>$width, WidthSub=>$width_sub, MaskSide=>$mask_side);
- 
+   //;     my $BoothEnc_mp_obj = generate('BoothEnc_MP', "BoothEnc_u$i", BoothType=>$booth, Width=>$width, WidthSub=>$width_sub, MaskSide=>$mask_side);
+
+   logic [`$booth`:0] 		 y_slice_`$i`;
+   
+//;if($i>=$pp_count-$pp_count_sub){
+assign y_slice_`$i` = mp_mode ? extended_y_mp[`$booth*($i+1) + $y_bd_shift`:`$booth*$i + $y_bd_shift`] : extended_y_mp[`$booth*($i+1)`:`$booth*$i`];
+//;} else {   
+assign y_slice_`$i` = extended_y_mp[`$booth*($i+1)`:`$booth*$i`];
+//; }
+   
+    
    `$BoothEnc_mp_obj->instantiate`
      (.x(x_mp), 
       //;   if ($booth>=3) {
@@ -267,25 +304,110 @@ module `mname`(
       .x5(x5), .x7(x7),
       //;   }
       .	mp_mode(mp_mode),		     
-      .y(extended_y_mp[`$booth*($i+1)`:`$booth*$i`]) , .pp(initial_pp_mp[`$i`]), .S(S_mp[`$i`]));
+      .y(y_slice_`$i`) , .pp(initial_pp_mp[`$i`]), .S(S_mp[`$i`]));
   
    //;   } # End of "for(my $i=0..."
 
 
-   logic [`$pp_width_sub-1`:0] 	 pp_ac [0:`$pp_count_sub+$useInc-1`];
-   logic [`$pp_width_sub-1`:0] 	 pp_bd [0:`$pp_count_sub+$useInc-1`];
+
+
+
+
+
    
-  
    
    // Finally, append the sign extenssions to the partial products
-   //;   if ($useInc){
-//;#   assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
-//;#   assign pp[1] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
-//;#   assign pp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[1], {(`$booth-2`){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
-//;#   //;     for(my $i=3; $i < $pp_count+1; $i++) {
-//;#   assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i-1`], {(`$booth-1`){1'b0}},S[`$i-2`]};
-//;#   //;     }
+//;#   //;   else { # i.e., not $useInc
+//;#   assign pp[0] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
+//;#   //;     for(my $i=1; $i < $pp_count; $i++) {
+//;#   assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i`], {(`$booth-1`){1'b0}},S[`$i-1`]};
+//;#   //;     }  
+//;#   //;   }
+   //; } # End of "elsif ($booth==2 || $booth==3)..."
 
+
+
+
+
+
+
+   
+
+   logic [`$pp_width-1`:0] 	 pp_sp [0:`$pp_count_mp+$useInc-1`]; 
+   logic [`$pp_width_sub-1`:0] 	 pp_ac [0:`$pp_count_sub+$useInc-1`];
+   logic [`$pp_width_sub-1`:0] 	 pp_bd [0:`$pp_count_sub+$useInc-1`];
+   //; if ($booth==1) {
+
+   //Mask out unused bits. Eventually this might be done in the higher module
+   logic [`$width-1`:0] 	    x_right;
+   assign   x_right[`$width_sub-1`:0] = x[`$width_sub-1`:0];
+   //assign   x_right[`$width-1`:`$width_sub`] = mp_mode ? {`$width-$width_sub`{1'b0}} : x[`$width-1`:`$width_sub`];
+   //Bits in the middle (between two numbers) should be zero-ed by upper block in the hierarchy
+   assign   x_right[`$width-$width_sub-1`:`$width_sub`] = x[`$width-$width_sub-1`:`$width_sub`];
+   assign   x_right[`$width-1`:`$width-$width_sub`] = mp_mode ? {`$width_sub`{1'b0}} : x[`$width-1`:`$width-$width_sub`];
+
+   logic [`$width-1`:0] 	    x_left;
+   assign x_left[`$width_sub-1`:0] = mp_mode ? {`$width_sub`{1'b0}} : x[`$width_sub-1`:0];
+   //Bits in the middle (between two numbers) should be zero-ed by upper block in the hierarchy
+   assign   x_left[`$width-$width_sub-1`:`$width_sub`] = x[`$width-$width_sub-1`:`$width_sub`];
+   assign   x_left[`$width-1`:`$width-$width_sub`] = x[`$width-1`:`$width-$width_sub`];
+   
+
+
+   
+
+
+   
+   //;   if ($useInc){
+   assign pp_sp[0] = xinc ? {y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
+   assign pp_sp[1] = yinc ? {1'b0, x_right, xinc} : `$pp_width`'b0; // add an extra x if yinc and an extra 1 if xinc AND yinc
+   //;     for (my $i=2; $i<=$pp_count_sub; $i++){
+   assign pp_sp[`$i`] = y[`$i-2`] ? {2'b0, x_right}: `$pp_width`'b0;
+   //;     }
+   
+   //;     for (my $i=$pp_count_sub+1; $i<$pp_count-$pp_count_sub; $i++){
+   assign pp_sp[`$i`] = (y[`$i-2`] & ~mp_mode) ? {2'b0, x}: `$pp_width`'b0;
+   //;     }
+   
+   //;     for (my $i=$pp_count-$pp_count_sub; $i<=$pp_count; $i++){
+   assign pp_sp[`$i`] = y[`$i-2`] ? {2'b0, x_left}: `$pp_width`'b0;
+   //;     }
+
+
+   assign pp_ac[0] = xinc ? {y[`$width_sub-1`:0], 2'b0} : `$pp_width_sub`'b0; // add an extra y if xinc
+   assign pp_ac[1] = yinc ? {1'b0, x[`$width_sub-1`:0], xinc} : `$pp_width_sub`'b0; // add an extra x if yinc and an extra 1 if xinc AND yinc
+   //;     for (my $i=2; $i<=$pp_count_sub; $i++){
+   assign pp_ac[`$i`] = y[`$i-2`] ? {2'b0, x[`$width_sub-1`:0]}: `$pp_width_sub`'b0;
+   //;     }
+
+
+   assign pp_bd[0] = xinc ? {y[`$width-1`:`$width-$width_sub`], 2'b0} : `$pp_width_sub`'b0; // add an extra y if xinc
+   assign pp_bd[1] = yinc ? {1'b0, x[`$width-1`:`$width-$width_sub`], xinc} : `$pp_width`'b0; // add an extra x if yinc and an extra 1 if xinc AND yinc
+   //;     for (my $i=2; $i<=$pp_count_sub; $i++){
+   assign pp_bd[`$i`] = y[`$pp_count-$pp_count_sub+$i-2`] ? {2'b0, x[`$width-1`:`$width-$width_sub`]}: `$pp_width_sub`'b0;
+   //;     }
+
+   
+   //;   }
+//;#   //;   else{ # i.e., no useInc...
+//;#   //;     for (my $i=0; $i<$pp_count; $i++){
+//;#   assign pp[`$i`] = y[`$i`] ?  {2'b0, x} : `$pp_width`'b0;
+//;#   //;     }   
+//;#   //;   }
+//;#  //;
+  //; } # End of "if ($booth==1)..." 
+  //; else { 
+
+///////////////////////////////////////   
+   assign pp_sp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
+   assign pp_sp[1] = {initial_pp_mp[0][`$width+$booth-1`], {(`$booth`){S_mp[0]}}, initial_pp_mp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
+   assign pp_sp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[1], {(`$booth-2`){1'b0}}, S_mp[0] & xinc & yinc , S_mp[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
+   //;     for(my $i=3; $i < $pp_count+1; $i++) {
+   assign pp_sp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`$i-1`], {(`$booth-1`){1'b0}},S_mp[`$i-2`]};
+   //;     }
+   //;     for(my $i=$pp_count+1; $i < $pp_count_mp+1; $i++) {
+   assign pp_sp[`$i`] = {(`$pp_width`){1'b0}};
+   //;     }
 
 
    assign pp_ac[0] = xinc ? {{(`$booth`){1'b0}}, y[`$width_sub-1`:0], {(2*`$booth`){1'b0}}} : 0;
@@ -305,53 +427,64 @@ module `mname`(
    assign pp_bd[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`$i-1+$pp_count-$pp_count_sub`][`$width+$booth-1`:`$width-$width_sub`], {(`$booth-1`){1'b0}},S_mp[`$i-2+$pp_count-$pp_count_sub`]};
    //;     }
    
-   //;   }
-//;#   //;   else { # i.e., not $useInc
-//;#   assign pp[0] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
-//;#   //;     for(my $i=1; $i < $pp_count; $i++) {
-//;#   assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i`], {(`$booth-1`){1'b0}},S[`$i-1`]};
-//;#   //;     }  
-//;#   //;   }
-   //; } # End of "elsif ($booth==2 || $booth==3)..."
+  //; } # End of "if ($booth==1)...else" 
 
 
 
+   
 
+    //;#     for(my $i=$pp_count+1; $i < $pp_count_mp+1; $i++) {
+   //;#assign pp_sp[`$i`] = {(`$pp_width`){1'b0}};
+   //;#     }
 
-
-   logic [`$pp_width-1`:0] 	 pp_mp [0:`$pp_count+$useInc-1`]; // `$pp_count`+ `$useInc` to account for xinc and yinc
-   //;   if ($useInc){
-   assign pp_mp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
-   assign pp_mp[1] = {initial_pp_mp[0][`$width+$booth-1`], {(`$booth`){S_mp[0]}}, initial_pp_mp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
-   assign pp_mp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[1], {(`$booth-2`){1'b0}}, S_mp[0] & xinc & yinc , S_mp[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
-   //;     for(my $i=3; $i < $pp_count+1; $i++) {
-   assign pp_mp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp_mp[`$i-1`], {(`$booth-1`){1'b0}},S_mp[`$i-2`]};
-   //;     }
-   //;   }
- 
-
-
-
-
-   //logic [`$pp_width-1`:0] 	 pp_mp_2 [0:`$pp_count+$useInc-1`]; // `$pp_count`+ `$useInc` to account for xinc and yinc
-   //;   if ($useInc){
-   //;     for(my $i=0; $i < $pp_count_sub+1; $i++) {
-   assign pp[`$i`] = mp_mode ? {{`$pp_width-$pp_width_sub`{1'b0}},pp_ac[`$i`]} : pp_mp[`$i`];
+   //y is a special case
+   assign pp[0][`$pp_width-1`    :`$pp_width_sub`] = mp_mode ?{`$pp_width-$pp_width_sub`{1'b0}} : pp_sp[0][`$pp_width-1`    :`$pp_width_sub`];
+   assign pp[0][`$pp_width_sub-1`:0] = mp_mode ? pp_ac[0] : pp_sp[0][`$pp_width_sub-1`:0];
+   
+     //;     for(my $i=1; $i < $pp_count_sub+1; $i++) {
+//;#   assign pp[`$i`] = mp_mode ? {{`$pp_width-$pp_width_sub`{1'b0}},pp_ac[`$i`]} : pp_sp[`$i`];
+   assign pp[`$i`][`$pp_width-1`    :`$pp_width-$booth-1`] = mp_mode ?{`$booth+1`{1'b0}} : pp_sp[`$i`][`$pp_width-1`    :`$pp_width-$booth-1`];
+   assign pp[`$i`][`$pp_width-1-$booth-1`    :`$pp_width_sub`] = pp_sp[`$i`][`$pp_width-1-$booth-1`    :`$pp_width_sub`];
+   assign pp[`$i`][`$pp_width_sub-1`:0] = mp_mode ? pp_ac[`$i`] : pp_sp[`$i`][`$pp_width_sub-1`:0];
    //;     }
 
    //;     for(my $i=$pp_count_sub+1; $i < $pp_count-$pp_count_sub; $i++) {
-   assign pp[`$i`] = mp_mode ? {`$pp_width`{1'b0}} : pp_mp[`$i`];
+//;#   assign pp[`$i`] = mp_mode ? {`$pp_width`{1'b0}} : pp_sp[`$i`];
+   assign pp[`$i`] = pp_sp[`$i`];
    //;     }
 
-   //;     for(my $i=$pp_count-$pp_count_sub; $i < $pp_count+1; $i++) {
-   assign pp[`$i`] = mp_mode ? {pp_bd[`$i-($pp_count-$pp_count_sub)`],{`$pp_width-$pp_width_sub`{1'b0}}} : pp_mp[`$i`];
+
+
+  
+
+
+   
+   
+//; if(1){  
+     
+   //;my $bd_pp_shift = 0;
+   //; $bd_pp_shift = 1 if ($booth==1);
+   //; $bd_pp_shift = 2 if ($booth==3);
+   //;
+   //; my $i_st = $pp_count_mp-$pp_count_sub;
+   assign pp[`$i_st`][`$pp_width-$pp_width_sub-$bd_pp_shift -1`:0] =  mp_mode ? {`$pp_width-$pp_width_sub-$bd_pp_shift`{1'b0}}:pp_sp[`$i_st`][`$pp_width-$pp_width_sub-$bd_pp_shift -1`:0];
+   assign pp[`$i_st`][`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift -1`:`$pp_width-$pp_width_sub-$bd_pp_shift`] = mp_mode ? pp_bd[0] : pp_sp[`$i_st`][`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift -1`:`$pp_width-$pp_width_sub-$bd_pp_shift`];
+   //;        if($bd_pp_shift>0){
+   assign pp[`$i_st`][`$pp_width-1`:`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift`] =  mp_mode ? {`$bd_pp_shift`{1'b0}} :pp_sp[`$i_st`][`$pp_width -1`:`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift`];
+   //;        }
+
+   
+   //;     for(my $i=$i_st+1; $i < $pp_count_mp+1; $i++) {
+//;#   assign pp[`$i`] = mp_mode ? {pp_bd[`$i-($pp_count_mp-$pp_count_sub)`],{`$pp_width-$pp_width_sub-$bd_pp_shift`{1'b0}}} : pp_sp[`$i`];
+   assign pp[`$i`][0] =  mp_mode ? 1'b0:pp_sp[`$i`][0];
+   assign pp[`$i`][`$pp_width-$pp_width_sub-$bd_pp_shift -1`:1] = pp_sp[`$i`][`$pp_width-$pp_width_sub-$bd_pp_shift -1`:1];
+   assign pp[`$i`][`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift -1`:`$pp_width-$pp_width_sub-$bd_pp_shift`] = mp_mode ? pp_bd[`$i-($i_st)`] : pp_sp[`$i`][`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift -1`:`$pp_width-$pp_width_sub-$bd_pp_shift`];
+   //;        if($bd_pp_shift>0){
+   assign pp[`$i`][`$pp_width-1`:`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift`] =  mp_mode ? {`$bd_pp_shift`{1'b0}} :pp_sp[`$i`][`$pp_width -1`:`$pp_width_sub + $pp_width-$pp_width_sub-$bd_pp_shift`];
+   //;        }
    //;     }
    
-   //;   }
-
-
-
-
+//;} 
    
 endmodule: `mname`
 

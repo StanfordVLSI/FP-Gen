@@ -139,8 +139,10 @@ module `mname`(
       //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
       //; }
-      .a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
-
+      .a(Eab_ps4), .b(Eab_ps5), .ci(), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4),
+      .zero0(), .zero1()
+      );
+   
 
     //Normal Shift Amount = `$frac_width` + 1 - LZD_A - LZD_B = `$frac_width` + 3 + ~LZD_A + ~LZD_B
     assign normalShiftConst = mp_mode ? `$frac_width_sub` + 3 : `$frac_width` + 3;
@@ -190,7 +192,8 @@ module `mname`(
       //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
       //; }
-      .a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4)
+      .a(Eab_ps0), .b(Eab_ps1), .ci(), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4),
+      .zero0(), .zero1()
       );
 
 //; }

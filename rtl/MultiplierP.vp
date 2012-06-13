@@ -37,9 +37,14 @@
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; $useInc = ($useInc =~ /YES/)? 1:0;
 //;
+//; my $useMP = parameter(Name=>'UseMP', Val=>0, List=>[1, 0],
+//; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
+//;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
+//; my $width_sub = parameter(Name=>'WidthSub', Val=>24, Min=>1, Step=>1,
+//;                       Doc=>"Sub signal bit widths");
 //; my $designware_mode = parameter(Name=>'Designware_MODE',
 //;                            Val=>'OFF', List=>['ON','OFF'],
 //;                            Doc=>"Designware mode determines whether or not ".
@@ -63,6 +68,9 @@ module `mname`(
     input logic 		  dumptolog,
    //; }
     input logic [`$width-1`:0] 	  a,b,	       
+   //; if ($useMP){
+    input logic                   mp_mode,
+    //; }	    
    //; if ($useInc){
     input logic 		  ainc, binc,
    //; }	    
@@ -78,8 +86,15 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
 /* BOOTH ENCODING
 */
    //; # First we generate the Booth module
-   //; my $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
+//;my $Booth_obj;
+   //;
+   //; if ($useMP){
+   //;     $Booth_obj = generate('Booth_MP', 'Booth', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
    //;				 UseInc=>($useInc)?"YES":"NO");
+   //; }else{
+   //;     $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
+   //;				 UseInc=>($useInc)?"YES":"NO");
+   //; }	    
    //;
    //; # Now we can extract some properties from it: How many partial products and of of what widths
    //; my $pp_count = $Booth_obj->get_param('PPCount');
@@ -94,6 +109,9 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
 			      .dumptolog(dumptolog),
 			      //; }
 			      .x(a), .y(b),
+                              //; if ($useMP){
+			      .mp_mode(mp_mode),
+			      //; }
 			      //; if ($useInc){
 			      .xinc(ainc), .yinc(binc),
 			      //; }

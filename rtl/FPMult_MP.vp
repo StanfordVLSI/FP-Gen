@@ -145,7 +145,7 @@ module `mname`(
 
 /////////////////////////////////////////////////////////////////////
 
-    logic [`$shift_width - 1`:0] LZD_MP_a, LZD_MP_c;
+    logic [`$shift_width_sub - 1`:0] LZD_MP_a, LZD_MP_c;
     //logic [`$frac_width_sub`:0] 	 Man_MP_a, Man_MP_c;
     //logic [`$exp_width_sub - 1`:0] 		      Exp_MP_a, Exp_MP_c;
 
@@ -164,7 +164,7 @@ module `mname`(
 
 
 
-    logic [`$shift_width - 1`:0]    LZD_MP_b, LZD_MP_d;
+    logic [`$shift_width_sub - 1`:0]    LZD_MP_b, LZD_MP_d;
     logic [`$frac_width_sub`:0]     Man_MP_b, Man_MP_d;
     logic [`$exp_width_sub - 1`:0]  Exp_MP_b, Exp_MP_d;
 
@@ -192,7 +192,7 @@ module `mname`(
 
    //; my $ExpMult_ac_obj = generate('ExpMult', 'ExpMult_ac_inst', FractionWidth=>$frac_width_sub, FractionWidthSub=>$frac_width_sub, ExponentWidth=>$exp_width_sub, ExponentWidthSub => $exp_width_sub, UseInc=>$useInc, EnableDenormals=>$enable_denormals, FloatingDigits => $floating_digits );
 
-   logic [`$shift_width + 1`:0]      shiftAmount_ac;
+   logic [`$shift_width_sub + 1`:0]      shiftAmount_ac;
    
   
 `$ExpMult_ac_obj->instantiate()` 
@@ -218,7 +218,7 @@ module `mname`(
 
    //; my $ExpMult_bd_obj = generate('ExpMult', 'ExpMult_bd_inst', FractionWidth=>$frac_width_sub, FractionWidthSub=>$frac_width_sub, ExponentWidth=>$exp_width_sub, ExponentWidthSub => $exp_width_sub, UseInc=>$useInc, EnableDenormals=>$enable_denormals, FloatingDigits => $floating_digits );
 
-   logic [`$shift_width + 1`:0]      shiftAmount_bd;
+   logic [`$shift_width_sub + 1`:0]      shiftAmount_bd;
    
   
 `$ExpMult_bd_obj->instantiate()` 
@@ -351,7 +351,10 @@ logic [`2*$product_width_sub - 1` : 0] Man_MP_BD_shifted;
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
-      .a(mp_mode?ManA_mp:ManA), .b(mp_mode?ManB_mp:ManB), 
+      .a(mp_mode?ManA_mp:ManA), .b(mp_mode?ManB_mp:ManB),
+      
+      .clk(),
+      .rst(),
 	       
    //; if ($useMP){
      .mp_mode(mp_mode),
