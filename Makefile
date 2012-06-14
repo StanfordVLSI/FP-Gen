@@ -117,7 +117,8 @@ ifeq ($(DESIGN_WRAPPER),MulAdd)
   PARAM_STRING += $(over_params)
   SYNTH_PARAM_STRING += $(PARAM_STRING) $(SYNTH_STRING)
   VERIF_PARAM_STRING += $(PARAM_STRING) $(VERIF_STRING)
-  VERIF_PARAM_STRING = "-parameter $(VERIF_PARAM_STRING)"
+  SET_SYNTH_PARAM_STRING = -parameter $(SYNTH_PARAM_STRING)
+  SET_VERIF_PARAM_STRING = -parameter $(VERIF_PARAM_STRING)
 endif 
 
 ifeq ($(DESIGN_NAME),Multiplier)
@@ -362,7 +363,7 @@ $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(VERIF_PARAM_STRING)
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_VERIF_PARAM_STRING)
 
 genesis_clean:
 	@echo ""
@@ -378,7 +379,7 @@ gen_syn: genesis_clean
 	@echo Elaborting for Synthesis Run
 	@echo ====================================================
 	rm -f *.v
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) -parameter $(SYNTH_PARAM_STRING)
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_SYNTH_PARAM_STRING)
 	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 design_map: $(GENESIS_VLOG_LIST)
