@@ -43,8 +43,6 @@ module `mname` ();
    //; my $useMP  = $Inst_obj->get_param('UseMP');
    //; my $booth  = $Inst_obj->get_param('BoothType');
    
-   //; my $Inst_obj_ac = generate('MultiplierP' , 'MultiplierP_ac', Width=>$BW_sub, UseMP=>0, BoothType=>$booth, UseInc=>$useInc?'YES':'NO'  );
-
    // local signals for DUT
    logic signed [`$BW-1`:0]     a, b;
    logic                 IncA , IncB,mp_mode ;
@@ -128,7 +126,9 @@ DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_bd ( .a(a[`$BW-1`:`$BW-$B
 	    b = {$random(seed),$random(seed)};
 	    IncA = 1'b0;
 	    IncB = 1'b0;
-	    mp_mode = i%2;//1'b0;
+	    //;if($useMP){
+	    mp_mode = i%2;
+            //;}
 	    #1;
 
 	    //Compare results with DW.

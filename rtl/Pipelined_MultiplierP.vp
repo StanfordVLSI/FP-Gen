@@ -38,8 +38,7 @@
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; my $useMP = parameter(Name=>'UseMP', Val=>'YES', List=>['YES', 'NO'],
 //; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
-//; my $multP_module_name = ($useMP =~ /YES/)? 'MultiplierP_MP':'MultiplierP';
-//;
+//;$useMP = ($useMP =~ /YES/)? 1:0;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>53, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths  !FUNCTIONAL!");
@@ -56,7 +55,7 @@ module `mname`(
    //; }
     input logic [`$width-1`:0] 	  a,b,
     input logic valid_in, clk , reset, stall,
-//; if ($useMP=~ /YES/){
+//; if ($useMP){
     input logic                   mp_mode,
 //; }	       
 //; if ($useInc=~ /YES/){
@@ -65,16 +64,15 @@ module `mname`(
     output logic [`2*$width+1`:0] out0,out1, // sign extended by 2 because of booth encoding
     output logic valid_out
 		    );
-
 //; if ($pipeline_depth==0){
-//;   my $Mul_obj = generate($multP_module_name, 'MultP', Width=>$width, UseInc=>$useInc);
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc, UseMP=>$useMP);
 
    `$Mul_obj->instantiate()` (
 //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
 //; }
       .a(a), .b(b),
-//;   if ($useMP=~ /YES/){
+//;   if ($useMP){
       .mp_mode(mp_mode),
 //;   } 
 //;   if ($useInc=~ /YES/){
@@ -90,7 +88,7 @@ module `mname`(
    assign IncA = 0;
    assign IncB = 0;
    //; }
-   //; if ( ! ($useMP=~ /YES/)){
+   //; if ( !$useMP){
    logic mp_mode;
    assign mp_mode = 0;
    //; }
@@ -98,19 +96,19 @@ module `mname`(
    logic [`$width-1`:0] a_0,b_0;
    logic ainc_0, binc_0, mp_mode_0;
    logic [`2*$width+1`:0] multp_out0, multp_out1; // sign extended by 2 because of booth encoding
-
+   
 
 //;        my $pipein = generate(  'Pinned_pipeline',  'MultP_pipeline',  Width=> 2*$width+3 , PipelineDepth=>$pipeline_depth);
    `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset), 
                                .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .valid_out(valid_out) );
 
-//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, UseInc=>$useInc, UseMP=>($useMP =~ /YES/));
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, UseInc=>$useInc, UseMP=>$useMP);
    `$Mul_obj->instantiate()` (
 //;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
 //;   }
       .a(a_0), .b(b_0),
-//;   if ($useMP=~ /YES/){
+//;   if ($useMP){
       .mp_mode(mp_mode),
 //;   } 
 //;   if ($useInc=~ /YES/){
@@ -149,7 +147,7 @@ module `mname`(
 //;     if ($useInc=~ /YES/){
    logic ainc_`$i`, binc_`$i`;
 //;     }
-//;     if ($useMP=~ /YES/){
+//;     if ($useMP){
    logic mp_mode_`$i`;
 //;     }
 
@@ -165,14 +163,14 @@ module `mname`(
         ainc_`$i` <= ainc;
         binc_`$i` <= binc;
 //;     }
-//;     if ($useMP=~ /YES/){
+//;     if ($useMP){
         mp_mode_`$i`<=mp_mode;
 //;     }
       end
     end
 
    logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
-//;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, WidthSub=>$width_sub, UseInc=>$useInc, UseMP=>($useMP =~ /YES/));
+//;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, WidthSub=>$width_sub, UseInc=>$useInc, UseMP=>$useMP);
 
    `$Mul_obj->instantiate()` (
 //;     if ($verif_mode =~ /ON/){
