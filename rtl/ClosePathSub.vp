@@ -154,7 +154,11 @@ module `mname`(
   //; if ($useInc =~ /YES/) {
                                   .ainc(IncA),
   //; }
-                                  .b(op2), .rsticky_b(1'b0), .absdiff(diff), .LZA_override_mask(max_shift_mask), .a_gt_b(a_gt_b),.LZA_count(LshiftAmt), .dumptolog(dumptolog)); // The shift amount
+                                  .b(op2), .rsticky_b(1'b0), .absdiff(diff), .LZA_override_mask(max_shift_mask), .a_gt_b(a_gt_b),.LZA_count(LshiftAmt)
+  //; if ($verif_mode =~ /ON/){
+                                , .dumptolog(dumptolog)
+  //; }
+                                  ); // The shift amount
 
   //normalization
 

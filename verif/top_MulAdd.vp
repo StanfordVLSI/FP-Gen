@@ -104,16 +104,12 @@ module `mname` ();
 			     .forward_c(forward_c[0]),
 			     //; }
                              //; }
+                             .clk(clk), .reset(reset),
    			     //; if ($pipeline_depth>0){
-                             .clk(clk), .reset(reset), .valid_in(1'b1),			     
+                             .valid_in(1'b1), .stall_in(1'b0),		     
 			     .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
                              .SO(SO), .SI(SI), .valid_out(valid_out),
-			     //;   if ($arch eq 'Cascade') {
-			             .stall_in(1'b0),                           
-			     //;   }  
-   		             //; } else {
- 			     .clk(clk), .reset(reset),
-                             //; }
+   		             //; }
 			     //outputs:
 			     //; if ($arch eq 'Cascade') {
 			     .stall_request(stall_request),

@@ -151,7 +151,11 @@ module `mname`(
                                      .b(biggerFraction),
                                      .ci( IncA & ~ExpB_gt_ExpA ),
                                      .sum0(sum0), .co0(co0), .zero0(zero0),
-                                     .sum1(sum1), .co1(co1), .zero1(zero1), .dumptolog(dumptolog));
+                                     .sum1(sum1), .co1(co1), .zero1(zero1)
+//; if ($verif_mode =~ /ON/){
+                                   , .dumptolog(dumptolog)
+//; }
+                                       );
 
   assign ZeroSum = (ZeroA & ZeroB) | (subtract & ~RSticky & (shift_out[`$manB_width+$manA_width-1`:`$manA_width`]==biggerFraction));
 

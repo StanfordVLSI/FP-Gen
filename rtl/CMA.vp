@@ -120,8 +120,8 @@ module `mname` (
   logic [`$ExtendedExp_width-1` : 0] ExpC_pp0_init, ExpC_pp1_init, ExpC_pp0, ExpC_pp1, ExpZ_pp0, ExpZ_pp1, ExpZ_pp0_late, ExpZ_pp1_late;
   logic ExpC_ci_init, ExpC_ci, ExpZ_ci, ExpZ_ci_late;
   logic [`$exp_width-1` : 0] ExpC;
-  logic stall, SignC_init, ExpCdec, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncZ, ZeroExpC, valid_rnd, ExpC_ci;
-  logic valid_mul, valid_add, ShiftZ, ShiftC, SignZ;
+  logic stall, SignC_init, ExpCdec, ExpCDecrementWhenShifting, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncC2, IncZ, IncZm, ZeroExpC, valid_rnd;
+  logic valid_mul, valid_add, ShiftZ, ShiftC, ShiftC2, SignZ;
   logic [`$mul_pipeline_depth-1`:0] forward_c_out, forward_c_out_dummy;
 
   logic [`$exp_width + $frac_width`:0] z_preInc, z_preIncm, c2, forwarded_c;
@@ -145,8 +145,12 @@ module `mname` (
 //;      }
                                   .valid_in(valid_in), .clk(clk) , .stall_in(stall_in), .reset(reset),
                                   .SignAB(SignAB), .ExpAB(ExpAB) , .ManAB(ManAB),
-                                  .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .dumptolog(dumptolog),
-                                  .valid_out(valid_mul), .stall_request(stall_request) );
+                                  .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
+                                  .valid_out(valid_mul), .stall_request(stall_request)
+//;      if ($verif_mode =~ /ON/){
+                                , .dumptolog(dumptolog)
+//;      }
+                                  );
 
 assign ZeroExpC = ~| c[ `$exp_width + $frac_width - 1` :`$frac_width` ]; 
 assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroExpC | c[`$frac_width`] }; 
@@ -203,7 +207,11 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //; my $ED_obj = generate('ExponentDifference', 'ED', ExponentWidth=>$exp_width);
   `$ED_obj->instantiate()` (.ExpA_pp0(ExpC_pp0), .ExpA_pp1(ExpC_pp1), .ExpA_ci(ExpC_ci),
                 .ExpADecrementWhenShifting(ExpCDecrementWhenShifting), .SignA(SignC), .ShiftA(ShiftC), 
-                .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpB_gt_ExpA(ExpB_gt_ExpA), .dumptolog(dumptolog));
+                .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpB_gt_ExpA(ExpB_gt_ExpA)
+  //; if ($verif_mode =~ /ON/){
+              , .dumptolog(dumptolog)
+  //; }
+                            );
 
 
 
@@ -220,13 +228,17 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
                          .rnd(rnd_add),
                         .SignB(SignAB), .ExpB(ExpAB), .ManB(ManAB), .InfB(InfAB), .NANB(NANAB), .ZeroB(ZeroAB),
                         .valid_in(valid_mul), .clk(clk) , .stall(stall), .reset(reset),
-                        .Z(z_preInc), .IncZ(IncZ), .status(status_init), .dumptolog(dumptolog),
+                        .Z(z_preInc), .IncZ(IncZ), .status(status_init),
                         .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose),
                         .ExpB_gt_ExpA(ExpB_gt_ExpA), .ExpZ_pp0(ExpZ_pp0), .ExpZ_pp1(ExpZ_pp1), .ExpZ_ci(ExpZ_ci),
                         .ExpZ_pp0_late(ExpZ_pp0_late), .ExpZ_pp1_late(ExpZ_pp1_late), .ExpZ_ci_late(ExpZ_ci_late),
                         .ExpZDecrementWhenShifting(ExpZDecrementWhenShifting), .ExpZDecrementWhenShifting_late(ExpZDecrementWhenShifting_late),
                         .ShiftZ(ShiftZ),
-                        .valid_out(valid_add)  );
+                        .valid_out(valid_add)   
+   //; if ($verif_mode =~ /ON/){
+                      , .dumptolog(dumptolog)
+  //; }
+                        );
 
 
 //;    my $inc_pipe = $enable_forwarding =~ /YES/?

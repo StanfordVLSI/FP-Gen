@@ -96,12 +96,12 @@ module `mname` (
   logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
   logic [`$exp_width + $frac_width`:0] FinalSum, A_p1, A_p2;
   logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ, CloseExpbase_ci;
-  logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract;
+  logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract, IncExpA;
   logic FX, FV, FU, FI, Tiny;
   logic FI_p2, ResultIsInfinity_p2, ResultIsA_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2;
   logic subtract_p, ResultIsClose_p, ResultIsA_p, ResultIsClose_p2;
   logic RndMaxNum, MaxNum;
-  logic valid_Result, valid_Result2, valid_A, valid_A2;
+  logic valid_Result, valid_Result2, valid_A, valid_A2, valid_far, valid_close;
   logic [2:0] rnd_p2;
 
   assign SigA  = A[`$frac_width-1`: 0 ];
@@ -179,9 +179,9 @@ module `mname` (
                                     .valid_in(valid_in & ~ResultIsClose & ResultIsNotSpecial ), .stall(stall), .clk(clk) , .reset(reset),
                                     .ManSum_out(FarManSum), .ExpSum_out(FarExpSum), .SignSum_out(SignFarSum), .ZeroSum_out(ZeroFarSum),
                                     .Guard_out(FarGuard), .Sticky_out(FarSticky) ,.Overflow_out(FarOverflow) , .ShiftExponent_out(FarShiftZ), .Expbase_pp0(FarExpbase_pp0), .Expbase_pp1(FarExpbase_pp1), 
-                                    .valid_out(valid_far),
+                                    .valid_out(valid_far)
   //; if ($verif_mode =~ /ON/){
-                                     .dumptolog(dumptolog)
+                                    , .dumptolog(dumptolog)
   //; }
                                       );
 
@@ -204,9 +204,9 @@ module `mname` (
                                        .Guard_out(CloseGuard), .Sticky_out(CloseSticky),
                                        .Expbase_pp0(CloseExpbase_pp0), .Expbase_pp1(CloseExpbase_pp1), .Expbase_ci(CloseExpbase_ci),
                                        .LZA_wrong_out(CloseShiftZ),
-                                       .valid_out(valid_close),
+                                       .valid_out(valid_close)
   //; if ($verif_mode =~ /ON/){
-                                       .dumptolog(dumptolog)
+                                       , .dumptolog(dumptolog)
   //; }
                                       );
 
