@@ -47,8 +47,10 @@
 //;                                   '  FP_Gen, FPMult, Multiplier, MultiplierP, adder, adderGPTree ' ) );
 //; my $top_name    = parameter(Name=>'TopName',
 //;                             Val=>( 'top_' . $design_test ) ,
-//;                             force=>1 , 
 //;                             Doc=>('Determines which top to generate as testBench.' ) );
+//; my $des_target  = parameter(Name=>'DESIGN_TARGET',
+//;                             Val=>( $design_test . '_unq1' ) ,
+//;                             Doc=>('!FUNCTIONAL! Generated module name used by synthesis scripts' ) );
 //;
 
 //top

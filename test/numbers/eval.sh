@@ -26,8 +26,8 @@ numbers.pl -f $PWD/test/numbers/FMA.cfg \
 
 echo "32 FMA svt Piped" 
 echo "==============================================================="
-numbers.pl -f $PWD/test/numbers/FMA-P.cfg PIPE_CNT=2 \
-     VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-32-lvt-1v0-pipe-r5 DESIGN_FILE=$PWD/test/numbers/FMA-32-P.design \
+numbers.pl -f $PWD/test/numbers/FMA-P.cfg \
+     VT=lvt Voltage=1v0  DESIGN_TITLE=FMA-32-lvt-1v0-pipe-r024 DESIGN_FILE=$PWD/test/numbers/FMA-32-P.design \
      FLOW_PARAM_FILE=$PWD/test/numbers/samehFlow.param 2>&1 | tee -a eval_log.log
 
 #echo "32 FMA lvt" 

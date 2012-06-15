@@ -44,3 +44,6 @@ hammerLight.pl \
 
 
  paretoReport.pl  -d  /hd/horowitz/users/jbrunhav/jb_co_p4_3/ChipGen/FP-Gen/../NUM_Results/FPMult-64.Data  -s  /hd/horowitz/users/jbrunhav/jb_co_p4_3/ChipGen/FP-Gen/../NUM_Results/intermediates/FPMult-64.paretoData  -m  /hd/horowitz/users/jbrunhav/jb_co_p4_3/ChipGen/FP-Gen/../NUM_Results/intermediates/FPMult-64.DesignEnum  -t  FPMult-64  -R  /hd/horowitz/users/jbrunhav/jb_co_p4_3/ChipGen/FP-Gen/../NUM_Results/FPMult-64.pdf
+
+
+paretoFilter.pl   -a ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.rawData  -p ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.paramList  -P ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.paramAttribute  -D ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.DataDump  -d ../NUM_Results/FMA-32-lvt-1v0-pipe-r7.Data  -s ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.paretoData  -l ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.liftData  -m ../NUM_Results/intermediates/FMA-32-lvt-1v0-pipe-r7.DesignEnum  -F test/numbers/samehFlow.param

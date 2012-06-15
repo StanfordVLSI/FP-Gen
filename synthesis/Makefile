@@ -6,17 +6,12 @@ SRC_DIR = ..
 io2core ?= 30
 VT ?= lvt
 Voltage ?= 1v0
-MOD_NAME ?= MultiplierP
-DESIGN_TARGET ?= $(MOD_NAME)_unq1
 target_delay ?= 1500
+RUN_NAME ?= $(VT)_$(Voltage)_$(target_delay)
 
-PIPE_CNT ?= xxx
-
-RUN_NAME = $(VT)_$(Voltage)_$(target_delay)_p$(PIPE_CNT)
-
-DC_COMMAND_STRING = "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET); source -echo -verbose ../multiplier_dc.tcl"
-COMMAND_STRING =  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET);  source -echo -verbose ../multiplier_icc.tcl"
-OPTIMIZED_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core); set DESIGN_TARGET $(DESIGN_TARGET);   source -echo -verbose ../multiplier_icc.tcl"
+DC_COMMAND_STRING = "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  source -echo -verbose ../multiplier_dc.tcl"
+PR_COMMAND_STRING = "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  source -echo -verbose ../multiplier_icc.tcl"
+OPTIMIZED_PR_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  source -echo -verbose ../multiplier_icc.tcl"
 
 
 dc: $(RUN_NAME)/log/dc_$(RUN_NAME).log
@@ -44,7 +39,7 @@ $(RUN_NAME)/log/icc_$(RUN_NAME).log: ./$(RUN_NAME)/log/dc_$(RUN_NAME).log
 	@echo ==================================================
 	@echo ==================================================
 	mkdir -p $(RUN_NAME)
-	cd $(RUN_NAME); mkdir -p log; icc_shell -64bit -f ../multiplier_icc.tcl -x $(COMMAND_STRING) 2>&1 | tee -i log/icc_$(RUN_NAME).log
+	cd $(RUN_NAME); mkdir -p log; icc_shell -64bit -f ../multiplier_icc.tcl -x $(PR_COMMAND_STRING) 2>&1 | tee -i log/icc_$(RUN_NAME).log
 	rm -rf cache work command.log default.svf filenames.log icc_output.txt *_port_map* nfs* legalizer*
 	perl checkRun.pl $(RUN_NAME)/log/icc_$(RUN_NAME).log
 
@@ -58,7 +53,7 @@ $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log: ./$(RUN_NAME)/log/dc_$(RUN_NAME).
 	@echo ==================================================
 	@echo ==================================================
 	mkdir -p $(RUN_NAME)
-	cd $(RUN_NAME); mkdir -p log; icc_shell -64bit -f ../multiplier_icc.tcl -x $(OPTIMIZED_COMMAND_STRING) 2>&1 | tee -i log/icc_optimized_$(RUN_NAME).log
+	cd $(RUN_NAME); mkdir -p log; icc_shell -64bit -f ../multiplier_icc.tcl -x $(PR_OPTIMIZED_COMMAND_STRING) 2>&1 | tee -i log/icc_optimized_$(RUN_NAME).log
 	rm -rf cache work command.log default.svf filenames.log icc_output.txt *_port_map* nfs* legalizer*
 	perl checkRun.pl $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 

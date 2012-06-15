@@ -390,9 +390,7 @@ RUN_SYNTHESIS_FLAGS:= \
                       VT=$(VT) \
                       Voltage=$(Voltage) \
                       target_delay=$(target_delay) \
-                      io2core=$(io2core) \
-                      MOD_NAME=$(MOD_NAME) \
-                      PIPE_CNT=$(PIPE_CNT) 
+                      io2core=$(io2core)
 
 #run_dc
 synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
