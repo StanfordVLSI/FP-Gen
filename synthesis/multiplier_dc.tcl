@@ -11,6 +11,7 @@ if { [file exists ../../top.saif] } {
 
 analyze -format sverilog [glob ../../*unq*.v]
 elaborate $DESIGN_NAME -architecture verilog -library DEFAULT
+link
 check_design
 
 if { [file exists ../../top.saif] } {
@@ -54,7 +55,7 @@ if { $PipelineDepth > 0 } {
   set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
 
   if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
-    set_multicycle_path $MulpPipelineDepth -from [get_cells MulShift/MUL0/* -filter {@is_sequential==true}]
+   #BROKEN*** set_multicycle_path $MulpPipelineDepth -from [get_cells MulShift/MUL0/* -filter {@is_sequential==true}]
   }
   if { $Retiming } { 	
     set_optimize_registers true -design ${DESIGN_NAME}

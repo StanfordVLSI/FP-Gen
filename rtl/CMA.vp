@@ -65,10 +65,10 @@
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
+//;                           Doc=>"!FUNCTIONAL! Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
+//;                           Doc=>"!FUNCTIONAL! Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
@@ -97,9 +97,7 @@ module `mname` (
 
   //; if ($enable_forwarding =~ /YES/){
     input logic 				forward_a, forward_b,
-  //;   if ($mul_pipeline_depth>0){
-    input logic [`$mul_pipeline_depth`:0] 	forward_c,
-  //;   }
+    input logic [`$mul_pipeline_depth`:0] 	forward_c, 
   //; }
     input logic 				clk , reset, valid_in, stall_in,SI, SCAN_ENABLE, test_mode,
     output logic 				SO,

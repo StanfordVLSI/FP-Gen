@@ -1,0 +1,154 @@
+/* *****************************************************************************
+ * Description: FP-Gen.vp
+ * Wrapper for CMA and FMA
+ * ****************************************************************************/
+
+//; ###############################################################################
+//; # PARAMETERIZATION
+//; #############################################################################/
+//;
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off." ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off.");
+//; my $arch = parameter(Name=>'Architecture', Val=>'FMA', List=>['CMA', 'FMA'],
+//; 			       Doc=>"Which architecture implements Multiply Add? Cascade multiply accumulate ".
+//; 			            "or Fused? (Pick:CMA/FMA)");
+//; 
+//; ###############################################################################
+//; # Local Variables to Aid In Instantiation
+//; #############################################################################/
+//;
+//; # Generate the SubInstance here and derive Parameters
+//; my $FP_obj = generate( $arch , $arch , VERIF_MODE=>$verif_mode , SYNTH_MODE=>$synth_mode );
+//; my $frac_width = $FP_obj->get_param('FractionWidth');
+//; my $exp_width = $FP_obj->get_param('ExponentWidth');
+//; my $enable_forwarding = $FP_obj->get_param('EnableForwarding');
+//; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
+//; my $product_width = 2 * $frac_width + 2;
+//;
+//; # Calculate Pipeline Depth for Export
+//;
+//; my $pipeline_depth = 0 ;
+//;    $pipeline_depth = $arch eq 'FMA' ? $FP_obj->get_param('PipelineDepth')+1 : $pipeline_depth;
+//;    $pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') + $FP_obj->get_param('AddPipelineDepth') : $pipeline_depth;
+//; my $mul_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') : 0 ;
+//; my $add_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') : 0 ;
+//;
+//; #######################################################################
+//; # Export Derived Paramters for Parent's Use
+//; #######################################################################
+//;
+//; parameter( Name=>'FractionWidth'    , Val=>$FP_obj->get_param('FractionWidth')    , Doc=>'' , force=>1 );
+//; parameter( Name=>'ExponentWidth'    , Val=>$FP_obj->get_param('ExponentWidth')    , Doc=>'' , force=>1 );
+//; parameter( Name=>'EnableForwarding' , Val=>$FP_obj->get_param('EnableForwarding') , Doc=>'' , force=>1 );
+//; parameter( Name=>'EnableDenormals'  , Val=>$FP_obj->get_param('EnableDenormals')  , Doc=>'' , force=>1 );
+//; parameter( Name=>'PipelineDepth'    , Val=>$pipeline_depth     , Doc=>'!FUNCTIONAL!' , force=>1 );
+//; parameter( Name=>'MulPipelineDepth' , Val=>$mul_pipeline_depth , Doc=>'' , force=>1 );
+//; parameter( Name=>'AddPipelineDepth' , Val=>$add_pipeline_depth , Doc=>'' , force=>1 );
+//; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
+//; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
+//; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
+//;
+
+// FP-Gen
+module `mname` (
+
+//; ##### Verification Signals #####		       
+//; if ($verif_mode =~ /ON/){
+	 input logic 				     dumptolog,
+//; }		
+
+//; ##### INPUTS ######
+         input logic [`$exp_width + $frac_width`:0]  a,
+         input logic [`$exp_width + $frac_width`:0]  b,
+         input logic [`$exp_width + $frac_width`:0]  c,
+	 input logic [2:0] 			     rnd,		
+
+         input logic 				     stall_in,
+		
+//; ##### Inputs For Forwarding #####
+//; if ($enable_forwarding =~ /YES/){
+         input logic 				     forward_a, 
+         input logic 				     forward_b, 
+         input logic [`$mul_pipeline_depth`:0]       forward_c,
+//; }
+		
+//; ##### Inputs For Piped Design #####
+//; if ($pipeline_depth>0){
+         input logic 				     valid_in, 
+         input logic 				     SI, 
+//; }    
+
+//; ##### GLOBALS ######
+         input logic 				     clk, 
+         input logic 				     reset,
+
+		
+//; ##### Globals For Piped Design #####
+//;if ($pipeline_depth>0){
+         input logic 				     SCAN_ENABLE, 
+         input logic 				     test_mode,
+//; }    
+		       		
+//; ##### Outputs for Piped Design #####
+//;if ($pipeline_depth>0){
+         output logic 				     valid_out, 
+         output logic 				     SO,
+//; }    
+		       
+//; ##### Outputs ##### 
+         output logic 				     stall_request,
+	 output logic [`$exp_width + $frac_width`:0] z,
+	 output logic [7:0] 			     status
+
+		       
+); // End Port Decleration 
+
+   
+   // Instantiate the Wrapped Unit Here
+   `$FP_obj->instantiate()` (
+//;                           ###### Inputs ######		
+//;                           if ($verif_mode =~ /ON/){
+	   				                  .dumptolog(dumptolog),
+//;                           }		
+                                                          .a(a),
+                                                          .b(b),
+                                                          .c(c),
+			                                  .rnd(rnd),
+                                                          .stall_in(stall_in),		
+//;                           if ($enable_forwarding =~ /YES/){
+           				                 .forward_a(forward_a), 
+           				                 .forward_b(forward_b), 
+           				                 .forward_c(forward_c),
+//;                           }
+//;                           ###### GLOBALS ######		
+//;                           if ($pipeline_depth>0){
+           				                 .valid_in(valid_in), 
+                                                         .SI(SI), 
+//;                           }    
+           				                 .clk(clk), 
+           				                 .reset(reset), 
+//;                           if ($pipeline_depth>0){
+           				                 .SCAN_ENABLE(SCAN_ENABLE), 
+            				                 .test_mode(test_mode),
+//;                           }
+//;                           ###### OUTPUTS ######    	       		
+//;                           if ($pipeline_depth>0){
+           				                 .valid_out(valid_out), 
+           				                 .SO(SO),
+//;                           }    
+                                                         .stall_request(stall_request),  
+	                                                 .z(z),
+	   			                         .status(status)
+                           );
+   
+
+   
+endmodule : `mname`

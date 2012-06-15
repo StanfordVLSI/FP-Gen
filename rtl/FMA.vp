@@ -93,7 +93,7 @@
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //; }
 //;
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) ,
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>7,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor(3*$pipeline_depth/7), Min=>0, 
 //;                       Max=> (($enable_forwarding =~ /YES/)?$pipeline_depth-1:$pipeline_depth) ,
@@ -127,13 +127,14 @@ module `mname` (
    //; }
    input logic [`$exp_width + $frac_width`:0] 	a, b, c,
    //; if ($enable_forwarding =~ /YES/){
-    input logic 				forward_a, forward_b, forward_c,
+    input logic 				forward_a, forward_b, 
+    input logic [0:0]                           forward_c,
    //; }
     input logic [2:0] 				rnd,
 
    //; if ($pipeline_depth>0){
     input logic 				clk, reset, valid_in, stall_in, SI, SCAN_ENABLE, test_mode,
-    output logic 				valid_out, SO,
+    output logic 				valid_out, SO, stall_request,
    //; } else {
     input logic 				clk, reset,
    //; }
@@ -149,6 +150,7 @@ module `mname` (
 
 
 
+   assign stall_request = 1'b0 ;
    
    
 //; if( $desinware_mode eq 'ON' ){

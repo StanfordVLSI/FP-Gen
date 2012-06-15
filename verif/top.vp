@@ -9,7 +9,7 @@
 
 /* *****************************************************************************
  * Description:
- * Top module for simulation, used for simple module testing. Should not
+ * Top module for simulation, used as a wrapper for other top designs
  * be mistaken as a full fledged verification environment. It's not!
  * 
  * 
@@ -19,88 +19,45 @@
  * Date          Author    Description
  * Oct 03, 2011  shacham   init version - ported my wallace env
  * Apr 21, 2011  tema8     added multi precision
+ * Jun 14, 2012  jbrunhav  Changed this file to wrap all tops
  * ****************************************************************************/
 
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//; my $verif_mode = parameter(Name=>'VERIF_MODE',
-//;                            Val=>'ON', List=>['ON','OFF'],
-//;                            Doc=>"Verification mode determines whether or not ".
-//;                                 "monitors and drivers are on. Possible values ".
-//;                                 "are ON or Off.  !IGNORE!" ); 
-//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
-//;                            Val=>'OFF', List=>['ON','OFF'],
-//;                            Doc=>"Synthesis mode determines whether or not ".
-//;                                 "special synthesis constructs are used. ".
-//;                                 "Possible values are ON or Off. !IGNORE! ");
+//; my $verif_mode  = parameter(Name=>'VERIF_MODE',
+//;                             Val=>'ON', List=>['ON','OFF'],
+//;                             Doc=>"Verification mode determines whether or not ".
+//;                                  "monitors and drivers are on. Possible values ".
+//;                                  "are ON or Off.  !IGNORE!" ); 
+//; my $synth_mode  = parameter(Name=>'SYNTH_MODE',
+//;                             Val=>'OFF', List=>['ON','OFF'],
+//;                             Doc=>"Synthesis mode determines whether or not ".
+//;                                  "special synthesis constructs are used. ".
+//;                                  "Possible values are ON or Off. !IGNORE! ");
+//; my $SAIF_mode   = parameter(Name=>'SAIF_MODE',
+//;                             Val=>'OFF', List=>['ON','OFF'],
+//;                             Doc=>"SAIF mode determines whether or not ".
+//;                                  "special activity factor exraction. ".
+//;                                  "is attempted");
+//; my $design_test = parameter(Name=>'DESIGN_NAME',
+//;                             Val=>'FP_Gen' , 
+//;                             List=>['FP_Gen','FPMult','Multiplier','MultiplierP','adder','adderGPTree'],
+//;                             Doc=>('!FUNCTIONAL! Determines which module to generate with a test bench. Options are:' .
+//;                                   '  FP_Gen, FPMult, Multiplier, MultiplierP, adder, adderGPTree ' ) );
+//; my $top_name    = parameter(Name=>'TopName',
+//;                             Val=>( 'top_' . $design_test ) ,
+//;                             force=>1 , 
+//;                             Doc=>('Determines which top to generate as testBench.' ) );
+//;
 
+//top
 module `mname` ();   
+
    //; # Generate the DUT here
-   //; my $FP_obj = generate('FPMult', 'FPMult');
+   //; my $Obj = generate_base( $top_name , $top_name , VERIF_MODE=>$verif_mode , SYNTH_MODE=>$synth_mode , SAIF_MODE=>$SAIF_mode );
+   //;  # NOTE!!! IF YOU ARE GETTING AN ERROR RELATED TO SAIF MODE IT IS BECAUSE YOU NEED TO IMPLEMENT SAIF!!! DO NOT COMMENT OUT!!!!
 
-   //; # Read what kind of DUT the user wanted so you can test it
-   //; my $frac_width = $FP_obj->get_param('FractionWidth');
-   //; my $exp_width = $FP_obj->get_param('ExponentWidth');
-   //; my $arch = $FP_obj->get_param('Architecture');
-   //; my $use_mp = $FP_obj->get_param('UseMP');
-   //; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
-   //; my $product_width = 2 * $frac_width + 2;
-  
-   // local signals for driving inputs
-   logic [`$frac_width - 1`:0] 		      FracA, FracB, FracC;
-   logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
-   logic 				      SignA, SignB, SignC;
-   logic 				      IncA, IncB, IncC;
+   `$Obj->instantiate` ();  
 
-
-   
-   // local signals for observing outputs
-   logic [`$exp_width + 1`:0] 		      ExpAB;
-   logic [`$product_width - 1`: 0] 	      ManAB; //entire mantissa, not just fraction
-   logic 				      SignAB, ANAB, InfAB, ZeroAB, RStickyAB;
-  
-   //; if ($verif_mode =~ /ON/){
-   logic 				      dumptolog;
-   //; }
-   
-   // Instantiate the dut here
-   `$FP_obj->instantiate()` (
-			     // inputs:
-			     //; if ($verif_mode =~ /ON/){
-			     .dumptolog(dumptolog),
-			     //; }
-			     .A({SignA, ExpA, FracA}), .B({SignB, ExpB, FracB}), 
-			     //; if ($use_mp){
-			     .mp_mode(1'b0),
-			     //;}
-			     //; if ($arch =~ /Cascade/){
-			     .IncA(IncA), .IncB(IncB),
-			     //;}
-			     //outputs:
-			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
-			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB), .RStickyAB(RStickyAB) 
-			     );
-   
-   
-   //; if ($verif_mode =~ /ON/){
-   // ------------------------ VERIFICATION HARNES ---------------------------//
-   // Instantiate the TestGenerator here:
-   //; my $TestBench_obj = generate('TestBench', 'TestBench', 
-   //;                              FractionWidth=>$frac_width, 
-   //;                              ExponentWidth=>$exp_width,
-   //; 				    Architecture=>$arch,
-   //;                              TestDenormals=>$enable_denormals);
-   `$TestBench_obj->instantiate` (
-				// outputs:
-				.dumptolog(dumptolog),
-				.SignA(SignA), .ExpA(ExpA), .FracA(FracA), .IncA(IncA), 
-				.SignB(SignB), .ExpB(ExpB), .FracB(FracB), .IncB(IncB), 
-				.SignC(SignC), .ExpC(ExpC), .FracC(FracC), .IncC(IncC), 
-				// inputs
-				.SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB),
-				.NaNRes(NANAB), .InfRes(InfAB), .ZeroRes(ZeroAB), .RStickyRes(RStickyAB) 
-				);
-   //; } # End of "if ($verif_mode..."
-   
 endmodule : `mname`

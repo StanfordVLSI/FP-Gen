@@ -27,126 +27,31 @@ endif
 
 SYN_CLK_PERIOD ?= 1.5
 
-PARAM_STRING ?= 
-SAIF_MODE ?= 0
-SYNTH_PARAM_STRING ?= 
-VERIF_PARAM_STRING ?= 
-
 ifndef DESIGN_NAME
-  DESIGN_NAME:=FMA
-  $(warning WARNING: Running with default design.  DESIGN_NAME=$(DESIGN_NAME))
+  $(error Error: Must specify design name -> DESIGN_NAME=FP-Gen )
 endif
 
-ifeq ($(DESIGN_NAME),MultiplierP)
-  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
-  INST_NAME ?= MultiplierP
-  MOD_NAME ?= MultiplierP
-  TOP_NAME ?= top_MultiplierP
-  ROLLUP_TARGET ?= MultiplierP_Rollup.target
-endif 
-
-ifeq ($(DESIGN_NAME),FPMult)
-  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
-  INST_NAME ?= FPMult
-  MOD_NAME ?= FPMult
-  TOP_NAME ?= top_FPMult
-  ROLLUP_TARGET ?= FPMult_Rollup.target
-endif 
-
-ifeq ($(DESIGN_NAME),FMA)
-   DESIGN_WRAPPER = MulAdd
-   ARCHITECTURE_NAME = Fused
-endif
-
-ifeq ($(DESIGN_NAME),CMA)
-   DESIGN_WRAPPER = MulAdd
-   ARCHITECTURE_NAME = Cascade
-endif 
-
-ifeq ($(DESIGN_WRAPPER),MulAdd)
-  INST_NAME ?= $(DESIGN_NAME)
-  MOD_NAME ?= $(DESIGN_NAME) 
-  TOP_NAME ?= top_MulAdd
-  ROLLUP_TARGET ?= MulAdd_Rollup.target
-
-  ARCH_PARAM ?= $(TOP_NAME).Architecture
-  PIPELINE_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).PipelineDepth
-  RETIME_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).Retiming
-  DW_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).Designware_MODE
-  INC_PARAM ?= $(TOP_NAME).$(DESIGN_NAME).UseInc
-  VERIF_PARAM_1 ?= $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE
-  SYNTH_PARAM_1 ?= $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE
-  VERIF_PARAM_2 ?= $(TOP_NAME).VERIF_MODE
-  SYNTH_PARAM_2 ?= $(TOP_NAME).SYNTH_MODE
-  SAIF_PARAM ?= $(TOP_NAME).SAIF_MODE
-
-  ifeq ($(PIPE_CNT),0)
-    RETIME_STATUS ?= 0
-  else
-    RETIME_STATUS ?= 1
-  endif
-
-  over_params =   
-  over_params1 =   
-  over_params2 =   
-  over_params3 = $(ARCH_PARAM)=$(ARCHITECTURE_NAME)
-  over_params4 = 
-
-  ifdef  PIPE_CNT
-   over_params1 = $(PIPELINE_PARAM)=$(PIPE_CNT) $(RETIME_PARAM)=$(RETIME_STATUS)
-  endif
-
-  ifeq ($(DW_MODE),1) 
-    DW_MODE_STRING ?= ON
-    INC_MODE_STRING ?= NO
-    FORCE_PARAMS = 1
-    over_params2 = $(INC_PARAM)=$(INC_MODE_STRING) $(DW_PARAM)=$(DW_MODE_STRING)
-  else
-    DW_MODE_STRING ?= "OFF"
-  endif
-
-  ifeq ($(SAIF_MODE),1)
-    VERIF_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=OFF $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=ON $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON $(TOP_NAME).SAIF_MODE=ON
-    SYNTH_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=OFF $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=ON $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON $(TOP_NAME).SAIF_MODE=ON
-  else
-    VERIF_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=ON  $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=OFF $(TOP_NAME).VERIF_MODE=ON  $(TOP_NAME).SYNTH_MODE=OFF $(TOP_NAME).SAIF_MODE=OFF
-    SYNTH_STRING := $(TOP_NAME).$(DESIGN_NAME).VERIF_MODE=OFF $(TOP_NAME).$(DESIGN_NAME).SYNTH_MODE=ON  $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON  $(TOP_NAME).SAIF_MODE=OFF
-  endif	
-
-  over_params = $(over_params1) $(over_params2) $(over_params3)
-  PARAM_STRING += $(over_params)
-  SYNTH_PARAM_STRING += $(PARAM_STRING) $(SYNTH_STRING)
-  VERIF_PARAM_STRING += $(PARAM_STRING) $(VERIF_STRING)
-  SET_SYNTH_PARAM_STRING = -parameter $(SYNTH_PARAM_STRING)
-  SET_VERIF_PARAM_STRING = -parameter $(VERIF_PARAM_STRING)
-endif 
-
-ifeq ($(DESIGN_NAME),Multiplier)
-  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
-  INST_NAME ?= Multiplier
-  MOD_NAME ?= Multiplier
-  TOP_NAME ?= top_Multiplier
-  ROLLUP_TARGET ?= Multiplier_Rollup.target
-endif 
-
-ifeq ($(DESIGN_NAME),FPMult)
-  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
-  INST_NAME ?= FPMult
-  MOD_NAME ?= FPMult
-  TOP_NAME ?= top_FPMult
-  ROLLUP_TARGET ?= FPMult_Rollup.target
-endif 
-
-ifeq ($(DESIGN_NAME),adder)
-  $(warning WARNING: DESIGN_NAME=$(DESIGN_NAME) May not work in current flow )
-  INST_NAME ?= adder
-  MOD_NAME ?= adder
-  TOP_NAME ?= top_adder
-  ROLLUP_TARGET ?= adder_Rollup.target
-endif 
-
+INST_NAME ?= $(DESIGN_NAME)
+MOD_NAME ?= $(DESIGN_NAME)
+TOP_NAME ?= top
 TOP_MODULE ?= $(TOP_NAME)
+ROLLUP_TARGET ?= $(DESIGN_NAME)_Rollup.target
 
+VERIF_PARAM ?= $(TOP_NAME).VERIF_MODE
+SYNTH_PARAM ?= $(TOP_NAME).SYNTH_MODE
+SAIF_PARAM  ?= $(TOP_NAME).SAIF_MODE
+
+VERIF_PARAM_STRING := $(TOP_NAME).VERIF_MODE=ON  $(TOP_NAME).SYNTH_MODE=OFF $(TOP_NAME).SAIF_MODE=OFF
+SYNTH_PARAM_STRING := $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON  $(TOP_NAME).SAIF_MODE=ON
+
+ifdef PARAM_STRING
+SET_GEN_PARAM_STRING = -parameter $(PARAM_STRING)
+else
+SET_GEN_PARAM_STRING = 
+endif
+
+SET_SYNTH_PARAM_STRING = -parameter $(SYNTH_PARAM_STRING) $(PARAM_STRING)
+SET_VERIF_PARAM_STRING = -parameter $(VERIF_PARAM_STRING) $(PARAM_STRING)
 
 # list src folders and include folders
 
@@ -363,7 +268,7 @@ $(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_VERIF_PARAM_STRING)
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_GEN_PARAM_STRING)
 
 genesis_clean:
 	@echo ""
@@ -373,6 +278,14 @@ genesis_clean:
 		tcsh genesis_clean.cmd;	\
 	fi
 	\rm -rf $(GENESIS_VLOG_LIST)
+
+gen_verif: genesis_clean  
+	@echo ""
+	@echo Elaborting for Synthesis Run
+	@echo ====================================================
+	rm -f *.v
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_VERIF_PARAM_STRING)
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 gen_syn: genesis_clean  
 	@echo ""
@@ -452,7 +365,7 @@ run_ibm: $(EXECUTABLE) testVectors/$(TESTVEC_FILE)
 
 ########## For Design Compiler #############
 ############################################
-RUN_NAME := synthesis/syn_$(VT)_$(Voltage)_$(target_delay)
+RUN_NAME := syn_$(VT)_$(Voltage)_$(target_delay)
 io2core ?= 30	
 COMMAND_STRING :=  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
 OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
@@ -460,8 +373,10 @@ OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set V
 # DC & ICC Run rules:
 ############################
 .PHONY: run_synthesis run_dc
-run_synthesis: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
-run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
+run_synthesis: gen_syn synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+run_dc: gen_syn synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
+run_icc: gen_syn run_dc synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+run_icc_opt: gen_syn run_dc synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
@@ -470,7 +385,8 @@ Voltage ?= 1v0
 io2core ?= 30
 PIPE_CNT ?= xxx
 
-RUN_SYNTHESIS_FLAGS:= MOD_NAME=$(DESIGN_NAME) \
+RUN_SYNTHESIS_FLAGS:= \
+                      RUN_NAME=$(RUN_NAME) \
                       VT=$(VT) \
                       Voltage=$(Voltage) \
                       target_delay=$(target_delay) \
