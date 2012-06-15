@@ -27,15 +27,21 @@ endif
 
 SYN_CLK_PERIOD ?= 1.5
 
-ifndef DESIGN_NAME
-  $(error Error: Must specify design name -> DESIGN_NAME=FP-Gen )
+DESIGN_PARAM_STRING = 
+
+ifdef DESIGN_NAME
+  DESIGN_PARAM_STRING = top.DESIGN_NAME=$(DESIGN_NAME)
+  DESIGN_TITLE = DESIGN_NAME
+else 
+  DESIGN_TITLE = unknown_design
+  $(warning WARNING: DESIGN_NAME is unkown_design.  Cannot be resolved without running Genesis... Will be unkown in logs and status )
+  $(warning WARNING: DESIGN_NAME is unkown_design.  Cannot be resolved without running Genesis... Will be unkown in logs and status )
+  $(warning WARNING: DESIGN_NAME is unkown_design.  Cannot be resolved without running Genesis... Please.... HELP... )
 endif
 
-INST_NAME ?= $(DESIGN_NAME)
-MOD_NAME ?= $(DESIGN_NAME)
 TOP_NAME ?= top
 TOP_MODULE ?= $(TOP_NAME)
-ROLLUP_TARGET ?= $(DESIGN_NAME)_Rollup.target
+ROLLUP_TARGET ?= $(DESIGN_TITLE)_Rollup.target
 
 VERIF_PARAM ?= $(TOP_NAME).VERIF_MODE
 SYNTH_PARAM ?= $(TOP_NAME).SYNTH_MODE
@@ -45,13 +51,17 @@ VERIF_PARAM_STRING := $(TOP_NAME).VERIF_MODE=ON  $(TOP_NAME).SYNTH_MODE=OFF $(TO
 SYNTH_PARAM_STRING := $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON  $(TOP_NAME).SAIF_MODE=ON
 
 ifdef PARAM_STRING
-SET_GEN_PARAM_STRING = -parameter $(PARAM_STRING)
+SET_GEN_PARAM_STRING = -parameter $(PARAM_STRING) $(DESIGN_PARAM_STRING)
 else
-SET_GEN_PARAM_STRING = 
+  ifdef DESIGN_NAME
+    SET_GEN_PARAM_STRING = -parameter $(DESIGN_PARAM_STRING) 
+  else
+    SET_GEN_PARAM_STRING = 
+  endif  
 endif
 
-SET_SYNTH_PARAM_STRING = -parameter $(SYNTH_PARAM_STRING) $(PARAM_STRING)
-SET_VERIF_PARAM_STRING = -parameter $(VERIF_PARAM_STRING) $(PARAM_STRING)
+SET_SYNTH_PARAM_STRING = -parameter $(SYNTH_PARAM_STRING) $(PARAM_STRING) $(DESIGN_PARAM_STRING)
+SET_VERIF_PARAM_STRING = -parameter $(VERIF_PARAM_STRING) $(PARAM_STRING) $(DESIGN_PARAM_STRING)
 
 # list src folders and include folders
 
@@ -96,11 +106,11 @@ endif
 
 # xml hierarchy file
 ifndef GENESIS_HIERARCHY
-GENESIS_HIERARCHY := $(MOD_NAME).xml
+GENESIS_HIERARCHY := $(DESIGN_TITLE).xml
 else
   $(warning WARNING: GENESIS_HIERARCHY set to $(GENESIS_HIERARCHY))
 endif
-GENESIS_TMP_HIERARCHY := $(MOD_NAME)_target.xml
+GENESIS_TMP_HIERARCHY := $(DESIGN_TITLE)_target.xml
 # For more Genesis parsing options, type 'Genesis2.pl -help'
 #        [-parse]                    ---   should we parse input file to generate perl modules?
 #        [-sources|srcpath dir]      ---   Where to find source files
@@ -285,7 +295,7 @@ gen_verif: genesis_clean
 	@echo ====================================================
 	rm -f *.v
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_VERIF_PARAM_STRING)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 gen_syn: genesis_clean  
 	@echo ""
@@ -293,10 +303,10 @@ gen_syn: genesis_clean
 	@echo ====================================================
 	rm -f *.v
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_SYNTH_PARAM_STRING)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 design_map: $(GENESIS_VLOG_LIST)
-	locDesignMap.pl TCL=/dev/null INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(MOD_NAME).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/nulll
+	locDesignMap.pl TCL=/dev/null INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/nulll
 
 # VCS rules:
 #####################
@@ -414,13 +424,13 @@ clean_synthesis:
 
 .PHONY: rollup1  rollup2 rollup3 report_results
 rollup1: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
+	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup2: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
+	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 rollup3: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_NAME) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(MOD_NAME).design \
+	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
                                    VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
 report_results:
 	cd synthesis ; perl report_results.pl ;
