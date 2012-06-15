@@ -353,14 +353,10 @@ if {$FixedHeightFloorPlan} {
 }
 
 if { [file exists ../../top.saif] } {
-  read_saif -auto_map_names -instance top_FMA/FMA -input ../../top.saif -verbose
   report_saif 
-  propagate_switching_activity -effort high -verbose
   report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
   write_saif -output ../../icc_out.saif 
 }
-
-
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
 set placement_site_width  [get_attribute [get_core_areas] tile_width];

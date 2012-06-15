@@ -77,12 +77,14 @@ module `mname` (
 
   assign out = ainc? OutInc: a;
 
+//; if( $verif_mode eq 'ON' ){
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
     $display ("ExpOut=%h ManOut=%h OutInc=%h",ExpOut, ManOut, OutInc);
 end
 // synopsys translate_on
-	
+//; }
+   
 endmodule
 

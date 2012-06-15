@@ -61,7 +61,7 @@ module `mname` ();
           logic [`$exp_width + $frac_width`:0]  a;
           logic [`$exp_width + $frac_width`:0]  b;
           logic [`$exp_width + $frac_width`:0]  c;
-	  logic [2:0] 			     rnd;		
+	  logic [2:0] 			        rnd;		
 
           logic 				     stall_in;
 		
@@ -69,7 +69,7 @@ module `mname` ();
 //; if ($enable_forwarding =~ /YES/){
           logic 				     forward_a; 
           logic 				     forward_b; 
-          logic [`$mul_pipeline_depth`:0]       forward_c;
+          logic [`$mul_pipeline_depth`:0]            forward_c;
 //; }
 		
 //; ##### Inputs For Piped Design #####
@@ -111,37 +111,37 @@ module `mname` ();
    `$FP_obj->instantiate()` (
 //;                           ###### Inputs ######		
 //;                           if ($verif_mode =~ /ON/){
-	   				                  .dumptolog(),
+	   				                  .dumptolog(dumptolog),
 //;                           }		
-                                                          .a(),
-                                                          .b(),
-                                                          .c(),
-			                                  .rnd(),
-                                                          .stall_in(),		
+                                                          .a(a),
+                                                          .b(b),
+                                                          .c(c),
+			                                  .rnd(rnd),
+                                                          .stall_in(stall_in),		
 //;                           if ($enable_forwarding =~ /YES/){
-           				                 .forward_a(), 
-           				                 .forward_b(), 
-           				                 .forward_c(),
+           				                 .forward_a(forward_a), 
+           				                 .forward_b(forward_b), 
+           				                 .forward_c(forward_c),
 //;                           }
 //;                           ###### GLOBALS ######		
 //;                           if ($pipeline_depth>0){
-           				                 .valid_in(), 
-                                                         .SI(), 
+           				                 .valid_in(valid_in), 
+                                                         .SI(SI), 
 //;                           }    
-           				                 .clk(), 
-           				                 .reset(), 
+           				                 .clk(clk), 
+           				                 .reset(reset), 
 //;                           if ($pipeline_depth>0){
-           				                 .SCAN_ENABLE(), 
-            				                 .test_mode(),
+           				                 .SCAN_ENABLE(SCAN_ENABLE), 
+            				                 .test_mode(test_mode),
 //;                           }
 //;                           ###### OUTPUTS ######    	       		
 //;                           if ($pipeline_depth>0){
-           				                 .valid_out(), 
-           				                 .SO(),
+           				                 .valid_out(valid_out), 
+           				                 .SO(SO),
 //;                           }    
-                                                         .stall_request(),  
-	                                                 .z(),
-	   			                         .status()			     
+                                                         .stall_request(stall_request),  
+	                                                 .z(z),
+	   			                         .status(status)			     
 			     );
 
 
@@ -239,10 +239,13 @@ module `mname` ();
 
           //YAY for Driver
           assign rnd = 3'b0 ;
-          assign ainc = 1'b0 ;
-          assign binc = 1'b0 ;
-          assign cinc = 1'b0 ;
-
+          assign stall_in = 1'b0 ;
+          assign forward_a = 0 ;
+          assign forward_b = 0 ;
+          assign forward_c = 0 ;
+          assign valid_in = 1 ;
+   
+   
 //; my $j_rand = "{ \$random(seed) , \$random(seed) , \$random(seed) , \$random(seed) }" ;
    
           //YAY for Driver
@@ -257,16 +260,17 @@ module `mname` ();
 	     //Start Toggle Extraction
 	     $set_gate_level_monitoring("rtl_on");
 	     #1
-	     $set_toggle_region(top_MulAdd);
+	     $set_toggle_region(top_FP_Gen);
 	     #1
 	     $toggle_start(); 
 	     #1
 	     $display("%t: AGENT IS ALIVE -- NOW RUN For Extraction...", $time);
 
-	     for (i=0; i<100000; i++) begin
+	     for (i=0; i<10000; i++) begin
 		a = `$j_rand` ;
 		b = `$j_rand` ;
 		c = `$j_rand` ;
+		//$display("%t: x%h", $time , z );
 		@(negedge clk);
 	     end
 
@@ -274,7 +278,7 @@ module `mname` ();
 	     repeat (20) @(posedge clk);
 
 	     $toggle_stop();
-	     $toggle_report ("top.saif",1.0e-12,top_MulAdd);
+	     $toggle_report ("top.saif",1.0e-12,top_FP_Gen);
 	     $finish(2);
 	     
 	  end

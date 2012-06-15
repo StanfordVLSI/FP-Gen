@@ -15,19 +15,15 @@ link
 check_design
 
 if { [file exists ../../top.saif] } {
-  #read_saif -auto_map_names -instance ${SYN_TOP_NAME}/${SYN_INST_NAME} -input ${SYN_SAIF_FILE} -verbose
-  #set_power_prediction true  
-  read_saif -auto_map_names -instance top_FMA/FMA -input ../../top.saif -verbose
+  read_saif -auto_map_names -instance top/${TOP_NAME}/${DESIGN_INSTANCE} -input ../../top.saif -verbose
   report_saif 
-  propagate_switching_activity -effort high -verbose
-  report_saif
-  #set_power_prediction true  
 } else {
   set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
   set_switching_activity -toggle_rate 0.5 -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
   set_switching_activity -toggle_rate 0.01 -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
   set_switching_activity -toggle_rate 0.2 -static_probability 0.8 valid_in
 }
+
 
 set HEDGE 0.8
 set PATH_RATIO 0.8 
@@ -108,9 +104,6 @@ check_design > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.check
 
 
 if { [file exists ../../top.saif] } {
-  read_saif -auto_map_names -instance top_FMA/FMA -input ../../top.saif -verbose
-  report_saif 
-  propagate_switching_activity -effort high -verbose
   report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
   write_saif -output ../../dc_out.saif 
 }

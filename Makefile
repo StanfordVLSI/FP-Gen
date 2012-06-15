@@ -371,29 +371,25 @@ run_ibm: $(EXECUTABLE) testVectors/$(TESTVEC_FILE)
 	@echo Now Running $(EXECUTABLE) using IBM\'s fpgen generated vectors
 	@echo ==================================================
 	$(EXECUTABLE)  $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=testVectors/$(TESTVEC_FILE) 2>&1 | tee run_bb.log
- 
+
 
 ########## For Design Compiler #############
 ############################################
-RUN_NAME := syn_$(VT)_$(Voltage)_$(target_delay)
-io2core ?= 30	
-COMMAND_STRING :=  "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
-OPTIMIZED_COMMAND_STRING := "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);"
 
 # DC & ICC Run rules:
 ############################
 .PHONY: run_synthesis run_dc
-run_synthesis: gen_syn synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
-run_dc: gen_syn synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
-run_icc: gen_syn run_dc synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
-run_icc_opt: gen_syn run_dc synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
-
-target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 
 VT ?= svt
 Voltage ?= 1v0
 io2core ?= 30
-PIPE_CNT ?= xxx
+target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
+RUN_NAME := syn_$(VT)_$(Voltage)_$(target_delay)
+
+run_synthesis: gen_syn synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
+run_icc: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+run_icc_opt: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 
 RUN_SYNTHESIS_FLAGS:= \
                       RUN_NAME=$(RUN_NAME) \
