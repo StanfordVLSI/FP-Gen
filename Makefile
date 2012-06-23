@@ -386,6 +386,10 @@ io2core ?= 30
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 RUN_NAME := syn_$(VT)_$(Voltage)_$(target_delay)
 
+ifdef appendix
+  RUN_NAME := $(RUN_NAME)_$(appendix)
+endif
+
 run_synthesis: gen_syn synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
 run_icc: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
