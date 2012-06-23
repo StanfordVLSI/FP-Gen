@@ -81,6 +81,7 @@
 //;                       Doc=>"Multiplier Part Pipeline depth");
 //; my $add_pipeline_depth = parameter(Name=>'AddPipelineDepth', Val=>3,
 //;                       Doc=>"Adder Part Pipeline depth");
+//; parameter( Name=>'PipelineDepth', Val=>$mul_pipeline_depth+$add_pipeline_depth+1 , Doc=>"!FUNCTIONAL! Pipeline depth" );
 //;
 //; # And some local variables
 //; my $product_width = 2 * $frac_width + 2;

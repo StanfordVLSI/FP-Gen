@@ -35,11 +35,9 @@
 //;
 //; # Calculate Pipeline Depth for Export
 //;
-//; my $pipeline_depth = 0 ;
-//;    $pipeline_depth = $arch eq 'FMA' ? $FP_obj->get_param('PipelineDepth')+1 : $pipeline_depth;
-//;    $pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') + $FP_obj->get_param('AddPipelineDepth') : $pipeline_depth;
+//; my $pipeline_depth = $FP_obj->get_param('PipelineDepth');
 //; my $mul_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') : 0 ;
-//; my $add_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') : 0 ;
+//; my $add_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('AddPipelineDepth') : 0 ;
 //;
 //; #######################################################################
 //; # Export Derived Paramters for Parent's Use
@@ -49,7 +47,7 @@
 //; parameter( Name=>'ExponentWidth'    , Val=>$FP_obj->get_param('ExponentWidth')    , Doc=>'' , force=>1 );
 //; parameter( Name=>'EnableForwarding' , Val=>$FP_obj->get_param('EnableForwarding') , Doc=>'' , force=>1 );
 //; parameter( Name=>'EnableDenormals'  , Val=>$FP_obj->get_param('EnableDenormals')  , Doc=>'' , force=>1 );
-//; parameter( Name=>'PipelineDepth'    , Val=>$pipeline_depth     , Doc=>'!FUNCTIONAL!' , force=>1 );
+//; parameter( Name=>'PipelineDepth'    , Val=>$pipeline_depth     , Doc=>'',, force=>1 );
 //; parameter( Name=>'MulPipelineDepth' , Val=>$mul_pipeline_depth , Doc=>'' , force=>1 );
 //; parameter( Name=>'AddPipelineDepth' , Val=>$add_pipeline_depth , Doc=>'' , force=>1 );
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );

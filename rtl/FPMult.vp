@@ -51,9 +51,9 @@
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
 //; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, List=>[ 0,1,2,3,4,5,6,7 ] ,
-//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//;                       Doc=>"Pipeline depth");
 //; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
-//; 			  Doc=>"Use parallel MultiplierP unit");
+//; 			  Doc=>"!FUNCTIONAL! Use parallel MultiplierP unit");
 
 //; # Multi precision mode
 //; my $useMP = parameter(Name=>'UseMP', Val=>0, List=>[1, 0],
@@ -61,7 +61,7 @@
 //; my $floating_digits= parameter(Name=>'FloatingDigits', Val=>1,  List=>[1,2],
 //; 			   Doc=>"Number of digits before floating point");
 //; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor($pipeline_depth/2),
-//;                       Doc=>"MultiplierP Part Pipeline depth");
+//;                       Doc=>"!FUNCTIONAL! MultiplierP Part Pipeline depth");
 //; my $add_pipeline_depth = $pipeline_depth - $mulp_pipeline_depth;
 //;
 //; # And some local variables
