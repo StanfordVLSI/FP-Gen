@@ -392,7 +392,7 @@ endif
 
 run_synthesis: gen_syn synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
-run_icc: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+run_icc: synthesis/$(RUN_NAME)/log/icc_$(RUN_NAME).log
 run_icc_opt: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 
 RUN_SYNTHESIS_FLAGS:= \
@@ -405,12 +405,16 @@ RUN_SYNTHESIS_FLAGS:= \
 #run_dc
 synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
-	make -C synthesis -f Makefile clean dc $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log 
+	make -C synthesis -f Makefile dc $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log 
 
 #run_synthesis
 synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log: $(EXECUTABLE)
 	mkdir -p log
-	make -C synthesis -f Makefile clean all $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log
+	make -C synthesis -f Makefile icc_optimized $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log
+
+synthesis/$(RUN_NAME)/log/icc_$(RUN_NAME).log: $(EXECUTABLE)
+	mkdir -p log
+	make -C synthesis -f Makefile icc $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log
 
 clean_synthesis:
 	rm -rf synthesis/svt_*v*_*.*

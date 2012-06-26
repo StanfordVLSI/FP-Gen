@@ -57,11 +57,11 @@ if {![info exists PipelineDepth]} {
 }
 
 if {![info exists Retiming]} {
-  set Retiming 0
+  set Retiming 1
 }
 
 if {![info exists SmartRetiming]} {
-  set SmartRetiming 0
+  set SmartRetiming 1
 }
 
 if {![info exists MulpPipelineDepth]} {
@@ -87,3 +87,8 @@ if {![info exists DESIGN_TARGET]} {
 } else {
     set DESIGN_NAME ${DESIGN_TARGET}
 }
+
+# Suppressed Messages:
+# Information: Changed wire load model for 'BoothCell_unq1_1451' from 'ZeroWireload' to 'ZeroWireload'. (OPT-170)
+suppress_message [list OPT-170]
+

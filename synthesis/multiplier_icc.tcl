@@ -88,8 +88,10 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 
 
 open_mw_lib $MW_DESIGN_LIBRARY
-import_designs $DESIGN_NAME.$VT.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
-read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
+#import_designs $DESIGN_NAME.$VT.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
+#read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
+import_designs $DESIGN_NAME.$VT.$target_delay.mapped.ddc -format ddc -top $DESIGN_NAME -cel $DESIGN_NAME
+
 #set_switching_activity -toggle_rate 0.5  -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
 #set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
 #set_switching_activity -toggle_rate 0.2  -base_clock clk -static_probability 0.2 stall_pipeline
@@ -273,7 +275,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set port_size [sizeof_collection $b_ports];
 
 
-  if { [ string equal $DESIGN_NAME "FMA_unq1" ] } {
+  if { [ string equal $DESIGN_NAME "FP_Gen_unq1" ] } {
 
     set c_ports [get_ports {c[*]}] 
     foreach_in_collection c_port $c_ports {
@@ -317,7 +319,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 
 if { [info exists ENABLE_MANUAL_PLACEMENT] } {
-   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_NAME "FMA_unq1" ]]; 
+   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_NAME "FP_Gen_unq1" ]]; 
 } else {
    set FixedHeightFloorPlan 0; 
 }
@@ -575,12 +577,6 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
  }
 
 
-#HACK FIXME
-#if { $FixedHeightFloorPlan } {
-#  estimate_fp_area -sizing_type fixed_height
-#} else {
-  estimate_fp_area -sizing_type fixed_aspect_ratio
-#}
 
 save_mw_cel -as ${DESIGN_NAME}_after_placement
 
@@ -596,9 +592,19 @@ route_group -all_clock_nets -search_repair_loop 15
 
 save_mw_cel -as ${DESIGN_NAME}_after_CTS
 
+#HACK FIXME
+#if { $FixedHeightFloorPlan } {
+#  estimate_fp_area -sizing_type fixed_height
+#} else {
+  estimate_fp_area -sizing_type fixed_aspect_ratio
+#}
+
 #routing
 route_opt -initial_route_only
 route_opt -skip_initial_route -effort medium -power
+
+
+
 
 save_mw_cel -as ${DESIGN_NAME}_final
 

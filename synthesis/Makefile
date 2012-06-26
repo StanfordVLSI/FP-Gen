@@ -15,7 +15,9 @@ OPTIMIZED_PR_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set
 
 
 dc: $(RUN_NAME)/log/dc_$(RUN_NAME).log
-all: $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log $(RUN_NAME)/log/icc_$(RUN_NAME).log
+icc: $(RUN_NAME)/log/icc_$(RUN_NAME).log
+icc_optimized: $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+all: icc icc_optimized
 
 #-64bit
 
@@ -45,7 +47,6 @@ $(RUN_NAME)/log/icc_$(RUN_NAME).log: ./$(RUN_NAME)/log/dc_$(RUN_NAME).log
 
 $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log: ./$(RUN_NAME)/log/dc_$(RUN_NAME).log
 	perl checkRun.pl $(RUN_NAME)/log/dc_$(RUN_NAME).log
-	perl checkRun.pl $(RUN_NAME)/log/icc_$(RUN_NAME).log
 	@echo ==================================================
 	@echo ==================================================
 	@echo Making $@ because of $?
@@ -53,7 +54,7 @@ $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log: ./$(RUN_NAME)/log/dc_$(RUN_NAME).
 	@echo ==================================================
 	@echo ==================================================
 	mkdir -p $(RUN_NAME)
-	cd $(RUN_NAME); mkdir -p log; icc_shell -64bit -f ../multiplier_icc.tcl -x $(PR_OPTIMIZED_COMMAND_STRING) 2>&1 | tee -i log/icc_optimized_$(RUN_NAME).log
+	cd $(RUN_NAME); mkdir -p log; icc_shell -64bit -f ../multiplier_icc.tcl -x $(OPTIMIZED_PR_COMMAND_STRING) 2>&1 | tee -i log/icc_optimized_$(RUN_NAME).log
 	rm -rf cache work command.log default.svf filenames.log icc_output.txt *_port_map* nfs* legalizer*
 	perl checkRun.pl $(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
 

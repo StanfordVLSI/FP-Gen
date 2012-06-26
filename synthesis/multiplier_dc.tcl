@@ -4,6 +4,7 @@
 
 source -echo -verbose ../header.tcl
 
+file mkdir reports
 
 if { [file exists ../../top.saif] } {
   saif_map -start
@@ -37,7 +38,10 @@ if { $PipelineDepth > 0 } {
        
   if { $Retiming && $SmartRetiming } {
     current_design MultiplierP_unq1
-    set cycle_multiplier [expr ($EnableMultiplePumping == "YES" && $MulpPipelineDepth>1)? $MulpPipelineDepth: 1 ];
+    set cycle_multiplier 1;
+    if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1 } {
+      set cycle_multiplier $MulpPipelineDepth;
+    }
     set_max_delay [expr double($cycle_multiplier)*double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
     compile_ultra -no_autoungroup
     current_design ${DESIGN_NAME}
@@ -47,11 +51,12 @@ if { $PipelineDepth > 0 } {
   set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
   create_clock $CLK -period $CLK_PERIOD
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-  set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-  set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
+  #set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
+  #set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
 
   if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
-   #BROKEN*** set_multicycle_path $MulpPipelineDepth -from [get_cells MulShift/MUL0/* -filter {@is_sequential==true}]
+   set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
+   set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
   }
   if { $Retiming } { 	
     set_optimize_registers true -design ${DESIGN_NAME}
@@ -59,17 +64,22 @@ if { $PipelineDepth > 0 } {
     # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/optimize_registers.html
     #optimize_registers -no_compile -justification_effort high -check_design -verbose -print_critical_loop
     # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/compile_ultra.html?otSearchResultSrc=advSearch&otSearchResultNumber=15&otPageNum=1
-    compile_ultra -no_autoungroup -retime -gate_clock
-  } else {
-    compile_ultra -no_autoungroup -gate_clock
+    compile_ultra -no_autoungroup -retime
+    #report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped_retime.timing.rpt
+    #optimize_registers -sync_transform multiclass -async_transform multiclass
+    #report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped_retime_mc.timing.rpt
+    #optimize_registers -sync_transform decompose -async_transform decompose
+    #report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped_retime_dc.timing.rpt
+    report_power  > reports/${DESIGN_NAME}.${APPENDIX}_${Voltage}.$target_delay.mapped_noclockgating.power.rpt
   }
+  compile_ultra -no_autoungroup -gate_clock
 
    #Reset Constraints for ICC
   set CLK_PERIOD [expr double($target_delay)/1000]
   create_clock $CLK -period $CLK_PERIOD
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-  set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-  set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
+  #set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
+  #set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
  
 } else {
 
@@ -89,11 +99,10 @@ if { $PipelineDepth > 0 } {
   set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
 }
 
+link
 write -format verilog -hierarchy -output $DESIGN_NAME.$VT.$target_delay.mapped.v
 write -format ddc -hierarchy -output $DESIGN_NAME.$VT.$target_delay.mapped.ddc
 write_sdc -nosplit $DESIGN_NAME.$VT.$target_delay.mapped.sdc
-
-file mkdir reports
 
 report_area  > reports/${DESIGN_NAME}.${APPENDIX}.$target_delay.mapped.area.rpt
 
