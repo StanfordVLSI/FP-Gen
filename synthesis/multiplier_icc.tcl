@@ -88,13 +88,19 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 
 
 open_mw_lib $MW_DESIGN_LIBRARY
-#import_designs $DESIGN_NAME.$VT.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
-#read_sdc $DESIGN_NAME.$VT.$target_delay.mapped.sdc
-import_designs $DESIGN_NAME.$VT.$target_delay.mapped.ddc -format ddc -top $DESIGN_NAME -cel $DESIGN_NAME
+import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
+read_sdc $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
+#import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc -format ddc -top $DESIGN_NAME -cel $DESIGN_NAME
 
-#set_switching_activity -toggle_rate 0.5  -base_clock clk -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]] add_sub}]
-#set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI SCAN_ENABLE test_mode}
-#set_switching_activity -toggle_rate 0.2  -base_clock clk -static_probability 0.2 stall_pipeline
+set ICC_SAIF_FILE $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.saif
+if { [file exists $ICC_SAIF_FILE] } {
+  read_saif -input $ICC_SAIF_FILE -instance_name $DESIGN_NAME
+} else {
+  set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
+  set_switching_activity -toggle_rate 0.5 -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
+  set_switching_activity -toggle_rate 0.01 -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
+  set_switching_activity -toggle_rate 0.2 -static_probability 0.8 valid_in
+}
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 

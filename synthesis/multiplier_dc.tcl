@@ -99,29 +99,25 @@ if { $PipelineDepth > 0 } {
   set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
 }
 
-link
-write -format verilog -hierarchy -output $DESIGN_NAME.$VT.$target_delay.mapped.v
-write -format ddc -hierarchy -output $DESIGN_NAME.$VT.$target_delay.mapped.ddc
-write_sdc -nosplit $DESIGN_NAME.$VT.$target_delay.mapped.sdc
-
-report_area  > reports/${DESIGN_NAME}.${APPENDIX}.$target_delay.mapped.area.rpt
-
-remove_attribute [current_design] local_link_library
-
-check_design
-check_design > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.check_design.rpt
-
+write -format verilog -hierarchy -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.v
+write -format ddc -hierarchy -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc
+write_sdc -nosplit $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
 
 if { [file exists ../../top.saif] } {
   report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
-  write_saif -output ../../dc_out.saif 
+  write_saif -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.saif 
 }
 
-report_timing -loops > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.timing_loops.rpt
-report_timing -loops
+report_area  > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
 
-report_power -net > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.activity_factor.rpt
+check_design > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.check_design.rpt
 
+report_timing -loops > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.timing_loops.rpt
+
+report_power -net > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.activity_factor.rpt
+
+
+remove_attribute [current_design] local_link_library
 
 set link_library [set ${VT}_0v8_target_libs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.timing.rpt
