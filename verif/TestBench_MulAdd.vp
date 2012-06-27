@@ -335,6 +335,7 @@ program automatic `mname` (
 	 Temp = Memory[loc];
 	 Temp_q = {Temp_q, Temp};
 	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin
+	    valid_in = 1'b1;
 	    rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
 	    a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
 	    b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
