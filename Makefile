@@ -384,6 +384,7 @@ VT ?= svt
 Voltage ?= 1v0
 io2core ?= 30
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
+SmartRetiming ?= 0
 RUN_NAME := syn_$(VT)_$(Voltage)_$(target_delay)
 
 ifdef appendix
@@ -400,7 +401,8 @@ RUN_SYNTHESIS_FLAGS:= \
                       VT=$(VT) \
                       Voltage=$(Voltage) \
                       target_delay=$(target_delay) \
-                      io2core=$(io2core)
+                      io2core=$(io2core) \
+                      SmartRetiming=$(SmartRetiming)
 
 #run_dc
 synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
@@ -421,7 +423,7 @@ clean_synthesis:
 	rm -rf synthesis/lvt_*v*_*.*
 	rm -rf synthesis/hvt_*v*_*.*
 	rm -f syn_bb.log
-	make -C synthesis -f Makefile clean VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+	make -C synthesis -f Makefile clean $(RUN_SYNTHESIS_FLAGS)
 
 #Rollup Rules:
 ##############################

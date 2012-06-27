@@ -61,7 +61,7 @@ if {![info exists Retiming]} {
 }
 
 if {![info exists SmartRetiming]} {
-  set SmartRetiming 1
+  set SmartRetiming 0
 }
 
 if {![info exists MulpPipelineDepth]} {
