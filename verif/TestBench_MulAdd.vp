@@ -219,7 +219,7 @@ program automatic `mname` (
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
       dumptolog = 1'b0;
-
+      valid_in = 1'b0;
       reset=1'b1;
       a = 0;
       b = 0;
@@ -241,6 +241,7 @@ program automatic `mname` (
 	 int i=0;
 	 while (i<num_trans) begin
 	    if(!stall_request) begin
+	       valid_in = 1'b1;
 	       i++;
 	       // Assign values to the lines
 	       dumptolog = 1'b0;
