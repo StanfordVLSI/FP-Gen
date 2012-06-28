@@ -88,9 +88,9 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 
 
 open_mw_lib $MW_DESIGN_LIBRARY
-import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
-read_sdc $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
-#import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc -format ddc -top $DESIGN_NAME -cel $DESIGN_NAME
+#import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
+#read_sdc $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
+import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc -format ddc -top $DESIGN_NAME -cel $DESIGN_NAME
 
 set ICC_SAIF_FILE $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.saif
 if { [file exists $ICC_SAIF_FILE] } {

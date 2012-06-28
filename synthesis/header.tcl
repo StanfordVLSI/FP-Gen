@@ -76,11 +76,16 @@ set target_library [set ${VT}_${Voltage}_target_libs]
 
 set_host_options -max_cores 2
 
-set link_library [set wc_${Voltage}_lib_dbs]
+set link_library "*"
+foreach L [set wc_[string tolower $LIB_VOLTAGE]_lib_dbs] {
+ lappend link_library $L
+}
+
 set synthetic_library [list dw_foundation.sldb]
 foreach L $synthetic_library {
  lappend link_library $L
 }
+
 
 if {![info exists DESIGN_TARGET]} {
     exit ;
