@@ -385,6 +385,7 @@ Voltage ?= 1v0
 io2core ?= 30
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 SmartRetiming ?= 0
+EnableClockGating ?= 1
 PREFIX ?= syn
 RUN_NAME := $(PREFIX)_$(VT)_$(Voltage)_$(target_delay)
 
@@ -403,7 +404,8 @@ RUN_SYNTHESIS_FLAGS:= \
                       Voltage=$(Voltage) \
                       target_delay=$(target_delay) \
                       io2core=$(io2core) \
-                      SmartRetiming=$(SmartRetiming)
+                      SmartRetiming=$(SmartRetiming) \
+                      EnableClockGating=$(EnableClockGating)
 
 #run_dc
 synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)

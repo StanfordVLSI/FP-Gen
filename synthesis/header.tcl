@@ -74,6 +74,10 @@ if {![info exists EnableMultiplePumping]} {
   set EnableMultiplePumping NO
 }
 
+if {![info exists EnableClockGating]} {
+  set EnableClockGating 1
+}
+
 set target_library [set ${VT}_${Voltage}_target_libs]
 
 set_host_options -max_cores 2

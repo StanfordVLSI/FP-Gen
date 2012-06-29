@@ -58,21 +58,17 @@ if { $PipelineDepth > 0 } {
    set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
    set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
   }
-  if { $Retiming } { 	
-    set_optimize_registers true -design ${DESIGN_NAME}
- 
-    # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/optimize_registers.html
-    #optimize_registers -no_compile -justification_effort high -check_design -verbose -print_critical_loop
-    # https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/compile_ultra.html?otSearchResultSrc=advSearch&otSearchResultNumber=15&otPageNum=1
-    compile_ultra -no_autoungroup -retime
-    #report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped_retime.timing.rpt
-    #optimize_registers -sync_transform multiclass -async_transform multiclass
-    #report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped_retime_mc.timing.rpt
-    #optimize_registers -sync_transform decompose -async_transform decompose
-    #report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped_retime_dc.timing.rpt
-    report_power  > reports/${DESIGN_NAME}.${APPENDIX}_${Voltage}.$target_delay.mapped_noclockgating.power.rpt
+  set_optimize_registers true -design ${DESIGN_NAME}
+  set COMPILE_COMMAND "compile_ultra -no_autoungroup"
+
+  if { $Retiming } {
+    lappend COMPILE_COMMAND "-retime"
   }
-  compile_ultra -no_autoungroup -gate_clock
+  if { $EnableClockGating } {
+    lappend COMPILE_COMMAND "-gate_clock"
+  }
+  echo $COMPILE_COMMAND 
+  eval $COMPILE_COMMAND
 
    #Reset Constraints for ICC
   set CLK_PERIOD [expr double($target_delay)/1000]

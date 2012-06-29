@@ -9,8 +9,9 @@ Voltage ?= 1v0
 target_delay ?= 1500
 RUN_NAME ?= $(VT)_$(Voltage)_$(target_delay)
 SmartRetiming ?= 0
+EnableClockGating ?= 1
 
-DC_COMMAND_STRING = "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  set SmartRetiming $(SmartRetiming); source -echo -verbose ../multiplier_dc.tcl"
+DC_COMMAND_STRING = "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  set SmartRetiming $(SmartRetiming);  set EnableClockGating $(EnableClockGating); source -echo -verbose ../multiplier_dc.tcl"
 PR_COMMAND_STRING = "set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  source -echo -verbose ../multiplier_icc.tcl"
 OPTIMIZED_PR_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; set VT  $(VT); set Voltage $(Voltage); set target_delay $(target_delay); set io2core $(io2core);  source -echo -verbose ../multiplier_icc.tcl"
 
