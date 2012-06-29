@@ -385,7 +385,8 @@ Voltage ?= 1v0
 io2core ?= 30
 target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
 SmartRetiming ?= 0
-RUN_NAME := syn_$(VT)_$(Voltage)_$(target_delay)
+PREFIX ?= syn
+RUN_NAME := $(PREFIX)_$(VT)_$(Voltage)_$(target_delay)
 
 ifdef appendix
   RUN_NAME := $(RUN_NAME)_$(appendix)
