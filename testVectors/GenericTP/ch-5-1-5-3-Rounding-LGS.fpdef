@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <INCLUDE file_name="DataTypesSP"/>
+  <INCLUDE file_name="DataTypesDP"/>
+  <INCLUDE file_name="DataTypesEP"/>
+  <COVERAGE_MODEL_SINGLE>
+   <!-- In this model, we enumerate all combinations of all values for the  -->
+   <!-- sign, fraction's least significant bit (LSB), guard-bit, and        -->
+   <!-- sticky-bit.                                                         -->
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="arith_grp_single"/>
+          <!-- enumerate all arithmetic single precision instructions -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <!-- biasing the intermediate result -->
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <USE_DATATYPE name="NORM"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXX0XX"/>
+                    <!-- fraction's lsb is zero -->
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXX1XX"/> 
+                    <!-- fraction's lsb is one -->
+                  </FRAC>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXTRA_BITS>
+                    <MASK value="XX" enumerate="TRUE"/>
+                    <!-- enumerate all values for guard and sticky bits-->
+                  </EXTRA_BITS>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="arith_grp_double"/>
+          <!-- enumerate all arithmetic double precision instructions -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <!-- biasing the intermediate result -->
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <USE_DATATYPE name="NORM"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX0XX"/>
+                    <!-- fraction's lsb is zero -->
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XX"/>
+                    <!-- fraction's lsb is one -->
+                  </FRAC>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXTRA_BITS>
+                    <MASK value="XX" enumerate="TRUE"/>
+                    <!-- enumerate all values for guard and sticky bits-->
+                  </EXTRA_BITS>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="arith_grp_extended"/>
+          <!--enumerate all arithmetic extended precision instructions-->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+          <!--biasing the intermediate result-->
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true" />
+                </COLLECTION>
+                <COLLECTION>
+                  <USE_DATATYPE name="NORM"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX0XX"/>
+                    <!-- fraction's lsb is zero -->
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XX"/>
+                    <!-- fraction's lsb is one -->
+                  </FRAC>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXTRA_BITS>
+                    <MASK value="XX" enumerate="TRUE"/>
+                    <!-- enumerate all values for guard and sticky bits-->
+                  </EXTRA_BITS>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

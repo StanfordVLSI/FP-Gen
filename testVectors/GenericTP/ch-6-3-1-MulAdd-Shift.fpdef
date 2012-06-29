@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <RELATIONS>
+          <!-- relation between the addend and the product - shift -->
+          <RELATION expression="INPUT3.exp-OPERAND6.exp">
+            <!-- addend >> product. result = addend +/- ulp -->
+            <RANGE range="(31,426]"/>
+            <RANGE enumerate="TRUE" range="[26,31]"/>
+            <!-- addend close to product. -->
+            <RANGE enumerate="TRUE" range="[-49,25]"/>
+            <!-- product >> addend. result = product +/- ulp -->
+            <RANGE enumerate="TRUE" range="[-58,-50]"/>
+            <RANGE range="[-406,-58)"/>
+          </RELATION>
+          <!-- relation between product and result - carry -->
+          <RELATION expression="OPERAND6.exp-BasicMulExp.exp">
+            <RANGE enumerate="TRUE" range="[0,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <RELATIONS>
+          <!-- relation between the addend and the product - shift -->
+          <RELATION expression="INPUT3.exp-OPERAND6.exp">
+            <!-- addend >> product. result = addend +/- ulp -->
+            <RANGE range="(60,3172]"/>
+            <RANGE enumerate="TRUE" range="[55,60]"/>
+            <!-- addend close to product. -->
+            <RANGE enumerate="TRUE" range="[-107,54]"/>
+            <!-- product >> addend. result = product +/- ulp -->
+            <RANGE enumerate="TRUE" range="[-116,-108]"/>
+            <RANGE range="[-3123,-116)"/>
+          </RELATION>
+          <!-- relation between product and result - carry -->
+          <RELATION expression="OPERAND6.exp-BasicMulExp.exp">
+            <RANGE enumerate="TRUE" range="[0,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

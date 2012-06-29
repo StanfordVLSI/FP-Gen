@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <INCLUDE file_name="DataTypesSP"/>
+  <INCLUDE file_name="DataTypesDP"/>
+  <INCLUDE file_name="DataTypesEP"/>
+
+  <COVERAGE_MODEL_SINGLE>
+   <!-- This is a model for multiply-add type instructions. We generate   -->
+   <!-- cases in which the operation is effective subtraction, and the    -->
+   <!-- product and addend are close in value, resulting in cancellation. -->
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/> 
+           <!-- multiply-add type, single precision instructions  -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+               <USE_DATATYPE name="MIN_DENORM_EXP"/>
+               <USE_DATATYPE name="MAX_DENORM_EXP"/>
+               <USE_DATATYPE name="MIN_NORM_EXP"/>
+               <USE_DATATYPE name="MAX_NORM_EXP"/>
+               <USE_DATATYPE name="UNBIASED_ZERO_EXP"/>
+               <USE_DATATYPE name="UNBIASED_ONE_EXP"/>
+            </FP>
+          </OPERAND>
+         </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+             <!-- cancellation scenarios: enumerate all possible exponents  -->
+             <!-- for the result.                                           -->
+            <RANGE enumerate="true" range="[-47,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+           <!-- multiply-add type, double precision instructions -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <USE_DATATYPE name="MIN_DENORM_EXP"/>
+              <USE_DATATYPE name="MAX_DENORM_EXP"/>
+              <USE_DATATYPE name="MIN_NORM_EXP"/>
+              <USE_DATATYPE name="MAX_NORM_EXP"/>
+              <USE_DATATYPE name="UNBIASED_ZERO_EXP"/>
+              <USE_DATATYPE name="UNBIASED_ONE_EXP"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+             <!-- cancellation scenarios: enumerate all possible exponents  -->
+             <!-- for the result.                                           -->
+            <RANGE enumerate="true" range="[-105,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

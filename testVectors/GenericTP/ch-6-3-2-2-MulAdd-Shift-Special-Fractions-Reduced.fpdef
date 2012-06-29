@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="OPERAND3">
+            <FP>
+              <FRAC>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ZEROS>
+                <MASK value="01010101010101010101010"/>
+                <MASK value="10101010101010101010101"/>
+                <MASK value="00110011001100110011001"/>
+                <MASK value="11001100110011001100110"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="111111111111XXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXX111111111111"/>
+                <MASK value="000000000000XXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXX000000000000"/>
+                <MASK value="11111111111111111111111"/>
+                <MASK value="00000000000000000000000"/>
+              </FRAC>
+            </FP>
+          </OPERAND>
+          <OPERAND name="OPERAND6">
+            <FP>
+              <FRAC>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ZEROS>
+                <MASK value="0101010101010101010101010"/>
+                <MASK value="1010101010101010101010101"/>
+                <MASK value="0011001100110011001100110"/>
+                <MASK value="1100110011001100110011001"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="1111111111111XXXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXXX1111111111111"/>
+                <MASK value="0000000000000XXXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXXX0000000000000"/>
+                <MASK value="1111111111111111111111111"/>
+                <MASK value="0000000000000000000000000"/>
+              </FRAC>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="OPERAND3.exp-OPERAND6.exp">
+            <RANGE range="[-406,-59]"/>
+            <RANGE range="[-58,-49]"/>
+            <RANGE range="[-48,-39]"/>
+            <RANGE range="[-38,-29]"/>
+            <RANGE range="[-28,-19]"/>
+            <RANGE range="[-18,-9]"/>
+            <RANGE range="[-8,1]"/>
+            <RANGE range="[2,11]"/>
+            <RANGE range="[12,21]"/>
+            <RANGE range="[22,31]"/>
+            <RANGE range="[32,32]"/>
+            <RANGE range="[33,426]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="OPERAND3">
+            <FP>
+              <FRAC>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ZEROS>
+                <MASK value="0101010101010101010101010101010101010101010101010101"/>
+                <MASK value="1010101010101010101010101010101010101010101010101010"/>
+                <MASK value="0011001100110011001100110011001100110011001100110011"/>
+                <MASK value="1100110011001100110011001100110011001100110011001100"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="11111111111111111111111111XXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXX11111111111111111111111111"/>
+                <MASK value="00000000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXX00000000000000000000000000"/>
+                <MASK value="1111111111111111111111111111111111111111111111111111"/>
+                <MASK value="0000000000000000000000000000000000000000000000000000"/>
+              </FRAC>
+            </FP>
+          </OPERAND>
+          <OPERAND name="OPERAND6">
+            <FP>
+              <FRAC>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[3,10]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ONES>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ONES>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[1,1]"/>
+                </NUMBER_OF_ZEROS>
+                <NUMBER_OF_ZEROS>
+                  <RANGE range="[2,2]"/>
+                </NUMBER_OF_ZEROS>
+                <MASK value="010101010101010101010101010101010101010101010101010101"/>
+                <MASK value="101010101010101010101010101010101010101010101010101010"/>
+                <MASK value="001100110011001100110011001100110011001100110011001100"/>
+                <MASK value="110011001100110011001100110011001100110011001100110011"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="111111111111111111111111111XXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXX111111111111111111111111111"/>
+                <MASK value="000000000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXX000000000000000000000000000"/>
+                <MASK value="111111111111111111111111111111111111111111111111111111"/>
+                <MASK value="000000000000000000000000000000000000000000000000000000"/>
+              </FRAC>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="OPERAND3.exp-OPERAND6.exp">
+            <RANGE range="[-3123,-117]"/>
+            <RANGE range="[-116,-107]"/>
+            <RANGE range="[-106,-97]"/>
+            <RANGE range="[-96,-87]"/>
+            <RANGE range="[-86,-77]"/>
+            <RANGE range="[-76,-67]"/>
+            <RANGE range="[-66,-57]"/>
+            <RANGE range="[-56,-47]"/>
+            <RANGE range="[-46,-37]"/>
+            <RANGE range="[-36,-27]"/>
+            <RANGE range="[-26,-17]"/>
+            <RANGE range="[-16,-7]"/>
+            <RANGE range="[-11,-7]"/>
+            <RANGE range="[-6,3]"/>
+            <RANGE range="[4,13]"/>
+            <RANGE range="[14,23]"/>
+            <RANGE range="[24,33]"/>
+            <RANGE range="[34,43]"/>
+            <RANGE range="[44,53]"/>
+            <RANGE range="[54,61]"/>
+            <RANGE range="[62,3172]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

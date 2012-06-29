@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <INCLUDE file_name="DataTypesSP"/>
+  <INCLUDE file_name="DataTypesDP"/>
+  <DIRECTIVES time_per_task="60"/>
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND  name="OPERAND6">
+             <FP>
+                 <USE_DATATYPE name="MIN_DENORM_EXP"/>
+                 <USE_DATATYPE name="MAX_DENORM_EXP"/>
+                 <USE_DATATYPE name="MIN_NORM_EXP"/>
+                 <USE_DATATYPE name="MAX_NORM_EXP"/>
+                 <USE_DATATYPE name="UNBIASED_ZERO_EXP"/>
+             </FP>
+           </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <!-- relation between the addend and the product - shift -->
+          <RELATION expression="INPUT3.exp-OPERAND6.exp">
+            <!-- addend >> product. result = addend +/- ulp -->
+            <RANGE enumerate="TRUE" range="[21,27]"/> 
+
+            <!-- product >> addend. result = product +/- ulp -->
+            <RANGE enumerate="TRUE" range="[-51,-45]"/> 
+
+          </RELATION>
+        </RELATIONS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND  name="OPERAND6">
+             <FP>
+                 <USE_DATATYPE name="MIN_DENORM_EXP"/>
+                 <USE_DATATYPE name="MAX_DENORM_EXP"/>
+                 <USE_DATATYPE name="MIN_NORM_EXP"/>
+                 <USE_DATATYPE name="MAX_NORM_EXP"/>
+                 <USE_DATATYPE name="UNBIASED_ZERO_EXP"/>
+             </FP>
+           </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <!-- relation between the addend and the product - shift -->
+          <RELATION expression="INPUT3.exp-OPERAND6.exp">
+            <!-- addend >> product. result = addend +/- ulp -->
+            <RANGE enumerate="TRUE" range="[50,56]"/>
+
+            <!-- product >> addend. result = product +/- ulp -->
+            <RANGE enumerate="TRUE" range="[-109,-103]"/>
+
+          </RELATION>
+        </RELATIONS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

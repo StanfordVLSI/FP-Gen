@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <INCLUDE file_name="DataTypesSP"/>
+  <INCLUDE file_name="DataTypesDP"/>
+  <INCLUDE file_name="DataTypesEP"/>
+  <DIRECTIVES time_per_task="10"/>
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+<!--- note: tasks that require "sequence" or "checkerboard" constraints were left out of this model for the time being. -->
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="(inputs_single, multiply_add_grp_single)" description="add, mul, multiply-add-grp"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INPUT">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                    <USE_DATATYPE name="REGULAR_EXPONENTS"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[3,10]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[3,10]"/>
+                    </NUMBER_OF_ZEROS>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[2,2]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[1,1]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[2,2]"/>
+                    </NUMBER_OF_ZEROS>   
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[1,1]"/>
+                    </NUMBER_OF_ZEROS>   
+                    <MASK value="01010101010101010101010"/>
+                    <MASK value="10101010101010101010101"/>
+                    <MASK value="00110011001100110011001"/>
+                    <MASK value="11001100110011001100110"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="11111111111111111111111"/>
+                    <MASK value="00000000000000000000000"/>
+                    <MASK value="111111111111XXXXXXXXXXX"/>
+                    <MASK value="XXXXXXXXXXX111111111111"/>
+                    <MASK value="000000000000XXXXXXXXXXX"/>
+                    <MASK value="XXXXXXXXXXX000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="(inputs_double, multiply_add_grp_double)" description="add, mul, multiply-add-grp"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INPUT">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                    <USE_DATATYPE name="REGULAR_EXPONENTS"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[3,10]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[3,10]"/>
+                    </NUMBER_OF_ZEROS>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[2,2]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[1,1]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[2,2]"/>
+                    </NUMBER_OF_ZEROS>   
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[1,1]"/>
+                    </NUMBER_OF_ZEROS>   
+                    <MASK value="0101010101010101010101010101010101010101010101010101"/>
+                    <MASK value="1010101010101010101010101010101010101010101010101010"/>
+                    <MASK value="0011001100110011001100110011001100110011001100110011"/>
+                    <MASK value="1100110011001100110011001100110011001100110011001100"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="1111111111111111111111111111111111111111111111111111"/>
+                    <MASK value="0000000000000000000000000000000000000000000000000000"/>
+                    <MASK value="11111111111111111111111111XXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXX11111111111111111111111111"/>
+                    <MASK value="00000000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXX00000000000000000000000000"/> 
+                  </FRAC>
+               </COLLECTION>
+              </CROSS_PRODUCT>
+             </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="(inputs_extended, multiply_add_grp_extended)" description="add, mul, multiply-add-grp"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INPUT">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                    <USE_DATATYPE name="REGULAR_EXPONENTS"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[3,10]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[3,10]"/>
+                    </NUMBER_OF_ZEROS>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[2,2]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ONES>
+                      <RANGE range="[1,1]"/>
+                    </NUMBER_OF_ONES>
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[2,2]"/>
+                    </NUMBER_OF_ZEROS>   
+                    <NUMBER_OF_ZEROS>
+                      <RANGE range="[1,1]"/>
+                    </NUMBER_OF_ZEROS>   
+                    <MASK value="0101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"/>
+                    <MASK value="1010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010"/>
+                    <MASK value="0011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011"/>
+                    <MASK value="1100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100110011001100"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"/>
+                    <MASK value="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+                    <MASK value="11111111111111111111111111111111111111111111111111111111XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX11111111111111111111111111111111111111111111111111111111"/>
+                    <MASK value="00000000000000000000000000000000000000000000000000000000XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"/>
+                    <MASK value="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX00000000000000000000000000000000000000000000000000000000"/> 
+                  </FRAC>
+               </COLLECTION>
+              </CROSS_PRODUCT>
+             </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

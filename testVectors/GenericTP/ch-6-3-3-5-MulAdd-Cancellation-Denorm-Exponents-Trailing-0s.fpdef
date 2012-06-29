@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+
+  <COVERAGE_MODEL_SINGLE>
+   <!-- This is a model for multiply-add type instructions. We generate   -->
+   <!-- cases in which the operation is effective subtraction, and the    -->
+   <!-- product and addend are close in value, resulting in cancellation. -->
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/> 
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                     min="0101101010"
+                     max="0110000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="1000000000000000000000000"/>
+                    <MASK value="0000000000000000000000000"/>
+                  </FRAC>
+               </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+         </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-46"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/> 
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE"
+                    min="0101101010"
+                    max="0110000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="1000000000000000000000000"/>
+                    <MASK value="0000000000000000000000000"/>
+                  </FRAC>
+               </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+         </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-45"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/> 
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                    min="0101101010"
+                    max="0110000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="X100000000000000000000000"/>
+                    <MASK value="1000000000000000000000000"/>
+                    <MASK value="0000000000000000000000000"/>
+                  </FRAC>
+               </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+         </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-44"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/> 
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                    min="0101101010"
+                    max="0110000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <MASK value="XX10000000000000000000000"/>
+                    <MASK value="X100000000000000000000000"/>
+                    <MASK value="1000000000000000000000000"/>
+                    <MASK value="0000000000000000000000000"/>
+                  </FRAC>
+               </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+         </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-43"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                    min="0101111001101"
+                    max="0110000000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                     <MASK value="100000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="000000000000000000000000000000000000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-104"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                    min="0101111001101"
+                    max="0110000000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                     <MASK value="100000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="000000000000000000000000000000000000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-103"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                    min="0101111001101"
+                    max="0110000000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                     <MASK value="X10000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="100000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="000000000000000000000000000000000000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-102"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <EXP>
+                    <RANGE description="All denormal exponents" enumerate="TRUE" 
+                    min="0101111001101"
+                    max="0110000000000"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                     <MASK value="XX1000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="X10000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="100000000000000000000000000000000000000000000000000000"/>
+                     <MASK value="000000000000000000000000000000000000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="-101"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+<DIRECTIVES randomOrder="false"/>
+
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                   <EXP>
+<!-- exponent range is so small that the addend must be 0.
+     Upper bound is -198, lower bound is minDenorm * minDenorm -->
+                   <RANGE min="0011011100" 
+                          max="0100111001"/>
+                   <RANGE enumerate="true" min="0011010101" 
+                                           max="0011011101"/>
+
+                  </EXP>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                   <EXP>
+<!-- exponent range is so small that the addend must be 0     
+     Upper bound is -1179, lower bound is minDenorm * minDenorm -->
+                   <RANGE min="0011110100100" 
+                          max="0101101100100"/>
+                   <RANGE enumerate="true" min="0011110011011" 
+                                           max="0011110100011"/>
+                  </EXP>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_extended"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                   <EXP>
+<!-- exponent range is so small that the addend must be 0
+     Upper bound is -16720, lower bound is minDenorm * minDenorm -->
+                   <RANGE min="00111111100101010" 
+                          max="01011111010101111"/>
+                   <RANGE enumerate="true" min="00111111100100011" 
+                                           max="00111111100101011"/>
+                  </EXP>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

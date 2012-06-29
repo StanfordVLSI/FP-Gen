@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_output_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="OUTPUT">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXP>
+                    <MASK value="00000000000"/>
+                    <MASK value="00000000001"/>
+                    <MASK value="01111111111"/>
+                    <MASK value="11111111110"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <RANGE enumerate="TRUE" max="0000000000000000000000000000000000000000000000000100" min="0000000000000000000000000000000000000000000000000000"/>
+                    <RANGE max="1111111111111111111111111111111111111111111111111111" min="0000000000000000000000000000000000000000000000000101"/>
+                    <RANGE enumerate="TRUE" max="1111111111111111111111111111111111111111111111111111" min="1111111111111111111111111111111111111111111111111100"/>
+                    <RANGE max="1111111111111111111111111111111111111111111111111011" min="0000000000000000000000000000000000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_output_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="OUTPUT">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXP>
+                    <MASK value="00000000"/>
+                    <MASK value="00000001"/>
+                    <MASK value="01111111"/>
+                    <MASK value="11111110"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <RANGE enumerate="TRUE" max="00000000000000000000100" min="00000000000000000000000"/>
+                    <RANGE max="11111111111111111111111" min="00000000000000000000101"/>
+                    <RANGE enumerate="TRUE" max="11111111111111111111111" min="11111111111111111111100"/>
+                    <RANGE max="11111111111111111111011" min="00000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_output_extended"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="OUTPUT">
+            <FP>
+              <CROSS_PRODUCT>
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="true"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXP>
+                    <MASK value="000000000000000"/>
+                    <MASK value="000000000000001"/>
+                    <MASK value="011111111111111"/>
+                    <MASK value="111111111111110"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <RANGE enumerate="TRUE" max="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100" min="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+                    <RANGE max="1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" min="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101"/>
+                    <RANGE enumerate="TRUE" max="1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" min="1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100"/>
+                    <RANGE max="1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111011" min="0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

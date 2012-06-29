@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <EXP>
+<!-- exponent range is smaller than min denorm [-197, -150].
+     this can be reached only by cancellation -->
+                <RANGE enumerate="true" min="0100111010"
+                                        max="0101101001"/>
+              </EXP>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="[-47,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <EXP>
+<!-- exponent range is smaller than min denorm [-1178, -1075].
+     this can be reached only by cancellation -->
+                 <RANGE enumerate="true" min="0101101100101" 
+                                         max="0101111001100"/>
+              </EXP>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="[-105,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_extended"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <EXP>
+<!-- exponent range is smaller than min denorm [-16719, -16496].
+     this can be reached only by cancellation -->
+                <RANGE enumerate="true" min="01011111010110000"
+                                        max="01011111110001111" />
+              </EXP>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+        <RELATIONS>
+          <RELATION expression="INTERMED.exp-BasicOpExp.exp">
+            <RANGE enumerate="true" range="[-225,1]"/>
+          </RELATION>
+        </RELATIONS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

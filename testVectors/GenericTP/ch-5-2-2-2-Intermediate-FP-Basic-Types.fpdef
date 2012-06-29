@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <INCLUDE file_name="DataTypesSP"/>
+  <INCLUDE file_name="DataTypesDP"/>
+  <INCLUDE file_name="DataTypesEP"/>
+  <DIRECTIVES time_per_task="10"/>
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="float_im_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <USE_DATATYPE name="NEG_INFINITY"/>
+              <USE_DATATYPE name="NEG_MAX_NORM"/>
+              <USE_DATATYPE name="NEG_LARGE_NORM"/>
+              <USE_DATATYPE name="NEG_NORM"/>
+              <USE_DATATYPE name="NEG_SMALL_NORM"/>
+              <USE_DATATYPE name="NEG_MIN_NORM"/>
+              <USE_DATATYPE name="NEG_MAX_DENORM"/>
+              <USE_DATATYPE name="NEG_DENORM"/>
+              <USE_DATATYPE name="NEG_MIN_DENORM"/>
+              <USE_DATATYPE name="NEG_ONE"/>
+              <USE_DATATYPE name="NEG_ZERO"/>
+              <USE_DATATYPE name="POS_ZERO"/>
+              <USE_DATATYPE name="POS_ONE"/>
+              <USE_DATATYPE name="POS_MIN_DENORM"/>
+              <USE_DATATYPE name="POS_DENORM"/>
+              <USE_DATATYPE name="POS_MAX_DENORM"/>
+              <USE_DATATYPE name="POS_MIN_NORM"/>
+              <USE_DATATYPE name="POS_SMALL_NORM"/>
+              <USE_DATATYPE name="POS_NORM"/>
+              <USE_DATATYPE name="POS_LARGE_NORM"/>
+              <USE_DATATYPE name="POS_MAX_NORM"/>
+              <USE_DATATYPE name="POS_INFINITY"/>
+              <USE_DATATYPE name="GEN_QNAN"/>
+              <USE_DATATYPE name="QNAN"/>
+              <USE_DATATYPE name="SNAN"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="float_im_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <USE_DATATYPE name="NEG_INFINITY"/>
+              <USE_DATATYPE name="NEG_MAX_NORM"/>
+              <USE_DATATYPE name="NEG_LARGE_NORM"/>
+              <USE_DATATYPE name="NEG_NORM"/>
+              <USE_DATATYPE name="NEG_SMALL_NORM"/>
+              <USE_DATATYPE name="NEG_MIN_NORM"/>
+              <USE_DATATYPE name="NEG_MAX_DENORM"/>
+              <USE_DATATYPE name="NEG_DENORM"/>
+              <USE_DATATYPE name="NEG_MIN_DENORM"/>
+              <USE_DATATYPE name="NEG_ONE"/>
+              <USE_DATATYPE name="NEG_ZERO"/>
+              <USE_DATATYPE name="POS_ZERO"/>
+              <USE_DATATYPE name="POS_ONE"/>
+              <USE_DATATYPE name="POS_MIN_DENORM"/>
+              <USE_DATATYPE name="POS_DENORM"/>
+              <USE_DATATYPE name="POS_MAX_DENORM"/>
+              <USE_DATATYPE name="POS_MIN_NORM"/>
+              <USE_DATATYPE name="POS_SMALL_NORM"/>
+              <USE_DATATYPE name="POS_NORM"/>
+              <USE_DATATYPE name="POS_LARGE_NORM"/>
+              <USE_DATATYPE name="POS_MAX_NORM"/>
+              <USE_DATATYPE name="POS_INFINITY"/>
+              <USE_DATATYPE name="GEN_QNAN"/>
+              <USE_DATATYPE name="QNAN"/>
+              <USE_DATATYPE name="SNAN"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="true" name="float_im_extended"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <USE_DATATYPE name="NEG_INFINITY"/>
+              <USE_DATATYPE name="NEG_MAX_NORM"/>
+              <USE_DATATYPE name="NEG_LARGE_NORM"/>
+              <USE_DATATYPE name="NEG_NORM"/>
+              <USE_DATATYPE name="NEG_SMALL_NORM"/>
+              <USE_DATATYPE name="NEG_MIN_NORM"/>
+              <USE_DATATYPE name="NEG_MAX_DENORM"/>
+              <USE_DATATYPE name="NEG_DENORM"/>
+              <USE_DATATYPE name="NEG_MIN_DENORM"/>
+              <USE_DATATYPE name="NEG_ONE"/>
+              <USE_DATATYPE name="NEG_ZERO"/>
+              <USE_DATATYPE name="POS_ZERO"/>
+              <USE_DATATYPE name="POS_ONE"/>
+              <USE_DATATYPE name="POS_MIN_DENORM"/>
+              <USE_DATATYPE name="POS_DENORM"/>
+              <USE_DATATYPE name="POS_MAX_DENORM"/>
+              <USE_DATATYPE name="POS_MIN_NORM"/>
+              <USE_DATATYPE name="POS_SMALL_NORM"/>
+              <USE_DATATYPE name="POS_NORM"/>
+              <USE_DATATYPE name="POS_LARGE_NORM"/>
+              <USE_DATATYPE name="POS_MAX_NORM"/>
+              <USE_DATATYPE name="POS_INFINITY"/>
+              <USE_DATATYPE name="GEN_QNAN"/>
+              <USE_DATATYPE name="QNAN"/>
+              <USE_DATATYPE name="SNAN"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

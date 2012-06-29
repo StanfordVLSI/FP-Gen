@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <COVERAGE_MODEL_SINGLE>
+  <!-- In this model we enumerate over values and exponents in the vicinity -->
+  <!-- of overflow results.                                                 -->
+  <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_im_single"/>
+          <!--enumerate single precision instructions that support -->
+          <!-- intermediate result biasing.                        -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT
+                 description = "results that are close to overflow: max normal exponent and large fractions">
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="TRUE"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXP>
+                    <MASK value="1001111110" 
+                    description="single precision max norm exponent"/>
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <RANGE enumerate="TRUE"
+                           min="1111111111111111111101111"
+                           max="1111111111111111111111111"/>
+                     <!-- large fraction -->
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+
+              <COLLECTION>
+              <!--exponents that are close to overflow -->
+                 <EXP>
+                    <RANGE
+                       enumerate = "TRUE"
+                       min = "1001111001"
+                       max = "1001111110"/>
+                     <!--High order exponents, close to max norm exponent -->
+                 </EXP>
+              </COLLECTION>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_im_double"/>
+          <!--enumerate double precision instructions that support -->
+          <!-- intermediate result biasing.                        -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT
+                 description = "results that are close to overflow: max normal exponent and large fractions">
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="TRUE"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXP>
+                    <MASK value="1001111111110"/>
+                      <!--double precision max norm exponent-->
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <RANGE enumerate="TRUE"
+                           min="111111111111111111111111111111111111111111111111101111"
+                           max="111111111111111111111111111111111111111111111111111111"/>
+                    <!-- large fraction -->
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+
+              <COLLECTION>
+              <!--exponents that are close to overflow -->
+                 <EXP>
+                    <RANGE
+                       enumerate = "TRUE"
+                       min = "1001111111001"
+                       max = "1001111111110"/>
+                    <!--High order exponents, close to max norm exponent -->
+                 </EXP>
+              </COLLECTION>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_im_extended"/>
+          <!--enumerate double precision instructions that support -->
+          <!-- intermediate result biasing.                        -->
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <CROSS_PRODUCT
+                 description = "results that are close to overflow: max normal exponent and large fractions">
+                <COLLECTION>
+                  <SIGN domain="both" enumerate="TRUE"/>
+                </COLLECTION>
+                <COLLECTION>
+                  <EXP>
+                    <MASK value="10011111111111110"/>
+                     <!--extended precision max norm exponent-->
+                  </EXP>
+                </COLLECTION>
+                <COLLECTION>
+                  <FRAC>
+                    <RANGE enumerate="TRUE"
+                           min="111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111101111"
+                           max="111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"/>
+                     <!--large fraction -->
+                  </FRAC>
+                </COLLECTION>
+              </CROSS_PRODUCT>
+
+              <COLLECTION>
+                <!-- exponents that are close to overflow -->
+                 <EXP>
+                    <RANGE
+                       enumerate = "TRUE"
+                       min = "10011111111111001"
+                       max = "10011111111111110"/>
+                       <!--High order exponents, close to max norm exponent -->
+                 </EXP>
+              </COLLECTION>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

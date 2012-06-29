@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <COVERAGE_MODEL_SINGLE>
+ <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+    <INSTRUCTIONS>
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_im_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <COLLECTION description = "enumeration on positive overflow values">
+                 <RANGE
+                    enumerate = "TRUE"
+                    min = "01001111111110111111111111111111111111111111111111111111111111111101"
+                    max = "01001111111111000000000000000000000000000000000000000000000000010111"/>
+              </COLLECTION>
+              <COLLECTION description = "enumeration on negative overflow values">
+                 <RANGE
+                    enumerate = "TRUE"
+                    min = "11001111111111000000000000000000000000000000000000000000000000010111"
+                    max = "11001111111110111111111111111111111111111111111111111111111111111101"/>
+              </COLLECTION>
+              <COLLECTION>
+                <RANGE
+                   description="positive overflow"
+                   min="01001111111111000000000000000000000000000000000000000000000000000000"
+                   max="01111111111110111111111111111111111111111111111111111111111111111111"/>
+                <RANGE description="negative overflow"
+                   min="11111111111110111111111111111111111111111111111111111111111111111111"
+                   max="11001111111111000000000000000000000000000000000000000000000000000000"/>
+              </COLLECTION>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_im_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <COLLECTION description = "enumeration on positive overflow values">
+                 <RANGE
+                    enumerate = "TRUE"
+                    min = "010011111101111111111111111111111101"
+                    max = "010011111110000000000000000000010111"/>
+              </COLLECTION>
+              <COLLECTION description = "enumeration on negative overflow values">
+                 <RANGE
+                    enumerate = "TRUE"
+                    min = "110011111110000000000000000000010111"
+                    max = "110011111101111111111111111111111101"/>
+              </COLLECTION>
+              <COLLECTION>
+                <RANGE description="positive overflow" max="011111111101111111111111111111111111" min="010011111110000000000000000000000000"/>
+                <RANGE description="negative overflow" max="110011111110000000000000000000000000" min="111111111101111111111111111111111111"/>
+              </COLLECTION>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+        <MNEMONIC>
+          <GROUP enumerate="TRUE" name="float_im_extended"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="INTERMED">
+            <FP>
+              <COLLECTION description = "enumeration on positive overflow values">
+                 <RANGE
+                    enumerate = "TRUE"
+                    min = "010011111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111101"
+                    max = "010011111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010111"/>
+              </COLLECTION>
+              <COLLECTION description = "enumeration on negative overflow values">
+                 <RANGE
+                    enumerate = "TRUE"
+                    min = "110011111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010111"
+                    max = "110011111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111101"/>
+              </COLLECTION>
+              <COLLECTION>
+                <RANGE description="positive overflow"
+                     max="011111111111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+                     min="010011111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"/>
+                <RANGE description="positive overflow"
+                     max="110011111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+                     min="111111111111111110111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"/>
+              </COLLECTION>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>

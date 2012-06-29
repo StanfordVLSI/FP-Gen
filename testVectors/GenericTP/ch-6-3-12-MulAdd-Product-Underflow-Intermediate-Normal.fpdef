@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FPGENFILE XSDversion="0.23">
+  <INCLUDE file_name="DataTypesSP"/>
+  <INCLUDE file_name="DataTypesDP"/>
+  <INCLUDE file_name="DataTypesEP"/>
+  <DIRECTIVES time_per_task="60"/>
+  <COVERAGE_MODEL_SINGLE>
+    <ENVIRONMENT>
+      <ROUNDING_MODE>
+        <CONSTRAINT domain="all_binary" enumerate="true"/>
+      </ROUNDING_MODE>
+      <ENABLE_BITS>
+	<ENABLE_BIT name="Underflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Overflow">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Inexact">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Invalid operation">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+	<ENABLE_BIT name="Zero divided">
+	  <CONSTRAINT domain="off"/>
+	</ENABLE_BIT>
+      </ENABLE_BITS>
+      <INSTRUCTION_MODE>
+        <DEFINITION>
+          <INPUT denorm_property="IEEE" inf_nan_property="IEEE" />
+          <OUTPUT denorm_property="IEEE" inf_nan_property="IEEE" nan_property="IEEE" neg_zero_property="IEEE"/>
+        </DEFINITION>
+      </INSTRUCTION_MODE>
+    </ENVIRONMENT>
+
+    <INSTRUCTIONS>
+
+<!-- single precision -->
+
+      <INST>
+<!-- product is denorm, intermediate result is norm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP>            
+              <USE_DATATYPE name="DENORM"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <USE_DATATYPE name="NORM"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is max denorm, intermediate result is max denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP>            
+              <USE_DATATYPE name="MAX_DENORM"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z01100000001111111111111111111111XXX" enumerate="true" 
+                    description="max denorm with all combinations on LSB, guard, and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is max denorm, intermediate result is min norm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP>            
+              <USE_DATATYPE name="MAX_DENORM"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z01100000010000000000000000000000XXX" enumerate="true" 
+                    description="min norm with all combinations on LSB, guard, and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is less than min denorm, intermediate result is denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <UNION>           
+                <RANGE min="000000000000000000000000000000000001"  
+                       max="001011010011111111111111111111111111"
+                      description="pos numbers less than min denorm"/>
+                <RANGE min="101011010011111111111111111111111111"  
+                       max="100000000000000000000000000000000001"
+                      description="neg numbers less than min denorm"/>
+             </UNION>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <USE_DATATYPE name="DENORM"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is less than min denorm, intermediate result is min denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <UNION>           
+                <RANGE min="000000000000000000000000000000000001"  
+                       max="001011010011111111111111111111111111"
+                      description="pos numbers less than min denorm"/>
+                <RANGE min="101011010011111111111111111111111111"  
+                       max="100000000000000000000000000000000001"
+                      description="neg numbers less than min denorm"/>
+             </UNION>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z010110101000000000000000000000000XX"
+                            enumerate="true" description="min denorm with all combinations on guard and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is min denorm - 1 ulp, intermediate result is min denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <MASK value="z010110100111111111111111111111111XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z010110101000000000000000000000000XX" 
+                    enumerate="true" description="min denorm with all combinations on guard and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is min denorm - 1 ulp, intermediate result is min denorm - 1 ulp  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_single"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <MASK value="z010110100111111111111111111111111XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z010110100111111111111111111111111XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+<!-- double precision -->
+
+      <INST>
+<!-- product is denorm, intermediate result is norm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP>            
+              <USE_DATATYPE name="DENORM"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <USE_DATATYPE name="NORM"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is max denorm, intermediate result is max denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP>            
+              <USE_DATATYPE name="MAX_DENORM"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z0110000000000111111111111111111111111111111111111111111111111111XXX" enumerate="true" 
+                    description="max denorm with all combinations on LSB, guard, and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is max denorm, intermediate result is min norm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP>            
+              <USE_DATATYPE name="MAX_DENORM"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z0110000000001000000000000000000000000000000000000000000000000000XXX" enumerate="true" 
+                    description="min norm with all combinations on LSB, guard, and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is less than min denorm, intermediate result is denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <UNION>           
+                <RANGE min="00000000000000000000000000000000000000000000000000000000000000000001"  
+                       max="00101111001100111111111111111111111111111111111111111111111111111111"
+                      description="pos numbers less than min denorm"/>
+                <RANGE min="10101111001100111111111111111111111111111111111111111111111111111111"  
+                       max="00000000000000000000000000000000000000000000000000000000000000000001"
+                      description="neg numbers less than min denorm"/>
+             </UNION>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <USE_DATATYPE name="DENORM"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is less than min denorm, intermediate result is min denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <UNION>           
+                <RANGE min="00000000000000000000000000000000000000000000000000000000000000000001"  
+                       max="00101111001100111111111111111111111111111111111111111111111111111111"
+                      description="pos numbers less than min denorm"/>
+                <RANGE min="10101111001100111111111111111111111111111111111111111111111111111111"  
+                       max="00000000000000000000000000000000000000000000000000000000000000000001"
+                      description="neg numbers less than min denorm"/>
+             </UNION>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z01011110011010000000000000000000000000000000000000000000000000000XX" 
+                            enumerate="true" description="min denorm with all combinations on guard and sticky"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is min denorm - 1 ulp, intermediate result is min denorm  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <MASK value="z01011110011001111111111111111111111111111111111111111111111111111XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z01011110011010000000000000000000000000000000000000000000000000000XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+      <INST>
+<!-- product is min denorm - 1 ulp, intermediate result is min denorm - 1 ulp  -->
+        <MNEMONIC>
+          <GROUP enumerate="true" name="multiply_add_grp_double"/>
+        </MNEMONIC>
+        <OPERANDS>
+          <OPERAND name="PRODUCT">
+            <FP> 
+              <MASK value="z01011110011001111111111111111111111111111111111111111111111111111XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+
+          <OPERAND name="INTERMED">                                    
+            <FP>
+              <MASK value="z01011110011001111111111111111111111111111111111111111111111111111XX" enumerate="true"/>
+            </FP>
+          </OPERAND>
+        </OPERANDS>
+      </INST>
+
+    </INSTRUCTIONS>
+  </COVERAGE_MODEL_SINGLE>
+</FPGENFILE>
