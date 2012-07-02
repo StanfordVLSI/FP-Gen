@@ -2,7 +2,7 @@
 # one example is running this from command line
 # icc_shell -f multiplier_icc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1;" | tee -i multiplier_icc_optimized.log
 
-source -echo ../header.tcl
+source -echo -verbose $env{FPGEN}/header.tcl
 
 proc add_cells_to_rp_group {args} {
 
@@ -68,7 +68,7 @@ if {$target_delay==-1} {
   set target_delay max
 }
 
-if { [file exists ../../top.saif] } {
+if { [file exists ${DESIGN_HOME}/top.saif] } {
   saif_map -start
 }
 
@@ -360,10 +360,10 @@ if {$FixedHeightFloorPlan} {
   	-start_first_row
 }
 
-if { [file exists ../../top.saif] } {
+if { [file exists ${DESIGN_HOME}/top.saif] } {
   report_saif 
   report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
-  write_saif -output ../../icc_out.saif 
+  write_saif -output icc_out.saif 
 }
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];

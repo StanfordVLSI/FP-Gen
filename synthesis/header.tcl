@@ -2,6 +2,10 @@
 
 source $env(FPGEN)/synthesis/synSetup/synopsys_startup/libselector.tcl
 
+if {![info exists DESIGN_HOME]} {
+  set DESIGN_HOME "../.."
+}
+
 if {![info exists VT]} {
   set VT lvt
 }

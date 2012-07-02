@@ -2,21 +2,21 @@
 # one example is running this from command line
 # dc_shell-xg-t -f multiplier_dc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1; set VT hvt; set Voltage 0v8" | tee -i multiplier_dc_optimized.log
 
-source -echo -verbose ../header.tcl
+source -echo -verbose $env{FPGEN}/synthesis/header.tcl
 
 file mkdir reports
 
-if { [file exists ../../top.saif] } {
+if { [file exists ${DESIGN_HOME}/top.saif] } {
   saif_map -start
 }
 
-analyze -format sverilog [glob ../../*unq*.v]
+analyze -format sverilog [glob ${DESIGN_HOME}/*unq*.v]
 elaborate $DESIGN_NAME -architecture verilog -library DEFAULT
 link
 check_design
 
-if { [file exists ../../top.saif] } {
-  read_saif -auto_map_names -instance top/${TOP_NAME}/${DESIGN_INSTANCE} -input ../../top.saif -verbose
+if { [file exists ${DESIGN_HOME}/top.saif] } {
+  read_saif -auto_map_names -instance top/${TOP_NAME}/${DESIGN_INSTANCE} -input ${DESIGN_HOME}/top.saif -verbose
   report_saif 
 } else {
   set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
@@ -33,6 +33,7 @@ if { $PipelineDepth > 0 } {
 
   set CLK clk
   set RST reset
+  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
   
   ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
        
@@ -44,11 +45,24 @@ if { $PipelineDepth > 0 } {
     }
     set_max_delay [expr double($cycle_multiplier)*double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
     compile_ultra -no_autoungroup
+
+    if { $Architecture=="CMA" } {
+       current_design FarPathAdd_unq1
+       create_clock $CLK -period $CLK_PERIOD
+       compile_ultra -no_autoungroup -retime
+       optimize_registers -sync_transform decompose -print_critical_loop
+       current_design ClosePathSub_unq1
+       create_clock $CLK -period $CLK_PERIOD
+       compile_ultra -no_autoungroup -retime
+       optimize_registers -sync_transform decompose -print_critical_loop
+    }
+
+
     current_design ${DESIGN_NAME}
     #set_dont_touch [get_cells -hierarchical MUL0] true
   }  
 
-  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
+  
   create_clock $CLK -period $CLK_PERIOD
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
   #set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
@@ -99,7 +113,7 @@ write -format verilog -hierarchy -output $DESIGN_NAME.${VT}_${Voltage}.$target_d
 write -format ddc -hierarchy -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc
 write_sdc -nosplit $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
 
-if { [file exists ../../top.saif] } {
+if { [file exists ${DESIGN_HOME}/top.saif] } {
   report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
   write_saif -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.saif 
 }
