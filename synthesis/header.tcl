@@ -1,10 +1,6 @@
 
-if {[info exists ENABLE_90]} {
-  source $env(HOME)/synopsys_startup/scr_ST90/common_options.tcl
-  source $env(HOME)/synopsys_startup/scr_ST90/libsetup.tcl -continue_on_error
-} else {
-  source ../synSetup/synopsys_startup/libsetup.tcl -continue_on_error
-}
+
+source $env(FPGEN)/synthesis/synSetup/synopsys_startup/libselector.tcl
 
 if {![info exists VT]} {
   set VT lvt
