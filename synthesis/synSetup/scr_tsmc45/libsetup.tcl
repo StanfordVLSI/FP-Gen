@@ -115,5 +115,3 @@ if {[info exists holdfix]} {
 	eval $command
     }
 }
-
-source -v -echo $env(HOME)/synopsys_startup/scr_tsmc45/init_psynenv.tcl

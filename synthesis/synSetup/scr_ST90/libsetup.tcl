@@ -171,7 +171,3 @@ if {[info exists holdfix]} {
 	eval $command
     }
 }
-
-source -v -echo -continue_on_error $env(HOME)/synopsys_startup/scr_ST90/dont_use_list.tcl
-
-source -v -echo $env(HOME)/synopsys_startup/scr_ST90/init_psynenv.tcl
