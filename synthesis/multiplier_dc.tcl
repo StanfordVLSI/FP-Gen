@@ -2,7 +2,7 @@
 # one example is running this from command line
 # dc_shell-xg-t -f multiplier_dc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1; set VT hvt; set Voltage 0v8" | tee -i multiplier_dc_optimized.log
 
-source -echo -verbose $env{FPGEN}/synthesis/header.tcl
+source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 
 file mkdir reports
 
