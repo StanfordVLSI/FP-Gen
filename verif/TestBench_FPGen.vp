@@ -194,8 +194,8 @@ program automatic `mname` (
 	 if(wave_delay) 
 	   #(100*wave_delay);
 	 $display("%t:\tStarting signal and memory wave capture",$time);
-	 $vcdpluson(0,        top);
-         //         levels  instance
+	 $vcdpluson(   0  , `($self->get_top())->mname`);
+         //         levels, instance
       end
    end
    

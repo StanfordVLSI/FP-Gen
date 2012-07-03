@@ -6,17 +6,17 @@ source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 
 file mkdir reports
 
-if { [file exists ${DESIGN_HOME}/top.saif] } {
+if { [file exists ${RUNDIR}/${DESIGN_TARGET}.saif] } {
   saif_map -start
 }
 
-analyze -format sverilog [glob ${DESIGN_HOME}/*unq*.v]
-elaborate $DESIGN_NAME -architecture verilog -library DEFAULT
+analyze -format sverilog [glob ${RUNDIR}/genesis_synth/*.v]
+elaborate $DESIGN_TARGET -architecture verilog -library DEFAULT
 link
 check_design
 
-if { [file exists ${DESIGN_HOME}/top.saif] } {
-  read_saif -auto_map_names -instance top/${TOP_NAME}/${DESIGN_INSTANCE} -input ${DESIGN_HOME}/top.saif -verbose
+if { [file exists ${RUNDIR}/${DESIGN_TARGET}.saif] } {
+  read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input ${RUNDIR}/${DESIGN_TARGET}.saif -verbose
   report_saif 
 } else {
   set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
@@ -58,7 +58,7 @@ if { $PipelineDepth > 0 } {
     }
 
 
-    current_design ${DESIGN_NAME}
+    current_design ${DESIGN_TARGET}
     #set_dont_touch [get_cells -hierarchical MUL0] true
   }  
 
@@ -72,7 +72,7 @@ if { $PipelineDepth > 0 } {
    set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
    set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
   }
-  set_optimize_registers true -design ${DESIGN_NAME}
+  set_optimize_registers true -design ${DESIGN_TARGET}
   set COMPILE_COMMAND "compile_ultra -no_autoungroup"
 
   if { $Retiming } {
@@ -109,41 +109,41 @@ if { $PipelineDepth > 0 } {
   set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
 }
 
-write -format verilog -hierarchy -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.v
-write -format ddc -hierarchy -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc
-write_sdc -nosplit $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
+write -format verilog -hierarchy -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.v
+write -format ddc -hierarchy -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc
+write_sdc -nosplit $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.sdc
 
-if { [file exists ${DESIGN_HOME}/top.saif] } {
-  report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
-  write_saif -output $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.saif 
+if { [file exists ${RUNDIR}/${DESIGN_TARGET}.saif] } {
+  report_saif -hier > reports/${DESIGN_TARGET}.mapped.saif.rpt
+  write_saif -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.saif 
 }
 
-report_area  > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
+report_area  > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
 
-check_design > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.check_design.rpt
+check_design > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.check_design.rpt
 
-report_timing -loops > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.timing_loops.rpt
+report_timing -loops > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.timing_loops.rpt
 
-report_power -net > reports/${DESIGN_NAME}.${VT}_${Voltage}.$target_delay.mapped.activity_factor.rpt
+report_power -net > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.activity_factor.rpt
 
 
 remove_attribute [current_design] local_link_library
 
 set link_library [set ${VT}_0v8_target_libs]
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.timing.rpt
-report_timing -loops > reports/${DESIGN_NAME}.${VT}_0v8.$target_delay.mapped.timing_loops.rpt
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing.rpt
+report_timing -loops > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing_loops.rpt
 report_timing -loops
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.power.rpt
-report_qor > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.mapped.qor.rpt
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.power.rpt
+report_qor > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.qor.rpt
 
 set link_library [set ${VT}_0v9_target_libs]
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_0v9.$target_delay.mapped.timing.rpt
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.mapped.power.rpt
-report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.mapped.qor.rpt
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v9.$target_delay.mapped.timing.rpt
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.power.rpt
+report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.qor.rpt
 
 set link_library [set ${VT}_1v0_target_libs]
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${VT}_1v0.$target_delay.mapped.timing.rpt
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.mapped.power.rpt
-report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.power.rpt
+report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
 
 exit

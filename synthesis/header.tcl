@@ -94,9 +94,7 @@ foreach L $synthetic_library {
 
 
 if {![info exists DESIGN_TARGET]} {
-    exit ;
-} else {
-    set DESIGN_NAME ${DESIGN_TARGET}
+    exit 7;
 }
 
 # Suppressed Messages:

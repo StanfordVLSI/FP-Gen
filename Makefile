@@ -1,70 +1,34 @@
 ##############################################################################
 ################ Makefile Definitions
 ################################################################################
+
+
+########### Generic Env Defs ############
+#########################################
+# Product is 
+# - FPGen which is an FP multiply Accumulator (default)
+# - FPMult which is an FP multiplier only
+PRODUCT := FPGen
+
 # This little trick finds where the makefile exists
-# DESIGN_HOME := $(dir $(lastword $(MAKEFILE_LIST)))
-DESIGN_HOME := $(dir $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST)))
-$(warning WARNING: FPGEN home set to $(DESIGN_HOME)) 
+DESIGN_HOME := $(realpath $(dir $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST))))
+$(warning FPGEN home set to $(DESIGN_HOME))
+
+# RUNDIR is where we are actually running
+RUNDIR := $(realpath ./)
+$(warning Work started at $(RUNDIR)) 
 
 # this line enables a local Makefile to override values of the main makefile
 -include Makefile.local
 
-########### Generic Env Defs ############
-#########################################
-ifndef SIM_ENGINE
-SIM_ENGINE := synopsys
-  $(warning WARNING: SIM_ENGINE not specified. Using default SIM_ENGINE=synopsys) 
-  $(warning WARNING: Rerun with SIM_ENGINE=synopsys or SIM_ENGINE=mentor)
-# ifndef SYNOPSYS
-#  $(error ERROR: Path to SYNOPSYS not set)
-# endif
-endif
-
 
 ############# For Genesis2 ##############
 #########################################
-# tile is the top of the pre-processed hierarchy
+GENESIS_TOP = top_$(PRODUCT)
+GENESIS_SYNTH_TOP_PATH = $(GENESIS_TOP).$(PRODUCT)
 
-SYN_CLK_PERIOD ?= 1.5
-
-DESIGN_PARAM_STRING = 
-
-ifdef DESIGN_NAME
-  DESIGN_PARAM_STRING = top.DESIGN_NAME=$(DESIGN_NAME)
-  DESIGN_TITLE = DESIGN_NAME
-else 
-  DESIGN_TITLE = unknown_design
-  $(warning WARNING: DESIGN_NAME is unkown_design.  Cannot be resolved without running Genesis... Will be unkown in logs and status )
-  $(warning WARNING: DESIGN_NAME is unkown_design.  Cannot be resolved without running Genesis... Will be unkown in logs and status )
-  $(warning WARNING: DESIGN_NAME is unkown_design.  Cannot be resolved without running Genesis... Please.... HELP... )
-endif
-
-TOP_NAME ?= top
-TOP_MODULE ?= $(TOP_NAME)
-ROLLUP_TARGET ?= $(DESIGN_TITLE)_Rollup.target
-
-VERIF_PARAM ?= $(TOP_NAME).VERIF_MODE
-SYNTH_PARAM ?= $(TOP_NAME).SYNTH_MODE
-SAIF_PARAM  ?= $(TOP_NAME).SAIF_MODE
-
-VERIF_PARAM_STRING := $(TOP_NAME).VERIF_MODE=ON  $(TOP_NAME).SYNTH_MODE=OFF $(TOP_NAME).SAIF_MODE=OFF
-SYNTH_PARAM_STRING := $(TOP_NAME).VERIF_MODE=OFF $(TOP_NAME).SYNTH_MODE=ON  $(TOP_NAME).SAIF_MODE=ON
-
-ifdef PARAM_STRING
-SET_GEN_PARAM_STRING = -parameter $(PARAM_STRING) $(DESIGN_PARAM_STRING)
-else
-  ifdef DESIGN_NAME
-    SET_GEN_PARAM_STRING = -parameter $(DESIGN_PARAM_STRING) 
-  else
-    SET_GEN_PARAM_STRING = 
-  endif  
-endif
-
-SET_SYNTH_PARAM_STRING = -parameter $(SYNTH_PARAM_STRING) $(PARAM_STRING) $(DESIGN_PARAM_STRING)
-SET_VERIF_PARAM_STRING = -parameter $(VERIF_PARAM_STRING) $(PARAM_STRING) $(DESIGN_PARAM_STRING)
 
 # list src folders and include folders
-
 GENESIS_SRC := 	-srcpath ./			\
 		-srcpath $(DESIGN_HOME)/rtl	\
 		-srcpath $(DESIGN_HOME)/verif			
@@ -79,6 +43,8 @@ vpath 	%.svp  $(GENESIS_SRC)
 vpath 	%.vph $(GENESIS_INC)
 vpath 	%.svph $(GENESIS_INC)
 
+
+# Now list all inputs to genesis: 
 GENESIS_PRIMITIVES :=	
 
 GENESIS_ENV :=		$(wildcard $(DESIGN_HOME)/verif/*.vp) $(wildcard $(DESIGN_HOME)/verif/*.svp)
@@ -89,28 +55,25 @@ GENESIS_DESIGN := 	$(notdir $(GENESIS_DESIGN))
 
 GENESIS_INPUTS :=	$(GENESIS_PRIMITIVES) $(GENESIS_ENV) $(GENESIS_DESIGN) 
 
-
 # debug level
 GENESIS_DBG_LEVEL := 0
 
 # List of generated verilog files
 GENESIS_VLOG_LIST := genesis_vlog.vf
+GENESIS_SYNTH_LIST := $(GENESIS_VLOG_LIST:%.vf=%.synth.vf)
 
-# Input xml program
-ifndef GENESIS_CFG_XML
-  GENESIS_CFG_XML := 	$(DESIGN_HOME)/empty.xml
-  $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
-else
-  $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
-endif
+# Input xml/cfg files, input parameters
+GENESIS_CFG_XML	:=
+GENESIS_CFG_SCRIPT	:=
+GENESIS_PARAMS	:=
 
-# xml hierarchy file
+# output xml hierarchy file
 ifndef GENESIS_HIERARCHY
-GENESIS_HIERARCHY := $(DESIGN_TITLE).xml
+GENESIS_HIERARCHY := $(PRODUCT).xml
 else
   $(warning WARNING: GENESIS_HIERARCHY set to $(GENESIS_HIERARCHY))
 endif
-GENESIS_TMP_HIERARCHY := $(DESIGN_TITLE)_target.xml
+
 # For more Genesis parsing options, type 'Genesis2.pl -help'
 #        [-parse]                    ---   should we parse input file to generate perl modules?
 #        [-sources|srcpath dir]      ---   Where to find source files
@@ -120,7 +83,7 @@ GENESIS_TMP_HIERARCHY := $(DESIGN_TITLE)_target.xml
 #                                    ---   (such as "for" or "while")
 #                                    ---   may not work properly.
 #        [-perl_modules modulename]  ---   Additional perl modules to load
-GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC)			
+GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC) -input $(GENESIS_INPUTS) 		
 
 # For more Genesis parsing options, type 'Genesis2.pl -help'
 #        [-generate]                 ---   should we generate a verilog hierarchy?
@@ -129,27 +92,32 @@ GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC)
 #        [-product filename]         ---   Should Genesis2 generate a product file list? (list of output files)
 #        [-hierarchy filename]       ---   Should Genesis2 generate a hierarchy representation tree?
 #        [-xml filename]             ---   Input XML representation of definitions
-GENESIS_GEN_FLAGS :=	-gen -top $(TOP_MODULE)					\
+#        [-cfg filename]                 # Config file to specify parameter values as a Perl script (overrides xml definitions)
+#	 [-parameter path.to.prm1=value1 path.to.another.prm2=value2] --- List of parameter override definitions
+#					  				  from command line (overrides xml and cfg definitions)
+GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
+			-synthtop $(GENESIS_SYNTH_TOP_PATH)			\
 			-depend depend.list					\
 			-product $(GENESIS_VLOG_LIST)				\
-			-hierarchy $(GENESIS_HIERARCHY)                		\
-			-xml $(GENESIS_CFG_XML)
-GENESIS_GEN_FLAGS2 :=	-gen -top $(TOP_MODULE)					\
-			-depend depend.list					\
-			-product $(GENESIS_VLOG_LIST)				\
-			-hierarchy $(GENESIS_HIERARCHY)                		\
-			-xml small_$(GENESIS_TMP_HIERARCHY)
+			-hierarchy $(GENESIS_HIERARCHY)
+
+ifneq ($(strip $(GENESIS_CFG_XML)),)
+  GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -xml $(GENESIS_CFG_XML)
+  $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
+endif
+ifneq ($(strip $(GENESIS_CFG_SCRIPT)),)
+  GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -cfg $(GENESIS_CFG_SCRIPT)
+  $(warning WARNING: GENESIS_CFG_SCRIPT set to $(GENESIS_CFG_SCRIPT))
+endif
+ifneq ($(strip $(GENESIS_PARAMS)),)
+  GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -parameter $(GENESIS_PARAMS)
+  $(warning WARNING: GENESIS_PARAMS set to $(GENESIS_PARAMS))
+endif
 
 
-
-############### For Verilog ################
-############################################
-
-##### FLAGS FOR SYNOPSYS COMPILATION ####
-ifeq ($(SIM_ENGINE), synopsys) 
-COMPILER := vcs
-
-EXECUTABLE := ./simv
+##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
+##############################################
+SIM_TOP = top_$(PRODUCT)
 
 VERILOG_ENV :=		 
 
@@ -175,9 +143,6 @@ VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
 # "+noportcoerce" compile-time option to shut off the port coercion for the entire design
 # "-top topModuleName" specifies the top module
 # "-f verilogFiles.list" specifies a file that contains list of verilog files to compile
-
-
-
 VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				+cli 						\
 				+lint=PCWM					\
@@ -189,7 +154,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-timescale=1ps/1ps				\
 				+noportcoerce         				\
 				-ld $(VCS_CC) -debug_pp				\
-				-top $(TOP_MODULE)				\
+				-top $(SIM_TOP)				\
 				-f $(GENESIS_VLOG_LIST) 			\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
 
@@ -197,250 +162,271 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 # "+vpdports" Record information about ports (signal/in/out)
 # "+vpdfileswitchsize+1000" limits the wave file to 1G (then switch to next file)
 VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
-				-l $(EXECUTABLE).log					\
+				-l simv.log					\
 				+vpdbufsize+100					\
 				+vpdfileswitchsize+100                          \
                                 +clk_period=$(SYN_CLK_PERIOD)
-
-endif 
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
 
-##### FLAGS FOR MENTOR COMPILATION ####
-ifeq ($(SIM_ENGINE), mentor) 
-COMPILER := vlog
-
-EXECUTABLE := vsim
-
-VERILOG_ENV :=		 
-
-VERILOG_DESIGN :=	
-
-VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
-
-VERILOG_LIBS := 	
-
-# "-source" Displays the associated line of source code before each error 
-#	message that is generated during compilation.
-# "-sv" Enables SystemVerilog features and keywords.
-# "-f fileName" Specifies a file with more command line arguments.
-VERILOG_COMPILE_FLAGS := 	-source -sv					\
-				-f $(GENESIS_VLOG_LIST) 			\
-				$(VERILOG_FILES) $(VERILOG_LIBS)
-
-# "-c" Specifies that the simulator is to be run in command-line mode.
-# "-capacity" Enables the fine-grain analysis display of memory capacity
-VERILOG_SIMULATION_FLAGS := 	-c						\
-				$(TOP_MODULE)					\
-				-capacity					\
-				-do "run -all; quit"  
-
-endif 
-##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
 
-##### FLAGS FOR IBM's FPGEN
+##### FLAGS FOR IBM's FPGEN #####
+#################################
+IBM_FPGEN_SEED := 12345
+IBM_FPGEN_CLUSTER_SIZE := 100
+IBM_FPGEN_CLUSTER_INDEX := 0
+IBM_FPGEN_TYPE := fmadd
+IBM_SRC_DIR := $(DESIGN_HOME)/IBM-TestVectors
+IBM_TRGT_DIR := IBM-GenVectors
+IBM_COVERAGE_MODEL := ch-5-1-2-3-All-Exponents.fpdef
+IBM_FPDEF_FILE := $(IBM_SRC_DIR)/GenericTP/$(IBM_COVERAGE_MODEL)
+IBM_FPRES_FILE := $(IBM_COVERAGE_MODEL)_$(IBM_FPGEN_CLUSTER_SIZE)_$(IBM_FPGEN_CLUSTER_INDEX).fpres
+IBM_FPLOG_FILE := $(IBM_COVERAGE_MODEL)_$(IBM_FPGEN_CLUSTER_SIZE)_$(IBM_FPGEN_CLUSTER_INDEX).fplog
+IBM_TESTVEC_FILE := $(IBM_COVERAGE_MODEL)_$(IBM_FPGEN_CLUSTER_SIZE)_$(IBM_FPGEN_CLUSTER_INDEX).fpvec
+IBM_FPGEN_FLAGS := 	-o $(IBM_TRGT_DIR)		\
+		-r $(IBM_FPRES_FILE)			\
+		-l $(IBM_FPLOG_FILE)			\
+		-S $(IBM_FPGEN_SEED)			\
+		-C $(IBM_FPGEN_CLUSTER_SIZE)		\
+		-i $(IBM_FPGEN_CLUSTER_INDEX)		\
+		-M $(IBM_FPGEN_TYPE)
+######## END OF FLAGS FOR IBM's FPGEN #####
 
-FPGEN_SEED := 12345
-FPGEN_CLUSTER_SIZE := 100
-FPGEN_CLUSTER_INDEX := 0
-FPGEN_TYPE := fmadd
-COVERAGE_MODEL := ch-5-1-2-3-All-Exponents.fpdef
-FPDEF_FILE := $(DESIGN_HOME)/testVectors/GenericTP/$(COVERAGE_MODEL)
-FPRES_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpres
-FPLOG_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fplog
-TESTVEC_FILE := $(COVERAGE_MODEL)_$(FPGEN_CLUSTER_SIZE)_$(FPGEN_CLUSTER_INDEX).fpvec
-FPGEN_FLAGS := 	-o testVectors		\
-		-r $(FPRES_FILE)	\
-		-l $(FPLOG_FILE)	\
-		-S $(FPGEN_SEED)	\
-		-C $(FPGEN_CLUSTER_SIZE)	\
-		-i $(FPGEN_CLUSTER_INDEX)	\
-		-M $(FPGEN_TYPE)
-########
+
+
+##### FLAGS FOR SYNOPSYS DC-SHELL #####
+#######################################
+SAIF_FILE 	= $(PRODUCT).saif
+VT 		?= svt
+VOLTAGE 	?= 1v0
+IO2CORE 	?= 30
+SYN_CLK_PERIOD ?= 1.5
+TARGET_DELAY 	?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
+SMART_RETIMING 	?= 0
+CLK_GATING 	?= 1
+
+
+
+DESIGN_TARGET	= $(PRODUCT)
+SYNTH_DIR_NAME 	= syn_$(VT)_$(VOLTAGE)_$(TARGET_DELAY)
+ifdef appendix
+  SYNTH_DIR_NAME 	= $(SYNTH_DIR_NAME)_$(appendix)
+endif
+SYNTH_HOME	= $(DESIGN_HOME)/synthesis
+SYNTH_RUNDIR 	= $(RUNDIR)/synthesis/$(SYNTH_DIR_NAME)
+SYNTH_LOGS	= $(SYNTH_RUNDIR)/log
+DC_LOG 		= $(SYNTH_LOGS)/dc.log
+
+SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
+			set RUNDIR $(RUNDIR); 			\
+			set DESIGN_TARGET $(DESIGN_TARGET); 	\
+			set VT  $(VT); 				\
+			set Voltage $(VOLTAGE); 		\
+			set target_delay $(TARGET_DELAY); 	\
+			set io2core $(IO2CORE);  		\
+			set SmartRetiming $(SMART_RETIMING);  	\
+			set EnableClockGating $(CLK_GATING);
+DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
+
+## Additional Flags for ICC
+ICC_LOG 		:= $(SYNTH_LOGS)/icc.log
+ICC_OPT_LOG 		:= $(SYNTH_LOGS)/icc_opt.log
+
+ICC_COMMAND_STRING = "$(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
+ICC_OPT_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; $(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
+
+######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
+
 
 ################################################################################
 ################ Makefile Rules
 ################################################################################
 #default rule: 
-all: $(EXECUTABLE)
+all: run
 
+
+###### Genesis2 rules: ######
+#############################
 # phony rules for verilog generation process
-.PHONY: gen gen2 genesis_clean
-gen: $(GENESIS_VLOG_LIST)
+.PHONY: gen genesis_clean
+gen: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST)
 
-# Genesis2 rules:
-#####################
 # This is the rule to activate Genesis2 generator to generate verilog 
 # files (_unqN.v) from the genesis (.vp) program.
-# Use "make GEN=<genesis2_gen_flags>" to add elaboration time flags
-$(GENESIS_VLOG_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
+# Use "make gen GEN=<genesis2_gen_flags>" to add elaboration time flags
+$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_GEN_PARAM_STRING)
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -debug $(GENESIS_DBG_LEVEL)
 
 genesis_clean:
 	@echo ""
 	@echo Cleanning previous runs of Genesis
 	@echo ===================================
-	if test -f "genesis_clean.cmd"; then 	\
+	@if test -f "genesis_clean.cmd"; then 	\
 		tcsh genesis_clean.cmd;	\
 	fi
-	\rm -rf $(GENESIS_VLOG_LIST)
+	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST)
+###### END OF Genesis2 Rules #######
 
-gen_verif: genesis_clean  
-	@echo ""
-	@echo Elaborting for Synthesis Run
-	@echo ====================================================
-	rm -f *.v
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_VERIF_PARAM_STRING)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
-
-gen_syn: genesis_clean  
-	@echo ""
-	@echo Elaborting for Synthesis Run
-	@echo ====================================================
-	rm -f *.v
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -input $(GENESIS_INPUTS) -debug $(GENESIS_DBG_LEVEL) $(SET_SYNTH_PARAM_STRING)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 design_map: $(GENESIS_VLOG_LIST)
 	locDesignMap.pl TCL=/dev/null INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/nulll
 
-# VCS rules:
+
+# VCS compile rules:
 #####################
 # compile rules:
 # use "make COMP=+define+<compile_time_flag[=value]>" to add compile time flags
 .PHONY: comp
-comp: $(EXECUTABLE)
+comp: simv
 
-$(EXECUTABLE):	$(VERILOG_FILES) $(GENESIS_VLOG_LIST) 
+simv:	$(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	@(if [ "$(SIM_ENGINE)" = "mentor" ]; then 	\
-	    vlib work;					\
-	  fi )
-	$(COMPILER)  $(VERILOG_COMPILE_FLAGS) $(COMP) 2>&1 | tee comp_bb.log 
+	vcs  $(VERILOG_COMPILE_FLAGS) $(COMP) 2>&1 | tee comp_bb.log 
+
 
 # IBM's fpgen rules:
 #####################
-# use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
-.PHONY: fpgen
+.PHONY: ibm_fpgen
 
-fpgen: testVectors/$(FPRES_FILE)
+ibm_fpgen: $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 
-testVectors/$(FPRES_FILE):$(FPDEF_FILE)
+$(IBM_TRGT_DIR)/$(IBM_FPRES_FILE):$(IBM_FPDEF_FILE)
 	@echo ""
-	@echo Now Running IBM\'s fpgen tool, generating $(FPRES_FILE)
-	@echo ==================================================
-	if test ! -d "testVectors"; then 	\
-		mkdir testVectors;	\
+	@echo Now Running IBM\'s fpgen tool, generating $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
+	@echo =======================================================================
+	if test ! -d "$(IBM_TRGT_DIR)"; then 	\
+		mkdir $(IBM_TRGT_DIR);		\
 	fi
-	fpgen $(FPDEF_FILE) $(FPGEN_FLAGS)
+	fpgen $(IBM_FPDEF_FILE) $(IBM_FPGEN_FLAGS)
 
 
-testVectors/$(TESTVEC_FILE): testVectors/$(FPRES_FILE)
+$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE): $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 	@echo ""
-	@echo Now Converting testVectors/$(FPRES_FILE)
-	@echo ==================================================
-	$(DESIGN_HOME)/scripts/converter.pl testVectors/$(FPRES_FILE)
+	@echo Now Converting $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
+	@echo =======================================================================
+	$(DESIGN_HOME)/scripts/converter.pl $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 
 
 
 # Simulation rules:
 #####################
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
-.PHONY: run run_wave run_ibm
-run_wave: $(EXECUTABLE)
+.PHONY: run run_ibm
+run: simv
 	@echo ""
-	@echo Now Running $(EXECUTABLE) with wave
+	@echo Now Running simv
 	@echo ==================================================
-	$(EXECUTABLE) +wave $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log 
+	./simv $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
 
-run: $(EXECUTABLE)
-	@echo ""
-	@echo Now Running $(EXECUTABLE)
-	@echo CLK $(SYN_CLK_PERIOD)
+run_ibm: simv $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
+	@echo ""Architecture
+	@echo Now Running simv using IBM\'s fpgen generated vectors
 	@echo ==================================================
-	$(EXECUTABLE) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
+	./simv $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) 2>&1 | tee run_bb.log
 
-run_ibm: $(EXECUTABLE) testVectors/$(TESTVEC_FILE)
-	@echo ""
-	@echo Now Running $(EXECUTABLE) using IBM\'s fpgen generated vectors
-	@echo ==================================================
-	$(EXECUTABLE)  $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=testVectors/$(TESTVEC_FILE) 2>&1 | tee run_bb.log
-
-
-########## For Design Compiler #############
-############################################
 
 # DC & ICC Run rules:
 ############################
-.PHONY: run_synthesis run_dc
+$(SAIF_FILE): simv
+	@echo ""
+	@echo Now Running simv for SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	@echo "FIXME: For now just making stuff up ;-)"
+	touch FIXME.$(SAIF_FILE)
 
-VT ?= svt
-Voltage ?= 1v0
-io2core ?= 30
-target_delay ?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
-SmartRetiming ?= 0
-EnableClockGating ?= 1
-PREFIX ?= syn
-RUN_NAME := $(PREFIX)_$(VT)_$(Voltage)_$(target_delay)
+# Design Compiler rules:
+.PHONY: force_dc run_dc dc_clean
 
-ifdef appendix
-  RUN_NAME := $(RUN_NAME)_$(appendix)
-endif
+force_dc: dc_clean run_dc
+run_dc: $(DC_LOG)
+$(DC_LOG): $(SAIF_FILE) $(GENESIS_SYNTH_LIST)
+	@echo ""
+	@echo Now Running DC SHELL: Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	(cd $(SYNTH_RUNDIR); 			\
+	dc_shell-xg-t -64bit -x $(DC_COMMAND_STRING) 2>&1 | tee -i $(DC_LOG)	\
+	)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
-run_synthesis: gen_syn synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
-run_dc: synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log
-run_icc: synthesis/$(RUN_NAME)/log/icc_$(RUN_NAME).log
-run_icc_opt: synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log
+dc_clean:
+	@echo ""
+	@echo Removing previous DC run log
+	@echo =============================================
+	\rm -f $(DC_LOG)
 
-RUN_SYNTHESIS_FLAGS:= \
-                      RUN_NAME=$(RUN_NAME) \
-                      VT=$(VT) \
-                      Voltage=$(Voltage) \
-                      target_delay=$(target_delay) \
-                      io2core=$(io2core) \
-                      SmartRetiming=$(SmartRetiming) \
-                      EnableClockGating=$(EnableClockGating)
+# IC Compiler rules:
+.PHONY: force_icc run_icc icc_clean
+.PHONY: force_icc_opt run_icc_opt icc_opt_clean
 
-#run_dc
-synthesis/$(RUN_NAME)/log/dc_$(RUN_NAME).log: $(EXECUTABLE)
-	mkdir -p log
-	make -C synthesis -f Makefile dc $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log 
+force_icc: icc_clean run_icc
+run_icc: $(ICC_LOG)
+force_icc_opt: icc_opt_clean run_icc_opt
+run_icc_opt: $(ICC_OPT_LOG)
 
-#run_synthesis
-synthesis/$(RUN_NAME)/log/icc_optimized_$(RUN_NAME).log: $(EXECUTABLE)
-	mkdir -p log
-	make -C synthesis -f Makefile icc_optimized $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log
+$(ICC_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST)
+	@echo ""
+	@echo Now Running IC Compiler: Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	(cd $(SYNTH_RUNDIR); 			\
+	icc_shell -64bit -x $(ICC_COMMAND_STRING) 2>&1 | tee -i $(ICC_LOG)	\
+	)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_LOG)
 
-synthesis/$(RUN_NAME)/log/icc_$(RUN_NAME).log: $(EXECUTABLE)
-	mkdir -p log
-	make -C synthesis -f Makefile icc $(RUN_SYNTHESIS_FLAGS)  2>&1 | tee syn_bb.log
+icc_clean:
+	@echo ""
+	@echo Removing previous ICC run log
+	@echo =============================================
+	\rm -f $(ICC_LOG)
 
-clean_synthesis:
-	rm -rf synthesis/svt_*v*_*.*
-	rm -rf synthesis/lvt_*v*_*.*
-	rm -rf synthesis/hvt_*v*_*.*
-	rm -f syn_bb.log
-	make -C synthesis -f Makefile clean $(RUN_SYNTHESIS_FLAGS)
+$(ICC_OPT_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST)
+	@echo ""
+	@echo Now Running IC Compiler (OPT): Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	(cd $(SYNTH_RUNDIR); 			\
+	icc_shell -64bit -x $(ICC_OPT_COMMAND_STRING) 2>&1 | tee -i $(ICC_LOG)	\
+	)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_LOG)
+
+icc_opt_clean:
+	@echo ""
+	@echo Removing previous ICC run log
+	@echo =============================================
+	\rm -f $(ICC_OPT_LOG)
+
+# One more rule to clean all synthesis/pnr related stuff
+.PHONY: synthesis_clean
+synthesis_clean:
+	\rm -rf $(SYNTH_RUNDIR)
 
 #Rollup Rules:
 ##############################
+ROLLUP_TARGET ?= $(DESIGN_TITLE)_Rollup.target
 
 .PHONY: rollup1  rollup2 rollup3 report_results
 rollup1: 
 	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
-                                   VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+                                   VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
 rollup2: 
 	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
-                                   VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+                                   VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
 rollup3: 
 	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
-                                   VT=$(VT) Voltage=$(Voltage) target_delay=$(target_delay) io2core=$(io2core)
+                                   VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
 report_results:
 	cd synthesis ; perl report_results.pl ;
 
@@ -458,11 +444,11 @@ eval4: gen comp run gen_syn run_dc
 # Cleanup rules:
 #####################
 .PHONY: clean cleanall 
-clean: genesis_clean
+clean: genesis_clean synthesis_clean
 	@echo ""
 	@echo Cleanning old files, objects, logs and garbage
 	@echo ==================================================
-	\rm -rf $(EXECUTABLE) 
+	\rm -rf simv simv.*
 	\rm -f *.tcl
 	\rm -f *.info
 	\rm -rf csrc
@@ -478,19 +464,11 @@ clean: genesis_clean
 	\rm -rf top.v
 	\rm -rf top_*.v
 	\rm -f graph_*.m
-	cd testVectors;rm -f *.fplog *.fpres *.fpvec *.log
-ifdef SIM_ENGINE
-	\rm -rf $(EXECUTABLE).*
-endif
-ifeq ($(SIM_ENGINE), mentor) 
-	\rm -rf work
-	\rm -rf transcript
-endif
+	\rm -rf $(IBM_TRGT_DIR)
+	\rm -f $(SAIF_FILE)
 
-cleanall: clean clean_synthesis
+cleanall: clean 
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
-	\rm -f *.v
-	\rm -f *.pm
-	\rm -f $(GENESIS_VLOG_LIST)
-	\rm -fr verif_work/
+	\rm -rf genesis*
+	\rm -rf synthesis*

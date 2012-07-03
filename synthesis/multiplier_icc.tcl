@@ -6,7 +6,7 @@ source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 
 proc add_cells_to_rp_group {args} {
 
-  global DESIGN_NAME;
+  global DESIGN_TARGET;
   set row 0;
   set column 0;
   set height 1;
@@ -24,14 +24,14 @@ proc add_cells_to_rp_group {args} {
 
   if {$cells_count>1} {
     create_rp_group $cells_name -columns [expr $cells_count/$height + ($cells_count%$height?1:0)] -rows $height;
-    add_to_rp_group $rp_groups -hierarchy ${DESIGN_NAME}::${cells_name} -column $column -row $row;
+    add_to_rp_group $rp_groups -hierarchy ${DESIGN_TARGET}::${cells_name} -column $column -row $row;
   }
 
   set cell_idx 0;
   foreach_in_collection cell $cells {
     set cell_name [get_object_name $cell];
     if {$cells_count>1} {
-      add_to_rp_group ${DESIGN_NAME}::$cells_name -leaf $cell_name \
+      add_to_rp_group ${DESIGN_TARGET}::$cells_name -leaf $cell_name \
                       -column [expr $cell_idx/$height] -row [expr $cell_idx%$height];
     } else {
       add_to_rp_group $rp_groups -leaf $cell_name -column $column -row $row;
@@ -41,7 +41,7 @@ proc add_cells_to_rp_group {args} {
 
   if {$space_width>0} {
     if {$cells_count>1} {
-      add_to_rp_group ${DESIGN_NAME}::$cells_name -keepout SPACE -type space -width $space_width -height 1 \
+      add_to_rp_group ${DESIGN_TARGET}::$cells_name -keepout SPACE -type space -width $space_width -height 1 \
                     -column [expr ($cells_count-1)/$height] -row [expr ($cells_count-1) % $height];
     } else {
       add_to_rp_group $rp_groups -keepout SPACE_${row}_${column} -type space -width $space_width -height 1 -column $column -row $row;
@@ -73,9 +73,9 @@ if { [file exists ${DESIGN_HOME}/top.saif] } {
 }
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
-  set MW_DESIGN_LIBRARY ${DESIGN_NAME}_${VT}_${target_delay}_optimized_LIB
+  set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_optimized_LIB
 } else {
-  set MW_DESIGN_LIBRARY ${DESIGN_NAME}_${VT}_${target_delay}_LIB
+  set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_LIB
 }
 
 if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
@@ -88,13 +88,13 @@ if { ![file exists $MW_DESIGN_LIBRARY/lib] } {
 
 
 open_mw_lib $MW_DESIGN_LIBRARY
-#import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.v -format verilog -top $DESIGN_NAME -cel $DESIGN_NAME
-#read_sdc $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.sdc
-import_designs $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.ddc -format ddc -top $DESIGN_NAME -cel $DESIGN_NAME
+#import_designs $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.v -format verilog -top $DESIGN_TARGET -cel $DESIGN_TARGET
+#read_sdc $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.sdc
+import_designs $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc -format ddc -top $DESIGN_TARGET -cel $DESIGN_TARGET
 
-set ICC_SAIF_FILE $DESIGN_NAME.${VT}_${Voltage}.$target_delay.mapped.saif
+set ICC_SAIF_FILE $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.saif
 if { [file exists $ICC_SAIF_FILE] } {
-  read_saif -input $ICC_SAIF_FILE -instance_name $DESIGN_NAME
+  read_saif -input $ICC_SAIF_FILE -instance_name $DESIGN_TARGET
 } else {
   set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
   set_switching_activity -toggle_rate 0.5 -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
@@ -242,7 +242,7 @@ if { $USE_3_2_FLOORPLAN } {
 }
 
 
-set fp [open reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.floorplanning.rpt w];
+set fp [open reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.floorplanning.rpt w];
 
 foreach {column width} [array get column_odd_width] {
    puts $fp "Odd_Width[$column] = $width";
@@ -281,7 +281,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set port_size [sizeof_collection $b_ports];
 
 
-  if { [ string equal $DESIGN_NAME "FP_Gen_unq1" ] } {
+  if { [ string equal $DESIGN_TARGET "FP_Gen_unq1" ] } {
 
     set c_ports [get_ports {c[*]}] 
     foreach_in_collection c_port $c_ports {
@@ -325,7 +325,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 
 if { [info exists ENABLE_MANUAL_PLACEMENT] } {
-   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_NAME "FP_Gen_unq1" ]]; 
+   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_TARGET "FP_Gen_unq1" ]]; 
 } else {
    set FixedHeightFloorPlan 0; 
 }
@@ -362,7 +362,7 @@ if {$FixedHeightFloorPlan} {
 
 if { [file exists ${DESIGN_HOME}/top.saif] } {
   report_saif 
-  report_saif -hier > reports/${DESIGN_NAME}.mapped.saif.rpt
+  report_saif -hier > reports/${DESIGN_TARGET}.mapped.saif.rpt
   write_saif -output icc_out.saif 
 }
 
@@ -407,13 +407,13 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
         for {set boothEnc_index 0} { $boothEnc_index < $booth_encoder_count } {incr boothEnc_index} {
           set boothSel_child_cells [get_cells "${BoothPath}/BoothEnc_u${boothEnc_index}/Booth_sel_${boothSel_index}/*"];
           add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} \
-                    ${DESIGN_NAME}::rp_tree -column $boothEnc_index -row $current_rp_column -height $boothSel_aspect_ratio;
+                    ${DESIGN_TARGET}::rp_tree -column $boothEnc_index -row $current_rp_column -height $boothSel_aspect_ratio;
         }
       } else {
 
         for {set row_index 0} { $row_index < $max_row } {incr row_index} {
           set CSA_child_cells [get_cells "${TreePath}/column_*/csa*_${row_index}_${column_index}/*"];
-          add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_NAME}::rp_tree \
+          add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_TARGET}::rp_tree \
                     -column $row_index -row $current_rp_column;
         }
         set booth_column_index [expr $column_index -$min_compressed_column];
@@ -422,7 +422,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
           for {set row_index 0} { $row_index < $booth_encoder_count } {incr row_index} {
             set booth_column_index_plus [expr $booth_column_index + 1];
             set booth_cell [get_cells "${BoothPath}/BoothEnc_u${row_index}/cell_${booth_column_index}/* Booth/BoothEnc_u${row_index}/cell_${booth_column_index_plus}/*"];
-            add_cells_to_rp_group $booth_cell rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
+            add_cells_to_rp_group $booth_cell rp_booth_${row_index}_${booth_column_index} ${DESIGN_TARGET}::rp_tree \
                     -column $row_index -row $current_rp_column;
           }
 
@@ -454,7 +454,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
       set boothSel_child_cells [get_cells "${boothSel_name}/*"];
 
-      add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} ${DESIGN_NAME}::rp_tree \
+      add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} ${DESIGN_TARGET}::rp_tree \
                     -column [expr int(floor(1.5*$boothEnc_index))] -row $boothSel_column -height $boothSel_aspect_ratio;
     }
 
@@ -479,14 +479,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       # Second: CSA cells
 
       set CSA_child_cells [get_cells "${CSA_name}/*"];
-      add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_NAME}::rp_tree \
+      add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_TARGET}::rp_tree \
                     -column [expr int(floor(1.5*$row_index))+1-$is_odd_row] -row $column_position;
 
       set in_space [expr  ($row_index%4==0 || $row_index%4==1)? \
                     int(floor( 4 * ( 1.3 * $max_column_width - ($is_odd_row ? $column_odd_width($compressed_CSA_column) : $column_even_width($compressed_CSA_column) )) / ( $placement_site_width * $row_count) ))  \
                     : 0 ];
       if {$in_space>0} {
-        add_to_rp_group ${DESIGN_NAME}::rp_tree -keepout SPACE_${row_index}_${column_index} -type space -width $in_space -height 1 \
+        add_to_rp_group ${DESIGN_TARGET}::rp_tree -keepout SPACE_${row_index}_${column_index} -type space -width $in_space -height 1 \
                     -column [expr int(floor(1.5*$row_index))+2-$is_odd_row] -row $column_position;
       }
     }
@@ -500,7 +500,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       set column_position [expr $column_index + $column_offset($column_index)];
 
       set booth_child_cells [get_cells "${booth_cell_name}/*"];
-      add_cells_to_rp_group $booth_child_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_NAME}::rp_tree \
+      add_cells_to_rp_group $booth_child_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_TARGET}::rp_tree \
                     -column [expr int(floor(1.5*$row_index))-$is_odd_row] -row $column_position;
     }
 
@@ -509,23 +509,23 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 #ADDER PLACEMENT SCRIPTS HERE:
 #if {[file exists ../place_SklanskyAdderTree_H.tcl]} {
 #  source -echo ../place_SklanskyAdderTree_H.tcl
-#  check_rp_groups -verbose ${DESIGN_NAME}::SklanskyAdderTree_H
+#  check_rp_groups -verbose ${DESIGN_TARGET}::SklanskyAdderTree_H
 #}
 
 #if {[file exists ../place_SklanskyAdderTree_K.tcl]} {
 #  source -echo ../place_SklanskyAdderTree_K.tcl
-#  check_rp_groups -verbose ${DESIGN_NAME}::SklanskyAdderTree_K
+#  check_rp_groups -verbose ${DESIGN_TARGET}::SklanskyAdderTree_K
 #}
 
-  #if {[file exists ../../place_PartialProductSum.tcl] && $DESIGN_NAME!="MultiplierP_unq1"} {
+  #if {[file exists ../../place_PartialProductSum.tcl] && $DESIGN_TARGET!="MultiplierP_unq1"} {
   #  source -echo ../../place_PartialProductSum.tcl
-  #  check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum
-  #  check_rp_groups -verbose ${DESIGN_NAME}::PartialProductSum_2
+  #  check_rp_groups -verbose ${DESIGN_TARGET}::PartialProductSum
+  #  check_rp_groups -verbose ${DESIGN_TARGET}::PartialProductSum_2
   #  create_rp_group RP_MULT -columns 2 -rows 2 -allow_non_rp_cells
-  #  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::rp_tree            -column 0 -row 1 ;
-  #  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum  -column 0 -row 0 ;
-  #  add_to_rp_group ${DESIGN_NAME}::RP_MULT   -hierarchy ${DESIGN_NAME}::PartialProductSum_2  -column 1 -row 1 ;
-  #  check_rp_groups -verbose ${DESIGN_NAME}::RP_MULT
+  #  add_to_rp_group ${DESIGN_TARGET}::RP_MULT   -hierarchy ${DESIGN_TARGET}::rp_tree            -column 0 -row 1 ;
+  #  add_to_rp_group ${DESIGN_TARGET}::RP_MULT   -hierarchy ${DESIGN_TARGET}::PartialProductSum  -column 0 -row 0 ;
+  #  add_to_rp_group ${DESIGN_TARGET}::RP_MULT   -hierarchy ${DESIGN_TARGET}::PartialProductSum_2  -column 1 -row 1 ;
+  #  check_rp_groups -verbose ${DESIGN_TARGET}::RP_MULT
   #}
 
   check_rp_groups -all -verbose
@@ -550,7 +550,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 
 
-save_mw_cel -as ${DESIGN_NAME}_before_placement
+save_mw_cel -as ${DESIGN_TARGET}_before_placement
 
 
 
@@ -572,10 +572,10 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
   create_placement
   psynopt -area_recovery
   refine_placement
-  save_mw_cel -as ${DESIGN_NAME}_before_rp_blowout
+  save_mw_cel -as ${DESIGN_TARGET}_before_rp_blowout
   remove_rp_groups -all
   refine_placement
-  save_mw_cel -as ${DESIGN_NAME}_before_psynopt
+  save_mw_cel -as ${DESIGN_TARGET}_before_psynopt
   place_opt -skip_initial_placement -effort high -power -area_recovery
 
  } else {
@@ -584,7 +584,7 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 
 
 
-save_mw_cel -as ${DESIGN_NAME}_after_placement
+save_mw_cel -as ${DESIGN_TARGET}_after_placement
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -tie
@@ -596,7 +596,7 @@ clock_opt -no_clock_route -only_psyn -power -area_recovery
 optimize_clock_tree -buffer_sizing -gate_sizing -effort high
 route_group -all_clock_nets -search_repair_loop 15
 
-save_mw_cel -as ${DESIGN_NAME}_after_CTS
+save_mw_cel -as ${DESIGN_TARGET}_after_CTS
 
 #HACK FIXME
 #if { $FixedHeightFloorPlan } {
@@ -612,30 +612,30 @@ route_opt -skip_initial_route -effort medium -power
 
 
 
-save_mw_cel -as ${DESIGN_NAME}_final
+save_mw_cel -as ${DESIGN_TARGET}_final
 
 file mkdir reports
 
-report_area  -physical -hierarchy > reports/${DESIGN_NAME}.${APPENDIX}.$target_delay.routed.area.rpt
+report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.routed.area.rpt
 
 remove_attribute [current_design] local_link_library
 
 
 
 set link_library [set wc_0v8_lib_dbs]
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.power.rpt
-report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.power.rpt
+report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
 
 set link_library [set wc_0v9_lib_dbs]
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.power.rpt
-report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.power.rpt
+report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
 
 set link_library [set wc_1v0_lib_dbs]
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
-report_power  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.power.rpt
-report_qor  > reports/${DESIGN_NAME}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
+report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.power.rpt
+report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
 
 
 exit

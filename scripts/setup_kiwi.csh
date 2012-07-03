@@ -13,3 +13,13 @@ module load numbers
 
 setenv VCS_CC gcc-4.4
 unsetenv DVE
+
+
+
+# For synthesis
+#### source $FPGEN/synthesis/synSetup/synopsys_startup/setup.csh
+source $FPGEN/synthesis/synSetup/synopsys_startup/library_TSMC_45.csh
+
+# For Ofer's debug env
+#setenv GENESIS_LIBS "$CHIPGEN/bin/PerlLibs"
+#set path=($GENESIS_LIBS/Genesis2 $path)

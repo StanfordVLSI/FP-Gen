@@ -18,7 +18,7 @@
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off.");
 //; my $arch = parameter(Name=>'Architecture', Val=>'FMA', List=>['CMA', 'FMA'],
-//; 			       Doc=>"!FUNCTIONAL! Which architecture implements Multiply Add? Cascade multiply accumulate ".
+//; 			       Doc=>"Which architecture implements Multiply Add? Cascade multiply accumulate ".
 //; 			            "or Fused? (Pick:CMA/FMA)");
 //; 
 //; ###############################################################################
