@@ -2,7 +2,7 @@
 # one example is running this from command line
 # icc_shell -f multiplier_icc.tcl -x "set ENABLE_MANUAL_PLACEMENT 1;" | tee -i multiplier_icc_optimized.log
 
-source -echo -verbose $env(FPGEN)/header.tcl
+source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 
 proc add_cells_to_rp_group {args} {
 
