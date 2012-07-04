@@ -260,6 +260,7 @@ $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo Making $@ because of $?
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -debug $(GENESIS_DBG_LEVEL)
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(PRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 genesis_clean:
 	@echo ""
@@ -271,9 +272,6 @@ genesis_clean:
 	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST)
 ###### END OF Genesis2 Rules #######
 
-
-design_map: $(GENESIS_VLOG_LIST)
-	locDesignMap.pl TCL=/dev/null INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(DESIGN_TITLE).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/nulll
 
 
 # VCS compile rules:
@@ -429,6 +427,12 @@ rollup3:
                                    VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
 report_results:
 	cd synthesis ; perl report_results.pl ;
+
+#Design Space Map Rules:
+###################################
+design_map:
+	locDesignMap.pl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(PRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
+
 
 #PipeLine Hack:
 ###############################
