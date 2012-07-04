@@ -21,7 +21,7 @@ while( $#ARGV > 0 ){
     $flow .= " echo \"$id $tag\" \n";
     $flow .= "   \n";
     $flow .= "source ./synSetup/synopsys_startup/setup.sh \n";
-    $flow .= "echo $SYNOPSYS_RCXT_BIN \n";
+    $flow .= "echo ${SYNOPSYS_STARRC_DIR}/bin \n";
     $flow .= "source ./synSetup/synopsys_startup/library_TSMC_45.sh\n";
     $flow .= "export VCS_ARCH_OVERRIDE=linux   \n";
     $flow .= "export VCS_HOME=/hd/cad/synopsys/vcs-mx/2010.06   \n";

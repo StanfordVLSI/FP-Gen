@@ -24,7 +24,7 @@ if {$synopsys_program_name != "pt_shell"} {
   ###############################
   set PT_DIR      $env(SYNOPSYS_PTS)/bin/   ;# path to PT bin directory
   set PT_SDC_FILE ""                     ;# optional file in case PT has different SDC that what is available in the ICC database
-  set STARRCXT_DIR $env(SYNOPSYS_RCXT_BIN) ;# path to Star-rcxt bin directory
+  set STARRCXT_DIR $env(SYNOPSYS_STARRC_DIR) ;# path to Star-rcxt bin directory
 
   set STARRCXT_MAX_NXTGRD $TLUPLUS_MAX_FILE ;# MAX NXTGRD file 
   set STARRCXT_MIN_NXTGRD $TLUPLUS_MIN_FILE ;# MIN NXTGRD file
