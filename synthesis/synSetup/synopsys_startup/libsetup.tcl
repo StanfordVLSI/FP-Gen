@@ -125,7 +125,7 @@ set TLUPLUS_MIN_FILE  ${TECH_DIR}/tluplus/cln45gs_1p10m+alrdl_rcbest_top2.tluplu
 ###############################
 ## SIGNOFF_OPT Input variables
 ###############################
-set PT_DIR      $env(SYNOPSYS_PT_BIN)   ;# path to PT bin directory
+set PT_DIR      $env(SYNOPSYS_PTS)/bin   ;# path to PT bin directory
 set PT_SDC_FILE ""                     ;# optional file in case PT has different SDC that what is available in the ICC database
 set STARRCXT_DIR $env(SYNOPSYS_RCXT_BIN) ;# path to Star-rcxt bin directory
 

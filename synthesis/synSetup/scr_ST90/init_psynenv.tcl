@@ -22,7 +22,7 @@ if {$synopsys_program_name != "pt_shell"} {
   ###############################
   ## SIGNOFF_OPT Input variables
   ###############################
-  set PT_DIR      $env(SYNOPSYS_PT_BIN)   ;# path to PT bin directory
+  set PT_DIR      $env(SYNOPSYS_PTS)/bin/   ;# path to PT bin directory
   set PT_SDC_FILE ""                     ;# optional file in case PT has different SDC that what is available in the ICC database
   set STARRCXT_DIR $env(SYNOPSYS_RCXT_BIN) ;# path to Star-rcxt bin directory
 
