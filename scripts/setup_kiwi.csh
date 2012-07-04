@@ -8,6 +8,7 @@ module load ncx
 module load vcs-mx
 module load icc
 module load ic 
+module load pts
 module load FPGen
 module load numbers
 
