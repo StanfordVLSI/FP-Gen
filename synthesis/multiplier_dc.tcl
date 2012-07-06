@@ -15,16 +15,6 @@ elaborate $DESIGN_TARGET -architecture verilog -library DEFAULT
 link
 check_design
 
-if { [file exists ${RUNDIR}/${DESIGN_TARGET}.saif] } {
-  read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input ${RUNDIR}/${DESIGN_TARGET}.saif -verbose
-  report_saif 
-} else {
-  set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
-  set_switching_activity -toggle_rate 0.5 -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
-  set_switching_activity -toggle_rate 0.01 -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
-  set_switching_activity -toggle_rate 0.2 -static_probability 0.8 valid_in
-}
-
 
 set HEDGE 0.8
 set PATH_RATIO 0.8 
@@ -64,6 +54,17 @@ if { $PipelineDepth > 0 } {
 
   
   create_clock $CLK -period $CLK_PERIOD
+
+  if { [file exists ${RUNDIR}/${DESIGN_TARGET}.saif] } {
+    read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input ${RUNDIR}/${DESIGN_TARGET}.saif -verbose
+    report_saif 
+  } else {
+    set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
+    set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
+    set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
+    set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.8 valid_in
+  }
+
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
   #set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
   #set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk

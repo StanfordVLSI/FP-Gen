@@ -298,6 +298,7 @@ module `mname`(
 
 
 //; if ($verif_mode =~ /ON/){
+// synopsys translate_off
    always @(posedge dumptolog)
      begin
 	$display ("`$self->get_instance_path()`: ZeroExpA=0x%h ZeroA=0x%h InfA=0x%h ExpA=%h ManA=%h, SigA=%h IncA=0x%h",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA_pl);
@@ -306,6 +307,7 @@ module `mname`(
 	$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
 	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h ManAB_shifted=%h shiftAmount=%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long, ManAB_shifted, shiftAmount);
      end
+// synopsys translate_on
  //; }
 
 endmodule : `mname`

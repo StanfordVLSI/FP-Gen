@@ -96,10 +96,10 @@ set ICC_SAIF_FILE $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.saif
 if { [file exists $ICC_SAIF_FILE] } {
   read_saif -input $ICC_SAIF_FILE -instance_name $DESIGN_TARGET
 } else {
-  set_switching_activity -toggle_rate 2 -static_probability 0.5 clk
-  set_switching_activity -toggle_rate 0.5 -static_probability 0.5 [get_ports -regexp {[abc][[.[.]].*[[.].]]}]
-  set_switching_activity -toggle_rate 0.01 -static_probability 0.01 {reset SI stall SCAN_ENABLE test_mode}
-  set_switching_activity -toggle_rate 0.2 -static_probability 0.8 valid_in
+  set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
+  set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
+  set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
+  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.8 valid_in
 }
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
@@ -598,12 +598,15 @@ route_group -all_clock_nets -search_repair_loop 15
 
 save_mw_cel -as ${DESIGN_TARGET}_after_CTS
 
+
+if { [info exists ENABLE_MANUAL_PLACEMENT] } {
 #HACK FIXME
 #if { $FixedHeightFloorPlan } {
 #  estimate_fp_area -sizing_type fixed_height
 #} else {
   estimate_fp_area -sizing_type fixed_aspect_ratio
 #}
+}
 
 #routing
 route_opt -initial_route_only

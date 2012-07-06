@@ -147,6 +147,7 @@ module `mname` (
    //;   }
 
    //; if ($verif_mode =~ /ON/){
+// synopsys translate_off
    always @(*) begin
       #1;
       assert ($onehot(~sel_x) || ~sel_x == `$num_outputs`'b0 || !$time)else begin
@@ -154,6 +155,7 @@ module `mname` (
 	 $finish(2);
       end
    end
+// synopsys translate_on
    //; }
 endmodule
 

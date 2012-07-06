@@ -343,7 +343,7 @@ $(SAIF_FILE): simv
 
 force_dc: dc_clean run_dc
 run_dc: $(DC_LOG)
-$(DC_LOG): $(SAIF_FILE) $(GENESIS_SYNTH_LIST)
+$(DC_LOG): $(SAIF_FILE) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
 	@echo =============================================
@@ -370,7 +370,7 @@ run_icc: $(ICC_LOG)
 force_icc_opt: icc_opt_clean run_icc_opt
 run_icc_opt: $(ICC_OPT_LOG)
 
-$(ICC_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST)
+$(ICC_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler: Making $@ because of $?
 	@echo =============================================
@@ -388,7 +388,7 @@ icc_clean:
 	@echo =============================================
 	\rm -f $(ICC_LOG)
 
-$(ICC_OPT_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST)
+$(ICC_OPT_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler (OPT): Making $@ because of $?
 	@echo =============================================
