@@ -475,4 +475,3 @@ cleanall: clean
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
 	\rm -rf genesis*
-	\rm -rf synthesis*
