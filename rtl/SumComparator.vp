@@ -40,6 +40,11 @@ module `mname` (
     input [`$width-1`:0] a, b, sum,
     output 		 equal
 		);
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+  */
    
   
    wire [`$width-1`:0] 	 v,w;

@@ -51,9 +51,9 @@ module `mname`(
   output logic [`$ExtendedExp_width-1`:0] ExpDifference,
   output logic ResultIsClose, ExpB_gt_ExpA);
 
-  logic [`$ExtendedExp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpA_ExpB_3, ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpDiffDec, ExpDiff, ExpDiffInc, ExpDiffShifted;
+  logic [`$ExtendedExp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpDiffDec, ExpDiff, ExpDiffInc, ExpDiffShifted;
 
-  logic co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
+  logic ExpDiff_Upper0s, ExpDiff_Upper1s, co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
 
   // ExpA_pp0 + ExpA_pp1 + ExpA_ci = ExpA - 1
 
@@ -61,8 +61,6 @@ module `mname`(
 
 
  // ExpDiff_pp0 + ExpDiff_pp1 = (ExpA-1)  + ~ExpB = ExpA - ExpB - 2 
-
-  assign ExpA_ExpB_3 = ExpDiff_pp0 + ExpDiff_pp1 - 1;
 
 
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'CA0', 
@@ -82,6 +80,18 @@ module `mname`(
   assign ExpA_ExpB = ExpDiff_pp0 + ExpDiff_pp1 + 2;
   assign ExpA_ExpB_plus1 = ExpDiff_pp0 + ExpDiff_pp1 + 3;
 
+// Result is close if expdiff is in the range of [0,2]: therefore we have following cases for result of ExpA-ExpB-2
+// a) ExpDifference = ExpB-ExpA-1    ---->   [-5,-3]
+// b) ExpDifference = ExpB-ExpA      ---->   [-4,-2]
+// c) ExpDifference = ExpB-ExpA+1    ---->   [-3,-1]
+// d) ExpDifference = ExpA-ExpB+1    ---->   [-3,-1]
+// e) ExpDifference = ExpA-ExpB      ---->   [-2, 0]
+// f) ExpDifference = ExpA-ExpB-1    ---->   [-1, 1]
+
+ //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $ExtendedExp_width-4);
+   `$SC0_obj->instantiate` (.a(ExpDiff_pp0[`$ExtendedExp_width-1`:4]), .b(ExpDiff_pp1[`$ExtendedExp_width-1`:4]), .sum({ (`$ExtendedExp_width-4`){1'b0}}), .equal(ExpDiff_Upper0s));
+ //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $ExtendedExp_width-4);
+   `$SC1_obj->instantiate` (.a(ExpDiff_pp0[`$ExtendedExp_width-1`:4]), .b(ExpDiff_pp1[`$ExtendedExp_width-1`:4]), .sum({ (`$ExtendedExp_width-4`){1'b1}}), .equal(ExpDiff_Upper1s));
   
 
   assign ExpB_gt_ExpA = ExpA_ExpB[`$ExtendedExp_width-1`];
@@ -95,7 +105,7 @@ module `mname`(
 
   assign ExpDifference = ShiftA? ExpDiffShifted : ExpDiff;
 
-  assign ResultIsClose = ((SignA ^ SignB) & (~|ExpDifference[`$ExtendedExp_width-1`:2])) & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
+  assign ResultIsClose = ((SignA ^ SignB) & ( ExpDiff_Upper0s | ExpDiff_Upper1s ) & (~|ExpDifference[3:2])) & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off
