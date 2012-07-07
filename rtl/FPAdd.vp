@@ -197,7 +197,7 @@ module `mname` (
   //; if ($enable_forwarding =~ /YES/){
                                        .IncA_in(IncA),
   //; }
-                                       .valid_in(valid_in & ResultIsClose & ResultIsNotSpecial ),
+                                       .valid_in(valid_in & ResultIsClose ),
                                        .stall(stall), .clk(clk) , .reset(reset),
                                        .ManDiff_out(CloseManDiff), .ExpDiff_out(CloseExpDiff),
                                        .SignDiff_out(CloseDiffSign) , .ZeroDiff_out(ZeroCloseDiff),
