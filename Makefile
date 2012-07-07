@@ -37,11 +37,17 @@ GENESIS_INC := 	-incpath ./			\
 		-incpath $(DESIGN_HOME)/rtl	\
 		-incpath $(DESIGN_HOME)/verif
 
+GENESIS_CFG := 	-cfgpath ./			\
+		-cfgpath $(DESIGN_HOME)/SysCfgs
+
+
 # vpath directive tells where to search for *.vp and *.vph files
 vpath 	%.vp  $(GENESIS_SRC)
 vpath 	%.svp  $(GENESIS_SRC)
 vpath 	%.vph $(GENESIS_INC)
 vpath 	%.svph $(GENESIS_INC)
+vpath 	%.cfg $(GENESIS_CFG)
+vpath 	%.xml $(GENESIS_CFG)
 
 
 # Now list all inputs to genesis: 
@@ -91,6 +97,7 @@ GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC) -input $(GENESIS_IN
 #        [-depend filename]          ---   Should Genesis2 generate a dependency file list? (list of input files)
 #        [-product filename]         ---   Should Genesis2 generate a product file list? (list of output files)
 #        [-hierarchy filename]       ---   Should Genesis2 generate a hierarchy representation tree?
+#        [-cfgpath|configs dir]		# Where to find config files (xml/scripts)
 #        [-xml filename]             ---   Input XML representation of definitions
 #        [-cfg filename]                 # Config file to specify parameter values as a Perl script (overrides xml definitions)
 #	 [-parameter path.to.prm1=value1 path.to.another.prm2=value2] --- List of parameter override definitions
@@ -99,15 +106,16 @@ GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
 			-synthtop $(GENESIS_SYNTH_TOP_PATH)			\
 			-depend depend.list					\
 			-product $(GENESIS_VLOG_LIST)				\
-			-hierarchy $(GENESIS_HIERARCHY)
+			-hierarchy $(GENESIS_HIERARCHY)				\
+			$(GENESIS_CFG)
 
-ifneq ($(strip $(GENESIS_CFG_XML)),)
-  GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -xml $(GENESIS_CFG_XML)
-  $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
-endif
 ifneq ($(strip $(GENESIS_CFG_SCRIPT)),)
   GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -cfg $(GENESIS_CFG_SCRIPT)
   $(warning WARNING: GENESIS_CFG_SCRIPT set to $(GENESIS_CFG_SCRIPT))
+endif
+ifneq ($(strip $(GENESIS_CFG_XML)),)
+  GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -xml $(GENESIS_CFG_XML)
+  $(warning WARNING: GENESIS_CFG_XML set to $(GENESIS_CFG_XML))
 endif
 ifneq ($(strip $(GENESIS_PARAMS)),)
   GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -parameter $(GENESIS_PARAMS)
@@ -254,7 +262,7 @@ gen: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST)
 # This is the rule to activate Genesis2 generator to generate verilog 
 # files (_unqN.v) from the genesis (.vp) program.
 # Use "make gen GEN=<genesis2_gen_flags>" to add elaboration time flags
-$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
+$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML) $(GENESIS_CFG_SCRIPT)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
