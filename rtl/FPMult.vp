@@ -78,22 +78,27 @@ module `mname`(
     input logic [`$exp_width + $frac_width`:0] 	a_in, b_in,
    //; if ($enable_forwarding =~ /YES/){
     input logic forward_a, forward_b,	
-    input logic [`$exp_width + $frac_width`:0] z_preInc,
+    input logic [`$exp_width + $frac_width`:0] z_preInc, z_postInc,
     input logic IncZ,
    //; }
-    input logic  clk , reset, valid_in, stall_in,	       
-
-    output logic 			      SignAB, NANAB, InfAB, ZeroAB,
-    output logic [`$exp_width + 1`:0] 	      ExpAB,
-    output logic [`$product_width - 1`: 0]    ManAB,
-    output logic valid_out, stall_request
+   //; if ($pipeline_depth>0) {
+    input logic  clk , reset, valid_in, stall_in, adder_mode, multiplier_mode,	       
+    output logic valid_out, stall_request,
+   //; }
+    output logic 			      SignAB_out, NANAB_out, InfAB_out, ZeroAB_out,
+    output logic [`$exp_width + 1`:0] 	      ExpAB_out,
+    output logic [`$product_width - 1`: 0]    ManAB_out
 	       );
 
-   logic [`$exp_width + $frac_width`:0] a,b, A_pl, B_pl;
-   logic ainc, binc, IncA_pl, IncB_pl, mp_mode_pl, valid_middle, valid_ManAB, stall;   
+   logic 			      SignAB, NANAB, InfAB, ZeroAB;
+   logic [`$exp_width + 1`:0] 	      ExpAB;
+   logic [`$product_width - 1`: 0]    ManAB;
+
+   logic [`$exp_width + $frac_width`:0] a,b, a0, a1, A_adder_mode, A_pl, B_pl;
+   logic ainc, binc, IncA_pl, IncB_pl, mp_mode_pl, adder_mode_pl, forward_a0, forward_a_pl, valid_A0, valid_A, valid_mul, valid_ManAB, valid_middle, stall;   
    logic [`$frac_width - 1`:0] 		      SigA, SigB;
-   logic [`$frac_width`:0] 		      ManA, ManB;
-   logic [`$exp_width - 1`:0] 		      ExpA, ExpB;
+   logic [`$frac_width`:0] 		      ManA, ManA1, manA_adder_mode, ManB;
+   logic [`$exp_width - 1`:0] 		      ExpA, ExpA_adder_mode, ExpB;
    logic [`$exp_width + 1`:0] 		      bias_offset, Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
    logic [`$product_width-1`: 0] 	      ManAB_unnormalized, ManAB_shifted, ManAB_normalized;
    //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger
@@ -113,20 +118,34 @@ module `mname`(
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
    assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
    assign {b,binc} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
+   assign a1 = forward_a0? z_postInc : a0;
 //; } else {
    assign {a,b,ainc,binc} = {a_in,b_in,2'b0};
+   assign a1 = A_pl;
 //; }
+
+
 
    assign ZeroExpA_prePipeline  =  ~|a[`$exp_width + $frac_width - 1`:`$frac_width`];
    assign ZeroExpB_prePipeline  =  ~|b[`$exp_width + $frac_width - 1`:`$frac_width`];
 
-//;   my $pipein = generate(  'Pinned_pipeline',  'pipein',  Width=> 2*$exp_width + 2*$frac_width + 7 , PipelineDepth => $pipeline_depth);
-  `$pipein ->instantiate()` ( .in ({a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline}) ,
+//;   my $pipein = generate(  'Pinned_pipeline',  'pipein',  Width=> 2*$exp_width + 2*$frac_width + 8 , PipelineDepth => $pipeline_depth);
+  `$pipein ->instantiate()` ( .in ({a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline, adder_mode}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset),
-                              .out({A_pl,B_pl,IncA_pl,IncB_pl,mp_mode_pl, ZeroExpA, ZeroExpB}), .valid_out(valid_middle) );
+                              .out({A_pl,B_pl,IncA_pl,IncB_pl,mp_mode_pl, ZeroExpA, ZeroExpB, adder_mode_pl}),
+                              .valid_out(valid_out) );
+
+
+//;   my $pipeA0 = generate(  'Pinned_pipeline',  'pipe_A0',  Width=> $exp_width + $frac_width + 2 , PipelineDepth => 1);
+  `$pipeA0 ->instantiate()` ( .in ({a,forward_a}) , .out({a0,forward_a0}),
+                              .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset),
+                              .valid_out(valid_A0) );
 
 	
-
+//; my $pipeA1 = generate(  'FF_pipeline',  'pipe_A1',  Width=> $exp_width + $frac_width + 1 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
+  `$pipeA1 ->instantiate()` ( .in(a1) , .out(A_adder_mode),
+                              .valid_in(valid_A0), .clk(clk) , .stall(stall), .reset(reset), 
+                              .valid_out(valid_A) );
 
 
    assign SignA = A_pl[ `$exp_width + $frac_width` ];
@@ -157,6 +176,8 @@ module `mname`(
    assign NANAB = NANA | NANB | (InfA & ZeroB) | (InfB & ZeroA);
    assign InfAB = (InfB | InfA) & ~NANAB ;
 
+   assign ZeroAB = ZeroA | ZeroB;
+   assign SignAB = SignA ^ SignB;
 
 
 // bypass the flopped versions of A and B because the unit is pipelined internally
@@ -178,13 +199,12 @@ module `mname`(
       .ainc(ainc), .binc(binc),
       //; }
 
-      .valid_in(valid_in),
+      .valid_in(valid_in & !adder_mode),
       .stall(stall), .clk(clk) , .reset(reset),
 
       .out(ManAB_unnormalized_long),
-      .valid_out(valid_out)
+      .valid_out(valid_mul)
       );
-
   
   assign shiftleft = zeroSigA & IncA_pl & zeroSigB & IncB_pl ;
 
@@ -236,7 +256,7 @@ module `mname`(
     logic normalize_ManAB;
     reg stalled;
 
-    assign normalize_ManAB = (ZeroExpA | ZeroExpB) & ~ZeroAB;
+    assign normalize_ManAB = ~adder_mode_pl & (ZeroExpA | ZeroExpB) & ~ZeroAB;
     assign stall_request = stalled? 0: normalize_ManAB ;
     
     always @(posedge clk)
@@ -280,10 +300,6 @@ module `mname`(
 
   DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
 					.ci(shiftleft), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
-   
-
-  assign ZeroAB = ZeroA | ZeroB;
-  assign SignAB = SignA ^ SignB;
 
 //;  if ($floating_digits==1) {
   assign ExpAB = ZeroAB? 0 : ( ManAB_normalized[`$product_width-1`]? ExpAB1 : ExpAB0);
@@ -293,8 +309,17 @@ module `mname`(
   assign ManAB = ManAB_normalized;
 //; }
 
-   
 
+   assign ExpA_adder_mode = A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width`];
+   assign manA_adder_mode = { ~|ExpA_adder_mode, A_adder_mode[`$frac_width - 1` : 0 ] };
+   
+   assign {InfAB_out,NANAB_out, ZeroAB_out, SignAB_out} = adder_mode_pl? 
+                                                     {InfA,NANA, ZeroA, SignA}
+                                                   : {InfAB, NANAB, ZeroAB, SignAB};
+
+   assign {ExpAB_out, ManAB_out} = adder_mode_pl? 
+                                                     {2'b0,ExpA_adder_mode, 1'b0, manA_adder_mode, `$frac_width`'b0}
+                                                   : {ExpAB, ManAB};
 
 
 //; if ($verif_mode =~ /ON/){

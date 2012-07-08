@@ -133,7 +133,7 @@ module `mname` (
     input logic [2:0] 				rnd,
 
    //; if ($pipeline_depth>0){
-    input logic 				clk, reset, valid_in, stall_in, SI, SCAN_ENABLE, test_mode,
+    input logic 				clk, reset, valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
     output logic 				valid_out, SO, stall_request,
    //; } else {
     input logic 				clk, reset,
@@ -196,11 +196,14 @@ module `mname` (
        .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
    //; }
        .z_preInc(z_preIncm), .z_final(z), .IncZ(IncZm),
-       .clk(clk) , .reset(reset), .valid_in(valid_in), .stall(stall_in),
+   //; if ($pipeline_depth>0){
+       .clk(clk) , .reset(reset),
+       .valid_in(valid_in), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode), .stall(stall_in),
+       .valid_out(valid_middle),
+   //; }
        .AB_pp0(AB_pp0), .AB_pp1(AB_pp1), .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
-       .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), 
-       .ExpBase(ExpBase),
-       .valid_out(valid_middle) );
+       .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), .ExpBase(ExpBase)
+        );
 
 //;  my $add_bus_width = $exp_width + 2*$product_width + $wide_width + 14;
 //;  my $add_pipeline_depth = $pipeline_depth-$mulp_pipeline_depth-1;

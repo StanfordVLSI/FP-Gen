@@ -70,19 +70,24 @@ module `mname` (
    //; }
     input logic [`$exp_width + $frac_width`:0] z_preInc, z_final,
     input logic IncZ,
-    input logic  clk , reset, valid_in, stall,
+    //; if ($pipeline_depth>0){
+    input logic  clk , reset, valid_in, adder_mode, multiplier_mode, stall,
+    output logic valid_out,
+    //; }
     output logic [`$product_width+1`:0] AB_pp0, AB_pp1,
     output logic SignAB, NANAB, InfAB, ZeroAB,
     output logic [`$wide_width-1`:0] shifted_C,
     output logic SignC, NANC, InfC, ZeroC, 
-    output logic [`$exp_width+1`:0] ExpBase,
-    output logic valid_out);	
+    output logic [`$exp_width+1`:0] ExpBase
+    );	
 
 
   
   logic [`$exp_width + $frac_width`:0] 	a, b, c, a0, b0, c0, c1;
-  logic forward_c0, ainc, binc, cinc, ainc0, binc0, cinc0, denormA, denormB, denormC, denormA0, denormB0, denormC0;
-  logic valid0, valid_exp, valid_r;
+  logic [`$product_width+1`:0] mulp_out_pp0, mulp_out_pp1;
+  logic [`$frac_width`:0] ManA_final;
+  logic forward_c0, ainc, binc, cinc, ainc0, binc0, cinc0, denormA, denormB, denormC, denormA0, denormB0, denormC0, adder_mode0, adder_mode_final, ainc_final;
+  logic valid0, valid_mul, valid_ManA, valid_exp, valid_r;
 
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
   assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
@@ -97,10 +102,11 @@ module `mname` (
 //; }
 
 //; if($pipeline_depth > 0 ){
-//;   my $pipeC1 = generate(  'Pinned_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+10  , PipelineDepth => 1);
-  `$pipeC1 ->instantiate()` ( .in({a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c}) ,
+//;   my $pipeC1 = generate(  'Pinned_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+11  , PipelineDepth => 1);
+  `$pipeC1 ->instantiate()` ( .in({a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c, adder_mode}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                              .out({a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0}), .valid_out(valid0) );
+                              .out({a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0,adder_mode0}),
+                              .valid_out(valid0) );
   
 //; } else {
   assign {a0,b0,c0,ainc0,binc0,cinc0, denormA0, denormB0, denormC0, forward_c0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c};
@@ -126,12 +132,20 @@ module `mname` (
       //; if($enable_forwarding =~ /YES/){
       .ainc( ainc ), .binc(binc),
       //; }
-      .valid_in(valid_in),
+      .valid_in(valid_in & ~adder_mode),
       .stall(stall), .clk(clk) , .reset(reset),
-      .out0(AB_pp0), .out1(AB_pp1),
-      .valid_out(valid_out)
+      .out0(mulp_out_pp0), .out1(mulp_out_pp1),
+      .valid_out(valid_mul)
       );
 
+//;   my $pipeA = generate(  'Pinned_pipeline',  'pipe_A',  Width=> $frac_width+2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipeA ->instantiate()` ( .in( { ~denormA , a[`$frac_width -1`:0], ainc} ) , .out({ManA_final, ainc_final}),
+                             .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
+                             .valid_out(valid_ManA) );
+
+  assign  {AB_pp0, AB_pp1} = adder_mode_final?
+                            { 3'b0,ManA_final, `2*$frac_width+3`'b0, ainc_final,`$frac_width`'b0}
+                          : { mulp_out_pp0 , mulp_out_pp1 }; 
 
   /*Exponent Difference*/
 
@@ -198,11 +212,11 @@ module `mname` (
   assign ExpBase0 = ExpResultIsC? {2'b0,ExpC0} : ExpAB;
 
 //; if($pipeline_depth > 1 ){
-//;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> $exp_width+10 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
-  `$pipeMisc ->instantiate()` ( .in({ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0}) ,
+//;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> $exp_width+11 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
+  `$pipeMisc ->instantiate()` ( .in({ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0, adder_mode0}) ,
                                 .valid_in(valid0), .clk(clk) , .stall(stall), .reset(reset), 
-                                .out({ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC}),
-                                .valid_out(valid_exp) );
+                                .out({ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final}),
+                                .valid_out(valid_out) );
 //; } else {
   assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0};
 //; }

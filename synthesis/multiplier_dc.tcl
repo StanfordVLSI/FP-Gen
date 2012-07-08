@@ -62,7 +62,9 @@ if { $PipelineDepth > 0 } {
     set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
     set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
     set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
-    set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.8 valid_in
+    set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
+    set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
+    set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
   }
 
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
@@ -134,17 +136,45 @@ set link_library [set ${VT}_0v8_target_libs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing.rpt
 report_timing -loops > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing_loops.rpt
 report_timing -loops
-report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.power.rpt
 report_qor > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.qor.rpt
+
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.avg_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode, multiplier_mode}
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.muladd_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.add_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.mul_power.rpt
+
 
 set link_library [set ${VT}_0v9_target_libs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v9.$target_delay.mapped.timing.rpt
-report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.power.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.qor.rpt
+
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.avg_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode, multiplier_mode}
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.muladd_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.add_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.mul_power.rpt
 
 set link_library [set ${VT}_1v0_target_libs]
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
-report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.power.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
+
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.avg_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode, multiplier_mode}
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.muladd_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.add_power.rpt
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.mul_power.rpt
 
 exit

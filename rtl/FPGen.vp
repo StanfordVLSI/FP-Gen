@@ -80,7 +80,7 @@ module `mname` (
 		
 //; ##### Inputs For Piped Design #####
 //; if ($pipeline_depth>0){
-         input logic 				     valid_in, 
+         input logic 				     valid_in, adder_mode, multiplier_mode, 
          input logic 				     SI, 
 //; }    
 
@@ -128,7 +128,9 @@ module `mname` (
 //;                           }
 //;                           ###### GLOBALS ######		
 //;                           if ($pipeline_depth>0){
-           				                 .valid_in(valid_in), 
+           				                 .valid_in(valid_in),
+                                                         .adder_mode(adder_mode),
+                                                         .multiplier_mode(multiplier_mode),
                                                          .SI(SI), 
 //;                           }    
            				                 .clk(clk), 
