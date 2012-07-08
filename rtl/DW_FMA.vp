@@ -1,0 +1,139 @@
+
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: //Smart_design/ChipGen/FP-Gen/rtl/DW_FMA.vp#1 $
+ ** $DateTime: 2011/12/24 22:02:13 $
+ ** $Change: 9979 $
+ ** $Author: sameh06 $
+ *************************************************************************/
+
+/* *****************************************************************************
+ * Description:
+ * ------------
+ * FMA datapath
+ * Status flag bits
+ * ______________________________
+ * Bit| Flag      | Description
+ * ______________________________
+ *  0 | Zero      | Integer or floating point output is zero.
+ *  1 | Infinity  | Floating point output is infinity.
+ *  2 | Invalid   | Floating point operation is not valid (0x∞, ∞-∞ ) . It is also set to 1 when one of the inputs is NaN
+ *  3 | Tiny      | Non zero floating point output after rounding has a magnitude less than the minimum normalized number( a denormalized number)
+ *  4 | Huge      | Finite floating point result after rounding has a magnitude greater than the maximum normalized number.
+ *  5 | Inexact   | Integer or floating point output is not equal to the infinitely precise result.
+ * ______________________________
+ *  
+ * Parameters:
+ * ------------
+ * * FractionWidth, ExponentWidth, EnableDenormals, PipelineDepth, EnableForwarding
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date           Author    Description
+ * Jan 24, 2012   sameh06   init version - 
+ *                          
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//; # Perl Libraries
+//; use POSIX qw(ceil floor log); # For ceiling rounding and log math
+//; sub CeilOfLog2{ return ceil(log(@_)/log(2)); }
+//;
+//; # get some values from the top
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off. !IGNORE!" ); 
+//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Doc=>"Synthesis mode determines whether or not ".
+//;                                 "special synthesis constructs are used. ".
+//;                                 "Possible values are ON or Off.  !IGNORE!");
+
+//;
+//; # module parameters
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!");
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!");
+//; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
+//;                           List=>['YES','NO'], 
+//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//;
+//; my $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['NO'],
+//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//;
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>6, Min=> 0, Max=>12,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//; my $retiming ;
+//; if( $pipeline_depth > 1 ){
+//;   $retiming = parameter(Name=>'Retiming', Val=>1, List=>[ 0, 1 ] , 
+//;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!");
+//;   $retiming or $self->error( "Error: HACK-> Parameter may only be 1\n" ) ;
+//; } else {
+//;   $retiming = parameter(Name=>'Retiming', Val=>0, List=>[ 0, 1 ] ,
+//;                       Doc=>"Should retiming be run in synthesis !FUNCTIONAL!");
+//;   $retiming and $self->error( "Error: HACK-> Parameter may only be 0\n" ) ;
+//; }
+//; 
+//;
+
+module `mname` (
+   //; if ($verif_mode =~ /ON/){
+    input logic 				dumptolog,
+   //; }
+   input logic [`$exp_width + $frac_width`:0] 	a, b, c,
+   //; if ($enable_forwarding =~ /YES/){
+    input logic 				forward_a, forward_b, 
+    input logic [0:0]                           forward_c,
+   //; }
+    input logic [2:0] 				rnd,
+
+   //; if ($pipeline_depth>0){
+    input logic 				clk, reset, valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
+    output logic 				valid_out, SO, stall_request,
+   //; } else {
+    input logic 				clk, reset,
+   //; }
+		
+    output logic [`$exp_width + $frac_width`:0] z,
+    output logic [7:0] status
+           );
+
+  /* synopsys dc_tcl_script_begin
+   set_ungroup [current_design] true
+   set_flatten true -effort high -phase true -design [current_design]
+     */
+
+
+
+   assign stall_request = 1'b0 ;
+   
+  logic [`$exp_width + $frac_width`:0] 	a2, b2, c2;
+  logic [2:0] 				rnd2;
+
+//;   if($pipeline_depth > 0 ){
+//;    my $fma_pipe = generate('Pinned_pipeline','fma_pipe', 
+//;                         Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth);
+
+  `$fma_pipe ->instantiate()` ( .in({a,b,c, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall_in), .reset(reset), 
+                                .out({a2,b2,c2, rnd2}), .valid_out(valid_out) );
+//;   } else {
+  assign {a2,b2,c2, rnd2} = {a,b,c, rnd};
+//;   }
+
+   DW_fp_mac #( `$frac_width` , `$exp_width` , `$enable_denormals eq 'YES' ?1:0` ) U1 (
+									       .a(a2), .b(b2), .c(c2), .rnd(rnd2),
+									       .z(z), .status(status) );
+   
+endmodule
+
+
