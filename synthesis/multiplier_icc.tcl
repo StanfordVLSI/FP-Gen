@@ -634,7 +634,7 @@ report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.qor.
 set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
 set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.avg_power.rpt
-set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode, multiplier_mode}
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.muladd_power.rpt
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
@@ -650,7 +650,7 @@ report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.qor.
 set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
 set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.avg_power.rpt
-set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode, multiplier_mode}
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.muladd_power.rpt
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
@@ -667,7 +667,7 @@ report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.qor.
 set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
 set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.avg_power.rpt
-set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode, multiplier_mode}
+set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.muladd_power.rpt
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
