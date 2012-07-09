@@ -134,7 +134,7 @@
 //;					Doc=>"Distribution weight for One pattern");
 //;	$PointOneOneOne_w = parameter(Name=>'PointOneOneOne_DistWeight', Val=>10, Min=>0, Step=>1,
 //;					Doc=>"Distribution weight for PointOneOneOne (0.111111111) pattern");
-//;	$EzAndSml_w = parameter(Name=>'EzAndSml_DistWeight', Val=>1000000, Min=>0, Step=>1,
+//;	$EzAndSml_w = parameter(Name=>'EzAndSml_DistWeight', Val=>0, Min=>0, Step=>1,
 //;					Doc=>"Distribution weight for an easy and small number");
 //;	$Random_w = parameter(Name=>'Random_DistWeight', Val=>800, Min=>0, Step=>1,
 //;					Doc=>"Distribution weight for Random (excluding Zero, Inf, Denorm and NaN) pattern");
