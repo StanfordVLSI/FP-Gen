@@ -36,16 +36,16 @@ if { $PipelineDepth > 0 } {
     set_max_delay [expr double($cycle_multiplier)*double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
     compile_ultra -no_autoungroup
 
-    if { $Architecture=="CMA" } {
-       current_design FarPathAdd_unq1
-       create_clock $CLK -period $CLK_PERIOD
-       compile_ultra -no_autoungroup -retime
-       optimize_registers -sync_transform decompose -print_critical_loop
-       current_design ClosePathSub_unq1
-       create_clock $CLK -period $CLK_PERIOD
-       compile_ultra -no_autoungroup -retime
-       optimize_registers -sync_transform decompose -print_critical_loop
-    }
+#    if { $Architecture=="CMA" } {
+#       current_design FarPathAdd_unq1
+#       create_clock $CLK -period $CLK_PERIOD
+#       compile_ultra -no_autoungroup -retime
+#       optimize_registers -sync_transform decompose -print_critical_loop
+#       current_design ClosePathSub_unq1
+#       create_clock $CLK -period $CLK_PERIOD
+#       compile_ultra -no_autoungroup -retime
+#       optimize_registers -sync_transform decompose -print_critical_loop
+#    }
 
 
     current_design ${DESIGN_TARGET}
@@ -132,7 +132,7 @@ report_power -net > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapp
 
 remove_attribute [current_design] local_link_library
 
-set link_library [set ${VT}_0v8_target_libs]
+set link_library $link_library_0v8
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing.rpt
 report_timing -loops > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing_loops.rpt
 report_timing -loops
@@ -149,7 +149,7 @@ set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adde
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.mul_power.rpt
 
 
-set link_library [set ${VT}_0v9_target_libs]
+set link_library $link_library_0v9
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v9.$target_delay.mapped.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.qor.rpt
 
@@ -165,7 +165,7 @@ set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 mult
 set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
 report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.mul_power.rpt
 
-set link_library [set ${VT}_1v0_target_libs]
+set link_library $link_library_1v0
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
 

@@ -94,17 +94,13 @@ if {$ENABLE_MVT} {
 # set link library to all wc library dbs
 
 
-set link_library "*"
-
-foreach L [set wc_[string tolower $LIB_VOLTAGE]_lib_dbs] {
- lappend link_library $L
-}
-
 set synthetic_library [list dw_foundation.sldb]
 
-foreach L $synthetic_library {
- lappend link_library $L
-}
+set link_library_0v8 [concat * $wc_0v8_lib_dbs $synthetic_library];
+set link_library_0v9 [concat * $wc_0v9_lib_dbs $synthetic_library];
+set link_library_1v0 [concat * $wc_1v0_lib_dbs $synthetic_library];
+
+set link_library [set link_library_[string tolower $LIB_VOLTAGE] ];
 
 
 # attach min library to max library to be used for hold-time fix if the variable $holdfix is defined

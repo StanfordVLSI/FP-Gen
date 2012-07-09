@@ -19,7 +19,7 @@
 //;                                 "Possible values are ON or Off.");
 //; my $arch = parameter(Name=>'Architecture', Val=>'FMA', List=>['CMA', 'FMA', 'DW_FMA'],
 //; 			       Doc=>"Which architecture implements Multiply Add? Cascade multiply accumulate ".
-//; 			            "or Fused or Designware component? (Pick:CMA/FMA)");
+//; 			            "or Fused or Designware component? (Pick:CMA/FMA) !FUNCTIONAL!");
 //; 
 //; ###############################################################################
 //; # Local Variables to Aid In Instantiation

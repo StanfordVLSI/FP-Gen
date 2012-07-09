@@ -99,5 +99,6 @@ if {![info exists DESIGN_TARGET]} {
 
 # Suppressed Messages:
 # Information: Changed wire load model for 'BoothCell_unq1_1451' from 'ZeroWireload' to 'ZeroWireload'. (OPT-170)
-suppress_message [list OPT-170]
+# Information: Skipping clock gating on design BoothSel_unq1_33, since there are no registers. (PWR-806)
+suppress_message {OPT-170 PWR-806}
 

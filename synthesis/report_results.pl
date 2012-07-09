@@ -1,34 +1,47 @@
 #!/usr/bin/perl
 
+if ( $#ARGV > 0 ){
+  $run_folder = shift @ARGV ;
+} else {
+  $run_folder = "." ;
+}
 
 #get a sorted list of all report files
-@files = <*/reports/*.mapped.timing.rpt>;
-print "design, Vth, Vdd, mapped delay, routed delay, optimized delay, mapped core area, routed core area, optimized core area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
+@files = <$run_folder/*/synthesis/*/reports/*.mapped.*_power.rpt>;
+print "Design, Configuration, Instruction, Vt, Vdd, clock period, mapped worst slack, routed worst slack, optimized worst slack, mapped area, routed area, optimized_area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
 
 foreach $file (@files) {
-  $file =~ /(.vt_\dv\d_.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
-  $folder_name=$1;
-  $design_name = $2;
-  $vt = $3;
-  $vdd = $4;
-  $target_delay = $5;
-  $prefix = "$design_name.${vt}_$vdd.$target_delay";
-  $optimized_prefix = "$design_name.optimized.${vt}_$vdd.$target_delay";
+  $file =~ /(.*\/(.*)\/synthesis\/syn_(.vt_\dv\d)_\d+\.?\d*_?(.*)?)\/reports\/(.*)\.(.vt)_(\dv\d)\.(\d+\.?\d*)\.mapped\.(.*)_power\.rpt/;
+  $folder_name = $1;    #e.g. ./CMA378/synthesis/syn_lvt_1v0_500.0_cg/reports
+  $design_name = $2;    #e.g. CMA378
+  $run_name = $3;       #e.g. lvt_1v0_500.0
+  $appendix = $4;       #e.g. cg
+  $top_name = $5;       #e.g. FPGen
+  $vt = $6;             #e.g. lvt
+  $vdd = $7;            #e.g. 1v0
+  $target_delay = $8;   #e.g. 500.0
+  $instruction_name=$9; #e.g. mul
+  $prefix = "$top_name.${vt}_$vdd.$target_delay";
+  $optimized_prefix = "$top_name.optimized.${vt}_$vdd.$target_delay";
 
-  @report_files = <$folder_name/reports/$prefix.mapped.timing.*>;
+  @report_files = <$folder_name/reports/$prefix.mapped.timing.rpt>;
   $mapped_delay = 1000;
+  $mapped_worst_slack = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) { 
       if ( $_ =~ /data arrival time\s+-?(\d+\.?\d*)/ && $1 < $mapped_delay) {    
-	    $mapped_delay = $1;
+	$mapped_delay = $1;
+      }
+      if ( $_ =~ /slack\s+\(\w*\)\s*(-?\d+\.?\d*)/ && $1 < $mapped_worst_slack) {    
+	$mapped_worst_slack = $1;
       }
     }
     close REPORTFILE;
   }
 
   $mapped_core_area="";
-  @report_files = <$folder_name/reports/$design_name.${vt}.$target_delay.mapped.area.*>;
+  @report_files = <$folder_name/reports/$top_name.$run_name.$target_delay.mapped.area.rpt>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -41,7 +54,7 @@ foreach $file (@files) {
 
   $mapped_dynamic_power="";
   $mapped_leakage_power="";
-  @report_files = <$folder_name/reports/$prefix.mapped.power.*>;
+  @report_files = <$folder_name/reports/$prefix.mapped.${instruction_name}_power.rpt>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -61,18 +74,22 @@ foreach $file (@files) {
 
   @report_files = <$folder_name/reports/$prefix.routed.timing.*>;
   $routed_delay = 1000;
+  $routed_worst_slack = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) { 
       if ( $_ =~ /data arrival time\s+-?(\d+\.?\d*)/ && $1 < $routed_delay) {    
 	    $routed_delay = $1;
       }
+      if ( $_ =~ /slack\s+\(\w*\)\s*(-?\d+\.?\d*)/ && $1 < $routed_worst_slack) {    
+	$routed_worst_slack = $1;
+      }
     }
     close REPORTFILE;
   }
 
   $routed_core_area="";
-  @report_files = <$folder_name/reports/$design_name.${vt}.$target_delay.routed.area.*>;
+  @report_files = <$folder_name/reports/$top_name.${vt}.$target_delay.routed.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -85,7 +102,7 @@ foreach $file (@files) {
 
   $routed_dynamic_power="";
   $routed_leakage_power="";
-  @report_files = <$folder_name/reports/$prefix.routed.power.*>;
+  @report_files = <$folder_name/reports/$prefix.routed.${instruction_name}_power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -103,11 +120,15 @@ foreach $file (@files) {
 
   @report_files = <$folder_name/reports/$optimized_prefix.routed.timing.*>;
   $optimized_delay = 1000;
+  $optimized_worst_slack = 1000;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) { 
       if ( $_ =~ /data arrival time\s+-?(\d+\.?\d*)/ && $1 < $optimized_delay) {    
 	    $optimized_delay = $1;
+      }
+      if ( $_ =~ /slack\s+\(\w*\)\s*(-?\d+\.?\d*)/ && $1 < $optimized_worst_slack) {    
+	$optimized_worst_slack = $1;
       }
     }
     close REPORTFILE;
@@ -115,7 +136,7 @@ foreach $file (@files) {
 
 
   $optimized_core_area="";
-  @report_files = <$folder_name/reports/$design_name.optimized.${vt}.$target_delay.routed.area.*>;
+  @report_files = <$folder_name/reports/$top_name.optimized.${vt}.$target_delay.routed.area.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
@@ -145,8 +166,9 @@ foreach $file (@files) {
   }
 
   $vdd =~ s/v/./;
+  $clk_period_ns = $target_delay / 1000;
   if ($mapped_delay != 1000)
   {
-     print "${vt}_$target_delay, $vt, $vdd, $mapped_delay, $routed_delay, $optimized_delay, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power\n";
+     print "$design_name, $appendix, $instruction_name, $vt, $vdd, $clk_period_ns, $mapped_worst_slack, $routed_worst_slack, $optimized_worst_slack, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power\n";
   }
 }
