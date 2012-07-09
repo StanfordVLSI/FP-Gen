@@ -397,7 +397,7 @@ icc_clean:
 
 $(ICC_OPT_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
-	@echo Now Running IC Compiler (OPT): Making $@ because of $?
+	@echo Now Running IC Compiler OPT: Making $@ because of $?
 	@echo =============================================
 	@if test ! -d "$(SYNTH_LOGS)"; then 	\
 		mkdir -p $(SYNTH_LOGS);		\
