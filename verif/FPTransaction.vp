@@ -222,8 +222,8 @@ class `mname`;
    function void FPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
     		 			 logic NaN, logic Inf, logic Zero);
 
-      $write("%t: RESULT: Sign=%1b, Exp=0x%h, Man=0x%h NaN=%b Inf=%b Zero=%b RSticky=%b -- My thoughts: ", 
-	     $time, Sign, Exp, Man, NaN, Inf, Zero, RSticky);
+      $write("%t: RESULT: Sign=%1b, Exp=0x%h, Man=0x%h NaN=%b Inf=%b Zero=%b -- My thoughts: ", 
+	     $time, Sign, Exp, Man, NaN, Inf, Zero);
 
       // Start with clear cut flagged cases:
       // ----------------------------------
