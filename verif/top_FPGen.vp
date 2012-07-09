@@ -24,13 +24,6 @@
 //;                            Doc=>"Synthesis mode determines whether or not ".
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off.");
-//; my $SAIF_mode = parameter(Name=>'SAIF_MODE',
-//;                            Val=>'OFF', List=>['ON','OFF'],
-//;                            Doc=>"SAIF mode determines whether or not ".
-//;                                 "special activity factor exraction. ".
-//;                                 "is attempted");
-//;  ( $SAIF_mode eq 'ON' and $synth_mode eq 'OFF' ) and $self->error( "Please do not attempt SAIF extraction in SYNTH=OFF mode\n" ); 
-//;  ( $verif_mode eq 'ON' and $synth_mode eq 'ON' ) and $self->error( "Please do not attempt synth in VERIF=ON mode\n" ); 
 //;  
 
 module `mname` ();   
@@ -47,17 +40,16 @@ module `mname` ();
    //; my $product_width        = 2 * $frac_width + 2;
 
 
-   //; ##############################################################
-   //; ### Local Signals to Stitch the Bench to the DUT
-   //; ##############################################################
+// ##############################################################
+// ### Local Signals to Stitch the Bench to the DUT
+// ##############################################################
    
-
-//; ##### Verification Signals #####		       
 //; if ($verif_mode =~ /ON/){
+// ##### Verification Signals #####		       
 	  logic 				     dumptolog;
 //; }		
 
-//; ##### INPUTS ######
+// ##### DUT INPUTS ######
           logic [`$exp_width + $frac_width`:0]  a;
           logic [`$exp_width + $frac_width`:0]  b;
           logic [`$exp_width + $frac_width`:0]  c;
@@ -65,47 +57,52 @@ module `mname` ();
 
           logic 				     stall_in;
 		
-//; ##### Inputs For Forwarding #####
 //; if ($enable_forwarding =~ /YES/){
+// ##### Inputs For Forwarding #####
           logic 				     forward_a; 
           logic 				     forward_b; 
           logic [`$mul_pipeline_depth`:0]            forward_c;
 //; }
 		
-//; ##### Inputs For Piped Design #####
 //; if ($pipeline_depth>0){
+// ##### Inputs For Piped Design #####
           logic 				     valid_in;
           logic 				     SI; 
 //; }    
 
-//; ##### GLOBALS ######
+// ##### GLOBALS ######
           logic 				     clk; 
           logic 				     reset;
 
 		
-//; ##### Globals For Piped Design #####
 //;if ($pipeline_depth>0){
+// ##### Globals For Piped Design #####
           logic 				     SCAN_ENABLE; 
           logic 				     test_mode;
 //; }    
 		       		
-//; ##### Outputs for Piped Design #####
 //;if ($pipeline_depth>0){
+// ##### Outputs for Piped Design #####
           logic 				     valid_out; 
           logic 				     SO;
 //; }    
 		       
-//; ##### Outputs ##### 
+// ##### Outputs ##### 
           logic 				     stall_request;
 	  logic [`$exp_width + $frac_width`:0] z;
 	  logic [7:0] 			     status;
 
 
 
-		         
-   //; #######################################################################
-   //; ### Instantiate Floating Point Multiply Add Unit as DEVICE UNDER TEST
-   //; #######################################################################
+// #######################################################################
+// ### A Clock and Reset Generator
+// #######################################################################
+//; my $clocker_obj = generate('clocker' , 'clocker', CLK_PERIOD=>100, RST_PERIOD=>20);
+   `$clocker_obj->instantiate()` (.clk(clk), .reset(reset));
+      
+// #######################################################################
+// ### Instantiate Floating Point Multiply Add Unit as DEVICE UNDER TEST
+// #######################################################################
 
    
    `$FP_obj->instantiate()` (
@@ -152,12 +149,9 @@ module `mname` ();
 
 
    
-   //; #######################################################################
-   //; ### Begin Verification Framework
-   //; #######################################################################
-
-   
-   
+// #######################################################################
+// ### Begin Verification Framework
+// #######################################################################   
    //; if ($verif_mode =~ /ON/){
    // ------------------------ VERIFICATION HARNES ---------------------------//
    // Instantiate the TestGenerator here:
@@ -196,48 +190,10 @@ module `mname` ();
    
    //; if ($verif_mode eq "OFF"){
    //; if ($synth_mode eq "ON"){
-   //; if ($SAIF_mode  eq "ON"){
 
           int clk_period;
           int seed;
        
-          //YAY for CLOCK
-          initial begin
-	     int clk_half_period;
-	     real clk_period_ns;
-	     seed = 500 ;
-	     
-	     if ( $test$plusargs("clk_period") ) 
-	       begin
-		  $value$plusargs("clk_period=%g",clk_period_ns);
-		  clk_period = $rtoi(clk_period_ns*1000.0) ;
-		  clk_half_period = clk_period / 2 ;
-		  $display( "Using Clk Period= %f nS", clk_period_ns) ;
-		  $display( "Using Clk Period= %d pS", clk_period) ;
-		  if( clk_period < 100 ) begin
-		     $display( "Error: Clock Period too small, Try again" );
-		     $finish(2);
-		  end
-	       end else begin
-		  $display( "ERROR: No Clock Period Set, Try again") ;
-		  $finish(2);
-	       end
-	     while(1) begin
-		#clk_half_period clk = 1'b0 ;
-		#clk_half_period clk = 1'b1 ;
-	     end
-	  end // initial begin
-
-          //YAY for RESET
-          initial begin
-             reset = 1'b1 ;
-             #clk_period ;
-             #clk_period ;
-             #clk_period ;
-             #clk_period ; 
-             reset = 1'b0 ;
-	  end
-
           //YAY for Driver
           assign rnd = 3'b0 ;
           assign stall_in = 1'b0 ;
@@ -245,13 +201,11 @@ module `mname` ();
           assign forward_b = 0 ;
           assign forward_c = 0 ;
           assign valid_in = 1 ;
-   
-   
+      
 //; my $j_rand = "{ \$random(seed) , \$random(seed) , \$random(seed) , \$random(seed) }" ;
    
           //YAY for Driver
-          initial begin
-	     
+          initial begin     
              int i;
              a = `$j_rand` ;
              b = `$j_rand` ;
@@ -281,10 +235,7 @@ module `mname` ();
 	     $toggle_stop();
 	     $toggle_report ("top.saif",1.0e-12,Gen);
 	     $finish(2);
-	     
 	  end
-	     
-
-   //; }}}
+   //; }}
    
 endmodule : `mname`

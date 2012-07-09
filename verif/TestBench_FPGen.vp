@@ -74,10 +74,11 @@ program automatic `mname` (
 			   output logic [`$mul_pipeline_depth`:0]      forward_c,
 			   //; }			
 			   //; if ($pipeline_depth>0){
-			   output logic 			       clk, reset, stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, stall_in,
+			   input  logic 			       clk, reset, 
+			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, stall_in,
 			   input logic 				       SO,
 			   //; } else {
-			   output logic 			       clk, reset,
+			   input  logic 			       clk, reset,
 			   //; }
 			   // results from the design
 			   input logic [`$exp_width + $frac_width`:0]  z,
@@ -140,7 +141,7 @@ program automatic `mname` (
    //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
-   //; 				    Architecture=>'Fused', 
+   //; 				    Architecture=>$arch, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenC_obj->instantiate`;
 
@@ -180,24 +181,6 @@ program automatic `mname` (
    
    //; }
    
-   initial forever
-     begin
-	clk=1;	//clock cycle is #100
-	#50;
-	clk=0;
-	#50;
-     end
-
-   initial begin
-      #70;
-      if (wave) begin
-	 if(wave_delay) 
-	   #(100*wave_delay);
-	 $display("%t:\tStarting signal and memory wave capture",$time);
-	 $vcdpluson(   0  , `($self->get_top())->mname`);
-         //         levels, instance
-      end
-   end
    
 
    initial begin
@@ -220,7 +203,6 @@ program automatic `mname` (
       // some simulation wire values initialization
       dumptolog = 1'b0;
       valid_in = 1'b0;
-      reset=1'b1;
       a = 0;
       b = 0;
       c = 0;
@@ -230,13 +212,14 @@ program automatic `mname` (
       forward_b = 1'b0;
       forward_c = 1'b0;
       //; }
-      #150; // 2 cycles of reset
-      reset=1'b0;
    end
 
-   // every #(70+100*k), generate stimulus	
+   // every cycle, on the neg edge generate stimulus	
    initial begin
-      #270;
+      @(negedge reset);
+      @(negedge clk);
+      #1;
+      
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 int i=0;
 	 while (i<num_trans) begin
@@ -326,7 +309,7 @@ program automatic `mname` (
 	       c_q = {c_q, c};
 	       expected_q = {expected_q, expected};
 	    end
-	    #100;		// wait a clock cycle
+	    @(negedge clk);#1;		// wait a clock cycle
     	 end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
       else begin // use the input test file
@@ -341,7 +324,7 @@ program automatic `mname` (
 	    b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
 	    c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];	    
 	    loc = loc + 1;
-	    #100;
+	    @(negedge clk); #1;		// wait a clock cycle
 	    Temp = Memory[loc];
 	    Temp_q = {Temp_q, Temp};
 	 end // while (loc <MEM_SIZE && MemTemp !== 1b'x )
@@ -349,9 +332,13 @@ program automatic `mname` (
    end // initial begin
    
    
-   // every #(230+100*$pipeline_depth+100*k), check results	
+   // every clk*$pipeline_depth+clk*k, check results	
    initial begin
-      #`230+100*$pipeline_depth`;
+      @(negedge reset);
+      @(negedge clk);
+      repeat(`$pipeline_depth`) @(negedge clk);
+      // @(negedge clk); 
+
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 int i=0;
 	 while (i<num_trans) begin
@@ -393,19 +380,19 @@ program automatic `mname` (
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
 	       // now check results... 
-	       if (! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd))
-		  
-		 begin
-		    dumptolog = 1'b1;
-		    #1;
-		    $display("%t: \033[0;31mERROR Found\033[0m", $time);
-		    $finish(2);
-		 end
+$write(  "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h Inc=%1b\n ", $time,
+	     TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction, TransRes.Inc);
+	       if (! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd)) begin
+		  //dumptolog = 1'b1;
+		  #1;
+		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+		  $finish(2);
+	       end
 	       else begin
 		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, r_expected);
 	       end // else: !if(! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd))
 	    end
-	    #100;		// wait a clock cycle
+            @(negedge clk);		// wait a clock cycle
     	 end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
       else begin // use the input test file
@@ -459,12 +446,12 @@ program automatic `mname` (
 	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
 	       $finish(2);
 	    end
-	    #100;
+	    @(negedge clk);
 	    r_Temp = Temp_q[0];
   	    Temp_q = Temp_q[1:$];
 	 end // while ( MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
-      #1000; // give the lines some time to settle
+      repeat (10) @(negedge clk); // give the lines some time to settle
       $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
       $finish(0);
    end // initial begin
@@ -475,33 +462,41 @@ program automatic `mname` (
    // general intialization procedure
    task get_command_line_args;
       // if this is a "+wave" run, it must record all signals
-      if ( $test$plusargs("Wave") ) 
-	begin
-           $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
-	   wave = 1;
-	end
-      if ( $test$plusargs("WaveDelay") ) 
-	begin
-	   $value$plusargs("WaveDelay=%d", wave_delay);
-	   $display("%t:\tRuntime input +DelayWave=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
-	end
+      if ( $test$plusargs("Wave") ) begin
+         $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
+	 wave = 1;
+      end
+      if ( $test$plusargs("WaveDelay") ) begin
+	 $value$plusargs("WaveDelay=%d", wave_delay);
+	 $display("%t:\tRuntime input +DelayWave=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
+	 fork
+	    start_wave;
+	 join_none
+      end
       // find the seed for this run
-      if ( $test$plusargs("Seed") ) 
-	begin
-	   $value$plusargs("Seed=%d", seed);
-	   $display("%t:\tRuntime input +Seed=%d found",$time, seed);
-	end
-      if ( $test$plusargs("NumTrans") )
-	begin
-	   $value$plusargs("NumTrans=%d", num_trans);
-	   $display("%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
-	end
-      if ( $test$plusargs("File") )
-	begin
-	   $value$plusargs("File=%s", vector_file);
-	   $display("%t:\tRuntime input +File=%s found",$time, vector_file);
-	end
+      if ( $test$plusargs("Seed") ) begin
+	 $value$plusargs("Seed=%d", seed);
+	 $display("%t:\tRuntime input +Seed=%d found",$time, seed);
+      end
+      if ( $test$plusargs("NumTrans") ) begin
+	 $value$plusargs("NumTrans=%d", num_trans);
+	 $display("%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
+      end
+      if ( $test$plusargs("File") ) begin
+	 $value$plusargs("File=%s", vector_file);
+	 $display("%t:\tRuntime input +File=%s found",$time, vector_file);
+      end
    endtask // get_command_line_args
+
    
+   task start_wave;
+      if (wave) begin
+	 if(wave_delay) 
+	   repeat(wave_delay) @(posedge clk);
+	 $display("%t:\tStarting signal and memory wave capture",$time);
+	 $vcdpluson(   0  , `($self->get_top())->mname`);
+      end
+   endtask // start_wave
    
+
 endprogram : `mname`
