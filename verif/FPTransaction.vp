@@ -220,7 +220,7 @@ class `mname`;
    // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
    // IMPORTANT: This function was custom built for the FPMult format
    function void FPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
-    		 			 logic NaN, logic Inf, logic Zero, logic RSticky);
+    		 			 logic NaN, logic Inf, logic Zero);
 
       $write("%t: RESULT: Sign=%1b, Exp=0x%h, Man=0x%h NaN=%b Inf=%b Zero=%b RSticky=%b -- My thoughts: ", 
 	     $time, Sign, Exp, Man, NaN, Inf, Zero, RSticky);
@@ -242,6 +242,7 @@ class `mname`;
 	 $display("Zero==1 ==> Assuming Zero");
 	 return;
       end
+/* RSticky no longer used
       if (RSticky) begin // Rsticky cases
 	 $write("RSticky==1 ==>  ");
       	 //corner case alert: if FP==1.111111 we need Man<=1.0 and Exp<=Exp+1
@@ -255,7 +256,7 @@ class `mname`;
 	    $display("Man!=1.111...1 ==> Man=Man+1");
 	 end
       end
-
+*/
       // Move to unflagged cases:
       // ---------------------------
       if (Exp > `2**$exp_width-2`) begin // Exponent overflow case
