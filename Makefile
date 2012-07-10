@@ -125,6 +125,7 @@ endif
 
 ##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
 ##############################################
+SIMV = $(RUNDIR)/simv
 SIM_TOP = top_$(PRODUCT)
 
 VERILOG_ENV :=		 
@@ -135,9 +136,10 @@ VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)
 
 SYNOPSYS := /hd/cad/synopsys/dc_shell/latest
 
-VERILOG_LIBS := 	-y $(SYNOPSYS)/dw/sim_ver/		\
-			+incdir+$(SYNOPSYS)/dw/sim_ver/	\
-			-y $(SYNOPSYS)/packages/gtech/src_ver/	\
+VERILOG_LIBS := 	-y $(RUNDIR)					\
+			-y $(SYNOPSYS)/dw/sim_ver/			\
+			+incdir+$(SYNOPSYS)/dw/sim_ver/			\
+			-y $(SYNOPSYS)/packages/gtech/src_ver/		\
 			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/  
 
 
@@ -162,8 +164,8 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-timescale=1ps/1ps				\
 				+noportcoerce         				\
 				-ld $(VCS_CC) -debug_pp				\
-				-top $(SIM_TOP)				\
-				-f $(GENESIS_VLOG_LIST) 			\
+				-top $(SIM_TOP)					\
+				-f $(RUNDIR)/$(GENESIS_VLOG_LIST) 		\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
 
 # "+vpdbufsize+100" limit the internal buffer to 100MB (forces flushing to disk)
@@ -208,31 +210,11 @@ VT 		?= svt
 VOLTAGE 	?= 1v0
 IO2CORE 	?= 30
 SYN_CLK_PERIOD 	?= 1.5
-SYN_CLK_PERIOD_PS = $(shell echo $(SYN_CLK_PERIOD)*1000 | bc ) 
+SYN_CLK_PERIOD_PS = $(strip $(shell echo $(SYN_CLK_PERIOD)*1000 | bc ))
 TARGET_DELAY 	?= $(SYN_CLK_PERIOD_PS)
 SMART_RETIMING 	?= 0
 CLK_GATING 	?= 1
 USE_SAIF	?= 0
-
-# For activity factor extraction
-SAIF_FILE 	= $(PRODUCT).saif
-SAIF_RUNTIME_ARGS:= 	+saif +clk_period=$(SYN_CLK_PERIOD_PS)	\
-			+SignIsPos_DistWeight=50		\
-			+Zero_DistWeight=10	 		\
-			+Denorm100_DistWeight=2			\
-			+DenormFFF_DistWeight=2			\
-			+Denorm001_DistWeight=2			\
-			+DenormRnd_DistWeight=4			\
-			+QuietNaN_DistWeight=10			\
-			+SignalingNaN_DistWeight=10		\
-			+Min_DistWeight				\
-			+Max_DistWeight				\
-			+Inf_DistWeight				\
-			+One_DistWeight				\
-			+PointOneOneOne_DistWeight		\
-			+EzAndSml_DistWeight			\
-			+Random_DistWeight			
-
 
 # flags for dc/icc
 DESIGN_TARGET	= $(PRODUCT)
@@ -262,6 +244,34 @@ ICC_OPT_LOG 		:= $(SYNTH_LOGS)/icc_opt.log
 
 ICC_COMMAND_STRING = "$(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
 ICC_OPT_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; $(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
+
+# For activity factor extraction (SAIF)
+SAIF_FILE 	= $(SYNTH_RUNDIR)/$(PRODUCT).saif
+# No saif dependency if not USE_SAIF
+ifneq ($(USE_SAIF),0)
+  SAIF_DEPENDENCY = $(SAIF_FILE)
+endif
+$(warning SAIF_DEPENDENCY=$(SAIF_DEPENDENCY)-SAIF_FILE=$(SAIF_FILE)-SYNTH_RUNDIR=$(SYNTH_RUNDIR)-PRODUCT=$(PRODUCT))
+# Each one of the following weights control the relative frequency of that type of fp number generated. 
+# Except for 'SignIsPos' which is percent positive numbers, the weights are relative to 
+# one another, not to any absolute number.
+SAIF_RUNTIME_ARGS:= 	+saif +clk_period=$(SYN_CLK_PERIOD_PS)	\
+			+NumTrans=100				\
+			+SignIsPos_DistWeight=50		\
+			+Zero_DistWeight=10	 		\
+			+Denorm100_DistWeight=2			\
+			+DenormFFF_DistWeight=2			\
+			+Denorm001_DistWeight=2			\
+			+DenormRnd_DistWeight=4			\
+			+QuietNaN_DistWeight=10			\
+			+SignalingNaN_DistWeight=10		\
+			+Min_DistWeight=10			\
+			+Max_DistWeight=10			\
+			+Inf_DistWeight=10			\
+			+One_DistWeight=10			\
+			+PointOneOneOne_DistWeight=10		\
+			+EzAndSml_DistWeight=0			\
+			+Random_DistWeight=50			
 
 ######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
 
@@ -306,9 +316,9 @@ genesis_clean:
 # compile rules:
 # use "make COMP=+define+<compile_time_flag[=value]>" to add compile time flags
 .PHONY: comp
-comp: simv
+comp: $(SIMV)
 
-simv:	$(GENESIS_VLOG_LIST)
+$(SIMV):	$(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
@@ -343,34 +353,39 @@ $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE): $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 #####################
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
 .PHONY: run run_ibm
-run: simv
+run: $(SIMV)
 	@echo ""
 	@echo Now Running simv
 	@echo ==================================================
-	./simv $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
+	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
 
-run_ibm: simv $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
+run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
 	@echo ""Architecture
 	@echo Now Running simv using IBM\'s fpgen generated vectors
 	@echo ==================================================
-	./simv $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) 2>&1 | tee run_bb.log
+	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) 2>&1 | tee run_bb.log
 
 
 # DC & ICC Run rules:
 ############################
-$(SAIF_FILE): simv
+$(SAIF_FILE): $(SIMV)
 	@echo ""
 	@echo Now Running simv for SAIF extraction: Making $@ because of $?
 	@echo ==============================================================
-	@echo "FIXME: For now just making stuff up ;-)"
-	touch FIXME.$(SAIF_FILE)
+	@if test ! -d "$(SYNTH_RUNDIR)"; then 	\
+		mkdir -p $(SYNTH_RUNDIR);	\
+	fi
+	(cd $(SYNTH_RUNDIR); 			\
+	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) $(RUN) 2>&1 | tee run_saif_bb.log	\
+	)
+
 
 # Design Compiler rules:
 .PHONY: force_dc run_dc dc_clean
 
 force_dc: dc_clean run_dc
 run_dc: $(DC_LOG)
-$(DC_LOG): $(SAIF_FILE) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
+$(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
 	@echo =============================================
@@ -397,7 +412,7 @@ run_icc: $(ICC_LOG)
 force_icc_opt: icc_opt_clean run_icc_opt
 run_icc_opt: $(ICC_OPT_LOG)
 
-$(ICC_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler: Making $@ because of $?
 	@echo =============================================
@@ -415,7 +430,7 @@ icc_clean:
 	@echo =============================================
 	\rm -f $(ICC_LOG)
 
-$(ICC_OPT_LOG): $(SAIF_FILE) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler OPT: Making $@ because of $?
 	@echo =============================================
@@ -479,7 +494,7 @@ clean: genesis_clean synthesis_clean
 	@echo ""
 	@echo Cleanning old files, objects, logs and garbage
 	@echo ==================================================
-	\rm -rf simv simv.*
+	\rm -rf $(SIMV) simv.*
 	\rm -f *.tcl
 	\rm -f *.info
 	\rm -rf csrc
