@@ -255,7 +255,7 @@ $(warning SAIF_DEPENDENCY=$(SAIF_DEPENDENCY)-SAIF_FILE=$(SAIF_FILE)-SYNTH_RUNDIR
 # Each one of the following weights control the relative frequency of that type of fp number generated. 
 # Except for 'SignIsPos' which is percent positive numbers, the weights are relative to 
 # one another, not to any absolute number.
-SAIF_RUNTIME_ARGS:= 	+saif +clk_period=$(SYN_CLK_PERIOD_PS)	\
+SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+NumTrans=100				\
 			+SignIsPos_DistWeight=50		\
 			+Zero_DistWeight=10	 		\

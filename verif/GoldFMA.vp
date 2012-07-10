@@ -63,14 +63,16 @@ class `mname`;
 	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
       $write(  "%t:          TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h IncC=%1b\n", $time,
 	       transC.TransType.name(), transC.Sign, transC.Exponent, transC.Fraction, transC.Inc);
-      CalcGold(transA, transB, transC, rnd);
-      
+
       // finally put it in your memory for a later check 
+      CalcGold(transA, transB, transC, rnd);
       $display("%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h Inc=%1b", $time,
 	       Expected.TransType.name(), Expected.Sign, Expected.Exponent, Expected.Fraction, Expected.Inc);
-      //$display("%t: RESULT: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
-      //transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction);
-		transRes.CalculateInc(); 
+
+      transRes.CalculateInc(); 
+      $write(  "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h Inc=%1b\n ", $time,
+	       transRes.TransType.name(), transRes.Sign, transRes.Exponent, transRes.Fraction, transRes.Inc);
+
       // First check flags:
       if (transRes.TransType == `$typeRes`::QuietNaN || transRes.TransType == `$typeRes`::SignalingNaN) begin
 	 if (Expected.TransType == `$typeRes`::QuietNaN || Expected.TransType == `$typeRes`::SignalingNaN)

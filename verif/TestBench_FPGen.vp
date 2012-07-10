@@ -6,7 +6,7 @@
  * Runtime Arguments 
  * -----------------
  * (Via the "make run RUN=+<runtime_flag[=value]>" notation)
- * * Wave, Seed, NumTrans
+ * * +Wave, +WaveDelay=N, +Seed=N, +NumTrans=N, +SAIF
  * 
  * Parameters:
  * -----------
@@ -78,8 +78,6 @@ program automatic `mname` (
 
    // Local variables and handles for controlling the simulation
    int 								       seed=`$seed`;
-   int 								       wave=0;
-   int 								       wave_delay=0;
    int 								       num_trans = `$num_trans`;
    int 								       dummy;
    string 							       vector_file = "`$vector_file`";
@@ -167,12 +165,36 @@ program automatic `mname` (
    
    //; }
    
+
+   //-------------------------------------------------------------------------//
+   // MAIN: Main flow of test
+   //-------------------------------------------------------------------------//
+   initial begin
+      get_command_line_args();
+      start_up_testbench();
+
+      // Fork the driver and monitor to do their thing
+      fork
+	 start_saif();
+	 drive_dut();
+	 monitor_dut();
+      join
+      
+      // if we reached this point safely, the test passed!
+      repeat (10) @(negedge clk); // give the lines some time to settle
+      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
+      finish_saif;
+      $finish(0);
+   end
    
 
-   initial begin
+   
+   //-------------------------------------------------------------------------//
+   // start_up_testbench: Task to reset all DUT signals and testbench objects
+   //-------------------------------------------------------------------------//
+   task start_up_testbench;
       $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
       // some simulation control initialization
-      get_command_line_args();
       dummy = $urandom(seed);
       TransGenA = new();
       TransGenB = new();
@@ -198,10 +220,13 @@ program automatic `mname` (
       forward_b = 1'b0;
       forward_c = 0;
       //; }
-   end
+   endtask // start_up_testbench
+   
 
-   // every cycle, on the neg edge generate stimulus	
-   initial begin
+   //-------------------------------------------------------------------------//
+   // Driver: every cycle, on the neg edge generate stimulus	
+   //-------------------------------------------------------------------------//
+   task drive_dut;
       @(negedge reset);
       @(negedge clk);
       #1;
@@ -312,11 +337,14 @@ program automatic `mname` (
 	    Temp_q = {Temp_q, Temp};
 	 end // while (loc <MEM_SIZE && MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
-   end // initial begin
+   endtask // drive_dut
    
    
-   // every clk*$pipeline_depth+clk*k, check results	
-   initial begin
+   
+   //-------------------------------------------------------------------------//
+   // Monitor: every clk*$pipeline_depth+clk*k, check results	
+   //-------------------------------------------------------------------------//
+   task monitor_dut;
       @(negedge reset);
       @(negedge clk);
       repeat(`$pipeline_depth`) begin
@@ -353,28 +381,26 @@ program automatic `mname` (
 	       //; if ($enable_forwarding eq 'YES'){
 	       // Print the forwarding information
 	       if ( forward_a_q[0] )
-		 $display("%t A is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_a`);
+		 $display("%t A is forwarded from Transaction #%0d", $time, i-`$forward_cycle_a`);
 	       if ( forward_b_q[0] )
-		 $display("%t B is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_b`);
+		 $display("%t B is forwarded from Transaction #%0d", $time, i-`$forward_cycle_b`);
 	       if ( |forward_c_q[0] ) begin
 		int hotbit;
 		for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
 			if (forward_c_q[0][k]) begin
 			   hotbit=k;
-			   $display("hotbit is %0d", k);
+			   //$display("hotbit is %0d", k);
 			end
 		end
-		 $display("%t C is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_c`+hotbit);
+		 $display("%t C is forwarded from Transaction #%0d", $time, i-`$forward_cycle_c`+hotbit);
 		end
 	       forward_a_q = forward_a_q[1:$];
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
 	       // now check results... 
-$write(  "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h Inc=%1b\n ", $time,
-	     TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction, TransRes.Inc);
 	       if (! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd)) begin
-		  //dumptolog = 1'b1;
+		  dumptolog = 1'b1;
 		  #1;
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
 		  $finish(2);
@@ -442,113 +468,73 @@ $write(  "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h Inc=%1b\n ", $time,
   	    Temp_q = Temp_q[1:$];
 	 end // while ( MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
-      repeat (10) @(negedge clk); // give the lines some time to settle
-      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
-      $finish(0);
-   end // initial begin
+   endtask // monitor_dut
+   
 
 
    
    //-------------------------------------------------------------------------//
-   // general intialization procedure
+   // general runtime argument parsing procedure
+   //-------------------------------------------------------------------------//
    task get_command_line_args;
+      int 	wave=0;
+      int 	wave_delay=0;
       // if this is a "+wave" run, it must record all signals
       if ( $test$plusargs("Wave") ) begin
-         $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
+         $display("\t%t:\tRuntime input Wave found (will start signal capture soon...)",$time);
 	 wave = 1;
       end
       if ( $test$plusargs("WaveDelay") ) begin
 	 $value$plusargs("WaveDelay=%d", wave_delay);
-	 $display("%t:\tRuntime input +DelayWave=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
+	 $display("\t%t:\tRuntime input +WaveDelay=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
 	 fork
-	    start_wave;
+	    if (wave) start_wave(.wave_delay(wave_delay));
 	 join_none
       end
       // find the seed for this run
       if ( $test$plusargs("Seed") ) begin
 	 $value$plusargs("Seed=%d", seed);
-	 $display("%t:\tRuntime input +Seed=%d found",$time, seed);
+	 $display("\t%t:\tRuntime input +Seed=%d found",$time, seed);
       end
       if ( $test$plusargs("NumTrans") ) begin
 	 $value$plusargs("NumTrans=%d", num_trans);
-	 $display("%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
+	 $display("\t%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
       end
       if ( $test$plusargs("File") ) begin
 	 $value$plusargs("File=%s", vector_file);
-	 $display("%t:\tRuntime input +File=%s found",$time, vector_file);
+	 $display("\t%t:\tRuntime input +File=%s found",$time, vector_file);
       end
    endtask // get_command_line_args
 
-   
-   task start_wave;
-      if (wave) begin
-	 if(wave_delay) 
-	   repeat(wave_delay) @(posedge clk);
-	 $display("%t:\tStarting signal and memory wave capture",$time);
-	 $vcdpluson(   0  , `($self->get_top())->mname`);
-      end
+
+   // task to control wave capture
+   task start_wave(input int wave_delay=0);
+      if(wave_delay) 
+	repeat(wave_delay) @(posedge clk);
+      $display("\t%t:\tStarting signal and memory wave capture",$time);
+      $vcdpluson(   0  , `($self->get_top())->mname`);
    endtask // start_wave
+
    
-   //; #######################################################################
-   //; ### Begin Activity Factor Estimation Framework
-   //; #######################################################################
+   // Activity factor tasks
+   task start_saif;
+      if ( $test$plusargs("SAIF") ) begin
+         $display("\t%t:\tStarting SAIF (Switching Activity Interchange Format)",$time);
+	 // setup SAIF 
+	 $set_gate_level_monitoring("rtl_on");
+      	 $set_toggle_region(`$FP_obj->get_instance_path()`);
+	 // wait for sim to really start
+	 @(negedge reset);
+	 $toggle_start;
+      end
+   endtask // start_saif
+
+   task finish_saif;
+      if ( $test$plusargs("SAIF") ) begin
+         $display("\t%t:\tFinalizing SAIF (Switching Activity Interchange Format)",$time);
+	 $toggle_stop();
+	 $toggle_report ("`$FP_obj->iname()`.saif",1.0e-12,`$FP_obj->get_instance_path()`);
+      end
+   endtask // finish_saif
    
-   //; if (0){
-
-          int clk_period;
-          int seed;
-       
-          //YAY for Driver
-          assign rnd = 3'b0 ;
-          assign stall_in = 1'b0 ;
-          assign forward_a = 0 ;
-          assign forward_b = 0 ;
-          assign forward_c = 0 ;
-          assign valid_in = 1 ;
-      
-//; my $j_rand = "{ \$random(seed) , \$random(seed) , \$random(seed) , \$random(seed) }" ;
-   
-          //YAY for Driver
-          initial begin     
-             int i;
-             a = `$j_rand` ;
-             b = `$j_rand` ;
-             c = `$j_rand` ;
-	     repeat (20) @(posedge clk);#1;
-
-	     //Start Toggle Extraction
-	     $set_gate_level_monitoring("rtl_on");
-	     #1
-	     $set_toggle_region(FPGen);
-	     #1
-	     $toggle_start(); 
-	     #1
-	     $display("%t: AGENT IS ALIVE -- NOW RUN For Extraction...", $time);
-
-	     for (i=0; i<10000; i++) begin
-		a = `$j_rand` ;
-		b = `$j_rand` ;
-		c = `$j_rand` ;
-		//$display("%t: x%h", $time , z );
-		@(negedge clk);
-	     end
-
-	     $display("%t: AGENT IS DONE", $time);
-	     repeat (20) @(posedge clk);
-
-	     $toggle_stop();
-	     $toggle_report ("top.saif",1.0e-12,Gen);
-	     $finish(2);
-	  end
-   //; }
-
-//  initial begin
-//  $set_gate_level_monitoring("on");
-//  $set_toggle_region(mixedHdlScope);
-//  // initialization of Verilog signals, and then:
-//  $toggle_start;
-//  // testbench
-//  $toggle_stop;
-//  $toggle_report("outputFile", timeUnit, mixedHdlScope);
-//  end
 endprogram : `mname`
