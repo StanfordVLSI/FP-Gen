@@ -251,7 +251,7 @@ SAIF_FILE 	= $(SYNTH_RUNDIR)/$(PRODUCT).saif
 ifneq ($(USE_SAIF),0)
   SAIF_DEPENDENCY = $(SAIF_FILE)
 endif
-$(warning SAIF_DEPENDENCY=$(SAIF_DEPENDENCY)-SAIF_FILE=$(SAIF_FILE)-SYNTH_RUNDIR=$(SYNTH_RUNDIR)-PRODUCT=$(PRODUCT))
+
 # Each one of the following weights control the relative frequency of that type of fp number generated. 
 # Except for 'SignIsPos' which is percent positive numbers, the weights are relative to 
 # one another, not to any absolute number.
