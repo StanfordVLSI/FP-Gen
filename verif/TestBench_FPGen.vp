@@ -326,7 +326,12 @@ program automatic `mname` (
    initial begin
       @(negedge reset);
       @(negedge clk);
-      repeat(`$pipeline_depth`) @(negedge clk);
+      repeat(`$pipeline_depth`) begin
+	 @(negedge clk);
+	 // while stall_request is enable, wait another cycle
+	 while(stall_request) @(negedge clk);
+      end
+      
       // @(negedge clk); 
 
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
