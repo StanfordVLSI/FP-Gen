@@ -172,8 +172,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 				-l simv.log					\
 				+vpdbufsize+100					\
-				+vpdfileswitchsize+100                          \
-                                +clk_period=$(SYN_CLK_PERIOD)
+				+vpdfileswitchsize+100
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
 
@@ -205,16 +204,37 @@ IBM_FPGEN_FLAGS := 	-o $(IBM_TRGT_DIR)		\
 
 ##### FLAGS FOR SYNOPSYS DC-SHELL #####
 #######################################
-SAIF_FILE 	= $(PRODUCT).saif
 VT 		?= svt
 VOLTAGE 	?= 1v0
 IO2CORE 	?= 30
-SYN_CLK_PERIOD ?= 1.5
-TARGET_DELAY 	?= $(shell echo $(SYN_CLK_PERIOD)*1000 | bc )
+SYN_CLK_PERIOD 	?= 1.5
+SYN_CLK_PERIOD_PS = $(shell echo $(SYN_CLK_PERIOD)*1000 | bc ) 
+TARGET_DELAY 	?= $(SYN_CLK_PERIOD_PS)
 SMART_RETIMING 	?= 0
 CLK_GATING 	?= 1
+USE_SAIF	?= 0
+
+# For activity factor extraction
+SAIF_FILE 	= $(PRODUCT).saif
+SAIF_RUNTIME_ARGS:= 	+saif +clk_period=$(SYN_CLK_PERIOD_PS)	\
+			+SignIsPos_DistWeight=50		\
+			+Zero_DistWeight=10	 		\
+			+Denorm100_DistWeight=2			\
+			+DenormFFF_DistWeight=2			\
+			+Denorm001_DistWeight=2			\
+			+DenormRnd_DistWeight=4			\
+			+QuietNaN_DistWeight=10			\
+			+SignalingNaN_DistWeight=10		\
+			+Min_DistWeight				\
+			+Max_DistWeight				\
+			+Inf_DistWeight				\
+			+One_DistWeight				\
+			+PointOneOneOne_DistWeight		\
+			+EzAndSml_DistWeight			\
+			+Random_DistWeight			
 
 
+# flags for dc/icc
 DESIGN_TARGET	= $(PRODUCT)
 SYNTH_DIR_NAME 	:= syn_$(VT)_$(VOLTAGE)_$(TARGET_DELAY)
 ifdef APPENDIX
