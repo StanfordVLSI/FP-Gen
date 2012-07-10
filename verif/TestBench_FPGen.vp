@@ -10,7 +10,7 @@
  * 
  * Parameters:
  * -----------
- * * FractionWidth, ExponentWidth, Architecture, TestDenormals, UseInc
+ * * DUT -- pointer to the design under test object 
  * * NumTrans, Seed
  * 
  * 
@@ -24,26 +24,19 @@
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
-//;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
-//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
-//;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
+//; my $FP_obj = parameter(Name=>'DUT', Val=>undef, Doc=>"Pointer to the design under test object");
+//; $self->error("Missing pointer to DUT") unless $FP_obj;
+//;
+//; # Extract some data from the design
+//; my $frac_width           = $FP_obj->get_param('FractionWidth');
+//; my $exp_width            = $FP_obj->get_param('ExponentWidth');
+//; my $enable_forwarding    = $FP_obj->get_param('EnableForwarding');
+//; my $pipeline_depth       = $FP_obj->get_param('PipelineDepth');
+//; my $test_denormals       = $FP_obj->get_param('EnableDenormals');
+//; my $mul_pipeline_depth   = $FP_obj->get_param('MulPipelineDepth') ;
+//;
 //; my $vector_file = parameter(Name=>'TestVectorFile', Val=>'',
 //;                             Doc=>"Name of the input testvector file");
-//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
-//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
-//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
-//;                           List=>['YES','NO'], 
-//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
-//;                                "of inputs A and B correctly (YES/NO)");
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>1, Min=>0 , Step=>1,
-//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
-//; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>4,
-//;                       Doc=>"Multiplier Part Pipeline depth");
-//; my $useInc = parameter(Name=>'UseInc', Val=>'YES', List=>['YES', 'NO'],
-//; 			   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc)");
 //; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
 //;                           Doc=>"Number of test transactions to run ".
 //;                                "(can be overriden at runtime using the '+NumTrans=value' command line notation)");
@@ -496,5 +489,66 @@ $write(  "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h Inc=%1b\n ", $time,
       end
    endtask // start_wave
    
+   //; #######################################################################
+   //; ### Begin Activity Factor Estimation Framework
+   //; #######################################################################
+   
+   //; if (0){
 
+          int clk_period;
+          int seed;
+       
+          //YAY for Driver
+          assign rnd = 3'b0 ;
+          assign stall_in = 1'b0 ;
+          assign forward_a = 0 ;
+          assign forward_b = 0 ;
+          assign forward_c = 0 ;
+          assign valid_in = 1 ;
+      
+//; my $j_rand = "{ \$random(seed) , \$random(seed) , \$random(seed) , \$random(seed) }" ;
+   
+          //YAY for Driver
+          initial begin     
+             int i;
+             a = `$j_rand` ;
+             b = `$j_rand` ;
+             c = `$j_rand` ;
+	     repeat (20) @(posedge clk);#1;
+
+	     //Start Toggle Extraction
+	     $set_gate_level_monitoring("rtl_on");
+	     #1
+	     $set_toggle_region(FPGen);
+	     #1
+	     $toggle_start(); 
+	     #1
+	     $display("%t: AGENT IS ALIVE -- NOW RUN For Extraction...", $time);
+
+	     for (i=0; i<10000; i++) begin
+		a = `$j_rand` ;
+		b = `$j_rand` ;
+		c = `$j_rand` ;
+		//$display("%t: x%h", $time , z );
+		@(negedge clk);
+	     end
+
+	     $display("%t: AGENT IS DONE", $time);
+	     repeat (20) @(posedge clk);
+
+	     $toggle_stop();
+	     $toggle_report ("top.saif",1.0e-12,Gen);
+	     $finish(2);
+	  end
+   //; }
+
+//  initial begin
+//  $set_gate_level_monitoring("on");
+//  $set_toggle_region(mixedHdlScope);
+//  // initialization of Verilog signals, and then:
+//  $toggle_start;
+//  // testbench
+//  $toggle_stop;
+//  $toggle_report("outputFile", timeUnit, mixedHdlScope);
+//  end
 endprogram : `mname`

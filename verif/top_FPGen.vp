@@ -101,9 +101,7 @@ module `mname` ();
       
 // #######################################################################
 // ### Instantiate Floating Point Multiply Add Unit as DEVICE UNDER TEST
-// #######################################################################
-
-   
+// #######################################################################  
    `$FP_obj->instantiate()` (
 //;                           ###### Inputs ######		
 //;                           if ($verif_mode =~ /ON/){
@@ -143,10 +141,6 @@ module `mname` ();
 
 
 
-
-
-
-
    
 // #######################################################################
 // ### Begin Verification Framework
@@ -154,14 +148,7 @@ module `mname` ();
    //; if ($verif_mode =~ /ON/){
    // ------------------------ VERIFICATION HARNES ---------------------------//
    // Instantiate the TestGenerator here:
-   //; my $TestBench_obj = generate('TestBench_FPGen', 'TestBench',
-   //;                              FractionWidth=>$frac_width, 
-   //;                              ExponentWidth=>$exp_width,
-   //;                              EnableForwarding=>$enable_forwarding,
-   //;                              PipelineDepth=>$pipeline_depth,
-   //;                              MulPipelineDepth=> $mul_pipeline_depth,
-   //; 				    UseInc=>'NO',
-   //;                              TestDenormals=>$enable_denormals);
+   //; my $TestBench_obj = generate('TestBench_FPGen', 'TestBench', DUT=>$FP_obj);
    `$TestBench_obj->instantiate` (
 				  // outputs:
 				  .dumptolog(dumptolog),
@@ -180,60 +167,4 @@ module `mname` ();
 				  .z(z),  .status(status), .valid_out(valid_out), .stall_request(stall_request)
 				  );
    //; } # End of "if ($verif_mode..."
-
-
-   //; #######################################################################
-   //; ### Begin Activity Factor Estimation Framework
-   //; #######################################################################
-   
-   //; if ($verif_mode eq "OFF"){
-   //; if ($synth_mode eq "ON"){
-
-          int clk_period;
-          int seed;
-       
-          //YAY for Driver
-          assign rnd = 3'b0 ;
-          assign stall_in = 1'b0 ;
-          assign forward_a = 0 ;
-          assign forward_b = 0 ;
-          assign forward_c = 0 ;
-          assign valid_in = 1 ;
-      
-//; my $j_rand = "{ \$random(seed) , \$random(seed) , \$random(seed) , \$random(seed) }" ;
-   
-          //YAY for Driver
-          initial begin     
-             int i;
-             a = `$j_rand` ;
-             b = `$j_rand` ;
-             c = `$j_rand` ;
-	     repeat (20) @(posedge clk);#1;
-
-	     //Start Toggle Extraction
-	     $set_gate_level_monitoring("rtl_on");
-	     #1
-	     $set_toggle_region(FPGen);
-	     #1
-	     $toggle_start(); 
-	     #1
-	     $display("%t: AGENT IS ALIVE -- NOW RUN For Extraction...", $time);
-
-	     for (i=0; i<10000; i++) begin
-		a = `$j_rand` ;
-		b = `$j_rand` ;
-		c = `$j_rand` ;
-		//$display("%t: x%h", $time , z );
-		@(negedge clk);
-	     end
-
-	     $display("%t: AGENT IS DONE", $time);
-	     repeat (20) @(posedge clk);
-
-	     $toggle_stop();
-	     $toggle_report ("top.saif",1.0e-12,Gen);
-	     $finish(2);
-	  end
-   //; }}
-   
 endmodule : `mname`
