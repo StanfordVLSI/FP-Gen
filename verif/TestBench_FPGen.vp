@@ -30,9 +30,6 @@
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
-//; my $arch = parameter(Name=>'Architecture', Val=>'Cascade', List=>['Cascade', 'Fused'],
-//; 			 Doc=>"Which architecture is tested? Cascaded multiply accumulate ".
-//; 			      "or Fused? (Pick:Cascade/Fused)");
 //; my $vector_file = parameter(Name=>'TestVectorFile', Val=>'',
 //;                             Doc=>"Name of the input testvector file");
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
@@ -127,21 +124,18 @@ program automatic `mname` (
    //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width,
-   //; 				    Architecture=>$arch,
    //;                              TestDenormals=>$test_denormals);
    `$TransGenA_obj->instantiate`;
    //; my $TransGenB_obj = generate('FPTransaction','TransGenB',
    //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
-   //; 				    Architecture=>$arch,
    //;                              TestDenormals=>$test_denormals);
    `$TransGenB_obj->instantiate`;
    //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
    //;				    Random=>'YES',
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
-   //; 				    Architecture=>$arch, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenC_obj->instantiate`;
 
@@ -149,8 +143,7 @@ program automatic `mname` (
    //; my $TransRes_obj = generate('FPTransaction','TransRes',
    //;				    Random=>'NO',
    //;                              FractionWidth=>$frac_width, 
-   //;                              ExponentWidth=>$exp_width, 
-   //; 				    Architecture=>$arch,   
+   //;                              ExponentWidth=>$exp_width,   
    //;                              TestDenormals=>$test_denormals);
    `$TransRes_obj->instantiate`;
 
@@ -210,7 +203,7 @@ program automatic `mname` (
       //; if ($enable_forwarding eq 'YES'){
       forward_a = 1'b0;
       forward_b = 1'b0;
-      forward_c = 1'b0;
+      forward_c = 0;
       //; }
    end
 
@@ -238,9 +231,6 @@ program automatic `mname` (
 		    && expected_q.size() >= `$forward_cycle_a` ) begin
 		  forward_a = 1'b1;
 		  a = expected_q[`$pipeline_depth-$forward_cycle_a-1`];
-		  //; for (my $i=0; $i<$forward_cycle_a; $i++){
-		  //$display("%t expected_q[`$i`] = %h", $time, expected_q[`$i`]);
-		  //;}
 		  TransGenA.ForceSignExpFrac(a[`$fp_width-1`], a[`$fp_width -2`:`$frac_width`], a[`$frac_width -1`:0], 1'b0);
 	       end 
 	       else  begin
@@ -278,7 +268,7 @@ program automatic `mname` (
 		  TransGenC.ForceSignExpFrac(c[`$fp_width-1`], c[`$fp_width -2`:`$frac_width`], c[`$frac_width -1`:0], 1'b0);
 	       end 
 	       else  begin
-		  forward_c = 'b0;
+		  forward_c = 0;
 		  TransGenC.randomize();
 		  c[`$exp_width + $frac_width`] = TransGenC.Sign;
 		  c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
@@ -371,7 +361,10 @@ program automatic `mname` (
 	       if ( |forward_c_q[0] ) begin
 		int hotbit;
 		for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
-			if (forward_c_q[0][k]) hotbit=k;
+			if (forward_c_q[0][k]) begin
+			   hotbit=k;
+			   $display("hotbit is %0d", k);
+			end
 		end
 		 $display("%t C is forwarded from Transaction #%0d cycles before", $time, i-`$forward_cycle_c`+hotbit);
 		end

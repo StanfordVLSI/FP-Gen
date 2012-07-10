@@ -29,7 +29,6 @@
 module `mname` ();   
    //; # Generate the DUT here and get the pipeline depth
    //; my $FP_obj               = generate_base('FPGen', 'FPGen', VERIF_MODE=>$verif_mode , SYNTH_MODE=>$synth_mode );
-   //; my $arch                 = $FP_obj->get_param('Architecture');
    //; my $pipeline_depth       = $FP_obj->get_param('PipelineDepth');
    //; my $mul_pipeline_depth   = $FP_obj->get_param('MulPipelineDepth') ;
    //; my $add_pipeline_depth   = $FP_obj->get_param('AddPipelineDepth');
@@ -156,7 +155,6 @@ module `mname` ();
    // ------------------------ VERIFICATION HARNES ---------------------------//
    // Instantiate the TestGenerator here:
    //; my $TestBench_obj = generate('TestBench_FPGen', 'TestBench',
-   //;                              Architecture=>($arch eq 'FMA' ? 'Fused' : 'Cascade'),
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width,
    //;                              EnableForwarding=>$enable_forwarding,
