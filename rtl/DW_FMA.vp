@@ -96,12 +96,10 @@ module `mname` (
     input logic [0:0]                           forward_c,
    //; }
     input logic [2:0] 				rnd,
-
-   //; if ($pipeline_depth>0){
-    input logic 				clk, reset, valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
-    output logic 				valid_out, SO, stall_request,
-   //; } else {
     input logic 				clk, reset,
+   //; if ($pipeline_depth>0){
+    input logic 				valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
+    output logic 				valid_out, SO, stall_request,
    //; }
 		
     output logic [`$exp_width + $frac_width`:0] z,

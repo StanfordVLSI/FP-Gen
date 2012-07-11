@@ -63,17 +63,14 @@ program automatic `mname` (
 			   output logic 			       forward_a, forward_b, 
 			   output logic [`$mul_pipeline_depth`:0]      forward_c,
 			   //; }			
-			   //; if ($pipeline_depth>0){
-			   input  logic 			       clk, reset, 
-			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, stall_in,
-			   input logic 				       SO,
-			   //; } else {
 			   input  logic 			       clk, reset,
+			   //; if ($pipeline_depth>0){
+			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, stall_in,
+			   input logic 				       SO, valid_out, stall_request
 			   //; }
 			   // results from the design
 			   input logic [`$exp_width + $frac_width`:0]  z,
-			   input logic [7:0] 			       status ,
-			   input logic 				       valid_out, stall_request
+			   input logic [7:0] 			       status
 			   );
 
    // Local variables and handles for controlling the simulation
@@ -106,9 +103,11 @@ program automatic `mname` (
 
    logic 							       resultIsZero, expectIsZero;
 
-
+   //; if ($pipeline_depth>0){
    assign stall_in = 1'b0 ;
-   
+   //; } else {
+   logic stall_request = 1'b0;
+   //; }
    
    // FP transaction handles
    //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
@@ -210,7 +209,9 @@ program automatic `mname` (
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
       dumptolog = 1'b0;
+      //; if ($pipeline_depth>0){
       valid_in = 1'b0;
+      //; }
       a = 0;
       b = 0;
       c = 0;
@@ -235,7 +236,9 @@ program automatic `mname` (
 	 int i=0;
 	 while (i<num_trans) begin
 	    if(!stall_request) begin
+               //; if ($pipeline_depth>0){
 	       valid_in = 1'b1;
+               //; }
 	       i++;
 	       // Assign values to the lines
 	       dumptolog = 1'b0;
@@ -326,7 +329,9 @@ program automatic `mname` (
 	 Temp = Memory[loc];
 	 Temp_q = {Temp_q, Temp};
 	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin
+            //; if ($pipeline_depth>0){
 	    valid_in = 1'b1;
+            //; }
 	    rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
 	    a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
 	    b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];

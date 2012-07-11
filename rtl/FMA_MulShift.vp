@@ -132,12 +132,15 @@ module `mname` (
       //; if($enable_forwarding =~ /YES/){
       .ainc( ainc ), .binc(binc),
       //; }
+      //; if ($pipeline_depth>0){
       .valid_in(valid_in & ~adder_mode),
       .stall(stall), .clk(clk) , .reset(reset),
-      .out0(mulp_out_pp0), .out1(mulp_out_pp1),
-      .valid_out(valid_mul)
+      .valid_out(valid_mul) ,
+      //; }
+      .out0(mulp_out_pp0), .out1(mulp_out_pp1)
       );
 
+//; if ($pipeline_depth>0){
 //;   my $pipeA = generate(  'Pinned_pipeline',  'pipe_A',  Width=> $frac_width+2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipeA ->instantiate()` ( .in( { ~denormA , a[`$frac_width -1`:0], ainc} ) , .out({ManA_final, ainc_final}),
                              .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
@@ -145,7 +148,10 @@ module `mname` (
 
   assign  {AB_pp0, AB_pp1} = adder_mode_final?
                             { 3'b0,ManA_final, `2*$frac_width+3`'b0, ainc_final,`$frac_width`'b0}
-                          : { mulp_out_pp0 , mulp_out_pp1 }; 
+                          : { mulp_out_pp0 , mulp_out_pp1 };
+//; } else {
+  assign  {AB_pp0, AB_pp1} = { mulp_out_pp0 , mulp_out_pp1 };
+//; }
 
   /*Exponent Difference*/
 

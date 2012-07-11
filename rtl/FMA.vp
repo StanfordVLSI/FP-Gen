@@ -175,6 +175,7 @@ module `mname` (
 //;  my $add_bus_width = $exp_width + 2*$product_width + $wide_width + 14;
 //;  my $add_pipeline_depth = $pipeline_depth-$mulp_pipeline_depth-1;
 //;  $add_pipeline_depth = $add_pipeline_depth<0? 0 : $add_pipeline_depth;
+//;  if ($add_pipeline_depth>0) {
 //;  my $add_pipe = ($enableMultiplePumping =~ /YES/)?
 //;         generate('Pinned_pipeline', 'add_pipe', Width=> $add_bus_width , PipelineDepth=> $add_pipeline_depth)
 //;       : generate('FF_pipeline', 'add_pipe', Width=> $add_bus_width, PipelineDepth=> $add_pipeline_depth, Retime=> 'YES');
@@ -182,8 +183,11 @@ module `mname` (
   `$add_pipe ->instantiate()` (
        .in({AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}) , 
        .valid_in(valid_middle), .clk(clk) , .stall(stall_in), .reset(reset), 
-       .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem}),
+       .out(),
        .valid_out(valid_inc) );
+//;  } else {
+  assign {AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem} = {AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}; 
+//;  }
 
 
 //;  if ($pipeline_depth>1) {

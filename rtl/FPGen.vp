@@ -68,8 +68,6 @@ module `mname` (
          input logic [`$exp_width + $frac_width`:0]  b,
          input logic [`$exp_width + $frac_width`:0]  c,
 	 input logic [2:0] 			     rnd,		
-
-         input logic 				     stall_in,
 		
 //; ##### Inputs For Forwarding #####
 //; if ($enable_forwarding =~ /YES/){
@@ -80,7 +78,7 @@ module `mname` (
 		
 //; ##### Inputs For Piped Design #####
 //; if ($pipeline_depth>0){
-         input logic 				     valid_in, adder_mode, multiplier_mode, 
+         input logic 				     stall_in, valid_in, adder_mode, multiplier_mode, 
          input logic 				     SI, 
 //; }    
 
@@ -97,12 +95,12 @@ module `mname` (
 		       		
 //; ##### Outputs for Piped Design #####
 //;if ($pipeline_depth>0){
+         output logic 				     stall_request,
          output logic 				     valid_out, 
          output logic 				     SO,
 //; }    
 		       
 //; ##### Outputs ##### 
-         output logic 				     stall_request,
 	 output logic [`$exp_width + $frac_width`:0] z,
 	 output logic [7:0] 			     status
 
@@ -120,7 +118,6 @@ module `mname` (
                                                           .b(b),
                                                           .c(c),
 			                                  .rnd(rnd),
-                                                          .stall_in(stall_in),		
 //;                           if ($enable_forwarding =~ /YES/){
            				                 .forward_a(forward_a), 
            				                 .forward_b(forward_b), 
@@ -128,6 +125,7 @@ module `mname` (
 //;                           }
 //;                           ###### GLOBALS ######		
 //;                           if ($pipeline_depth>0){
+                                                         .stall_in(stall_in),		
            				                 .valid_in(valid_in),
                                                          .adder_mode(adder_mode),
                                                          .multiplier_mode(multiplier_mode),
@@ -142,9 +140,9 @@ module `mname` (
 //;                           ###### OUTPUTS ######    	       		
 //;                           if ($pipeline_depth>0){
            				                 .valid_out(valid_out), 
+                                                         .stall_request(stall_request),  
            				                 .SO(SO),
 //;                           }    
-                                                         .stall_request(stall_request),  
 	                                                 .z(z),
 	   			                         .status(status)
                            );

@@ -54,15 +54,17 @@ module `mname`(
     input logic 				dumptolog,
    //; }
     input logic [`$width-1`:0] 	  a,b,
-    input logic valid_in, clk , reset, stall,
 //; if ($useMP){
     input logic                   mp_mode,
 //; }	       
 //; if ($useInc=~ /YES/){
     input logic 		  ainc, binc,
-//; }	    
-    output logic [`2*$width+1`:0] out0,out1, // sign extended by 2 because of booth encoding
-    output logic valid_out
+//; }
+//; if ($pipeline_depth > 0 ) {
+    input logic valid_in, clk , reset, stall,
+    output logic valid_out, 
+//; }   
+    output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 //; if ($pipeline_depth==0){
 //;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, UseInc=>$useInc, UseMP=>$useMP);
