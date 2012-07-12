@@ -70,6 +70,8 @@
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the signal for the multiplier ".
 //;                           "(default is IEEE Double, 11 bit)");
+//; my $inc_enable = parameter(Name=>'IncEnable', Val=>'NO', List=>['NO', 'YES'],
+//; 			 Doc=>"Choose whether there is a Inc signal with FP numbers");
 //; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
@@ -100,6 +102,10 @@
 //;	# Parameters to control constraints
 //;	$SignIsPos_w = parameter(Name=>'SignIsPos_DistWeight', Val=>50, Min=>0, Step=>1, Max=>100,
 //;					Doc=>"Distribution weight for positive values (range is 0..100)");
+//;     if ($inc_enable eq 'YES'){
+//;	  $Inc_w = parameter(Name=>'Inc_DistWeight', Val=>0, Min=>0, Step=>1, Max=>100,
+//;	  		     Doc=>"Distribution weight for an increment-by-one trailer (range is 0..100)");
+//;     }
 //;	$Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
 //;			    Doc=>"Distribution weight for Zero pattern");
 //; 	if ($test_denormals =~ /YES/){
@@ -483,6 +489,12 @@ class `mname`;
 	      $value$plusargs("SignIsPos_DistWeight`$NamedTransCtrl`=%d",  SignIsPos_w);
 	      $display("%t: `mname`: Runtime input +SignIsPos_DistWeight`$NamedTransCtrl`=%d found", $time, SignIsPos_w);
 	   end
+	   //;   if ($inc_enable eq 'YES'){
+	   if ($test$plusargs("Inc_DistWeight`$NamedTransCtrl`")) begin
+	      $value$plusargs("Inc_DistWeight`$NamedTransCtrl`=%d",  Inc_w);
+	      $display("%t: `mname`: Runtime input +Inc_DistWeight`$NamedTransCtrl`=%d found", $time, Inc_w);
+	   end
+	   //;   }
 	   if ($test$plusargs("Zero_DistWeight`$NamedTransCtrl`")) begin
 	      $value$plusargs("Zero_DistWeight`$NamedTransCtrl`=%d",  Zero_w);
 	      $display("%t: `mname`: Runtime input +Zero_DistWeight`$NamedTransCtrl`=%d found", $time, Zero_w);
