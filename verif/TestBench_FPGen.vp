@@ -43,13 +43,12 @@
 //; my $seed = parameter(Name=>'Seed',Val=>12345, Min=>0, Step=>1,
 //;                      Doc=>"Seed for random values".
 //;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
+//;
+//; # local variables
 //; my $forward_cycle = $pipeline_depth-1;
-//; my $forward_cycle_a = parameter (Name=>'ForwardCycA', Val=>$forward_cycle,  Max=>$pipeline_depth,
-//;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
-//; my $forward_cycle_b = parameter (Name=>'ForwardCycB', Val=>$forward_cycle,  Max=>$pipeline_depth,
-//;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
-//; my $forward_cycle_c = parameter (Name=>'ForwardCycC', Val=>$forward_cycle,  Max=>$pipeline_depth,
-//;                                    Step=>1, Doc=>"The cycles that forwarding signal comes from" );
+//; my $forward_cycle_a = $forward_cycle;
+//; my $forward_cycle_b = $forward_cycle;
+//; my $forward_cycle_c = $forward_cycle;
 //;                                 
 //; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2;
 //; my $fp_width = $frac_width + $exp_width + 1;
@@ -63,10 +62,10 @@ program automatic `mname` (
 			   output logic 			       forward_a, forward_b, 
 			   output logic [`$mul_pipeline_depth`:0]      forward_c,
 			   //; }			
-			   input  logic 			       clk, reset,
+			   input logic 				       clk, reset,
 			   //; if ($pipeline_depth>0){
 			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, stall_in,
-			   input logic 				       SO, valid_out, stall_request
+			   input logic 				       SO, valid_out, stall_request,
 			   //; }
 			   // results from the design
 			   input logic [`$exp_width + $frac_width`:0]  z,
@@ -88,25 +87,21 @@ program automatic `mname` (
    // Signals for the input testvector verification
    logic [MEM_WIDTH-1:0] 					       Memory [0:MEM_SIZE-1];  // Space for input file
    logic [MEM_WIDTH-1:0] 					       Temp, Temp_q[$], r_Temp;  // Verilog doesn't allow direct access to a
-   // bit field of an array
-   logic [`$exp_width + $frac_width`:0] 			       expectZ, z2;
-   // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
-   logic 							       FX, FO, FU, FV, FZ,expectNaN;
-   int 								       loc;
 
-   logic 							       zinc=0, ainc=0, binc=0, cinc=0;
    
-   
-   // Singals for pipeline output
-   logic [`$exp_width + $frac_width`:0] 			       r_a, r_b, r_c, expected, r_expected, a_q[$], b_q[$], c_q[$], expected_q[$];
+   // Singals for read the queues
+   logic [`$exp_width + $frac_width`:0] 			       r_a, r_b, r_c;
+   logic [`$exp_width + $frac_width`:0] 			       expected, expectedZ;
    logic [2:0] 							       r_rnd;
+   
+   // queues for storing numbers inside the pipeline
+   logic [`$exp_width + $frac_width`:0] 			       a_q[$], b_q[$], c_q[$];
+   logic [`$exp_width + $frac_width`:0] 			       expected_q[$];
+   
 
-   logic 							       resultIsZero, expectIsZero;
 
-   //; if ($pipeline_depth>0){
-   assign stall_in = 1'b0 ;
-   //; } else {
-   logic stall_request = 1'b0;
+   //; if ($pipeline_depth==0){
+   logic 							       stall_request = 1'b0; // cheat here for simplicity
    //; }
    
    // FP transaction handles
@@ -127,7 +122,13 @@ program automatic `mname` (
    //;                              FractionWidth=>$frac_width, 
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
-   `$TransGenC_obj->instantiate`;
+   `$TransGenC_obj->instantiate`;   
+   //; my $TransExpected_obj = generate('FPTransaction','TransExpected',
+   //;				    Random=>'NO',
+   //;                              FractionWidth=>$frac_width, 
+   //;                              ExponentWidth=>$exp_width,   
+   //;                              TestDenormals=>$test_denormals);
+   `$TransExpected_obj->instantiate`;
 
    // one more handle for the observed output
    //; my $TransRes_obj = generate('FPTransaction','TransRes',
@@ -160,7 +161,7 @@ program automatic `mname` (
    //; $forward_C = generate('forward', 'ForwardC', Width=>$mul_pipeline_depth+1);
    `$forward_C->instantiate()`;
    logic							       forward_a_q[$], forward_b_q[$];
-   logic  [`$mul_pipeline_depth`:0]                                    forward_c_q[$];
+   logic [`$mul_pipeline_depth`:0] 				       forward_c_q[$];
    
    //; }
    
@@ -182,7 +183,7 @@ program automatic `mname` (
       // if we reached this point safely, the test passed!
       repeat (10) @(negedge clk); // give the lines some time to settle
       $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
-      finish_saif;
+      finish_saif();
       $finish(0);
    end
    
@@ -198,6 +199,7 @@ program automatic `mname` (
       TransGenA = new();
       TransGenB = new();
       TransGenC = new();
+      TransExpected = new();
       TransRes = new();
       GoldRef = new();
       //; if ($enable_forwarding eq 'YES'){
@@ -205,17 +207,17 @@ program automatic `mname` (
       `$forward_B->iname()` = new();
       `$forward_C->iname()` = new();
       //; }
-
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
       dumptolog = 1'b0;
       //; if ($pipeline_depth>0){
       valid_in = 1'b0;
+      stall_in = 1'b0;
       //; }
       a = 0;
       b = 0;
       c = 0;
-      rnd = 3'b0;
+      rnd = 3'b000;
       //; if ($enable_forwarding eq 'YES'){
       forward_a = 1'b0;
       forward_b = 1'b0;
@@ -228,6 +230,7 @@ program automatic `mname` (
    // Driver: every cycle, on the neg edge generate stimulus	
    //-------------------------------------------------------------------------//
    task drive_dut;
+      int loc;
       @(negedge reset);
       @(negedge clk);
       #1;
@@ -252,14 +255,12 @@ program automatic `mname` (
 		    && expected_q.size() >= `$forward_cycle_a` ) begin
 		  forward_a = 1'b1;
 		  a = expected_q[`$pipeline_depth-$forward_cycle_a-1`];
-		  TransGenA.ForceSignExpFrac(a[`$fp_width-1`], a[`$fp_width -2`:`$frac_width`], a[`$frac_width -1`:0], 1'b0);
+		  TransGenA.ForceFPNum(a);
 	       end 
 	       else  begin
 		  forward_a = 1'b0;
 		  TransGenA.randomize();
-		  a[`$exp_width + $frac_width`] = TransGenA.Sign;
-		  a[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenA.Exponent;
-		  a[`$frac_width -1`:0] = TransGenA.Fraction;
+		  a = TransGenA.GetFPNum();
 	       end // else: !if( `$forward_A->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_a_q = {forward_a_q, forward_a};
@@ -269,14 +270,12 @@ program automatic `mname` (
 		    && expected_q.size() >= `$forward_cycle_b` ) begin
 		  forward_b = 1'b1;
 		  b = expected_q[`$pipeline_depth-$forward_cycle_b-1`];	       
-		  TransGenB.ForceSignExpFrac(b[`$fp_width-1`], b[`$fp_width -2`:`$frac_width`], b[`$frac_width -1`:0], 1'b0);
+		  TransGenB.ForceFPNum(b);
 	       end 
 	       else  begin
 		  forward_b = 1'b0;
 		  TransGenB.randomize();
-		  b[`$exp_width + $frac_width`] = TransGenB.Sign;
-		  b[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenB.Exponent;
-		  b[`$frac_width -1`:0] = TransGenB.Fraction;
+		  b = TransGenB.GetFPNum();
 	       end // else: !if( `$forward_B->iname()`.forward...
 	       // store the forward_b signal in the queue
 	       forward_b_q = {forward_b_q, forward_b};
@@ -285,36 +284,28 @@ program automatic `mname` (
 		    // check the if there is result in pipeline for forwarding
 		    && expected_q.size() >= `$forward_cycle_c` ) begin
 		  forward_c = `$forward_C->iname()`.forward;
-		  c = expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit];	       
-		  TransGenC.ForceSignExpFrac(c[`$fp_width-1`], c[`$fp_width -2`:`$frac_width`], c[`$frac_width -1`:0], 1'b0);
+		  c = expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit];
+		  TransGenC.ForceFPNum(c);
 	       end 
 	       else  begin
 		  forward_c = 0;
 		  TransGenC.randomize();
-		  c[`$exp_width + $frac_width`] = TransGenC.Sign;
-		  c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
-		  c[`$frac_width -1`:0] = TransGenC.Fraction;
+		  c = TransGenC.GetFPNum();
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_c_q = {forward_c_q, forward_c};
 	       //; } else {
 	       TransGenA.randomize();
-	       a[`$exp_width + $frac_width`] = TransGenA.Sign;
-	       a[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenA.Exponent;
-	       a[`$frac_width -1`:0] = TransGenA.Fraction;
 	       TransGenB.randomize();
 	       TransGenC.randomize();
-	       b[`$exp_width + $frac_width`] = TransGenB.Sign;
-	       b[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenB.Exponent;
-	       b[`$frac_width -1`:0] = TransGenB.Fraction;
-	       c[`$exp_width + $frac_width`] = TransGenC.Sign;
-	       c[`$exp_width + $frac_width -1`:`$frac_width`] = TransGenC.Exponent;
-	       c[`$frac_width -1`:0] = TransGenC.Fraction;
+	       a = TransGenA.GetFPNum();
+	       b = TransGenB.GetFPNum();
+	       c = TransGenC.GetFPNum();
 	       //;}
+	       // calculate the expected result
 	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
-	       expected[`$exp_width + $frac_width`] = GoldRef.Expected.Sign;
-	       expected[`$exp_width + $frac_width -1`:`$frac_width`] = GoldRef.Expected.Exponent;
-	       expected[`$frac_width -1`:0] = GoldRef.Expected.Fraction;
+	       expected = GoldRef.Expected.GetFPNum();
+	       // store all the numbers in queques
 	       a_q = {a_q, a};
 	       b_q = {b_q, b};
 	       c_q = {c_q, c};
@@ -328,18 +319,20 @@ program automatic `mname` (
 	 loc=0;
 	 Temp = Memory[loc];
 	 Temp_q = {Temp_q, Temp};
-	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin
-            //; if ($pipeline_depth>0){
-	    valid_in = 1'b1;
-            //; }
-	    rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
-	    a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
-	    b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
-	    c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];	    
-	    loc = loc + 1;
+	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin	    
+	    if(!stall_request) begin
+               //; if ($pipeline_depth>0){
+	       valid_in = 1'b1;
+               //; }
+	       rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
+	       a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
+	       b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
+	       c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];	    
+	       loc = loc + 1;
+	       Temp = Memory[loc];
+	       Temp_q = {Temp_q, Temp};
+	    end
 	    @(negedge clk); #1;		// wait a clock cycle
-	    Temp = Memory[loc];
-	    Temp_q = {Temp_q, Temp};
 	 end // while (loc <MEM_SIZE && MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
    endtask // drive_dut
@@ -367,22 +360,22 @@ program automatic `mname` (
 	       i++;
 	       
 	       $display("\n%t: Transaction #%0d: ", $time, i);
+	       // set the input numbers and dequeque
 	       r_a = a_q[0];
 	       r_b = b_q[0];
 	       r_c = c_q[0];
-	       r_expected = expected_q[0];
+	       expectedZ = expected_q[0];
 	       a_q = a_q[1:$];
 	       b_q = b_q[1:$];
 	       c_q = c_q[1:$];
 	       expected_q = expected_q[1:$];
-	       TransRes.ForceSignExpFrac(z[`$exp_width + $frac_width`],
-					 z[`$exp_width + $frac_width -1`:`$frac_width`],
-					 z[`$frac_width -1`:0],
-					 zinc);
-	       TransGenA.ForceSignExpFrac(r_a[`$fp_width-1`], r_a[`$fp_width -2`:`$frac_width`], r_a[`$frac_width -1`:0], 1'b0);
-	       TransGenB.ForceSignExpFrac(r_b[`$fp_width-1`], r_b[`$fp_width -2`:`$frac_width`], r_b[`$frac_width -1`:0], 1'b0);
-	       TransGenC.ForceSignExpFrac(r_c[`$fp_width-1`], r_c[`$fp_width -2`:`$frac_width`], r_c[`$frac_width -1`:0], 1'b0);
-
+	       // restore FP models
+	       TransRes.ForceFPNum(z);
+	       TransGenA.ForceFPNum(r_a);
+	       TransGenB.ForceFPNum(r_b);
+	       TransGenC.ForceFPNum(r_c);
+	       TransExpected.ForceFPNum(expectedZ);
+	     
 	       //; if ($enable_forwarding eq 'YES'){
 	       // Print the forwarding information
 	       if ( forward_a_q[0] )
@@ -390,29 +383,45 @@ program automatic `mname` (
 	       if ( forward_b_q[0] )
 		 $display("%t B is forwarded from Transaction #%0d", $time, i-`$forward_cycle_b`);
 	       if ( |forward_c_q[0] ) begin
-		int hotbit;
-		for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
-			if (forward_c_q[0][k]) begin
-			   hotbit=k;
-			   //$display("hotbit is %0d", k);
-			end
-		end
-		 $display("%t C is forwarded from Transaction #%0d", $time, i-`$forward_cycle_c`+hotbit);
-		end
+		  // find the hotbit in forward_c_q[0]
+		  int hotbit;
+		  for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
+		     if (forward_c_q[0][k]) begin
+			hotbit=k;
+		     end
+		  end
+		  $display("%t C is forwarded from Transaction #%0d", $time, i-`$forward_cycle_c`+hotbit);
+	       end
+	       // dequeque
 	       forward_a_q = forward_a_q[1:$];
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
-	       // now check results... 
-	       if (! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd)) begin
+
+
+	       // Print some transaction information
+	       $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
+			 TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
+	       $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
+			 TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
+	       $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
+			 TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
+	       $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+			 TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
+	       $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
+			 TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
+	       
+	       // now check results...
+	       if (! GoldRef.CheckMultResult(TransRes, TransExpected)) begin
 		  dumptolog = 1'b1;
 		  #1;
+		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
 		  $finish(2);
 	       end
 	       else begin
-		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, r_expected);
-	       end // else: !if(! GoldRef.CheckMultResult(TransRes, TransGenA, TransGenB, TransGenC, rnd))
+		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, expectedZ);
+	       end 
 	    end
             @(negedge clk);		// wait a clock cycle
     	 end // for (int i=0; i<num_trans; i++)
@@ -422,55 +431,68 @@ program automatic `mname` (
   	 Temp_q = Temp_q[1:$];
 	 while( !(r_Temp == 1'bx) ) begin
 	    
-	    expectZ = r_Temp[`$fp_width+20-1`:20];
-	    FO = r_Temp[12];
-	    FZ = r_Temp[0];
-	    FV = r_Temp[4];
-	    FU = r_Temp[8];
-	    FX = r_Temp[16];
-	    r_rnd = r_Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
-	    r_a = r_Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
-	    r_b = r_Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
-	    r_c = r_Temp[`$fp_width*2+20-1`:`$fp_width  +20`];
-	    expectNaN = expectZ[`$fp_width-2`:`$frac_width`] ==	{(`$exp_width`){1'b1}} 
-			&& expectZ[`$frac_width-1`:0]!={(`$frac_width`){1'b0}};
-	    expectIsZero = expectZ[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
-			   && expectZ[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
-	    
-	    /*
-	     if(FO) begin
-	     expectZ[`$fp_width-2`:0] = {{(`$exp_width`){1'b1}},{(`$frac_width`){1'b0}}};
+	    if(!stall_request) begin	      
+	       // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
+	       logic   FX, FO, FU, FV, FZ, expectNaN, expectIsZero, resultIsZero;
+	       
+	       expectedZ = r_Temp[`$fp_width+20-1`:20];
+	       FO = r_Temp[12];
+	       FZ = r_Temp[0];
+	       FV = r_Temp[4];
+	       FU = r_Temp[8];
+	       FX = r_Temp[16];
+	       r_rnd = r_Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
+	       r_a = r_Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
+	       r_b = r_Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
+	       r_c = r_Temp[`$fp_width*2+20-1`:`$fp_width  +20`];
+	       
+	       expectNaN = expectedZ[`$fp_width-2`:`$frac_width`] ==	{(`$exp_width`){1'b1}} 
+		       && expectedZ[`$frac_width-1`:0]!={(`$frac_width`){1'b0}};
+	       expectIsZero = expectedZ[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
+		       && expectedZ[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
+	       
+	       /*
+		if(FO) begin
+		expectedZ[`$fp_width-2`:0] = {{(`$exp_width`){1'b1}},{(`$frac_width`){1'b0}}};
 	    end
-	     if(FU) begin
-	     expectZ[`$fp_width-2`:0] = {(`$exp_width+$frac_width`){1'b0}};
+		if(FU) begin
+		expectedZ[`$fp_width-2`:0] = {(`$exp_width+$frac_width`){1'b0}};
 	    end
-	     */
+		*/
 
 
-            $display("%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
-		     r_rnd, r_a, r_b, r_c, $bitstoreal(r_a),  $bitstoreal(r_b), $bitstoreal(r_c), $bitstoreal(expectZ));
-	    // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
-            $display("%t: Expect Result: Sign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
-		     expectZ[`$fp_width-1`], expectZ[`$fp_width-2`:`$frac_width`], expectZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
-            $display("%t: FMA_Result: Sign = %h, Exp = %h, Man = %h, Inc=%h", $time,
-		     z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0], zinc);
-	    //calculate output result after inc
-    	    TransRes.ForceSignExpFrac(z[`$fp_width-1`], z[`$fp_width -2`:`$frac_width`], z[`$frac_width -1`:0], zinc);
-	    TransRes.CalculateInc();
-	    z2 = TransRes.GetFPNum();
-            $display("%t: After Inc: Sign = %h, Exp = %h, Man = %h  ", $time,
-		     z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0] );
-	    resultIsZero = z2[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
-			   && z2[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
-	    if(!(z2 == expectZ || (resultIsZero==1 && expectIsZero==1)/* && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))*/|| (expectNaN==1 && (status[2]==1)))) begin
-	       dumptolog = 1'b1;
-	       #1;
-	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
-	       $finish(2);
+               $display("\n\n%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
+			r_rnd, r_a, r_b, r_c, $bitstoreal(r_a),  $bitstoreal(r_b), 
+			$bitstoreal(r_c), $bitstoreal(expectedZ));
+	       // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
+               $display("%t: Expect Result: \tSign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
+			expectedZ[`$fp_width-1`], expectedZ[`$fp_width-2`:`$frac_width`], expectedZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
+               $display("%t: FMA_Result: \tSign = %h, Exp = %h, Man = %h", $time,
+			z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0]);
+	       /*
+		//calculate output result after inc
+    		TransRes.ForceFPNum(z);
+		TransRes.CalculateInc();
+		z2 = TransRes.GetFPNum();
+		$display("%t: After Inc: Sign = %h, Exp = %h, Man = %h  ", $time,
+		z2[`$fp_width-1`], z2[`$fp_width-2`:`$frac_width`], z2[`$frac_width-1`:0] );
+		*/
+
+	       
+	       resultIsZero = z[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
+			      && z[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
+	       if(!(z == expectedZ || (resultIsZero==1 && expectIsZero==1)
+		    /* && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))*/
+		    || (expectNaN==1 && (status[2]==1)))) begin
+		  dumptolog = 1'b1;
+		  #1;
+		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+		  $finish(2);
+	       end
+	       r_Temp = Temp_q[0];
+  	       Temp_q = Temp_q[1:$];
 	    end
 	    @(negedge clk);
-	    r_Temp = Temp_q[0];
-  	    Temp_q = Temp_q[1:$];
 	 end // while ( MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
    endtask // monitor_dut
@@ -492,10 +514,12 @@ program automatic `mname` (
       if ( $test$plusargs("WaveDelay") ) begin
 	 $value$plusargs("WaveDelay=%d", wave_delay);
 	 $display("\t%t:\tRuntime input +WaveDelay=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
-	 fork
-	    if (wave) start_wave(.wave_delay(wave_delay));
-	 join_none
-      end
+      end      
+      // Run wave if wave=1
+      fork
+	 if (wave) start_wave(.wave_delay(wave_delay));
+      join_none
+      
       // find the seed for this run
       if ( $test$plusargs("Seed") ) begin
 	 $value$plusargs("Seed=%d", seed);
@@ -514,7 +538,7 @@ program automatic `mname` (
 
    // task to control wave capture
    task start_wave(input int wave_delay=0);
-      if(wave_delay) 
+      if(wave_delay)	
 	repeat(wave_delay) @(posedge clk);
       $display("\t%t:\tStarting signal and memory wave capture",$time);
       $vcdpluson(   0  , `($self->get_top())->mname`);
