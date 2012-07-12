@@ -88,6 +88,7 @@
 //; my ($SignIsPos_w, $Zero_w, $QuietNaN_w, $SignalingNaN_w, $Min_w, $Max_w, $Inf_w);
 //; my $DenormRnd_w = 0; my $Denorm100_w = 0; my $DenormFFF_w = 0; my $Denorm001_w = 0;
 //; my ($One_w, $PointOneOneOne_w, $EzAndSml_w, $Random_w);
+//; my $Inc_w = 0;
 //;
 //; if ($rand_mode =~ /YES/){
 //;	# Parameter to enable per transaction control from command line
@@ -155,6 +156,14 @@ class `mname`;
    // --------------------------------------------------------------------------
    // Some setters:
    // --------------------------------------------------------------------------
+   function ForceFPNum(logic [`$frac_width+$exp_width` : 0] num);
+      this.ForceSignExpFrac(num[`$frac_width + $exp_width`], 
+			    num[`$frac_width + $exp_width - 1`:`$frac_width`], 
+			    num[`$frac_width - 1`:0], 
+			    1'b0);
+      
+   endfunction // ForceFPNum
+   
    // Kind of C'tor for a regular, NON-Random transaction
    function ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, 
     			     logic [`$frac_width - 1`:0] Frac, logic Inc);
