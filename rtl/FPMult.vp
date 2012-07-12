@@ -129,6 +129,7 @@ module `mname`(
    assign ZeroExpA_prePipeline  =  ~|a[`$exp_width + $frac_width - 1`:`$frac_width`];
    assign ZeroExpB_prePipeline  =  ~|b[`$exp_width + $frac_width - 1`:`$frac_width`];
 
+//; if ($pipeline_depth > 0 ) {
 //;   my $pipein = generate(  'Pinned_pipeline',  'pipein',  Width=> 2*$exp_width + 2*$frac_width + 8 , PipelineDepth => $pipeline_depth);
   `$pipein ->instantiate()` ( .in ({a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline, adder_mode}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset),
@@ -146,6 +147,12 @@ module `mname`(
   `$pipeA1 ->instantiate()` ( .in(a1) , .out(A_adder_mode),
                               .valid_in(valid_A0), .clk(clk) , .stall(stall), .reset(reset), 
                               .valid_out(valid_A) );
+//; } else  {
+  assign {A_pl,B_pl,IncA_pl,IncB_pl,mp_mode_pl, ZeroExpA, ZeroExpB } = {a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline};
+  assign adder_mode_pl = 0;
+  assign A_adder_mode = a;
+ 
+//; }
 
 
    assign SignA = A_pl[ `$exp_width + $frac_width` ];
@@ -198,12 +205,12 @@ module `mname`(
       //; if($enable_forwarding =~ /YES/){
       .ainc(ainc), .binc(binc),
       //; }
-
+      //; if ($pipeline_depth>0) {
       .valid_in(valid_in & !adder_mode),
       .stall(stall), .clk(clk) , .reset(reset),
-
-      .out(ManAB_unnormalized_long),
-      .valid_out(valid_mul)
+      .valid_out(valid_mul),
+      //; }
+      .out(ManAB_unnormalized_long)
       );
   
   assign shiftleft = zeroSigA & IncA_pl & zeroSigB & IncB_pl ;
@@ -248,8 +255,6 @@ module `mname`(
       //; }
       .a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
 
-    assign stall = stall_request | stall_in;
-
 //; if( $pipeline_depth > 0 ){
     logic [`$product_width-1`: 0] ManAB_unnormalized_m;
     logic [`$shift_width`:0] shiftAmount_m;
@@ -258,6 +263,7 @@ module `mname`(
 
     assign normalize_ManAB = ~adder_mode_pl & (ZeroExpA | ZeroExpB) & ~ZeroAB;
     assign stall_request = stalled? 0: normalize_ManAB ;
+    assign stall = stall_request | stall_in;
     
     always @(posedge clk)
     if (reset)
@@ -273,7 +279,6 @@ module `mname`(
     assign ManAB_shifted = ManAB_unnormalized_m << shiftAmount_m; 
     assign ManAB_normalized = normalize_ManAB ? ManAB_shifted : ManAB_unnormalized;
 //; } else {
-    assign stall_request=0;
     assign ManAB_normalized = ManAB_unnormalized << shiftAmount;
 //; }
     

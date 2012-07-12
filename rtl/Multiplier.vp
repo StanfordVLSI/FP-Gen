@@ -92,18 +92,18 @@ module `mname`(
     input logic dumptolog,
    //; }
     input logic [`$width-1`:0]    a,b,
-	       
+   //; if ($useInc){
+    input logic 		  ainc, binc,
+   //; }	       
    //; if ($useMP){
     input logic                   mp_mode,
    //; }
+   //; if ($total_pipeline_depth > 0 ) {
     input logic valid_in,	       
     input logic clk , reset , stall,
-
-   //; if ($useInc){
-    input logic 		  ainc, binc,
+    output logic valid_out,
    //; }
-    output logic [`2*$width`:0] out,
-    output logic valid_out		  
+    output logic [`2*$width`:0] out		  
 		    );
 
 //; if( $DW_mode eq 'ON' ){
@@ -136,13 +136,15 @@ module `mname`(
    //; if ($useMP){
       .mp_mode(mp_mode),
    //; }
-      //; if ($useInc){
+   //; if ($useInc){
       .ainc(ainc), .binc(binc),
-      //; }
+   //; }
+   //; if ($mulp_pipeline_depth > 0 ) {
       .valid_in(valid_in),
       .stall(stall), .clk(clk) , .reset(reset),
-      .out0(multp_out0), .out1(multp_out1),
-      .valid_out(valid_mulp)
+      .valid_out(valid_mulp),
+   //; }
+      .out0(multp_out0), .out1(multp_out1)
       );
 
 //;   if ($add_pipeline_depth>0) {
@@ -167,8 +169,7 @@ module `mname`(
    `$adderInst->instantiate()` (
 				   .a(  pp0[`2*$width`:0]  ) , 
 				   .b(  pp1[`2*$width`:0]  ) , 
-				   .ci(1'b0) ,
-                                   .clk(clk) , .rst(reset), 
+				   .ci(1'b0) , 
 				   //.s(  out_mp  ) 
 				   .s(  out  ), .co(co_dummy)
 			       );

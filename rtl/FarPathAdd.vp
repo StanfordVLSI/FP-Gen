@@ -65,12 +65,15 @@ module `mname`(
   input logic [`$ExtendedExp_width-1`:0] ExpA_in, ExpB_in, ExpDifference_in, 
   input logic SignA_in, SignB_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in,
   input logic [`$manB_width-1`:0] ManB_in,
+ //; if ($pipeline_depth>0) {
   input logic  clk , reset, valid_in, stall,
+  output logic valid_out,
+ //; }
   output logic [`$manA_width-1`:0] ManSum_out,
   output logic [`$exp_width-1`:0] ExpSum_out, 
   output logic Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out,
-  output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1,
-  output logic valid_out
+  output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1
+
               );
 
   //; if (! ($useInc =~ /YES/) ){
@@ -85,6 +88,7 @@ module `mname`(
   logic [`$exp_width-1`:0] ExpSum;
   logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum;
 
+//; if ($pipeline_depth>0) {
 //;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
 //;                             Width=> $manA_width + $manB_width + 3*$ExtendedExp_width + 6,
 //;                             PipelineDepth => $pipeline_depth-1);
@@ -100,6 +104,10 @@ module `mname`(
                                 .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
                                 .out({ManSum_out, ExpSum_out, Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out}),
                                 .valid_out(valid_out) ); 
+//; } else {
+  assign {ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpB_gt_ExpA} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in};
+  assign {ManSum_out, ExpSum_out, Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out} = {ManSum, ExpSum, Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum};
+//; } 
 
   logic [`$shift_width-1`:0] LshiftAmtUnbounded, shift_amount;
   logic [`$manB_width-1`:0] biggerFraction, sum0, sum1;

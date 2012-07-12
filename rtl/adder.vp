@@ -35,10 +35,6 @@ module `mname()`
     input logic  [ `$BW-1` : 0] a,
     input logic  [ `$BW-1` : 0] b,
     input logic                 ci,
-
-    input logic clk ,
-    input logic rst ,
-
     //Output Signals
     output logic [ `$BW-1` : 0] s ,
     output logic                co 

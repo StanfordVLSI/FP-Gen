@@ -61,13 +61,15 @@ module `mname`(
   input logic [`$ExtendedExp_width-1`:0] ExpA_in, ExpB_in, 
   input logic SignA_in, SignB_in,
   input logic [`$manB_width-1`:0] ManB_in,
+  //; if ($pipeline_depth>0) {
   input logic  clk , reset, valid_in, stall,
+  output logic  valid_out,
+  //; }
   output logic [`$manA_width-1`:0] ManDiff_out, 
   output logic Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out,
   output logic [`$exp_width-1`:0] ExpDiff_out, 
   output logic [`$ExtendedExp_width-1`:0] Expbase_pp0, Expbase_pp1,
-  output logic Expbase_ci, 
-  output logic  valid_out
+  output logic Expbase_ci
               );
 
 
@@ -85,6 +87,8 @@ module `mname`(
   logic Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff;
   logic [`$ExtendedExp_width-1`:0] LShiftAmtWide;
 
+
+//; if ($pipeline_depth>0) {
 //;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
 //;                             Width=> $manA_width + $manB_width + 2*$ExtendedExp_width + 3,
 //;                             PipelineDepth => $pipeline_depth-1);
@@ -99,7 +103,11 @@ module `mname`(
   `$pipe_out->instantiate()` ( .in({ManDiff, ExpDiff, Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff}) ,
                                 .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
                                 .out({ManDiff_out, ExpDiff_out, Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out}),
-                                .valid_out(valid_out) ); 
+                                .valid_out(valid_out) );
+//; } else {
+  assign {ManA, IncA, ExpA, SignA, ManB, ExpB, SignB} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in};
+  assign {ManDiff_out, ExpDiff_out, Guard_out, Sticky_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out} = {ManDiff, ExpDiff, Guard, Sticky, LZA_wrong, SignDiff, ZeroDiff};
+//; } 
 
   logic [`$manB_width-1`:0] manA_wide;
   logic [`$exp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpDiff0, ExpDiff1, ExpDiff2;

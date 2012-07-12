@@ -81,10 +81,10 @@
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>7,
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>20,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
-//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor(3*$pipeline_depth/7), Min=>0, 
-//;                       Max=> (($enable_forwarding =~ /YES/)?$pipeline_depth-1:$pipeline_depth) ,
+//; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
+//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor(3*$muladd_pipeline_depth/6), Min=>0, Max=> $muladd_pipeline_depth,
 //;                       Doc=>"Pipeline depth of the multiplier tree !FUNCTIONAL!");
 //; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
 //; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
@@ -119,12 +119,10 @@ module `mname` (
     input logic [0:0]                           forward_c,
    //; }
     input logic [2:0] 				rnd,
-
-   //; if ($pipeline_depth>0){
-    input logic 				clk, reset, valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
-    output logic 				valid_out, SO, stall_request,
-   //; } else {
     input logic 				clk, reset,
+   //; if ($pipeline_depth>0){
+    input logic 				valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
+    output logic 				valid_out, SO, stall_request,
    //; }
 		
     output logic [`$exp_width + $frac_width`:0] z,
