@@ -183,7 +183,7 @@ module `mname` (
   `$add_pipe ->instantiate()` (
        .in({AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}) , 
        .valid_in(valid_middle), .clk(clk) , .stall(stall_in), .reset(reset), 
-       .out(),
+       .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem}),
        .valid_out(valid_inc) );
 //;  } else {
   assign {AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem} = {AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}; 
