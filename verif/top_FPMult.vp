@@ -18,18 +18,19 @@
  * -----------
  * Date          Author    Description
  * Oct 03, 2011  shacham   init version - ported my wallace env
+ * Jul 11, 2012  jingpu    add an external clk/rst generator
  * ****************************************************************************/
 
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
 //; my $verif_mode = parameter(Name=>'VERIF_MODE',
-//;                            Val=>'OFF', List=>['ON','OFF'],
+//;                            Val=>'ON', List=>['ON','OFF'],
 //;                            Doc=>"Verification mode determines whether or not ".
 //;                                 "monitors and drivers are on. Possible values ".
 //;                                 "are ON or Off.  !IGNORE!" ); 
 //; my $synth_mode = parameter(Name=>'SYNTH_MODE',
-//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Val=>'OFF', List=>['ON','OFF'],
 //;                            Doc=>"Synthesis mode determines whether or not ".
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off. !IGNORE! ");
@@ -45,67 +46,128 @@ module `mname` ();
    //; my $pipeline_depth = $FP_obj->get_param('PipelineDepth');
    //; my $enable_forwarding = $FP_obj->get_param('EnableForwarding');
    //; my $product_width = 2 * $frac_width + 2;
-  
-   // local signals for driving inputs
+   //; my $input_width = $frac_width + $exp_width +1;
+
+
+   // ##############################################################
+   // ### Local Signals to Stitch the Bench to the DUT
+   // ##############################################################
+
+
+   //; if ($verif_mode =~ /ON/){
+   // ##### Verification Signals #####		       
+   logic 				     dumptolog;
+   //; }
+   
+   // ##### DUT INPUTS ######
    logic [`$frac_width - 1`:0] 		      FracA, FracB, FracC;
    logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
    logic 				      SignA, SignB, SignC;
-   logic 				      IncA, IncB, IncC;
-   logic forward_a, forward_b, IncZ;
-   logic [`$exp_width + $frac_width`:0] z_preInc;
-
-
-
    
-   // local signals for observing outputs
-   logic [`$exp_width + 1`:0] 		      ExpAB;
-   logic [`$product_width - 1`: 0] 	      ManAB; //entire mantissa, not just fraction
-   logic 				      SignAB, NANAB, InfAB, ZeroAB, RStickyAB;
-  
-   // local signals for pipeline control
-   logic clk, reset, valid_out, stall_request;
-
-   //; if ($verif_mode =~ /ON/){
-   logic 				      dumptolog;
+   //; if ($enable_forwarding =~ /YES/){ 
+   // ##### Inputs For Forwarding #####
+   logic 				      forward_a;
+   logic 				      forward_b;
    //; }
    
-   // Instantiate the dut here
+   // ##### Outputs ##### 
+   logic [`$exp_width + 1`:0] 		      ExpAB;
+   logic [`$product_width - 1`: 0] 	      ManAB; //entire mantissa, not just fraction
+   logic 				      SignAB, NANAB, InfAB, ZeroAB;
+
+
+   // ##### GLOBALS ######
+   logic 				      clk; 
+   logic 				      reset;
+   	
+   //; if ($pipeline_depth>0){
+   // ##### Controls and Outputs for Piped Design #####
+   logic 				      stall_in;
+   logic 				      valid_in;
+   logic 				      valid_out;
+   logic 				      stall_request;
+   //; }
+
+   // #######################################################################
+   // ### A Clock and Reset Generator
+   // #######################################################################
+   //; my $clocker_obj = generate('clocker' , 'clocker', CLK_PERIOD=>1000, RST_PERIOD=>20);
+   `$clocker_obj->instantiate()` (.clk(clk), .reset(reset));
+   
+   // #######################################################################
+   // ### Instantiate Floating Point Multiply Add Unit as DEVICE UNDER TEST
+   // #######################################################################
+   
    `$FP_obj->instantiate()` (
-			     // inputs:
 			     //; if ($verif_mode =~ /ON/){
+			     // ##### Verification Signals #####
 			     .dumptolog(dumptolog),
 			     //; }
-			     .a_in({SignA, ExpA, FracA}), .b_in({SignB, ExpB, FracB}), 
+			     
+			     // ###### Inputs ######
+			     .a_in({SignA, ExpA, FracA}), 
+			     .b_in({SignB, ExpB, FracB}),
+			     
                              //; if ($enable_forwarding =~ /YES/){
-                             .forward_a(forward_a), .forward_b(forward_b), .z_preInc(z_preInc), .IncZ(IncZ)
+			     // ##### Inputs For Forwarding #####
+                             .forward_a(forward_a), 
+			     .forward_b(forward_b),
+			     // Set to be zero since we are not verifying 
+			     // the function of the following ports
+			     .z_preInc({`$input_width`{1'b0}}), 
+			     .z_postInc({`$input_width`{1'b0}}), 
+			     .IncZ(1'b0), 
                              //; }
+			     
    			     //; if ($pipeline_depth>0){
-                             .clk(clk), .reset(reset), .valid_in(1'b1), .stall_in(1'b0),
+			     // ##### Controls for Piped Design #####
+                             .clk(clk), 
+			     .reset(reset), 
+			     .valid_in(valid_in), 
+			     .stall_in(stall_in),			     
+                             .adder_mode(1'b0), .multiplier_mode(1'b0),
+			     
+			     // ##### Outputs for Piped Design #####
+			     .valid_out(valid_out), 
+			     .stall_request(stall_request),
                              //; }
-			     //outputs:
-			     .SignAB(SignAB), .ExpAB(ExpAB), .ManAB(ManAB),
-			     .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
-			     .valid_out(valid_out), .stall_request(stall_request)
+			     
+			     // ###### OUTPUTS ###### 
+			     .SignAB_out(SignAB), .ExpAB_out(ExpAB), .ManAB_out(ManAB),
+			     .NANAB_out(NANAB), 
+			     .InfAB_out(InfAB), 
+			     .ZeroAB_out(ZeroAB)
 			     );
-   
+
    
    //; if ($verif_mode =~ /ON/){
+   // #######################################################################
+   // ### Begin Verification Framework
+   // #######################################################################  
    // ------------------------ VERIFICATION HARNES ---------------------------//
    // Instantiate the TestGenerator here:
-   //; my $TestBench_obj = generate('TestBench', 'TestBench', 
-   //;                              FractionWidth=>$frac_width, 
-   //;                              ExponentWidth=>$exp_width,
-   //;                              TestDenormals=>$enable_denormals);
+   //; my $TestBench_obj = generate('TestBench_FPMult', 'TestBench', DUT=>$FP_obj);
    `$TestBench_obj->instantiate` (
-				// outputs:
-				.dumptolog(dumptolog),
-				.SignA(SignA), .ExpA(ExpA), .FracA(FracA), .IncA(IncA), 
-				.SignB(SignB), .ExpB(ExpB), .FracB(FracB), .IncB(IncB), 
-				.SignC(SignC), .ExpC(ExpC), .FracC(FracC), .IncC(IncC), 
-				// inputs
-				.SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB),
-				.NaNRes(NANAB), .InfRes(InfAB), .ZeroRes(ZeroAB) 
-				);
+				  // outputs:
+				  .dumptolog(dumptolog),
+				  .SignA(SignA), .ExpA(ExpA), .FracA(FracA),  
+				  .SignB(SignB), .ExpB(ExpB), .FracB(FracB),  
+				  .SignC(SignC), .ExpC(ExpC), .FracC(FracC), 
+ 
+				  //; if ($enable_forwarding =~ /YES/){
+				  .forward_a(forward_a), .forward_b(forward_b),
+				  //; }
+				  
+				  .clk(clk), .reset(reset),
+   			     	  //; if ($pipeline_depth>0){
+                             	  .valid_in(valid_in), .stall_in(stall_in),
+                                  .valid_out(valid_out), .stall_request(stall_request),
+   		            	  //; }
+				  
+				  // inputs
+				  .SignRes(SignAB), .ExpRes(ExpAB), .ManRes(ManAB),
+				  .NaNRes(NANAB), .InfRes(InfAB), .ZeroRes(ZeroAB) 
+				  );
    //; } # End of "if ($verif_mode..."
    
 endmodule : `mname`

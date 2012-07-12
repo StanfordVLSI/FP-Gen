@@ -1,12 +1,3 @@
-/*************************************************************************
- ** From Perforce:
- **
- ** $Id$
- ** $DateTime$
- ** $Change$
- ** $Author$
- *************************************************************************/
-
 /* *****************************************************************************
  * Description:
  * -----------
@@ -27,51 +18,64 @@
  * -----------
  * Date          Author    Description
  * Oct 05, 2011  shacham   init version - test generator for FP Mult-Acc
+ * Jul 11, 2012  jingpu    major change - move clk/rst out and support pipeline design
  * 
  * ****************************************************************************/
 
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
-//;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 52 bit)");
-//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
-//;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the signal for the multiplier (default is IEEE Double, 11 bit)");
-//; my $test_denormals = parameter(Name=>'TestDenormals', Val=>'YES', 
-//;                           List=>['YES','NO'], 
-//;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
-//;                                "of inputs A and B correctly (YES/NO)");
+//; my $FP_obj = parameter(Name=>'DUT', Val=>undef, Doc=>"Pointer to the design under test object");
+//; $self->error("Missing pointer to DUT") unless $FP_obj;
+//;
+//; # Extract some data from the design
+//; my $frac_width = $FP_obj->get_param('FractionWidth');
+//; my $exp_width = $FP_obj->get_param('ExponentWidth');
+//; my $enable_denormals = $FP_obj->get_param('EnableDenormals');
+//; my $pipeline_depth = $FP_obj->get_param('PipelineDepth');
+//; my $enable_forwarding = $FP_obj->get_param('EnableForwarding');
+//; my $test_denormals = $FP_obj->get_param('EnableDenormals');
+//; my $product_width = 2 * $frac_width + 2;
+//;
 //; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
 //;                           Doc=>"Number of test transactions to run ".
-//;                                "(can be overriden at runtime using the '+NumTrans=value' command line notation)");
+//;                                "(can be overriden at runtime using the".
+//;                                " '+NumTrans=value' command line notation)");
 //; my $seed = parameter(Name=>'Seed',Val=>12345, Min=>0, Step=>1,
 //;                      Doc=>"Seed for random values".
-//;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
-//;                                 
-//; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2
+//;                      "(can AND SHOULD be overriden at runtime using the".
+//;                      "  '+Seed=value' command line notation)");
 
-program automatic `mname` (
-    output logic dumptolog,
-			   // signals to drive the design
-    output logic [`$frac_width - 1`:0] 	FracA, FracB, FracC,
-    output logic [`$exp_width - 1`:0] 	ExpA, ExpB, ExpC,
-    output logic 			SignA, SignB, SignC,
-    output logic 			IncA, IncB, IncC,			
+   program automatic `mname` (
+			      output logic 			   dumptolog,
+			      // signals to drive the design
+			      output logic [`$frac_width - 1`:0]   FracA, FracB, FracC,
+			      output logic [`$exp_width - 1`:0]    ExpA, ExpB, ExpC,
+			      output logic 			   SignA, SignB, SignC,
+   
+			      //; if ($enable_forwarding =~ /YES/){
+			      output logic 			   forward_a, forward_b,
+			      //; }
 
-			   // results from the design
-    input logic [`$product_width - 1`:0] ManRes,
-    input logic [`$exp_width + 1`:0] 	 ExpRes,
-    input logic 			 SignRes,
-    input logic 			 NaNRes, InfRes, ZeroRes
-		);
+			      input logic 			   clk, reset,
+			      //; if ($pipeline_depth>0) {
+			      output logic 			   valid_in, stall_in, 
+			      input logic 			   valid_out, stall_request,
+			      //; }
+   
+			      // results from the design
+			      input logic [`$product_width - 1`:0] ManRes,
+			      input logic [`$exp_width + 1`:0] 	   ExpRes,
+			      input logic 			   SignRes,
+			      input logic 			   NaNRes, InfRes, ZeroRes
+			      );
 
    // Local variables and handles for controlling the simulation
    int 					seed=`$seed`;
    int 					num_trans = `$num_trans`;
    int 					dummy;
-
+   logic 				IncA, IncB, IncC;
+   
    // FP transaction handles
    //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
    //;				    Random=>'YES',
@@ -172,8 +176,8 @@ program automatic `mname` (
 	begin
            $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
            //         levels  instance
-           $vcdpluson(0,        top);
-	   $vcdplusmemon(0,     top);
+           $vcdpluson(0,        top_FPMult);
+	   $vcdplusmemon(0,     top_FPMult);
         end
       // find the seed for this run
       if ( $test$plusargs("Seed") ) 
