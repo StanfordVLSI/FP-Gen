@@ -35,7 +35,6 @@
 //; my $pipeline_depth = $FP_obj->get_param('PipelineDepth');
 //; my $enable_forwarding = $FP_obj->get_param('EnableForwarding');
 //; my $test_denormals = $FP_obj->get_param('EnableDenormals');
-//; my $product_width = 2 * $frac_width + 2;
 //;
 //; my $num_trans = parameter(Name=>'NumTrans',Val=>10, Min=>1, Step=>1,
 //;                           Doc=>"Number of test transactions to run ".
@@ -45,37 +44,59 @@
 //;                      Doc=>"Seed for random values".
 //;                      "(can AND SHOULD be overriden at runtime using the".
 //;                      "  '+Seed=value' command line notation)");
+//;
+//; # local varibles
+//; my $forward_cycle = $pipeline_depth-1;
+//; my $forward_cycle_a = $forward_cycle;
+//; my $forward_cycle_b = $forward_cycle;
+//; my $forward_cycle_c = $forward_cycle;
+//; my $product_width = 2 * $frac_width + 2;
 
-   program automatic `mname` (
-			      output logic 			   dumptolog,
-			      // signals to drive the design
-			      output logic [`$frac_width - 1`:0]   FracA, FracB, FracC,
-			      output logic [`$exp_width - 1`:0]    ExpA, ExpB, ExpC,
-			      output logic 			   SignA, SignB, SignC,
-   
-			      //; if ($enable_forwarding =~ /YES/){
-			      output logic 			   forward_a, forward_b,
-			      //; }
+program automatic `mname` (
+			   output logic 			       dumptolog,
+			   // signals to drive the design
+			   output logic [`$frac_width + $exp_width`:0] a, b,
 
-			      input logic 			   clk, reset,
-			      //; if ($pipeline_depth>0) {
-			      output logic 			   valid_in, stall_in, 
-			      input logic 			   valid_out, stall_request,
-			      //; }
-   
-			      // results from the design
-			      input logic [`$product_width - 1`:0] ManRes,
-			      input logic [`$exp_width + 1`:0] 	   ExpRes,
-			      input logic 			   SignRes,
-			      input logic 			   NaNRes, InfRes, ZeroRes
-			      );
+			   //; if ($enable_forwarding =~ /YES/){
+			   output logic 			       forward_a, forward_b,
+			   //; }
+
+			   input logic 				       clk, reset,
+			   //; if ($pipeline_depth>0) {
+			   output logic 			       valid_in, stall_in, 
+			   input logic 				       valid_out, stall_request,
+			   //; }
+
+			   // results from the design
+			   input logic [`$product_width - 1`:0]        ManRes,
+			   input logic [`$exp_width + 1`:0] 	       ExpRes,
+			   input logic 				       SignRes,
+			   input logic 				       NaNRes, InfRes, ZeroRes
+			   );
 
    // Local variables and handles for controlling the simulation
-   int 					seed=`$seed`;
-   int 					num_trans = `$num_trans`;
-   int 					dummy;
-   logic 				IncA, IncB, IncC;
+   int 								       seed=`$seed`;
+   int 								       num_trans = `$num_trans`;
+   int 								       dummy;
+   int 								       i=0;
+   int 								       j=0;
    
+
+
+   
+   // queues for storing numbers inside the pipeline
+   logic [`$exp_width + $frac_width`:0] 			       a_q[$], b_q[$], c_q[$];
+   logic [`$exp_width + $frac_width`:0] 			       expected_q[$];
+   
+   // Singals for read the queues
+   logic [`$exp_width + $frac_width`:0] 			       r_a, r_b, r_c;
+   logic [`$exp_width + $frac_width`:0] 			       expected, expectedZ;
+   
+   //; if ($pipeline_depth==0){
+   logic 							       stall_request = 1'b0; // cheat here for simplicity
+   //; }
+
+
    // FP transaction handles
    //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
    //;				    Random=>'YES',
@@ -89,12 +110,6 @@
    //;                              ExponentWidth=>$exp_width, 
    //;                              TestDenormals=>$test_denormals);
    `$TransGenB_obj->instantiate`;
-   //; my $TransGenC_obj = generate('FPTransaction','TransGenC',
-   //;				    Random=>'YES',
-   //;                              FractionWidth=>$frac_width, 
-   //;                              ExponentWidth=>$exp_width, 
-   //;                              TestDenormals=>$test_denormals);
-   `$TransGenC_obj->instantiate`;
 
    // one more handle for the observed output
    //; my $TransRes_obj = generate('FPTransaction','TransRes',
@@ -111,74 +126,215 @@
    //;                              FPTransRes_Ptr=>$TransRes_obj,
    //;                              TestDenormals=>$test_denormals);
    `$GoldRef_obj->instantiate`;
+
    
+   //; my $forward_A;
+   //; my $forward_B;
+   //; if ($enable_forwarding eq 'YES'){
+   // Random model for forwarding signal
+   //; $forward_A = generate('forward', 'ForwardA', Width=>1);
+   `$forward_A->instantiate()`;
+   //; $forward_B = generate('forward', 'ForwardB', Width=>1);
+   `$forward_B->instantiate()`; 
+   logic 							       forward_a_q[$], forward_b_q[$];
+   //; }
+
    
+   //-------------------------------------------------------------------------//
+   // MAIN: Main flow of test
+   //-------------------------------------------------------------------------//
    initial begin
+      get_command_line_args();
+      start_up_testbench();
+
+      // Fork the driver and monitor to do their thing
+      fork
+	 drive_dut();
+	 monitor_dut();
+      join
+      
+      // if we reached this point safely, the test passed!
+      repeat (10) @(negedge clk); // give the lines some time to settle
+      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
+      $finish(0);
+   end
+
+
+   //-------------------------------------------------------------------------//
+   // start_up_testbench: Task to reset all DUT signals and testbench objects
+   //-------------------------------------------------------------------------//
+   task start_up_testbench;
       $display("%t: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...",$time);
       // some simulation control initialization
-      get_command_line_args();
       dummy = $urandom(seed);
       TransGenA = new();
       TransGenB = new();
-      TransGenC = new();
       TransRes = new();
       GoldRef = new();
-
+      //; if ($enable_forwarding eq 'YES'){
+      `$forward_A->iname()` = new();
+      `$forward_B->iname()` = new();
+      //; }
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
-     dumptolog = 1'b0;
-      FracA = 0;
-      ExpA = 0;
-      FracB = 0;
-      ExpB = 0;
-      for (int i=0; i<num_trans; i++) 
-	begin
-	   // Assign values to the lines
-	   dumptolog = 1'b0;
-	   TransGenA.randomize();
-	   TransGenB.randomize();
-	   TransGenC.randomize();
-
-	   SignA = TransGenA.Sign;  FracA = TransGenA.Fraction;  ExpA = TransGenA.Exponent;  IncA=TransGenA.Inc; 
-	   SignB = TransGenB.Sign;  FracB = TransGenB.Fraction;  ExpB = TransGenB.Exponent;  IncB=TransGenB.Inc; 
-	   SignC = TransGenC.Sign;  FracC = TransGenC.Fraction;  ExpC = TransGenC.Exponent;  IncC=TransGenC.Inc; 
-	   $display("\n%t: Transaction #%0d: ", $time, i);
-	   GoldRef.CalcGold(TransGenA, TransGenB);
-	   
-	   // wait for it...
-	   #100;
-	   TransRes.FPMultResult_to_FPTrans(SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
-	   
-	   // now check results...
-	   if (! GoldRef.CheckMultResult(TransRes) )
-	     begin
-		dumptolog = 1'b1;
-		#1;
-		$display("%t: \033[0;31mERROR Found\033[0m", $time);
-		$finish(2);
-	     end
-
-	   // wait before starting over
-	   #100;
-    	end // for (int i=0; i<num_trans; i++)
+      dumptolog = 1'b0;
+      //; if ($pipeline_depth>0){
+      valid_in = 1'b0;
+      stall_in = 1'b0;
+      //; }
+      a = 0;
+      b = 0;
+      //; if ($enable_forwarding eq 'YES'){
+      forward_a = 1'b0;
+      forward_b = 1'b0;      
+      //; }
+   endtask // start_up_testbench
+   
+   
+   
+   //-------------------------------------------------------------------------//
+   // Driver: every cycle, on the neg edge generate stimulus	
+   //-------------------------------------------------------------------------//
+   task drive_dut;
+      @(negedge reset);
+      @(negedge clk);
+      #1;
       
-      #1000; // give the lines some time to settle
-      $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
-   end // initial begin
+      while (i<num_trans) begin
+	 if(!stall_request) begin
+            //; if ($pipeline_depth>0){
+	    valid_in = 1'b1;
+            //; }
+	    i++;
+	    // Assign values to the lines
+	    dumptolog = 1'b0;
+	    
+	    //; if ($enable_forwarding eq 'YES'){
+	    //`$forward_A->iname()`.randomize();
+	    //`$forward_B->iname()`.randomize();
+	    if ( `$forward_A->iname()`.forward
+		 // check the if there is result in pipeline for forwarding
+		 && expected_q.size() >= `$forward_cycle_a` ) begin
+	       forward_a = 1'b1;
+	       a = expected_q[`$pipeline_depth-$forward_cycle_a-1`];
+	       TransGenA.ForceFPNum(a);
+	    end 
+	    else  begin
+	       forward_a = 1'b0;
+	       TransGenA.randomize();
+	       a = TransGenA.GetFPNum();
+	    end // else: !if( `$forward_A->iname()`.forward...
+	    // store the forward_a signal in the queue
+	    forward_a_q = {forward_a_q, forward_a};
+	    
+	    if ( `$forward_B->iname()`.forward
+		 // check the if there is result in pipeline for forwarding
+		 && expected_q.size() >= `$forward_cycle_b` ) begin
+	       forward_b = 1'b1;
+	       b = expected_q[`$pipeline_depth-$forward_cycle_b-1`];	       
+	       TransGenB.ForceFPNum(b);
+	    end 
+	    else  begin
+	       forward_b = 1'b0;
+	       TransGenB.randomize();
+	       b = TransGenB.GetFPNum();
+	    end // else: !if( `$forward_B->iname()`.forward...
+	    // store the forward_b signal in the queue
+	    forward_b_q = {forward_b_q, forward_b};
+	    
+	    //; } else {  # No forwarding
+	    TransGenA.randomize();
+	    TransGenB.randomize();
+	    a = TransGenA.GetFPNum();
+	    b = TransGenB.GetFPNum();
+	    //;}
+
+	    // store all the numbers in queques
+	    a_q = {a_q, a};
+	    b_q = {b_q, b};
+	 end
+	 @(negedge clk);#1;		// wait a clock cycle
+      end // for (int i=0; i<num_trans; i++)
+   endtask // drive_dut
+   
+
+   //-------------------------------------------------------------------------//
+   // Monitor: every clk*$pipeline_depth+clk*k, check results	
+   //-------------------------------------------------------------------------//
+   task monitor_dut;
+      @(negedge reset);
+      @(negedge clk);
+      repeat(`$pipeline_depth`) begin
+	 @(negedge clk);
+	 // while stall_request is enable, wait another cycle
+	 while(stall_request) @(negedge clk);
+      end
+      
+      while (j<num_trans) begin
+	 if(!stall_request) begin
+	    j++;    
+
+	    $display("\n%t: Transaction #%0d: ", $time, i);
+
+	    // set the input numbers and dequeque
+	    r_a = a_q[0];
+	    r_b = b_q[0];
+	    a_q = a_q[1:$];
+	    b_q = b_q[1:$];
+	    // restore FP models
+	    TransGenA.ForceFPNum(r_a);
+	    TransGenB.ForceFPNum(r_b);
+
+
+	    //; if ($enable_forwarding eq 'YES'){
+	    // Print the forwarding information
+	    if ( forward_a_q[0] )
+	      $display("%t A is forwarded from Transaction #%0d", $time, i-`$forward_cycle_a`);
+	    if ( forward_b_q[0] )
+	      $display("%t B is forwarded from Transaction #%0d", $time, i-`$forward_cycle_b`);
+	    //; }
+	    
+	    // calculate the expected result
+	    GoldRef.CalcGold(TransGenA, TransGenB);
+	    
+	    TransRes.FPMultResult_to_FPTrans(SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
+	    
+	    // now check results...
+	    if (! GoldRef.CheckMultResult(TransRes) ) begin
+	       dumptolog = 1'b1;
+	       #1;
+	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
+	       $finish(2);
+	    end
+
+
+	 end // if (!stall_request)
+         @(negedge clk);		// wait a clock cycle
+      end // while (i<num_trans)
+   endtask // monitor_dut
+   
+   
    
    
    
    //-------------------------------------------------------------------------//
    // general intialization procedure
    task get_command_line_args;
+      int 	wave=0;
+      int 	wave_delay=0;
       // if this is a "+wave" run, it must record all signals
-      if ( $test$plusargs("Wave") ) 
-	begin
-           $display("%t:\tRuntime input Wave found (starting signal and memory wave capture)",$time);
-           //         levels  instance
-           $vcdpluson(0,        top_FPMult);
-	   $vcdplusmemon(0,     top_FPMult);
-        end
+      if ( $test$plusargs("Wave") ) begin
+         $display("\t%t:\tRuntime input Wave found (will start signal capture soon...)",$time);
+	 wave = 1;
+      end
+      if ( $test$plusargs("WaveDelay") ) begin
+	 $value$plusargs("WaveDelay=%d", wave_delay);
+	 $display("\t%t:\tRuntime input +WaveDelay=%0d found. Waveform will be recorded from the %0dth Transaction",$time, wave_delay, wave_delay);
+      end
+      // Run wave if wave=1
+      fork
+	 if (wave) start_wave(.wave_delay(wave_delay));
+      join_none
       // find the seed for this run
       if ( $test$plusargs("Seed") ) 
 	begin
@@ -192,5 +348,15 @@
 	end
    endtask // get_command_line_args
    
-      
+   // task to control wave capture
+   task start_wave(input int wave_delay=0);
+      if(wave_delay) 
+	repeat(wave_delay) @(posedge clk);
+      $display("\t%t:\tStarting signal and memory wave capture",$time);
+      $vcdpluson(   0  , `($self->get_top())->mname`);
+   endtask // start_wave
+
 endprogram : `mname`
+
+
+  

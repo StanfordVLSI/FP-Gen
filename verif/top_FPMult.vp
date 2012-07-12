@@ -60,9 +60,7 @@ module `mname` ();
    //; }
    
    // ##### DUT INPUTS ######
-   logic [`$frac_width - 1`:0] 		      FracA, FracB, FracC;
-   logic [`$exp_width - 1`:0] 		      ExpA, ExpB, ExpC;
-   logic 				      SignA, SignB, SignC;
+   logic [`$frac_width + $exp_width`:0]      a, b;
    
    //; if ($enable_forwarding =~ /YES/){ 
    // ##### Inputs For Forwarding #####
@@ -105,8 +103,8 @@ module `mname` ();
 			     //; }
 			     
 			     // ###### Inputs ######
-			     .a_in({SignA, ExpA, FracA}), 
-			     .b_in({SignB, ExpB, FracB}),
+			     .a_in(a), 
+			     .b_in(b),
 			     
                              //; if ($enable_forwarding =~ /YES/){
 			     // ##### Inputs For Forwarding #####
@@ -150,9 +148,7 @@ module `mname` ();
    `$TestBench_obj->instantiate` (
 				  // outputs:
 				  .dumptolog(dumptolog),
-				  .SignA(SignA), .ExpA(ExpA), .FracA(FracA),  
-				  .SignB(SignB), .ExpB(ExpB), .FracB(FracB),  
-				  .SignC(SignC), .ExpC(ExpC), .FracC(FracC), 
+				  .a(a), .b(b),
  
 				  //; if ($enable_forwarding =~ /YES/){
 				  .forward_a(forward_a), .forward_b(forward_b),
