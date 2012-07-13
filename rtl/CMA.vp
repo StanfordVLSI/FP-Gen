@@ -148,11 +148,11 @@ module `mname` (
                                   .a_in(a), .b_in(b),
 //;      if ($enable_forwarding =~ /YES/){
                                   .forward_a(forward_a), .forward_b(forward_b),	
-                                  .z_preInc(z_preInc), .IncZ(IncZ),
+                                  .z_preInc(z_preInc), .IncZ(IncZ), .z_postInc(z),
 //;      }
 //;      if ($mul_pipeline_depth>0){
                                   .valid_in(valid_in), .clk(clk) , .stall_in(stall_in), .reset(reset),
-                                  .valid_out(valid_mul), .stall_request(stall_request)
+                                  .valid_out(valid_mul), .stall_request(stall_request), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode),
 //;      }
                                   .SignAB_out(SignAB), .ExpAB_out(ExpAB) , .ManAB_out(ManAB),
                                   .NANAB_out(NANAB), .InfAB_out(InfAB), .ZeroAB_out(ZeroAB)

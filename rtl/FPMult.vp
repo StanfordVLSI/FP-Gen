@@ -335,7 +335,10 @@ module `mname`(
 	$display ("`$self->get_instance_path()`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB_pl);
 	$display ("`$self->get_instance_path()`: ExpAB=%h , ManAB=%h, SignAB=%h, NANAB=%h, InfAB=%h, ZeroAB=%h",ExpAB, ManAB, SignAB, NANAB, InfAB, ZeroAB);
 	$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
-	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h ManAB_shifted=%h shiftAmount=%h",ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long, ManAB_shifted, shiftAmount);
+	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h", ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long);
+    //;if ($enable_denormals=~ /YES/){
+	$display ("`$self->get_instance_path()`: ManAB_shifted=%h shiftAmount=%h", ManAB_shifted, shiftAmount);
+    //;}
      end
 // synopsys translate_on
  //; }
