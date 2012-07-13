@@ -8,7 +8,7 @@
 # Product is 
 # - FPGen which is an FP multiply Accumulator (default)
 # - FPMult which is an FP multiplier only
-PRODUCT := FPGen
+FPPRODUCT := FPGen
 
 # This little trick finds where the makefile exists
 DESIGN_HOME := $(realpath $(dir $(word $(words $(MAKEFILE_LIST)), $(MAKEFILE_LIST))))
@@ -24,8 +24,8 @@ $(warning Work started at $(RUNDIR))
 
 ############# For Genesis2 ##############
 #########################################
-GENESIS_TOP = top_$(PRODUCT)
-GENESIS_SYNTH_TOP_PATH = $(GENESIS_TOP).$(PRODUCT)
+GENESIS_TOP = top_$(FPPRODUCT)
+GENESIS_SYNTH_TOP_PATH = $(GENESIS_TOP).$(FPPRODUCT)
 
 
 # list src folders and include folders
@@ -75,7 +75,7 @@ GENESIS_PARAMS	:=
 
 # output xml hierarchy file
 ifndef GENESIS_HIERARCHY
-GENESIS_HIERARCHY := $(PRODUCT).xml
+GENESIS_HIERARCHY := $(FPPRODUCT).xml
 else
   $(warning WARNING: GENESIS_HIERARCHY set to $(GENESIS_HIERARCHY))
 endif
@@ -126,7 +126,7 @@ endif
 ##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
 ##############################################
 SIMV = $(RUNDIR)/simv
-SIM_TOP = top_$(PRODUCT)
+SIM_TOP = top_$(FPPRODUCT)
 
 VERILOG_ENV :=		 
 
@@ -217,7 +217,7 @@ CLK_GATING 	?= 1
 USE_SAIF	?= 0
 
 # flags for dc/icc
-DESIGN_TARGET	= $(PRODUCT)
+DESIGN_TARGET	= $(FPPRODUCT)
 SYNTH_DIR_NAME 	:= syn_$(VT)_$(VOLTAGE)_$(TARGET_DELAY)
 ifdef APPENDIX
   SYNTH_DIR_NAME 	:= $(SYNTH_DIR_NAME)_$(APPENDIX)
@@ -246,7 +246,7 @@ ICC_COMMAND_STRING = "$(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/m
 ICC_OPT_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; $(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
 
 # For activity factor extraction (SAIF)
-SAIF_FILE 	= $(SYNTH_RUNDIR)/$(PRODUCT).saif
+SAIF_FILE 	= $(SYNTH_RUNDIR)/$(FPPRODUCT).saif
 # No saif dependency if not USE_SAIF
 ifneq ($(USE_SAIF),0)
   SAIF_DEPENDENCY = $(SAIF_FILE)
@@ -297,7 +297,7 @@ $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo Making $@ because of $?
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -debug $(GENESIS_DBG_LEVEL)
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(PRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
+	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(FPPRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 genesis_clean:
 	@echo ""
@@ -473,7 +473,7 @@ report_results:
 #Design Space Map Rules:
 ###################################
 design_map:
-	locDesignMap.pl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(PRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
+	locDesignMap.pl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(FPPRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null
 
 
 #PipeLine Hack:
