@@ -85,12 +85,12 @@ program automatic `mname` (
 
    
    // queues for storing numbers inside the pipeline
-   logic [`$exp_width + $frac_width`:0] 			       a_q[$], b_q[$], c_q[$];
-   logic [`$exp_width + $frac_width`:0] 			       expected_q[$];
+   logic [`$exp_width + $frac_width`:0] 			       a_q[$], b_q[$];
+   logic [`$exp_width + $product_width - 1`:0] 			       expected_q[$];
    
    // Singals for read the queues
-   logic [`$exp_width + $frac_width`:0] 			       r_a, r_b, r_c;
-   logic [`$exp_width + $frac_width`:0] 			       expected, expectedZ;
+   logic [`$exp_width + $frac_width`:0] 			       r_a, r_b;
+   logic [`$exp_width + $product_width - 1`:0] 			       z, expectedZ;
    
    //; if ($pipeline_depth==0){
    logic 							       stall_request = 1'b0; // cheat here for simplicity
@@ -212,35 +212,10 @@ program automatic `mname` (
 	    //; if ($enable_forwarding eq 'YES'){
 	    //`$forward_A->iname()`.randomize();
 	    //`$forward_B->iname()`.randomize();
-	    if ( `$forward_A->iname()`.forward
-		 // check the if there is result in pipeline for forwarding
-		 && expected_q.size() >= `$forward_cycle_a` ) begin
-	       forward_a = 1'b1;
-	       a = expected_q[`$pipeline_depth-$forward_cycle_a-1`];
-	       TransGenA.ForceFPNum(a);
-	    end 
-	    else  begin
-	       forward_a = 1'b0;
-	       TransGenA.randomize();
-	       a = TransGenA.GetFPNum();
-	    end // else: !if( `$forward_A->iname()`.forward...
-	    // store the forward_a signal in the queue
-	    forward_a_q = {forward_a_q, forward_a};
-	    
-	    if ( `$forward_B->iname()`.forward
-		 // check the if there is result in pipeline for forwarding
-		 && expected_q.size() >= `$forward_cycle_b` ) begin
-	       forward_b = 1'b1;
-	       b = expected_q[`$pipeline_depth-$forward_cycle_b-1`];	       
-	       TransGenB.ForceFPNum(b);
-	    end 
-	    else  begin
-	       forward_b = 1'b0;
-	       TransGenB.randomize();
-	       b = TransGenB.GetFPNum();
-	    end // else: !if( `$forward_B->iname()`.forward...
-	    // store the forward_b signal in the queue
-	    forward_b_q = {forward_b_q, forward_b};
+	    TransGenA.randomize();
+	    TransGenB.randomize();
+	    a = TransGenA.GetFPNum();
+	    b = TransGenB.GetFPNum();
 	    
 	    //; } else {  # No forwarding
 	    TransGenA.randomize();
@@ -274,7 +249,7 @@ program automatic `mname` (
 	 if(!stall_request) begin
 	    j++;    
 
-	    $display("\n%t: Transaction #%0d: ", $time, i);
+	    $display("\n%t: Transaction #%0d: ", $time, j);
 
 	    // set the input numbers and dequeque
 	    r_a = a_q[0];
@@ -284,29 +259,19 @@ program automatic `mname` (
 	    // restore FP models
 	    TransGenA.ForceFPNum(r_a);
 	    TransGenB.ForceFPNum(r_b);
-
-
-	    //; if ($enable_forwarding eq 'YES'){
-	    // Print the forwarding information
-	    if ( forward_a_q[0] )
-	      $display("%t A is forwarded from Transaction #%0d", $time, i-`$forward_cycle_a`);
-	    if ( forward_b_q[0] )
-	      $display("%t B is forwarded from Transaction #%0d", $time, i-`$forward_cycle_b`);
-	    //; }
 	    
 	    // calculate the expected result
 	    GoldRef.CalcGold(TransGenA, TransGenB);
-	    
+	    expectedZ = GoldRef.Expected.GetFPNum();
 	    TransRes.FPMultResult_to_FPTrans(SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
-	    
+	    z = TransRes.GetFPNum();
 	    // now check results...
 	    if (! GoldRef.CheckMultResult(TransRes) ) begin
 	       dumptolog = 1'b1;
 	       #1;
 	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
-	       $finish(2);
+	       //$finish(2);
 	    end
-
 
 	 end // if (!stall_request)
          @(negedge clk);		// wait a clock cycle
