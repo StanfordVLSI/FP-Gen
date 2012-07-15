@@ -86,11 +86,10 @@ program automatic `mname` (
    
    // queues for storing numbers inside the pipeline
    logic [`$exp_width + $frac_width`:0] 			       a_q[$], b_q[$];
-   logic [`$exp_width + $product_width - 1`:0] 			       expected_q[$];
    
    // Singals for read the queues
    logic [`$exp_width + $frac_width`:0] 			       r_a, r_b;
-   logic [`$exp_width + $product_width - 1`:0] 			       z, expectedZ;
+   logic [`$exp_width + $product_width -1`:0] 			       z, expectedZ;
    
    //; if ($pipeline_depth==0){
    logic 							       stall_request = 1'b0; // cheat here for simplicity
@@ -210,6 +209,7 @@ program automatic `mname` (
 	    dumptolog = 1'b0;
 	    
 	    //; if ($enable_forwarding eq 'YES'){
+	    // we are not verifying forwarding logic of this fake FPMult
 	    //`$forward_A->iname()`.randomize();
 	    //`$forward_B->iname()`.randomize();
 	    TransGenA.randomize();
@@ -259,18 +259,27 @@ program automatic `mname` (
 	    // restore FP models
 	    TransGenA.ForceFPNum(r_a);
 	    TransGenB.ForceFPNum(r_b);
+	    $display("%t: SENT: \tTypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
+		   TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
+	    $display("%t:       \tTypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
+		   TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
 	    
 	    // calculate the expected result
 	    GoldRef.CalcGold(TransGenA, TransGenB);
 	    expectedZ = GoldRef.Expected.GetFPNum();
+	    
+	    $display("%t: RESULT:\tSign=%1b, Exp=0x%b, Man=0x%h NaN=%b Inf=%b Zero=%b", $time,
+		   SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
 	    TransRes.FPMultResult_to_FPTrans(SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
 	    z = TransRes.GetFPNum();
+	    $display("%h", z);
+	    
 	    // now check results...
 	    if (! GoldRef.CheckMultResult(TransRes) ) begin
 	       dumptolog = 1'b1;
 	       #1;
 	       $display("%t: \033[0;31mERROR Found\033[0m", $time);
-	       //$finish(2);
+	       $finish(2);
 	    end
 
 	 end // if (!stall_request)

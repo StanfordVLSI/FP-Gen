@@ -89,23 +89,12 @@ class `mname`;
       logic 			      overflow = 0, underflow = 0;
 
       
-      $write("%t: SENT:  TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b | ", $time,
-	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
-      $display("TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b",
-	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
       
       
       // init all values:
       FracExpected = '0;
       ExpExpected = '0;
       SignExpected = '0;
-      transA.CalculateInc(); 
-      transB.CalculateInc();
-      
-      $write("%t: Sent PostInc:  TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h IncA=%1b | ", $time,
-	     transA.TransType.name(), transA.Sign, transA.Exponent, transA.Fraction, transA.Inc);
-      $display("TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h IncB=%1b",
-	       transB.TransType.name(), transB.Sign, transB.Exponent, transB.Fraction, transB.Inc);
       
       
       // First we calculate the expected sign, since it used in both regular and corner cases

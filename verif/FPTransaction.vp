@@ -228,30 +228,26 @@ class `mname`;
    // IMPORTANT: This function was custom built for the FPMult format
    function void FPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
     		 			 logic NaN, logic Inf, logic Zero);
-
-      $write("%t: RESULT: Sign=%1b, Exp=0x%h, Man=0x%h NaN=%b Inf=%b Zero=%b -- My thoughts: ", 
-	     $time, Sign, Exp, Man, NaN, Inf, Zero);
-
+      
+      logic [`$frac_width`:0] 		       ManDenormed;
+      logic [`$exp_width + 1`:0] 	       expOffset;
       // Start with clear cut flagged cases:
       // ----------------------------------
       if (NaN) begin // NaN cases
 	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b1, 1'b0); // FIXME: Signaling? maybe Quiet NaN?
-	 $display("NaN==1 ==> Assuming NaN");
 	 return;
       end
       if (Inf) begin // Inf cases
 	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b0, 1'b0);
-	 $display("Inf==1 ==> Assuming Inf");
 	 return;
       end
       if (Zero) begin // Zero cases
 	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, `$frac_width`'b0, 1'b0);
-	 $display("Zero==1 ==> Assuming Zero");
 	 return;
       end
-/* RSticky no longer used
-      if (RSticky) begin // Rsticky cases
-	 $write("RSticky==1 ==>  ");
+      /* RSticky no longer used
+       if (RSticky) begin // Rsticky cases
+       $write("RSticky==1 ==>  ");
       	 //corner case alert: if FP==1.111111 we need Man<=1.0 and Exp<=Exp+1
       	 if (Man == {(`$frac_width+1`){1'b1}}) begin
 	    Man = `$frac_width+1`'b1;
@@ -265,32 +261,42 @@ class `mname`;
       end
 */
       // Move to unflagged cases:
-      // ---------------------------
-      if (Exp > `2**$exp_width-2`) begin // Exponent overflow case
-	 this.ForceSignExpFrac(Sign, {(`$exp_width+2`){1'b1}}, `$frac_width`'b0, 1'b0);
-	 $display("Exp>MaxExp (`2**$exp_width-2`)  ==> Assume Inf");
-      end else
-      if (Exp == `$exp_width+2`'b0) begin // Zero cases
+      // --------------------------- 
+      if (Man == `$frac_width+1`'b0) begin // Zero cases
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], `$frac_width`'b0, 1'b0);
-	 $display("Exp==0  ==> Assume Zero");
       end
+      else if (Exp[`$exp_width+1`] == 1'b1 || Exp == `$exp_width+2`'b0) begin // Negative/Zero  Exp --> Denorm cases
+	 $display("%t \t\t The output exponent is negative(%0d). Denormalization is done before check.", $time, -Exp);
+	 expOffset = (~Exp + 1'b1);
+	 $display("%b", expOffset);
+	 
+	 expOffset = expOffset + 1;
+	 ManDenormed = Man >> expOffset;
+	 $display("%d %h", expOffset, ManDenormed);
+	// ManDenormed = ManDenormed >> 1;
+	 //$display("%h", ManDenormed);
+	 if(|(Man<<`$frac_width+1`-expOffset) || 
+	    ManDenormed == `$frac_width+1`'b0) //round up ManDenormed if it is sticky
+	   ManDenormed = ManDenormed + `$frac_width+1`'b1;
+	  
+	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, ManDenormed[`$frac_width - 1`:0], 1'b0);
+      end
+      else if (Exp > `2**$exp_width-2`) begin // Exponent overflow case
+	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b0, 1'b0);
+      end 
       else if (Exp == `$exp_width+2`'b1) begin // Denorm and Normal cases
 	 if (Man[`$frac_width`] == 1'b0) begin  // Denorm
-	    this.ForceSignExpFrac(Sign, `$exp_width+2`'b0, Man[`$frac_width - 1`:0], 1'b0);
-	    $display("Exp==1, Man[msb]=0  ==> Assume Denorm");
+	    this.ForceSignExpFrac(Sign, `$exp_width`'b0, Man[`$frac_width - 1`:0], 1'b0);
 	 end else begin 			// Normals (with wxp=1)
 	    this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
-	    $display("Exp==1, Man[msb]=1  ==> Assume Normal");
 	 end
       end else if (Exp == {(`$exp_width+2`){1'b1}}) begin // Inf and NaN cases
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
-	 $display("Exp==111..1 ==> Assuming Inf or NaN");
       end
 
       // Finally, normal case:
       // ---------------------------
-      else begin 					// Just normal cases
-	 $display("Normal Case!");
+      else begin 		
 	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
       end
    endfunction // FPMultResult_to_FPTrans
