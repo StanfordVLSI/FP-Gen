@@ -86,9 +86,9 @@ module `mname`(
 //; } elsif ($pipeline_depth>0){
 
    //; if ( ! ($useInc=~ /YES/)){
-   logic IncA, IncB;
-   assign IncA = 0;
-   assign IncB = 0;
+   logic ainc, binc;
+   assign ainc = 0;
+   assign binc = 0;
    //; }
    //; if ( !$useMP){
    logic mp_mode;

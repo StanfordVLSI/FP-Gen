@@ -120,6 +120,7 @@ module `mname`(
    assign {b,binc} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
    assign a1 = forward_a0? z_postInc : a0;
 //; } else {
+   logic forward_a = 0;
    assign {a,b,ainc,binc} = {a_in,b_in,2'b0};
    assign a1 = A_pl;
 //; }
