@@ -263,31 +263,35 @@ class `mname`;
       // Move to unflagged cases:
       // --------------------------- 
       if (Man == `$frac_width+1`'b0) begin // Zero cases
-	 this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], `$frac_width`'b0, 1'b0);
+	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, `$frac_width`'b0, 1'b0);
       end
       else if (Exp[`$exp_width+1`] == 1'b1 || Exp == `$exp_width+2`'b0) begin // Negative/Zero  Exp --> Denorm cases
-	 $display("%t \t\t The output exponent is negative(%0d). Denormalization is done before check.", $time, -Exp);
-	 expOffset = (~Exp + 1'b1);
-	 $display("%b", expOffset);
 	 
-	 expOffset = expOffset + 1;
+	 //;   if ($test_denormals =~ /YES/){
+	 $display("%t \t\t The output exponent is negative(%0d). Denormalization is done before check.", $time, -Exp);
+	 expOffset = (~Exp + 2'b10);
+	 $display("%b", expOffset);
 	 ManDenormed = Man >> expOffset;
 	 $display("%d %h", expOffset, ManDenormed);
-	// ManDenormed = ManDenormed >> 1;
-	 //$display("%h", ManDenormed);
 	 if(|(Man<<`$frac_width+1`-expOffset) || 
 	    ManDenormed == `$frac_width+1`'b0) //round up ManDenormed if it is sticky
 	   ManDenormed = ManDenormed + `$frac_width+1`'b1;
 	  
 	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, ManDenormed[`$frac_width - 1`:0], 1'b0);
+	 //; } else {
+	 //; # Denorm mode is OFF, then the result should be zero
+	 $display("%t \t\t The output exponent is negative(%0d), supposed to be ZERO since denorm mode is OFF", $time, -Exp);
+	 this.ForceSignExpFrac(Sign, `$exp_width`'b0, `$frac_width`'b0, 1'b0);
+	 //; }
       end
       else if (Exp > `2**$exp_width-2`) begin // Exponent overflow case
 	 this.ForceSignExpFrac(Sign, {(`$exp_width`){1'b1}}, `$frac_width`'b0, 1'b0);
       end 
       else if (Exp == `$exp_width+2`'b1) begin // Denorm and Normal cases
-	 if (Man[`$frac_width`] == 1'b0) begin  // Denorm
+	 /*if (Man[`$frac_width`] == 1'b0) begin  // Denorm
 	    this.ForceSignExpFrac(Sign, `$exp_width`'b0, Man[`$frac_width - 1`:0], 1'b0);
-	 end else begin 			// Normals (with wxp=1)
+	 end else*/ begin
+ 	 // Normals (with wxp=1)
 	    this.ForceSignExpFrac(Sign, Exp[`$exp_width-1`:0], Man[`$frac_width - 1`:0], 1'b0);
 	 end
       end else if (Exp == {(`$exp_width+2`){1'b1}}) begin // Inf and NaN cases

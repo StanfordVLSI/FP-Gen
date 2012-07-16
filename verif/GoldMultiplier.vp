@@ -216,31 +216,46 @@ class `mname`;
 	 //$display("DEBUG: full man=%h", Man_internal);
 	 
 //----------------------
-
+	 
 	 // Finally, sum it all up:
 	 overflow = (Exp_internal > Exp_max+Exp_offset) ? 1'b1 : 1'b0;
 	 underflow = (Exp_internal < Exp_offset+1) ? 1'b1 : 1'b0;
+	 $display("DEBUG: Exp_internal=0x%h Man_internal=0x%h overflow=%b underflow=%b",
+		  Exp_internal,Man_internal, overflow, underflow);
 	 if (overflow)
 	   Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected); };
-	 else if (underflow) begin
+	 else if (underflow) 
+	   //; if ($test_denormals =~ /NO/){
+	   Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };	  
+
+         //; } else {
+	 begin 	
 	    if (sticky) begin
 	       ExpExpected = 0;
 	       FracExpected = sticky;
 	       Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected, 1'b0);
-	    end else begin
-	       Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
-	    end
-	 end else begin
+	    end else 
+	      Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
+	 end
+	 //; }
+	 else begin
 	    ExpExpected = Exp_internal - Exp_offset;
 	    FracExpected = Man_internal[`$fracRes_width-1`:0];
-	    if (ExpExpected==1 && Man_internal[`$fracRes_width`]==1'b0) // Denorm case ==> zero the exp
+	    $display("DEBUG: ExpExpected=0x%h FracExpected=0x%h", ExpExpected,FracExpected);
+	 if (ExpExpected==1 && Man_internal[`$fracRes_width`]==1'b0) begin // Denorm case ==> zero the exp
+	    $display("DEBUG: Denorm result found.");
+	    
 	      //; if ($test_denormals =~ /NO/){
 	      Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected); };
               //; } else {
 	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected, 1'b0);
 	      //; }
-	    else							  // Normal case
+	    end
+	    else
+	      begin
+	      $display("DEBUG: Norm result found.");							  // Normal case
 	      Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected, 1'b0);
+	      end
 	 end
       end // End of the "normal" case (no special input)
       

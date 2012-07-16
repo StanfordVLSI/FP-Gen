@@ -268,7 +268,7 @@ program automatic `mname` (
 	    GoldRef.CalcGold(TransGenA, TransGenB);
 	    expectedZ = GoldRef.Expected.GetFPNum();
 	    
-	    $display("%t: RESULT:\tSign=%1b, Exp=0x%b, Man=0x%h NaN=%b Inf=%b Zero=%b", $time,
+	    $display("%t: RESULT:\tSign=%1b, Exp=0x%h, Man=0x%h NaN=%b Inf=%b Zero=%b", $time,
 		   SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
 	    TransRes.FPMultResult_to_FPTrans(SignRes, ExpRes, ManRes, NaNRes, InfRes, ZeroRes);
 	    z = TransRes.GetFPNum();
