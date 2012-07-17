@@ -392,7 +392,8 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	@if test ! -d "$(SYNTH_LOGS)"; then 	\
 		mkdir -p $(SYNTH_LOGS);		\
 	fi
-	(cd $(SYNTH_RUNDIR); 			\
+	(cd $(SYNTH_RUNDIR); 							\
+	hostname -A > $(SYNTH_RUNDIR)/run_dc.hostname;				\
 	dc_shell-xg-t -64bit -x $(DC_COMMAND_STRING) 2>&1 | tee -i $(DC_LOG)	\
 	)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
@@ -419,7 +420,8 @@ $(ICC_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/mul
 	@if test ! -d "$(SYNTH_LOGS)"; then 	\
 		mkdir -p $(SYNTH_LOGS);		\
 	fi
-	(cd $(SYNTH_RUNDIR); 			\
+	(cd $(SYNTH_RUNDIR); 							\
+	hostname -A > $(SYNTH_RUNDIR)/run_icc.hostname;				\
 	icc_shell -64bit -x $(ICC_COMMAND_STRING) 2>&1 | tee -i $(ICC_LOG)	\
 	)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_LOG)
@@ -437,7 +439,8 @@ $(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)
 	@if test ! -d "$(SYNTH_LOGS)"; then 	\
 		mkdir -p $(SYNTH_LOGS);		\
 	fi
-	(cd $(SYNTH_RUNDIR); 			\
+	(cd $(SYNTH_RUNDIR); 							\
+	hostname -A > $(SYNTH_RUNDIR)/run_icc_opt.hostname;			\
 	icc_shell -64bit -x $(ICC_OPT_COMMAND_STRING) 2>&1 | tee -i $(ICC_LOG)	\
 	)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_LOG)
