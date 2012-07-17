@@ -60,7 +60,7 @@ module `mname`(
 //; if ($useInc=~ /YES/){
     input logic 		  ainc, binc,
 //; }
-//; if ($pipeline_depth > 0 ) {
+//; if ($pipeline_depth != 0 ) {
     input logic valid_in, clk , reset, stall,
     output logic valid_out, 
 //; }   
