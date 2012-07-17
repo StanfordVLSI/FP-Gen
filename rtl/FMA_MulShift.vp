@@ -146,9 +146,14 @@ module `mname` (
                              .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
                              .valid_out(valid_ManA) );
 
-  assign  {AB_pp0, AB_pp1} = adder_mode_final?
+assign  {AB_pp0, AB_pp1} = adder_mode_final?
                             { 3'b0,ManA_final, `2*$frac_width+3`'b0, ainc_final,`$frac_width`'b0}
-                          : { mulp_out_pp0 , mulp_out_pp1 };
+                          : { mulp_out_pp0 , mulp_out_pp1 }; 
+
+
+  /*   assign  AB_pp0 = mulp_out_pp0;
+   assign  AB_pp1 = mulp_out_pp1; */
+
 //; } else {
   assign  {AB_pp0, AB_pp1} = { mulp_out_pp0 , mulp_out_pp1 };
 //; }
@@ -225,6 +230,7 @@ module `mname` (
                                 .valid_out(valid_out) );
 //; } else {
   assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0};
+  assign valid_out = valid0;
 //; }
 
   /* Aligner*/
