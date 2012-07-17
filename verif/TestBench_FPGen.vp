@@ -417,13 +417,14 @@ program automatic `mname` (
 		  #1;
 		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+                  @(negedge clk); #1;		// wait a clock cycle
 		  $finish(2);
 	       end
 	       else begin
 		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, expectedZ);
 	       end 
 	    end
-            @(negedge clk);		// wait a clock cycle
+            @(posedge clk);		// wait a clock cycle
     	 end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
       else begin // use the input test file
