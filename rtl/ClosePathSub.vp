@@ -133,9 +133,9 @@ module `mname`(
   assign op2 = ExpA_gt_ExpB_2? {2'b0 , ManB}
                              : ExpA_gt_ExpB_1? {1'b0 , ManB,1'b0} : {ManB,2'b0};
 
-  assign Expbase_pp0 = (ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB;
-  assign Expbase_pp1 = ~LShiftAmtWide;
-  assign Expbase_ci  = op2[`$manB_width+1`];
+  assign Expbase_pp0 = ZeroDiff? 0 : ((ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB);
+  assign Expbase_pp1 = ZeroDiff? 0 : ~LShiftAmtWide;
+  assign Expbase_ci  = ZeroDiff & op2[`$manB_width+1`];
  
   //Subtraction + LZA
   

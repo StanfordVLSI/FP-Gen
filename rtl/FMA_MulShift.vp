@@ -161,7 +161,7 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
   /*Exponent Difference*/
 
   wire [`$frac_width-1`:0] SigA0, SigB0, SigC0;
-  wire [`$exp_width-1`:0] ExpA0, ExpB0, ExpC0;
+  wire [`$exp_width-1`:0] ExpA0, ExpB0, ExpC0, ExpC1;
   wire SignA0, SignB0, SignC0, SignAB0, zeroSigA0, zeroSigB0, zeroSigC0;
   wire IncExpA0, IncExpB0, IncExpC0, NANorInfA0, NANorInfB0, NANorInfC0, InfA0, InfB0, InfC0;
   wire NANA0, NANB0, NANC0, ZeroA0, ZeroB0, ZeroC0, NANAB0, InfAB0, ZeroAB0; 
@@ -220,7 +220,7 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
                                    .carry(ExpCarry), .sum(ExpSum), .co(DummyCo1) );
 
   DW01_add #(`$exp_width+2`) Add_ExpAB (.A(ExpSum), .B(ExpCarry), .CI(denormB0), .SUM(ExpAB), .CO(DummyCo2) );
-  assign ExpBase0 = ExpResultIsC? {2'b0,ExpC0} : ExpAB;
+  assign ExpBase0 = ExpResultIsC? {2'b0,ExpC1} : ExpAB;
 
 //; if($pipeline_depth > 1 ){
 //;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> $exp_width+11 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
@@ -256,6 +256,7 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
 
   logic [`$frac_width`:0] ManC1, ManC2;
 
+  assign ExpC1  = c1[`$exp_width + $frac_width -1`:`$frac_width`];
   assign ManC1 = { (IncExpC0|~denormC0) , c1[`$frac_width -1`:0]};
 //; if($pipeline_depth > 1 ){
 //;   my $align_pipe = ($enable_forwarding =~ /YES/)?

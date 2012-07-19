@@ -53,7 +53,7 @@ module `mname`(
 
   logic [`$ExtendedExp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpDiffDec, ExpDiff, ExpDiffInc, ExpDiffShifted;
 
-  logic ExpDiff_Upper0s, ExpDiff_Upper1s, co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
+  logic ExpB_gt_ExpA_shifted, ExpDiff_Upper0s, ExpDiff_Upper1s, co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
 
   // ExpA_pp0 + ExpA_pp1 + ExpA_ci = ExpA - 1
 
@@ -93,19 +93,18 @@ module `mname`(
  //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $ExtendedExp_width-4);
    `$SC1_obj->instantiate` (.a(ExpDiff_pp0[`$ExtendedExp_width-1`:4]), .b(ExpDiff_pp1[`$ExtendedExp_width-1`:4]), .sum({ (`$ExtendedExp_width-4`){1'b1}}), .equal(ExpDiff_Upper1s));
   
+  assign ExpDiffDec = ExpA_ExpB_1[`$ExtendedExp_width-1`]?     ~ExpA_ExpB_2 : ExpA_ExpB_1; 
+  assign ExpDiff    = ExpA_ExpB[`$ExtendedExp_width-1`]?       ~ExpA_ExpB_1 : ExpA_ExpB;
+  assign ExpDiffInc = ExpA_ExpB_plus1[`$ExtendedExp_width-1`]? ~ExpA_ExpB   : ExpA_ExpB_plus1;
 
-  assign ExpB_gt_ExpA = ExpA_ExpB[`$ExtendedExp_width-1`];
+  assign {ExpB_gt_ExpA_shifted, ExpDiffShifted} =   ExpADecrementWhenShifting? 
+                                                        {ExpA_ExpB_1[`$ExtendedExp_width-1`],ExpDiffDec} 
+                                                      : {ExpA_ExpB_plus1[`$ExtendedExp_width-1`],ExpDiffInc};
 
+  assign {ExpB_gt_ExpA, ExpDifference} = ShiftA? {ExpB_gt_ExpA_shifted, ExpDiffShifted} 
+                                               : {ExpA_ExpB[`$ExtendedExp_width-1`] , ExpDiff};
 
-  assign ExpDiffDec = ExpB_gt_ExpA? ~ExpA_ExpB_2 : ExpA_ExpB_1;      //  ExpB > ExpA ? ExpB-ExpA+1 : ExpA-ExpB-1
-  assign ExpDiff    = ExpB_gt_ExpA? ~ExpA_ExpB_1 : ExpA_ExpB;        //  ExpB > ExpA ? ExpB-ExpA   : ExpA-ExpB
-  assign ExpDiffInc = ExpB_gt_ExpA? ~ExpA_ExpB   : ExpA_ExpB_plus1;  //  ExpB > ExpA ? ExpB-ExpA-1 : ExpA-ExpB+1
-
-  assign ExpDiffShifted =   ExpADecrementWhenShifting? ExpDiffDec : ExpDiffInc;
-
-  assign ExpDifference = ShiftA? ExpDiffShifted : ExpDiff;
-
-  assign ResultIsClose = ((SignA ^ SignB) & ( ExpDiff_Upper0s | ExpDiff_Upper1s ) & (~|ExpDifference[3:2])) & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
+  assign ResultIsClose = ((SignA ^ SignB) & ( ExpDiff_Upper0s | ExpDiff_Upper1s ) & (~|ExpDifference[4:2])) & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off

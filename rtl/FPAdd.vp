@@ -96,7 +96,7 @@ module `mname` (
   logic [`$ExpB_width-1`:0] ExpA , ExpA_p1, CloseExpbase_pp0, CloseExpbase_pp1, FarExpbase_pp0, FarExpbase_pp1;
   logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
   logic [`$exp_width + $frac_width`:0] FinalSum, A_p1, A_p2;
-  logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, FarShiftZ, CloseShiftZ, CloseExpbase_ci;
+  logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, ShiftSum, FarShiftSum, CloseShiftDiff, CloseExpbase_ci;
   logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract, IncExpA;
   logic FX, FV, FU, FI, Tiny;
   logic FI_p2, ResultIsInfinity_p2, ResultIsA_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2;
@@ -190,7 +190,7 @@ module `mname` (
                                     .valid_out(valid_far),
   //; }
                                     .ManSum_out(FarManSum), .ExpSum_out(FarExpSum), .SignSum_out(SignFarSum), .ZeroSum_out(ZeroFarSum),
-                                    .Guard_out(FarGuard), .Sticky_out(FarSticky) ,.Overflow_out(FarOverflow) , .ShiftExponent_out(FarShiftZ), .Expbase_pp0(FarExpbase_pp0), .Expbase_pp1(FarExpbase_pp1)
+                                    .Guard_out(FarGuard), .Sticky_out(FarSticky) ,.Overflow_out(FarOverflow) , .ShiftExponent_out(FarShiftSum), .Expbase_pp0(FarExpbase_pp0), .Expbase_pp1(FarExpbase_pp1)
   //; if ($verif_mode =~ /ON/){
                                     , .dumptolog(dumptolog)
   //; }
@@ -217,7 +217,7 @@ module `mname` (
                                        .SignDiff_out(CloseDiffSign) , .ZeroDiff_out(ZeroCloseDiff),
                                        .Guard_out(CloseGuard), .Sticky_out(CloseSticky),
                                        .Expbase_pp0(CloseExpbase_pp0), .Expbase_pp1(CloseExpbase_pp1), .Expbase_ci(CloseExpbase_ci),
-                                       .LZA_wrong_out(CloseShiftZ)
+                                       .LZA_wrong_out(CloseShiftDiff)
   //; if ($verif_mode =~ /ON/){
                                        , .dumptolog(dumptolog)
   //; }
@@ -231,10 +231,10 @@ module `mname` (
                                                              {CloseExpbase_pp0, CloseExpbase_pp1, CloseExpbase_ci, 1'b0}
                                                            : {FarExpbase_pp0 , FarExpbase_pp1 , 1'b0, subtract_p};
 
-  assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow , ShiftZ} = 
+  assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow , ShiftSum} = 
                     ResultIsClose_p2?
-                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, 1'b0, CloseShiftZ}
-                   :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, FarShiftZ};
+                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, 1'b0, CloseShiftDiff}
+                   :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, FarShiftSum};
 
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
   `$rnd_obj->instantiate()` (.rnd(rnd_p2), .Sign(SignResult), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(RoundInc), .MaxNum(RndMaxNum));
@@ -254,9 +254,11 @@ module `mname` (
 
   assign status = {2'b0, FX, FV, Tiny, FI_p2, ResultIsInfinity_p2, ZeroResult};
 
-  assign {IncZ,Z} = FI_p2 ? {2'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width-1`){1'b0}}}
-              : (ResultIsInfinity_p2|FV) ? {1'b0, SignInfinity_p2,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
-                                : ResultIsA_p2 ? {1'b0,SignSpecial_p2,A_p2[`$exp_width + $frac_width - 1`:0]} : {RoundInc,FinalSum};
+  assign {ShiftZ, IncZ, Z} = FI_p2 ? {3'b0,{(`$exp_width+1`){1'b1}},{(`$frac_width-1`){1'b0}}}
+              : (ResultIsInfinity_p2|FV) ?
+                     {2'b0, SignInfinity_p2,{{(`$exp_width-1`){1'b1}}, ~MaxNum}, {(`$frac_width`){MaxNum}}}
+                   : ResultIsA_p2 ? {2'b0,SignSpecial_p2,A_p2[`$exp_width + $frac_width - 1`:0]} 
+                                  : { ShiftSum , RoundInc,FinalSum};
 
 //; if ($verif_mode =~ /ON/){
   // synopsys translate_off
