@@ -1,6 +1,6 @@
 
 
-export TSMCHOME=/nobackup/sameh06/TSMCHOME
+export TSMCHOME=/cad/synopsys_EDK2/TSMCHOME
 
 
 #main standard cell libraries

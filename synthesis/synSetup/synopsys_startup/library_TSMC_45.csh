@@ -1,6 +1,6 @@
 
 
-setenv TSMCHOME /nobackup/sameh06/TSMCHOME
+setenv TSMCHOME /cad/synopsys_EDK2/TSMCHOME
 
 
 #main standard cell libraries
