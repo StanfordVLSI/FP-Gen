@@ -150,10 +150,10 @@ module `mname` (
 // synopsys translate_off
    always @(*) begin
       #1;
-      assert ($onehot(~sel_x) || ~sel_x == `$num_outputs`'b0 || !$time)else begin
+    /* assert ($onehot(~sel_x) || ~sel_x == `$num_outputs`'b0 || !$time)else begin
 	 $display("%t: ERROR: Bad select signals for booth`$booth` cell: select=`$num_outputs`b", $time, sel_x);
 	 $finish(2);
-      end
+      end*/
    end
 // synopsys translate_on
    //; }
