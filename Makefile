@@ -441,7 +441,7 @@ $(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)
 	fi
 	(cd $(SYNTH_RUNDIR); 							\
 	hostname -A > $(SYNTH_RUNDIR)/run_icc_opt.hostname;			\
-	icc_shell -64bit -x $(ICC_OPT_COMMAND_STRING) 2>&1 | tee -i $(ICC_LOG)	\
+	icc_shell -64bit -x $(ICC_OPT_COMMAND_STRING) 2>&1 | tee -i $(ICC_OPT_LOG)	\
 	)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_LOG)
 
