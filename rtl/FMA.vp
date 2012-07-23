@@ -161,7 +161,7 @@ module `mname` (
        .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
    //; }
        .z_preInc(z_preIncm), .z_final(z), .IncZ(IncZm),
-   //; if ($pipeline_depth>0){
+   //; if ($mulp_pipeline_depth>0){
        .clk(clk) , .reset(reset),
        .valid_in(valid_in), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode), .stall(stall_in),
        .valid_out(valid_middle),
@@ -169,6 +169,11 @@ module `mname` (
        .AB_pp0(AB_pp0), .AB_pp1(AB_pp1), .SignAB(SignAB), .NANAB(NANAB), .InfAB(InfAB), .ZeroAB(ZeroAB),
        .shifted_C(shifted_C),.SignC(SignC), .NANC(NANC), .InfC(InfC), .ZeroC(ZeroC), .ExpBase(ExpBase)
         );
+   
+   //; if($mulp_pipeline_depth<=0 && $pipeline_depth>0) {
+   // pass through the valid signal when MulShift is non-pipelined
+   assign valid_middle = valid_in;
+   //; }
 
 //;  my $add_bus_width = $exp_width + 2*$product_width + $wide_width + 14;
 //;  my $add_pipeline_depth = $pipeline_depth-$mulp_pipeline_depth-1;
@@ -184,8 +189,14 @@ module `mname` (
        .out({AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem}),
        .valid_out(valid_inc) );
 //;  } else {
-  assign {AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem} = {AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase}; 
+  assign {AB_pp0m,AB_pp1m,SignABm,NANABm,InfABm, ZeroABm, shifted_Cm, SignCm, NANCm, InfCm, ZeroCm, ExpBasem} = {AB_pp0, AB_pp1, SignAB, NANAB, InfAB, ZeroAB, shifted_C, SignC, NANC, InfC, ZeroC , ExpBase};
+   //; if( $pipeline_depth>0) {
+   // pass through the valid signal
+   assign valid_inc = valid_middle;
+   //; }
 //;  }
+   
+
 
 
 //;  if ($pipeline_depth>1) {
