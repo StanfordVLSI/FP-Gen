@@ -109,7 +109,7 @@ module `mname` (
                               .valid_out(valid0) );
   
 //; } else {
-  assign {a0,b0,c0,ainc0,binc0,cinc0, denormA0, denormB0, denormC0, forward_c0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c};
+  assign {a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0,adder_mode0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c, adder_mode};
 //; }
 
   assign denormA = ~| a[`$exp_width + $frac_width -1`:`$frac_width`];
@@ -229,7 +229,7 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
                                 .out({ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final}),
                                 .valid_out(valid_out) );
 //; } else {
-  assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0};
+  assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0, adder_mode0};
   assign valid_out = valid0;
 //; }
 
