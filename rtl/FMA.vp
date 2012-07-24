@@ -159,8 +159,8 @@ module `mname` (
        .a_in(a), .b_in(b), .c_in(c),
    //; if ($enable_forwarding =~ /YES/){
        .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
-   //; }
        .z_preInc(z_preIncm), .z_final(z), .IncZ(IncZm),
+   //; }
    //; if ($mulp_pipeline_depth>0){
        .clk(clk) , .reset(reset),
        .valid_in(valid_in), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode), .stall(stall_in),
