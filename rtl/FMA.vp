@@ -84,7 +84,11 @@
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>20,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
-//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor(3*$muladd_pipeline_depth/6), Min=>0, Max=> $muladd_pipeline_depth,
+//; my $default_mulp_pipeline_depth = floor($muladd_pipeline_depth/2);
+//; if ( $enable_forwarding =~ /YES/ && $default_mulp_pipeline_depth<2) {
+//;   $default_mulp_pipeline_depth = 2;
+//; }
+//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>$default_mulp_pipeline_depth, Min=>0, Max=> $muladd_pipeline_depth,
 //;                       Doc=>"Pipeline depth of the multiplier tree !FUNCTIONAL!");
 //; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
 //; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
