@@ -78,7 +78,6 @@ if {![info exists EnableClockGating]} {
   set EnableClockGating 1
 }
 
-set target_library [set ${VT}_${Voltage}_target_libs]
 
 set_host_options -max_cores 2
 
@@ -91,6 +90,14 @@ set synthetic_library [list dw_foundation.sldb]
 foreach L $synthetic_library {
  lappend link_library $L
 }
+
+
+set target_library [set ${VT}_${Voltage}_target_libs]
+
+regexp {([^\/]*)\.db} $target_library  matched target_lib_name
+
+remove_attribute [get_lib_cells $target_lib_name/*] dont_touch 
+remove_attribute [get_lib_cells $target_lib_name/*] dont_use
 
 
 if {![info exists DESIGN_TARGET]} {
