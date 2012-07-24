@@ -8,7 +8,7 @@ if ( $#ARGV > 0 ){
 
 #get a sorted list of all report files
 @files = <$run_folder/*/synthesis/*/reports/*.mapped.*_power.rpt>;
-print "Design, Configuration, Instruction, Vt, Vdd, clock period, mapped worst slack, routed worst slack, optimized worst slack, mapped area, routed area, optimized_area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
+print "Design, Configuration, Instruction, Vt, Vdd, clock period, mapped worst slack, routed worst slack, optimized worst slack, mapped area, routed area, optimized_area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power, hostname\n";
 
 foreach $file (@files) {
   $file =~ /(.*\/(.*)\/synthesis\/syn_(.vt_\dv\d)_\d+\.?\d*_?(.*)?)\/reports\/(.*)\.(.vt)_(\dv\d)\.(\d+\.?\d*)\.mapped\.(.*)_power\.rpt/;
@@ -165,10 +165,18 @@ foreach $file (@files) {
     close REPORTFILE;
   }
 
+  $hostname="";
+  @report_files = <$folder_name/run_dc.hostname>;
+  foreach $report_file (@report_files) {
+    open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
+    $hostname =  <REPORTFILE> ;
+    close REPORTFILE;
+  }
+
   $vdd =~ s/v/./;
   $clk_period_ns = $target_delay / 1000;
   if ($mapped_delay != 1000)
   {
-     print "$design_name, $appendix, $instruction_name, $vt, $vdd, $clk_period_ns, $mapped_worst_slack, $routed_worst_slack, $optimized_worst_slack, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power\n";
+     print "$design_name, $appendix, $instruction_name, $vt, $vdd, $clk_period_ns, $mapped_worst_slack, $routed_worst_slack, $optimized_worst_slack, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power, $hostname";
   }
 }
