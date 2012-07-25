@@ -109,7 +109,7 @@ module `mname` (
                               .valid_out(valid0) );
   
 //; } else {
-  assign {a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0,adder_mode0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c, adder_mode};
+  assign {a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c};
 //; }
 
   assign denormA = ~| a[`$exp_width + $frac_width -1`:`$frac_width`];
