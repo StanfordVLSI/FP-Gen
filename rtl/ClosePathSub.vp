@@ -139,7 +139,12 @@ module `mname`(
  
   //Subtraction + LZA
   
-  DW_decode_en #(`$shift_width`) U1 ( .en(~|Expbase_pp0[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
+  DW_decode_en #(`$shift_width`) U1 (
+//; if ( $ExtendedExp_width-1 > $shift_width ) {
+                                   .en(~|Expbase_pp0[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
+//; } else {
+                                   .en(1'b1)
+//; }
                                  , .a(Expbase_pp0[`$shift_width-1`:0])
                                  , .b(max_shift_dec) );
 

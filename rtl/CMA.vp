@@ -77,12 +77,18 @@
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
-//; my $pipeline_depth = parameter( Name=>'PipelineDepth', Val=>8 , Min=>(($enable_forwarding =~ /YES/)?3:0), Max=>20,
+//; my $pipeline_depth = parameter( Name=>'PipelineDepth', Val=>8 , Min=>(($enable_forwarding =~ /YES/)?5:0), Max=>20,
 //;                                 Doc=>"!FUNCTIONAL! Pipeline depth" );
 //; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
-//; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>floor(4*$muladd_pipeline_depth /7), Min=>0, Max=> $muladd_pipeline_depth  ,
+//; my $default_mul_pipeline_depth = floor(4*$muladd_pipeline_depth /7);
+//; my $min_mul_pipeline_depth = ($enable_forwarding =~ /YES/) ? 2 : 0 ;
+//; if ( $default_mul_pipeline_depth < $min_mul_pipeline_depth) {
+//;   $default_mul_pipeline_depth = $min_mul_pipeline_depth;
+//; }
+//; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>$default_mul_pipeline_depth, Min=>$min_mul_pipeline_depth, Max=> $muladd_pipeline_depth  ,
 //;                       Doc=>"Multiplier Part Pipeline depth");
-//; my $add_pipeline_depth = parameter(Name=>'AddPipelineDepth', Val=>floor(3*$muladd_pipeline_depth/7), Min=>0, Max=> $muladd_pipeline_depth  ,
+//; my $add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth;
+//; parameter(Name=>'AddPipelineDepth', Val=>$add_pipeline_depth, Min=>$add_pipeline_depth, Max=> $add_pipeline_depth,
 //;                       Doc=>"Adder Part Pipeline depth");
 //;
 //; # And some local variables
@@ -181,7 +187,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO',
 //;                              EnableForwarding => $enable_forwarding);
   `$pipe_forward->instantiate()` ( .in({ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec}) ,
-//;     if ($mul_pipeline_depth>0 && $enable_forwarding =~ /YES/) {
+//;     if ($enable_forwarding =~ /YES/) {
                                .forwarded_in({ExpZ_pp0, ExpZ_pp1, ExpZ_ci, ExpZDecrementWhenShifting}),
                                .forward(forward_c[`$mul_pipeline_depth`:1]),
                                .forward_out (forward_c_out),
@@ -196,7 +202,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO',
 //;                              EnableForwarding => $enable_forwarding);
   `$pipe_forward2->instantiate()` ( .in({c, 2'b0}) ,
-//;     if ($mul_pipeline_depth>1 && $enable_forwarding =~ /YES/) {
+//;     if ($enable_forwarding =~ /YES/) {
                                .forwarded_in({z_preInc,IncZ, ShiftZ}),
                                .forward(forward_c[`$mul_pipeline_depth-1`:0]),
                                .forward_out (forward_c_out_dummy),
