@@ -81,15 +81,8 @@ if {![info exists EnableClockGating]} {
 
 set_host_options -max_cores 2
 
-set link_library "*"
-foreach L [set wc_[string tolower $Voltage]_lib_dbs] {
- lappend link_library $L
-}
-
-set synthetic_library [list dw_foundation.sldb]
-foreach L $synthetic_library {
- lappend link_library $L
-}
+set target_library [set ${VT}_[string tolower $Voltage]_target_libs]
+set link_library [set link_library_[string tolower $Voltage] ]
 
 if {![info exists DESIGN_TARGET]} {
     exit 7;
