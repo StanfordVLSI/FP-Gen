@@ -137,7 +137,7 @@ module `mname`(
     assign next_enable = enable[0];
 //; }
 
-    always @(negedge clk)
+    always @(posedge clk)
       if (reset)
         enable <= 1;
       else
