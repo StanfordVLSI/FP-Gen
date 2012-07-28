@@ -193,7 +193,7 @@ module `mname` (
   /* Overflow flags
   */
 
-  assign FV_exp =  !ExpResult0[`$exp_width+1`]
+  assign FV_exp =  !ExpUnderflow & !ExpResult0[`$exp_width+1`]
                    & ( ExpResult0[`$exp_width`] || (ExpResult0[`$exp_width-1`:1]== {(`$exp_width-1`){1'b1}} & (IncExp | ExpResult0[0])) ) ;
 
 
