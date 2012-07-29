@@ -167,6 +167,8 @@ module `mname` (
 
 //; if ($pipeline_depth>0 && $mul_pipeline_depth==0){
     assign valid_mul = valid_in;
+   assign stall_request = 1'b0;
+   
 //; }
 
 assign ZeroExpC = ~| c[ `$exp_width + $frac_width - 1` :`$frac_width` ]; 
