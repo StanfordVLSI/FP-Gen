@@ -77,6 +77,8 @@ program automatic `mname` (
    int 								       num_trans = `$num_trans`;
    int 								       dummy;
    string 							       vector_file = "`$vector_file`";
+   int 								       verb = 1;
+   
    
 
 
@@ -358,8 +360,10 @@ program automatic `mname` (
 	 while (i<num_trans) begin
 	    if(!stall_request) begin
 	       i++;
+	       if (verb) begin
+		  $display("\n%t: Transaction #%0d: ", $time, i);
+	       end
 	       
-	       $display("\n%t: Transaction #%0d: ", $time, i);
 	       // set the input numbers and dequeque
 	       r_a = a_q[0];
 	       r_b = b_q[0];
@@ -378,50 +382,63 @@ program automatic `mname` (
 	     
 	       //; if ($enable_forwarding eq 'YES'){
 	       // Print the forwarding information
-	       if ( forward_a_q[0] )
-		 $display("%t A is forwarded from Transaction #%0d", $time, i-`$forward_cycle_a`);
-	       if ( forward_b_q[0] )
-		 $display("%t B is forwarded from Transaction #%0d", $time, i-`$forward_cycle_b`);
-	       if ( |forward_c_q[0] ) begin
-		  // find the hotbit in forward_c_q[0]
-		  int hotbit;
-		  for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
-		     if (forward_c_q[0][k]) begin
-			hotbit=k;
+	       if(verb) begin
+		  if ( forward_a_q[0] )
+		    $display("%t A is forwarded from Transaction #%0d", $time, i-`$forward_cycle_a`);
+		  if ( forward_b_q[0] )
+		    $display("%t B is forwarded from Transaction #%0d", $time, i-`$forward_cycle_b`);
+		  if ( |forward_c_q[0] ) begin
+		     // find the hotbit in forward_c_q[0]
+		     int hotbit;
+		     for (int k=0; k<=`$mul_pipeline_depth`; k++) begin
+			if (forward_c_q[0][k]) begin
+			   hotbit=k;
+			end
 		     end
+		     $display("%t C is forwarded from Transaction #%0d", $time, i-`$forward_cycle_c`+hotbit);
 		  end
-		  $display("%t C is forwarded from Transaction #%0d", $time, i-`$forward_cycle_c`+hotbit);
 	       end
 	       // dequeque
 	       forward_a_q = forward_a_q[1:$];
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
-
-
-	       // Print some transaction information
-	       $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
-			 TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
-	       $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
-			 TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
-	       $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
-			 TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
-	       $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
-			 TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
-	       $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
-			 TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
 	       
 	       // now check results...
 	       if (! GoldRef.CheckMultResult(TransRes, TransExpected)) begin
 		  dumptolog = 1'b1;
-		  #1;
+		  #1;	      
+		  // Print some transaction information
+		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
+			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
+		  $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
+			    TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
+		  $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
+			    TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
+		  $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
+		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
+			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
 		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
                   @(negedge clk); #1;		// wait a clock cycle
 		  $finish(2);
 	       end
 	       else begin
+		  // Print some transaction information
+		  if (verb) begin
+		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
+			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
+		  $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
+			    TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
+		  $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
+			    TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
+		  $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
+		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
+			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
 		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, expectedZ);
+		  end // if (verb)
 	       end 
 	    end
             @(posedge clk);		// wait a clock cycle
@@ -461,15 +478,17 @@ program automatic `mname` (
 	    end
 		*/
 
-
-               $display("\n\n%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
-			r_rnd, r_a, r_b, r_c, $bitstoreal(r_a),  $bitstoreal(r_b), 
-			$bitstoreal(r_c), $bitstoreal(expectedZ));
-	       // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
-               $display("%t: Expect Result: \tSign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
-			expectedZ[`$fp_width-1`], expectedZ[`$fp_width-2`:`$frac_width`], expectedZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
-               $display("%t: FMA_Result: \tSign = %h, Exp = %h, Man = %h", $time,
-			z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0]);
+	       if (verb) begin
+		  $display("\n\n%t: Input: %h_%h_%h_%h ( %e * %e + %e = %e )", $time,
+			   r_rnd, r_a, r_b, r_c, $bitstoreal(r_a),  $bitstoreal(r_b), 
+			   $bitstoreal(r_c), $bitstoreal(expectedZ));
+		  // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
+		  $display("%t: Expect Result: \tSign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
+			   expectedZ[`$fp_width-1`], expectedZ[`$fp_width-2`:`$frac_width`], expectedZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
+		  $display("%t: FMA_Result: \tSign = %h, Exp = %h, Man = %h", $time,
+			   z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0]);
+	       end
+	       
 	       /*
 		//calculate output result after inc
     		TransRes.ForceFPNum(z);
@@ -507,7 +526,11 @@ program automatic `mname` (
    task get_command_line_args;
       int 	wave=0;
       int 	wave_delay=0;
-      // if this is a "+wave" run, it must record all signals
+      // if this is a "+wave" run, it must record all signals      
+      if ( $test$plusargs("Silent") ) begin
+	 $display("\t%t:\tRuntime input +Silent found",$time);
+	 verb = 0;
+      end
       if ( $test$plusargs("Wave") ) begin
          $display("\t%t:\tRuntime input Wave found (will start signal capture soon...)",$time);
 	 wave = 1;
