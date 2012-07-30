@@ -140,7 +140,7 @@ module `mname`(
     always @(posedge clk)
       if (reset)
         enable <= 1;
-      else
+      else if (!stall)
         enable <= next_enable;
 
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){

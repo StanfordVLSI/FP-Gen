@@ -139,7 +139,7 @@ module `mname`(
    //; if ($useInc){
       .ainc(ainc), .binc(binc),
    //; }
-   //; if ($mulp_pipeline_depth > 0 ) {
+   //; if ($mulp_pipeline_depth != 0 ) {
       .valid_in(valid_in),
       .stall(stall), .clk(clk) , .reset(reset),
       .valid_out(valid_mulp),
