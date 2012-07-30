@@ -632,17 +632,17 @@ remove_attribute [current_design] local_link_library
 set link_library $link_library_0v8
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
-report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.avg_power.rpt
+report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.avg_power.rpt
 
 if { $PipelineDepth > 0 } {
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.muladd_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.muladd_power.rpt
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.add_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.add_power.rpt
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.mul_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.mul_power.rpt
   set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
   set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
 }
@@ -650,17 +650,17 @@ if { $PipelineDepth > 0 } {
 set link_library $link_library_0v9
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
-report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.avg_power.rpt
+report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.avg_power.rpt
 
 if { $PipelineDepth > 0 } {
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.muladd_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.muladd_power.rpt
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.add_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.add_power.rpt
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.mul_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.mul_power.rpt
   set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
   set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
 }
@@ -668,16 +668,16 @@ if { $PipelineDepth > 0 } {
 set link_library $link_library_1v0
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
-report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.avg_power.rpt
+report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.avg_power.rpt
 if { $PipelineDepth > 0 } {
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.muladd_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.muladd_power.rpt
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.add_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.add_power.rpt
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
   set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-  report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.mul_power.rpt
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.mul_power.rpt
 }
 
 

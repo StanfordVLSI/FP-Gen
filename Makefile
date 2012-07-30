@@ -214,7 +214,7 @@ SYN_CLK_PERIOD_PS = $(strip $(shell echo $(SYN_CLK_PERIOD)*1000 | bc ))
 TARGET_DELAY 	?= $(SYN_CLK_PERIOD_PS)
 SMART_RETIMING 	?= 0
 CLK_GATING 	?= 1
-USE_SAIF	?= 0
+USE_SAIF	?= 1
 
 # flags for dc/icc
 DESIGN_TARGET	= $(FPPRODUCT)
@@ -256,22 +256,22 @@ endif
 # Except for 'SignIsPos' which is percent positive numbers, the weights are relative to 
 # one another, not to any absolute number.
 SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
-			+NumTrans=100				\
+			+NumTrans=1000				\
 			+SignIsPos_DistWeight=50		\
 			+Zero_DistWeight=10	 		\
-			+Denorm100_DistWeight=2			\
-			+DenormFFF_DistWeight=2			\
-			+Denorm001_DistWeight=2			\
-			+DenormRnd_DistWeight=4			\
-			+QuietNaN_DistWeight=10			\
-			+SignalingNaN_DistWeight=10		\
-			+Min_DistWeight=10			\
-			+Max_DistWeight=10			\
-			+Inf_DistWeight=10			\
+			+Denorm100_DistWeight=1			\
+			+DenormFFF_DistWeight=1			\
+			+Denorm001_DistWeight=1			\
+			+DenormRnd_DistWeight=1			\
+			+QuietNaN_DistWeight=1			\
+			+SignalingNaN_DistWeight=1		\
+			+Min_DistWeight=1			\
+			+Max_DistWeight=1			\
+			+Inf_DistWeight=1			\
 			+One_DistWeight=10			\
-			+PointOneOneOne_DistWeight=10		\
-			+EzAndSml_DistWeight=0			\
-			+Random_DistWeight=50			
+			+PointOneOneOne_DistWeight=1		\
+			+EzAndSml_DistWeight=1			\
+			+Random_DistWeight=200			
 
 ######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
 
