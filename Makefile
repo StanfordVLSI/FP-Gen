@@ -296,7 +296,7 @@ $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -debug $(GENESIS_DBG_LEVEL)
+	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -debug $(GENESIS_DBG_LEVEL) 2>&1 | tee gen_bb.log
 	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(FPPRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 genesis_clean:
@@ -515,6 +515,8 @@ clean: genesis_clean synthesis_clean
 	\rm -f graph_*.m
 	\rm -rf $(IBM_TRGT_DIR)
 	\rm -f $(SAIF_FILE)
+	\rm -f TEST_PASS
+	\rm -f TEST_FAIL
 
 cleanall: clean 
 	\rm -rf DVE*
