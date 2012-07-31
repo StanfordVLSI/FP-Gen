@@ -39,7 +39,7 @@
 //;
 //; my %placement ; # Arrays Holding Placement Info For ASCII figure
 //;
-//; my $id = sprintf( "%03x" , int( rand(4095) ) ) ; #id for instance names to help with id's
+//; my $id = '';# sprintf( "%03x" , int( rand(4095) ) ) ; #id for instance names to help with id's
 //;
 //; my $groupName = $GROUPNAME ; # 
 //; my $groupName2 = $GROUPNAME2 ; # 

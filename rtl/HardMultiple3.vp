@@ -144,7 +144,7 @@ module `mname` (
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
      begin
-	$display("\t`mname`: X=0x%h, Expected3X=0x%h, Result3X=0x%h", x, 3*x, x3);
+	$display("%m: X=0x%h, Expected3X=0x%h, Result3X=0x%h", x, 3*x, x3);
 	$write ("gh=%b ph=%b ", ~gh_b, ~ph_b);
 	$write ("gk=%b pk=%b ", ~gk_b, ~pk_b);
 	$write ("GH=%b ", GH);
