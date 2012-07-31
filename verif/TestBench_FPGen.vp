@@ -78,6 +78,8 @@ program automatic `mname` (
    int 								       dummy;
    string 							       vector_file = "`$vector_file`";
    int 								       verb = 1;
+   int 								       result_tag;
+   
    
    
 
@@ -185,6 +187,9 @@ program automatic `mname` (
       // if we reached this point safely, the test passed!
       repeat (10) @(negedge clk); // give the lines some time to settle
       $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
+      result_tag = $fopen("TEST_PASS","w");
+      $fclose(result_tag);
+      
       finish_saif();
       $finish(0);
    end
@@ -421,6 +426,8 @@ program automatic `mname` (
 			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
 		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+		  result_tag = $fopen("TEST_FAIL","w");
+		  $fclose(result_tag);
                   @(negedge clk); #1;		// wait a clock cycle
 		  $finish(2);
 	       end
@@ -507,6 +514,8 @@ program automatic `mname` (
 		  dumptolog = 1'b1;
 		  #1;
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+		  result_tag = $fopen("TEST_FAIL","w");
+		  $fclose(result_tag);
 		  $finish(2);
 	       end
 	       r_Temp = Temp_q[0];
