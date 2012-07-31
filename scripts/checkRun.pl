@@ -27,7 +27,7 @@ close (MYFILE);
 sub error{
     my $msg = shift;
     print STDERR "ERROR: $msg\n\n";
-    move ($log_file, $log_file.Error);
+    move ($log_file, "$log_file\.Error");
     exit 7;
 }
 

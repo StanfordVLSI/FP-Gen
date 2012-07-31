@@ -32,7 +32,7 @@ popd
 
 mkdir -p CMA378MP
 pushd CMA378MP
-jsub -I -- make -f $FPGEN/Makefile run  GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.MUL.EnableMultiplePumping=YES"
+jsub -I -- make -f $FPGEN/Makefile run GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.MUL.EnableMultiplePumping=YES"
 
 jsub  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc run_icc_opt GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.MUL.EnableMultiplePumping=YES" SYN_CLK_PERIOD=0.5 VT=lvt VOLTAGE=1v0 CLK_GATING=0
 
