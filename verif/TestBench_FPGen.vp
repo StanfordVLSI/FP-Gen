@@ -582,8 +582,8 @@ program automatic `mname` (
    task start_saif;
       if ( $test$plusargs("SAIF") ) begin
          $display("\t%t:\tStarting SAIF (Switching Activity Interchange Format)",$time);
-	 // setup SAIF 
-	 $set_gate_level_monitoring("rtl_on");
+	 // setup SAIF: https://solvnet.synopsys.com/retrieve/029417.html
+	 $set_gate_level_monitoring("rtl_on", "mda");
       	 $set_toggle_region(`$FP_obj->get_instance_path()`);
 	 // wait for sim to really start
 	 @(negedge reset);

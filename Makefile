@@ -153,8 +153,10 @@ VERILOG_LIBS := 	-y $(RUNDIR)					\
 # "+noportcoerce" compile-time option to shut off the port coercion for the entire design
 # "-top topModuleName" specifies the top module
 # "-f verilogFiles.list" specifies a file that contains list of verilog files to compile
+# "+memcbk" Enables callbacks for memories and multi-dimensional arrays (MDAs). 
 VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				+cli 						\
+                                +memcbk                                         \
 				+lint=PCWM					\
 				+libext+.v					\
 				-notice						\
