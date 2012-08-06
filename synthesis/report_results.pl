@@ -58,13 +58,16 @@ foreach $file (@files) {
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) { 
-		$mapped_dynamic_power = ($4 eq "uW")? $1 / 1000.0 : $1 ;
-		$mapped_dynamic_power = ($4 eq " W")? $1 * 1000.0 : $mapped_dynamic_power ; 
+         if ( $_ =~ /Dynamic Power Units = 1(.W)/ ) {
+		$dynamic_power_multiplier = ($1 eq "uW")? 0.001 : ($1 eq "nW")?1E-6: ($1 eq "mW")?1:1000;
 	 }
-	 if ( $_ =~ /Cell Leakage Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {
-           $mapped_leakage_power = ($4 eq "uW")? $1 / 1000.0: $1;
-           $mapped_leakage_power = ($4 eq " W")? $1 * 1000.0: $mapped_leakage_power;
+         if ( $_ =~ /Leakage Power Units = 1(.W)/ ) {
+		$leakage_power_multiplier = ($1 eq "uW")? 0.001 : ($1 eq "nW")?1E-6: ($1 eq "mW")?1:1000;
+	 }
+         if ( $_ =~ /$top_name .* 100.0/ ) {
+             my @values = split(/\s+/, $_);
+             $mapped_dynamic_power = ($values[1] + $values[2]) * $dynamic_power_multiplier;
+             $mapped_leakage_power = $values[3] * $leakage_power_multiplier;
 	 }
      }
     close REPORTFILE;
@@ -106,13 +109,16 @@ foreach $file (@files) {
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {    
-		$routed_dynamic_power = ($4 eq "uW")? $1 /1000.0 : $1 ;
-		$routed_dynamic_power = ($4 eq " W")? $1 * 1000.0 : $routed_dynamic_power ;
+         if ( $_ =~ /Dynamic Power Units = 1(.W)/ ) {
+		$dynamic_power_multiplier = ($1 eq "uW")? 0.001 : ($1 eq "nW")?1E-6: ($1 eq "mW")?1:1000;
 	 }
-	 if ( $_ =~ /Cell Leakage Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {
-           $routed_leakage_power = ($4 eq "uW")? $1 / 1000.0: $1;
-           $routed_leakage_power = ($4 eq " W")? $1 * 1000.0: $routed_leakage_power;
+         if ( $_ =~ /Leakage Power Units = 1(.W)/ ) {
+		$leakage_power_multiplier = ($1 eq "uW")? 0.001 : ($1 eq "nW")?1E-6: ($1 eq "mW")?1:1000;
+	 }
+         if ( $_ =~ /$top_name .* 100.0/ ) {
+             my @values = split(/\s+/, $_);
+             $routed_dynamic_power = ($values[1] + $values[2]) * $dynamic_power_multiplier;
+             $routed_leakage_power = $values[3] * $leakage_power_multiplier;
 	 }
      }
     close REPORTFILE;
@@ -149,17 +155,21 @@ foreach $file (@files) {
 
   $optimized_dynamic_power="";
   $optimized_leakage_power="";
-  @report_files = <$folder_name/reports/$optimized_prefix.routed.power.*>;
+  @report_files = <$folder_name/reports/$optimized_prefix.routed.${instruction_name}_power.*>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-	 if ( $_ =~ /Total Dynamic Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {    
-		$optimized_dynamic_power = ($4 eq "uW")? $1 / 1000.0: $1;
-		$optimized_dynamic_power = ($4 eq " W")? $1 * 1000.0: $optimized_dynamic_power;
+         if ( $_ =~ /Dynamic Power Units = 1(.W)/ ) {
+		$dynamic_power_multiplier = ($1 eq "uW")? 0.001 : ($1 eq "nW")?1E-6: ($1 eq "mW")?1:1000;
 	 }
-	 if ( $_ =~ /Cell Leakage Power\s*=\s+(\d+\.?\d*((e|E)-?\d+)?)\s*(.W)/ ) {
-           $optimized_leakage_power = ($4 eq "uW")? $1 / 1000.0: $1;
-           $optimized_leakage_power = ($4 eq " W")? $1 * 1000.0: $optimized_leakage_power;
+         if ( $_ =~ /Leakage Power Units = 1(.W)/ ) {
+                
+		$leakage_power_multiplier = ($1 eq "uW")? 0.001 : ($1 eq "nW")?1E-6: ($1 eq "mW")?1:1000;
+	 }
+         if ( $_ =~ /$top_name .* 100.0/ ) {
+             my @values = split(/\s+/, $_);
+             $optimized_dynamic_power = ($values[1] + $values[2]) * $dynamic_power_multiplier;
+             $optimized_leakage_power = $values[3] * $leakage_power_multiplier;
 	 }
      }
     close REPORTFILE;
