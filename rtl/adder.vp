@@ -7,7 +7,7 @@
 //; use POSIX ();
 //;
 //  PARAMETERS:
-//; my $AdderType = parameter( name=>'AdderType', val=>'Sklansky' ,
+//; my $AdderType = parameter( name=>'AdderType', val=>'DesignWare' ,
 //;                            doc=>'!implementation! AdderType: Indicate the topology to use for the Propogate Generate tree.  Ripple type indicates that a ripple chain should be used rather than a tree.  Sklansky indicates that a sklansky topology should be used (Weste&Harris 3rd pp662). Legal Values: Ripple Sklansky  !IMPLEMENTATION!' ,
 //;                            list=>[ 'Sklansky' , 'DesignWare' ] ) ;
 //; my $BW  = parameter( name=>'BitWidth', val=>16 , 

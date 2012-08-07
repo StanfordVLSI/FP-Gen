@@ -317,7 +317,7 @@ module `mname`(
 
 
    assign ExpA_adder_mode = A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width`];
-   assign manA_adder_mode = { ~|ExpA_adder_mode, A_adder_mode[`$frac_width - 1` : 0 ] };
+   assign manA_adder_mode = { |ExpA_adder_mode, A_adder_mode[`$frac_width - 1` : 0 ] };
    
    assign {InfAB_out,NANAB_out, ZeroAB_out, SignAB_out} = adder_mode_pl? 
                                                      {InfA,NANA, ZeroA, SignA}

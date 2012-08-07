@@ -273,7 +273,9 @@ SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+One_DistWeight=10			\
 			+PointOneOneOne_DistWeight=1		\
 			+EzAndSml_DistWeight=1			\
-			+Random_DistWeight=200			
+			+Random_DistWeight=200			\
+                        +MulWeight=30                           \
+                        +AddWeight=40
 
 ######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
 

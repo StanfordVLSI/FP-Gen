@@ -1,0 +1,56 @@
+/* *****************************************************************************
+ * Description:
+ * Random generator for fowarding signals
+ * 
+ * Parameters:
+ * * AddWeight, MulWeight, 
+ * 
+ *  
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author    Description
+ * August 6, 2012  sameh06    init version
+ * ****************************************************************************/
+
+/*******************************************************************************
+ * PARAMETERIZATION
+ * ****************************************************************************/
+//;  my  $add_weight = parameter(Name=>'AddWeight', Val=>5, Min=>0, Step=>1, Max=>100,
+//;	  		      Doc=>"Distribution weight for fowarding signal to be 1 (range is 0..100)");
+//;  my  $mul_weight = parameter(Name=>'MulWeight', Val=>5, Min=>0, Step=>1, Max=>100-$add_weight,
+//;	  		      Doc=>"Distribution weight for fowarding signal to be 1 (range is 0..100 `$add_weight`)");
+
+class `mname`;
+   typedef enum {MUL, ADD, MULADD} InstructionType;
+   rand InstructionType inst;
+   logic adder_mode , multiplier_mode;
+
+   int add_weight = `$add_weight`;
+   int mul_weight = `$mul_weight`;
+
+   constraint pick_inst_type{
+      inst dist {MUL := mul_weight, ADD := add_weight, MULADD := 100-mul_weight-add_weight};
+   }
+
+   function void post_randomize;
+      adder_mode = inst==ADD;
+      multiplier_mode = inst==MUL;
+   endfunction 
+   
+     // C'tor for a Random transaction
+     // The constructor also reads user defined, per simulation, weights
+     function new();
+	if ($test$plusargs("AddWeight")) begin
+	   $value$plusargs("AddWeight=%d",  add_weight);
+	   $display("%t: `mname`: Runtime input +AddWeight=%d found", $time, add_weight);
+	end
+	if ($test$plusargs("MulWeight")) begin
+	   $value$plusargs("MulWeight=%d",  mul_weight);
+	   $display("%t: `mname`: Runtime input +MulWeight=%d found", $time, mul_weight);
+	end
+     endfunction // new
+
+endclass : `mname`
+   

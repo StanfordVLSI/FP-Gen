@@ -64,7 +64,7 @@ program automatic `mname` (
 			   //; }			
 			   input logic 				       clk, reset,
 			   //; if ($pipeline_depth>0){
-			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, stall_in,
+			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, adder_mode, multiplier_mode, stall_in,
 			   input logic 				       SO, valid_out, stall_request,
 			   //; }
 			   // results from the design
@@ -103,9 +103,15 @@ program automatic `mname` (
    logic [`$exp_width + $frac_width`:0] 			       expected_q[$];
    
 
+   //; my $FPGenControl_obj;
+   //; if ($pipeline_depth>0){
+   //;   $FPGenControl_obj = generate('FPGenControl','FPControl');
+   `$FPGenControl_obj->instantiate`;
+   
+   //; }
 
    //; if ($pipeline_depth==0){
-   logic 							       stall_request = 1'b0; // cheat here for simplicity
+   logic stall_request = 1'b0; // cheat here for
    //; }
    
    // FP transaction handles
@@ -220,6 +226,9 @@ program automatic `mname` (
       //; if ($pipeline_depth>0){
       valid_in = 1'b0;
       stall_in = 1'b0;
+      adder_mode = 1'b0;
+      multiplier_mode = 1'b0;
+      `$FPGenControl_obj->iname()` = new();
       //; }
       a = 0;
       b = 0;
@@ -248,6 +257,9 @@ program automatic `mname` (
 	    if(!stall_request) begin
                //; if ($pipeline_depth>0){
 	       valid_in = 1'b1;
+               `$FPGenControl_obj->iname()`.randomize();
+               adder_mode = `$FPGenControl_obj->iname()`.adder_mode;
+               multiplier_mode = `$FPGenControl_obj->iname()`.multiplier_mode;
                //; }
 	       i++;
 	       // Assign values to the lines
@@ -261,54 +273,61 @@ program automatic `mname` (
 		    // check the if there is result in pipeline for forwarding
 		    && expected_q.size() >= `$forward_cycle_a` ) begin
 		  forward_a = 1'b1;
-		  a = expected_q[`$pipeline_depth-$forward_cycle_a-1`];
-		  TransGenA.ForceFPNum(a);
+		  TransGenA.ForceFPNum(expected_q[`$pipeline_depth-$forward_cycle_a-1`]);
 	       end 
 	       else  begin
 		  forward_a = 1'b0;
 		  TransGenA.randomize();
-		  a = TransGenA.GetFPNum();
 	       end // else: !if( `$forward_A->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_a_q = {forward_a_q, forward_a};
-	       
-	       if ( `$forward_B->iname()`.forward
+
+               if (adder_mode) begin
+                  forward_b = 1'b0;
+                  TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
+               end	       
+	       else if ( `$forward_B->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
 		    && expected_q.size() >= `$forward_cycle_b` ) begin
-		  forward_b = 1'b1;
-		  b = expected_q[`$pipeline_depth-$forward_cycle_b-1`];	       
-		  TransGenB.ForceFPNum(b);
+		  forward_b = 1'b1;   
+		  TransGenB.ForceFPNum( expected_q[`$pipeline_depth-$forward_cycle_b-1`]);
 	       end 
 	       else  begin
 		  forward_b = 1'b0;
 		  TransGenB.randomize();
-		  b = TransGenB.GetFPNum();
 	       end // else: !if( `$forward_B->iname()`.forward...
 	       // store the forward_b signal in the queue
 	       forward_b_q = {forward_b_q, forward_b};
-	       
+
+               if (multiplier_mode) begin
+                  forward_c = 1'b0;
+                  TransGenC.ForceFPNum(0);	
+               end	       
 	       if ( (|`$forward_C->iname()`.forward)
 		    // check the if there is result in pipeline for forwarding
 		    && expected_q.size() >= `$forward_cycle_c` ) begin
 		  forward_c = `$forward_C->iname()`.forward;
-		  c = expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit];
-		  TransGenC.ForceFPNum(c);
+		  TransGenC.ForceFPNum(expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit]);
 	       end 
 	       else  begin
 		  forward_c = 0;
 		  TransGenC.randomize();
-		  c = TransGenC.GetFPNum();
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_c_q = {forward_c_q, forward_c};
 	       //; } else {
 	       TransGenA.randomize();
-	       TransGenB.randomize();
-	       TransGenC.randomize();
 	       a = TransGenA.GetFPNum();
-	       b = TransGenB.GetFPNum();
-	       c = TransGenC.GetFPNum();
+               if (adder_mode)
+                    TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
+               else TransGenB.randomize();	
+	       if (multiplier_mode)
+                    TransGenC.ForceFPNum(0);
+               else TransGenC.randomize();
 	       //;}
+               a = TransGenA.GetFPNum();
+               b = TransGenB.GetFPNum();	
+	       c = TransGenC.GetFPNum();
 	       // calculate the expected result
 	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
 	       expected = GoldRef.Expected.GetFPNum();
@@ -330,6 +349,8 @@ program automatic `mname` (
 	    if(!stall_request) begin
                //; if ($pipeline_depth>0){
 	       valid_in = 1'b1;
+               adder_mode = 1'b0;
+               multiplier_mode = 1'b0;
                //; }
 	       rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
 	       a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];

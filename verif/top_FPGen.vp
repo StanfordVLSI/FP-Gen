@@ -65,6 +65,8 @@ module `mname` ();
 //; if ($pipeline_depth>0){
 // ##### Inputs For Piped Design #####
           logic 				     valid_in;
+          logic 				     adder_mode;
+          logic 				     multiplier_mode;
           logic 				     stall_in;
           logic 				     SI;
           logic 				     SCAN_ENABLE; 
@@ -113,7 +115,7 @@ module `mname` ();
 //;                           if ($pipeline_depth>0){
            				                 .valid_in(valid_in),
                                                          .stall_in(stall_in),		
-                                                         .adder_mode(1'b0), .multiplier_mode(1'b0),
+                                                         .adder_mode(adder_mode), .multiplier_mode(multiplier_mode),
                                                          .SI(SI),
            				                 .SCAN_ENABLE(SCAN_ENABLE), 
             				                 .test_mode(test_mode),
@@ -148,7 +150,7 @@ module `mname` ();
                             	  .clk(clk), .reset(reset),
    			     	  //; if ($pipeline_depth>0){
 			     	  .stall_pipeline(stall_pipeline),  .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
-                             	  .SO(SO), .SI(SI),.valid_in(valid_in), .stall_in(stall_in),
+                             	  .SO(SO), .SI(SI),.valid_in(valid_in), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode), .stall_in(stall_in),
                                   .valid_out(valid_out), .stall_request(stall_request),
    		            	  //; }
 				  // inputs
