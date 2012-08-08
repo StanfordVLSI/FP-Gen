@@ -146,6 +146,10 @@ module `mname`(
    //; }
       .out0(multp_out0), .out1(multp_out1)
       );
+   
+//; if ($mulp_pipeline_depth == 0 ) {
+   assign valid_mulp = valid_in;
+//; }
 
 //;   if ($add_pipeline_depth>0) {
 //;     my $add_pipeline = $enableMultiplePumping?
