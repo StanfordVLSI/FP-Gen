@@ -110,7 +110,7 @@ module `mname`(
 //; } 
 
   logic [`$manB_width-1`:0] manA_wide;
-  logic [`$exp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpDiff0, ExpDiff1, ExpDiff2;
+  logic [`$exp_width-1`:0] ExpDiff1_pp0, ExpDiff1_pp1, ExpDiff0, ExpDiff1, ExpDiff2;
   logic [`$manB_width+1`:0] op1, op2, diff, max_shift_mask;
   logic [`$manB_width+2`:0] shiftedDiff;
   logic ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2, mostSticky, a_gt_b, co_dummy0, co_dummy1, co_dummy2;
@@ -190,21 +190,23 @@ module `mname`(
 
   //calculate Expbase_pp0 - LShiftAmt + (0 | 1 | 2)
   assign LShiftAmtWide = LshiftAmt;
-  assign ExpDiff_pp0 = {Expbase_pp0[`$exp_width-1`:1] ^ Expbase_pp1[`$exp_width-1`:1], Expbase_pp0[0] ^ ~Expbase_pp1[0]};
-  assign ExpDiff_pp1 = {Expbase_pp0[`$exp_width-2`:1] & Expbase_pp1[`$exp_width-2`:1], Expbase_pp0[0] | Expbase_pp1[0],1'b0};
+  assign ExpDiff1_pp0 = {Expbase_pp0[`$exp_width-1`:1] ^ Expbase_pp1[`$exp_width-1`:1], Expbase_pp0[0] ^ ~Expbase_pp1[0]};
+  assign ExpDiff1_pp1 = {Expbase_pp0[`$exp_width-2`:1] & Expbase_pp1[`$exp_width-2`:1], Expbase_pp0[0] | Expbase_pp1[0],1'b1};
 
+
+//; my $ExpDiffAdder_obj = generate('adder', 'ExpDiff_Adder', BitWidth =>$exp_width);
+`$ExpDiffAdder_obj->instantiate()` ( .a(Expbase_pp0[`$exp_width-1`:0]), .b(Expbase_pp1[`$exp_width-1`:0]) , .ci(1'b1) ,
+                                     .s(ExpDiff0), .co(co_dummy0));
 
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'CA', 
 //;                                                 , Width =>$exp_width);
-
   `$CompoundAdder_obj->instantiate()` (
             //; if ($verif_mode =~ /ON/){
                                    .dumptolog(dumptolog),
             //; }
-                                   .a(ExpDiff_pp0), .b(ExpDiff_pp1),
-                                   .sum0(ExpDiff0), .co0(co_dummy0),
-                                   .sum1(ExpDiff1), .co1(co_dummy1));
-  assign ExpDiff2 = ExpDiff_pp0 + ExpDiff_pp1 + 2;
+                                   .a(ExpDiff1_pp0), .b(ExpDiff1_pp1),
+                                   .sum0(ExpDiff1), .co0(co_dummy1),
+                                   .sum1(ExpDiff2), .co1(co_dummy2));
   
   assign ExpDiff = ZeroDiff ? 0 : shiftedDiff[`$manB_width+2`]? ExpDiff2 : shiftedDiff[`$manB_width+1`]? ExpDiff1 :ExpDiff0; // handle total cancelation case
   assign SignDiff = ZeroDiff ? 0 : a_gt_b ^ SignB;
