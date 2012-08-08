@@ -63,7 +63,7 @@ module `mname`(
   input logic IncA_in,
   //; }
   input logic [`$ExtendedExp_width-1`:0] ExpA_in, ExpB_in, ExpDifference_in, 
-  input logic SignA_in, SignB_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in,
+  input logic SignA_in, SignB_in, ZeroA_in, ZeroB_in, ExpA_gt_ExpB_in,
   input logic [`$manB_width-1`:0] ManB_in,
  //; if ($pipeline_depth>0) {
   input logic  clk , reset, valid_in, stall,
@@ -83,7 +83,7 @@ module `mname`(
   logic [`$manA_width-1`:0] ManA;
   logic [`$manB_width-1`:0] ManB;
   logic [`$ExtendedExp_width-1`:0] ExpA, ExpB, ExpDifference;
-  logic IncA, SignA, SignB, ZeroA, ZeroB, ExpB_gt_ExpA, valid_middle, ManB_overnormal;
+  logic IncA, SignA, SignB, ZeroA, ZeroB, ExpA_gt_ExpB, valid_middle, ManB_overnormal;
   logic [`$manA_width-1`:0] ManSum;
   logic [`$exp_width-1`:0] ExpSum;
   logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum;
@@ -92,9 +92,9 @@ module `mname`(
 //;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
 //;                             Width=> $manA_width + $manB_width + 3*$ExtendedExp_width + 6,
 //;                             PipelineDepth => $pipeline_depth-1);
-  `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in}) ,
+  `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpA_gt_ExpB_in}) ,
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                               .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpB_gt_ExpA}),
+                               .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpA_gt_ExpB}),
                                .valid_out(valid_middle) );
 
 //;   my $pipe_out = generate(  'FF_pipeline',  'pipe_out',
@@ -105,7 +105,7 @@ module `mname`(
                                 .out({ManSum_out, ExpSum_out, Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out}),
                                 .valid_out(valid_out) ); 
 //; } else {
-  assign {ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpB_gt_ExpA} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpB_gt_ExpA_in};
+  assign {ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpA_gt_ExpB} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpA_gt_ExpB_in};
   assign {ManSum_out, ExpSum_out, Guard_out, Sticky_out, Overflow_out, ShiftExponent_out, SignSum_out, ZeroSum_out} = {ManSum, ExpSum, Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum};
 //; } 
 
@@ -127,14 +127,14 @@ module `mname`(
 
 
   assign subtract = SignA ^ SignB;
-  assign ManB_overnormal = ExpB_gt_ExpA & ManB[`$manB_width-1`];
+  assign ManB_overnormal = ~ExpA_gt_ExpB & ManB[`$manB_width-1`];
 
   // Calculate shift amount
   assign shift_amount = ExpDifference[`$ExtendedExp_width-1`:`$shift_width`]==0 ? ExpDifference[`$shift_width-1`:0] : `$manB_width`; //saturation logic
 
   // Alignment & inversion
-  assign biggerFraction    = ExpB_gt_ExpA ? ManB : {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}};
-  assign shift_in          = ExpB_gt_ExpA ? {1'b0, ManA,{(`$manB_width-1`){IncA}}} : {ManB,{(`$manA_width`){1'b0}}};
+  assign biggerFraction    = ExpA_gt_ExpB ? {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}} : ManB ;
+  assign shift_in          = ExpA_gt_ExpB ? {ManB,{(`$manA_width`){1'b0}}} : {1'b0, ManA,{(`$manB_width-1`){IncA}}} ;
 
 
   assign shift_out         = shift_in >> shift_amount ;
@@ -143,7 +143,7 @@ module `mname`(
  
   // Divide the additions to 3 regions:
   // - Lower Part (manA_width): Use for sticky bit calculation Rsticky
-  assign RSticky= (ExpB_gt_ExpA & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
+  assign RSticky= (~ExpA_gt_ExpB & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
 
   // - Middle Part (manB_width-manA_width-1): calculate sum using subtract& ~RSticky as an input
 
@@ -157,7 +157,7 @@ module `mname`(
 
    `$CompoundAdder_obj->instantiate()` (.a(smallerFraction[`$manB_width+$manA_width-1`:`$manA_width`]),
                                      .b(biggerFraction),
-                                     .ci( IncA & ~ExpB_gt_ExpA ),
+                                     .ci( IncA & ExpA_gt_ExpB ),
                                      .sum0(sum0), .co0(co0), .zero0(zero0),
                                      .sum1(sum1), .co1(co1), .zero1(zero1)
 //; if ($verif_mode =~ /ON/){
@@ -175,7 +175,7 @@ module `mname`(
                                                                :(IncA & ci?
                                                                            {co1^subtract,sum1, ~zero1}
                                                                           :{co0^subtract,sum0, ~zero0} )   ;
-  assign SignSum = ZeroSum? 0 :(ExpB_gt_ExpA? SignB: SignA);
+  assign SignSum = ZeroSum? 0 :(ExpA_gt_ExpB? SignA: SignB);
 
 //;} else {
   assign {sumUpper,sumMiddle, sumMiddleSticky} =  subtract ?
@@ -187,7 +187,7 @@ module `mname`(
                                                                :(IncA & ci?
                                                                            {co1^subtract,sum1, ~zero1} 
                                                                           :{co0^subtract,sum0, ~zero0} )   ; 
-  assign SignSum = ZeroSum? 0 :(ExpB_gt_ExpA? SignB: SignA^(subtract & ~co0));
+  assign SignSum = ZeroSum? 0 :(ExpA_gt_ExpB? SignA^(subtract & ~co0) : SignB );
 //;}
 
 
@@ -219,7 +219,7 @@ module `mname`(
 
   assign ExpSumCenterIsOne  = ExpSumCenter==1;
 
-  assign ExtendedExpSum  = ExpB_gt_ExpA ? ExpB : ExpA;
+  assign ExtendedExpSum  = ExpA_gt_ExpB ? ExpA : ExpB;
   assign ExtendedExpSumInc = ExtendedExpSum + 1;
   assign ExtendedExpSumPlus2 = ExtendedExpSum + 2;
   assign ExtendedExpSumDec = ExtendedExpSum -1;
@@ -242,9 +242,9 @@ always @(posedge dumptolog)
 begin
     $display ("`$self->get_instance_path()`: ManA=%h, IncA=%h, ManB=%h", ManA, IncA, ManB); 
     $display ("`$self->get_instance_path()`: ExpA=%h, ExpB=%h, ExpDifference=%h",ExpA, ExpB, ExpDifference);
-    $display ("`$self->get_instance_path()`: SignA=%b, SignB=%b, ZeroA=%b, ZeroB=%b, ExpB_gt_ExpA=%b",SignA, SignB, ZeroA, ZeroB, ExpB_gt_ExpA); 
+    $display ("`$self->get_instance_path()`: SignA=%b, SignB=%b, ZeroA=%b, ZeroB=%b, ExpA_gt_ExpB=%b",SignA, SignB, ZeroA, ZeroB, ExpA_gt_ExpB); 
     $display ("`$self->get_instance_path()`: ExpSum=%h ManSum=%h Guard=%b Sticky=%b",ExpSum, ManSum, Guard, Sticky);
-    $display ("`$self->get_instance_path()`: biggerFraction =%h ExpB_gt_ExpA=%h", biggerFraction,ExpB_gt_ExpA);
+    $display ("`$self->get_instance_path()`: biggerFraction =%h ExpA_gt_ExpB=%h", biggerFraction,ExpA_gt_ExpB);
     $display ("`$self->get_instance_path()`: smallerFraction=%h shift_in=%h shift_amount=%d",smallerFraction, shift_in, shift_amount);
     $display ("`$self->get_instance_path()`: RSticky=%b subtract=%b ci=%b co1=%b",RSticky, subtract, ci, co1);
     $display ("`$self->get_instance_path()`: sum0=%h sum1=%h {sumUpper,sumMiddle}=%h",sum0, sum1, {sumUpper,sumMiddle});

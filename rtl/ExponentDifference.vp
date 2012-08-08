@@ -49,11 +49,11 @@ module `mname`(
   input logic ExpA_ci,
   input logic ExpADecrementWhenShifting, SignA, ShiftA,  SignB, 
   output logic [`$ExtendedExp_width-1`:0] ExpDifference,
-  output logic ResultIsClose, ExpB_gt_ExpA);
+  output logic ResultIsClose, ExpA_gt_ExpB);
 
   logic [`$ExtendedExp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpDiffDec, ExpDiff, ExpDiffInc, ExpDiffShifted;
 
-  logic ExpB_gt_ExpA_shifted, ExpDiff_Upper0s, ExpDiff_Upper1s, co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
+  logic ExpA_gt_ExpB_shifted, ExpDiff_Upper0s, ExpDiff_Upper1s, co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
 
   // ExpA_pp0 + ExpA_pp1 + ExpA_ci = ExpA - 1
 
@@ -97,12 +97,12 @@ module `mname`(
   assign ExpDiff    = ExpA_ExpB[`$ExtendedExp_width-1`]?       ~ExpA_ExpB_1 : ExpA_ExpB;
   assign ExpDiffInc = ExpA_ExpB_plus1[`$ExtendedExp_width-1`]? ~ExpA_ExpB   : ExpA_ExpB_plus1;
 
-  assign {ExpB_gt_ExpA_shifted, ExpDiffShifted} =   ExpADecrementWhenShifting? 
-                                                        {ExpA_ExpB_1[`$ExtendedExp_width-1`],ExpDiffDec} 
-                                                      : {ExpA_ExpB_plus1[`$ExtendedExp_width-1`],ExpDiffInc};
+  assign {ExpA_gt_ExpB_shifted, ExpDiffShifted} =   ExpADecrementWhenShifting? 
+                                                   {~ExpA_ExpB_2[`$ExtendedExp_width-1`],ExpDiffDec} 
+                                                 : {~ExpA_ExpB[`$ExtendedExp_width-1`],ExpDiffInc};
 
-  assign {ExpB_gt_ExpA, ExpDifference} = ShiftA? {ExpB_gt_ExpA_shifted, ExpDiffShifted} 
-                                               : {ExpA_ExpB[`$ExtendedExp_width-1`] , ExpDiff};
+  assign {ExpA_gt_ExpB, ExpDifference} = ShiftA? {ExpA_gt_ExpB_shifted, ExpDiffShifted} 
+                                               : {~ExpA_ExpB_1[`$ExtendedExp_width-1`] , ExpDiff};
 
   assign ResultIsClose = ((SignA ^ SignB) & ( ExpDiff_Upper0s | ExpDiff_Upper1s ) & (~|ExpDifference[4:2])) & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
 
@@ -111,7 +111,7 @@ module `mname`(
 always @(posedge dumptolog)
 begin
     $display ("`$self->get_instance_path()`: ExpA_pp0=%h ExpA_pp1=%h ExpB=%h",ExpA_pp0, ExpA_pp1, ExpB);
-    $display ("`$self->get_instance_path()`: ExpA_ExpB_2=%h ExpA_ExpB_1=%h ExpA_ExpB=%h ExpA_ExpB_plus1=%h ExpB_gt_ExpA=%b", ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpB_gt_ExpA);
+    $display ("`$self->get_instance_path()`: ExpA_ExpB_2=%h ExpA_ExpB_1=%h ExpA_ExpB=%h ExpA_ExpB_plus1=%h ExpA_gt_ExpB=%b", ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpA_gt_ExpB);
     $display ("`$self->get_instance_path()`: ExpDifference=%d ResultIsClose=%b",ExpDifference, ResultIsClose);
 end
 // synopsys translate_on
