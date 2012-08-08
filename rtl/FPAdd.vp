@@ -125,7 +125,7 @@ module `mname` (
   assign ResultIsNotSpecial = (~ZeroB|IncA) & ~InfA & ~InfB & ~NANA & ~NANB;
   assign SignInfinity = InfA ? SignA : SignB;
   assign SignSpecial = SignA & (~ZeroA | SignB);
-  assign subtract = SignA ^ SignB;
+  assign subtract = (SignA ^ SignB) & ~ZeroA & ~ZeroB;
 
 //; if ($pipeline_depth > 0 ) {
 //;   my $pipeMisc = generate(  'FF_pipeline',  'pipe_misc',  Width=> 8, PipelineDepth => $pipeline_depth, Retime=>'YES');
