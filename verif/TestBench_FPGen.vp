@@ -317,13 +317,19 @@ program automatic `mname` (
 	       forward_c_q = {forward_c_q, forward_c};
 	       //; } else {
 	       TransGenA.randomize();
-	       a = TransGenA.GetFPNum();
+	       a = TransGenA.GetFPNum();	       
+	          //; if ($pipeline_depth>0){
                if (adder_mode)
                     TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
-               else TransGenB.randomize();	
+               else 
+		 TransGenB.randomize();	
 	       if (multiplier_mode)
                     TransGenC.ForceFPNum(0);
                else TransGenC.randomize();
+	          //; } else {
+	       TransGenB.randomize();	
+	       TransGenC.randomize();
+	          //; }
 	       //;}
                a = TransGenA.GetFPNum();
                b = TransGenB.GetFPNum();	
