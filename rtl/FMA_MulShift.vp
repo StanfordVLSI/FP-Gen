@@ -141,10 +141,6 @@ module `mname` (
       );
 
 //; if ($pipeline_depth>0){
-//;   my $pipeA = generate(  'Pinned_pipeline',  'pipe_A',  Width=> $frac_width+2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
-  `$pipeA ->instantiate()` ( .in( { ~denormA , a[`$frac_width -1`:0], ainc} ) , .out({ManA_final, ainc_final}),
-                             .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
-                             .valid_out(valid_ManA) );
 
 assign  {AB_pp0, AB_pp1} = adder_mode_final?
                             { 3'b0,ManA_final, `2*$frac_width+3`'b0, ainc_final,`$frac_width`'b0}
@@ -228,9 +224,16 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
                                 .valid_in(valid0), .clk(clk) , .stall(stall), .reset(reset), 
                                 .out({ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final}),
                                 .valid_out(valid_out) );
+
+//;   my $pipeA = generate(  'FF_pipeline',  'pipe_A',  Width=> $frac_width+2 , PipelineDepth => $pipeline_depth-1);
+  `$pipeA ->instantiate()` ( .in( { ~denormA0 , a0[`$frac_width -1`:0], ainc0} ) , .out({ManA_final, ainc_final}),
+                             .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
+                             .valid_out(valid_ManA) );
 //; } else {
   assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0, adder_mode0};
   assign valid_out = valid0;
+  assign {ManA_final, ainc_final} = { ~denormA0 , a0[`$frac_width -1`:0], ainc0};
+  assign valid_ManA = valid0 & adder_mode0;
 //; }
 
   /* Aligner*/
