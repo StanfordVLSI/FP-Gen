@@ -104,7 +104,7 @@ module `mname`(
    //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger
    logic [`$product_width`: 0] 		      ManAB_unnormalized_long;
    logic 				      NANorInfA, NANorInfB, zeroSigA, zeroSigB, InfA;
-   logic 				      InfB, NANA, NANB, SignA, SignB, ZeroExpA, ZeroExpB, ZeroExpA_prePipeline, ZeroExpB_prePipeline;
+   logic 				      InfB, NANA, NANB, SignA, SignB, ZeroExpA, ZeroExpB, ZeroExpA_prePipeline, ZeroExpB_prePipeline, ZeroExpA_adder_mode;
    logic 				      ZeroA, ZeroB, co_dummy0, co_dummy1, co_dummy2;
    logic 				      co_dummy3, co_dummy4, shiftleft;
 
@@ -316,8 +316,13 @@ module `mname`(
 //; }
 
 
-   assign ExpA_adder_mode = A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width`];
-   assign manA_adder_mode = { |ExpA_adder_mode, A_adder_mode[`$frac_width - 1` : 0 ] };
+//; if ($enable_denormals=~ /YES/){
+   assign ZeroExpA_adder_mode = ~| A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width`];
+//; } else {
+   assign ZeroExpA_adder_mode = 0;
+//; }
+   assign ExpA_adder_mode = {A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width+1`], A_adder_mode[`$frac_width`] | ZeroExpA_adder_mode};
+   assign manA_adder_mode = { ~ZeroExpA_adder_mode, A_adder_mode[`$frac_width - 1` : 0 ] };
    
    assign {InfAB_out,NANAB_out, ZeroAB_out, SignAB_out} = adder_mode_pl? 
                                                      {InfA,NANA, ZeroA, SignA}
