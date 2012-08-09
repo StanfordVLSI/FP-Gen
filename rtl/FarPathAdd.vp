@@ -122,7 +122,7 @@ module `mname`(
   logic [`$exp_width-1`:0] ExpSumCenter, ExpSumRight, ExpSumLeft, ExpSumUpperLeft, ExpSumShifted;
 
   logic OverflowCenter, OverflowRight, OverflowLeft, OverflowShifted, OverflowUpperLeft;
-  logic subtract, RSticky, ci, co0, co1, co2, zero0, zero1, sumMiddleSticky;
+  logic subtract, RSticky, biggerFraction_ci, shift_out_ci, co0, co1, co2, zero0, zero1, sumMiddleSticky;
   logic stickyRight, guardRight, stickyCenter, guardCenter, stickyLeft, stickyUpperLeft, guardLeft, guardUpperLeft, ExpSumCenterIsOne;
 
 
@@ -134,20 +134,20 @@ module `mname`(
 
   // Alignment & inversion
   assign biggerFraction    = ExpA_gt_ExpB ? {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}} : ManB ;
+  assign biggerFraction_ci = IncA & ExpA_gt_ExpB;
   assign shift_in          = ExpA_gt_ExpB ? {ManB,{(`$manA_width`){1'b0}}} : {1'b0, ManA,{(`$manB_width-1`){IncA}}} ;
 
 
   assign shift_out         = shift_in >> shift_amount ;
+  assign shift_out_ci      = IncA & ~ExpA_gt_ExpB & (&shift_out[`$manA_width-1`:0]);
   assign smallerFraction   = subtract ? ~shift_out : shift_out;
   
  
   // Divide the additions to 3 regions:
   // - Lower Part (manA_width): Use for sticky bit calculation Rsticky
-  assign RSticky= (~ExpA_gt_ExpB & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
+  assign RSticky= (~shift_out_ci & (|shift_out[`$manA_width-1`:0]) ) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
 
   // - Middle Part (manB_width-manA_width-1): calculate sum using subtract& ~RSticky as an input
-
-  assign ci = &smallerFraction[`$manA_width-1`:0];
 
 
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'SM', 
@@ -157,7 +157,7 @@ module `mname`(
 
    `$CompoundAdder_obj->instantiate()` (.a(smallerFraction[`$manB_width+$manA_width-1`:`$manA_width`]),
                                      .b(biggerFraction),
-                                     .ci( IncA & ExpA_gt_ExpB ),
+                                     .ci( biggerFraction_ci ),
                                      .sum0(sum0), .co0(co0), .zero0(zero0),
                                      .sum1(sum1), .co1(co1), .zero1(zero1)
 //; if ($verif_mode =~ /ON/){
@@ -169,10 +169,10 @@ module `mname`(
 
 //;if ($enable_denormals==1) {
   assign {sumUpper,sumMiddle, sumMiddleSticky} =  subtract ?
-                                                                ( ~RSticky ?
+                                                                ( (~RSticky & ~shift_out_ci)?
                                                                             {co1^subtract,sum1, ~zero1}
                                                                            :{co0^subtract,sum0, ~zero0} )
-                                                               :(IncA & ci?
+                                                               :(shift_out_ci?
                                                                            {co1^subtract,sum1, ~zero1}
                                                                           :{co0^subtract,sum0, ~zero0} )   ;
   assign SignSum = ZeroSum? 0 :(ExpA_gt_ExpB? SignA: SignB);
@@ -180,11 +180,11 @@ module `mname`(
 //;} else {
   assign {sumUpper,sumMiddle, sumMiddleSticky} =  subtract ?
                                                                 (co0?
-                                                                     ( ~RSticky ?
+                                                                     ( (~RSticky & ~shift_out_ci)?
                                                                                  {co1^subtract,sum1, ~zero1}
                                                                                 :{co0^subtract,sum0, ~zero0} )
                                                                     :{co0~^subtract,~sum0, ~zero1})
-                                                               :(IncA & ci?
+                                                               :(shift_out_ci?
                                                                            {co1^subtract,sum1, ~zero1} 
                                                                           :{co0^subtract,sum0, ~zero0} )   ; 
   assign SignSum = ZeroSum? 0 :(ExpA_gt_ExpB? SignA^(subtract & ~co0) : SignB );
@@ -246,7 +246,7 @@ begin
     $display ("`$self->get_instance_path()`: ExpSum=%h ManSum=%h Guard=%b Sticky=%b",ExpSum, ManSum, Guard, Sticky);
     $display ("`$self->get_instance_path()`: biggerFraction =%h ExpA_gt_ExpB=%h", biggerFraction,ExpA_gt_ExpB);
     $display ("`$self->get_instance_path()`: smallerFraction=%h shift_in=%h shift_amount=%d",smallerFraction, shift_in, shift_amount);
-    $display ("`$self->get_instance_path()`: RSticky=%b subtract=%b ci=%b co1=%b",RSticky, subtract, ci, co1);
+    $display ("`$self->get_instance_path()`: RSticky=%b subtract=%b co1=%b",RSticky, subtract, co1);
     $display ("`$self->get_instance_path()`: sum0=%h sum1=%h {sumUpper,sumMiddle}=%h",sum0, sum1, {sumUpper,sumMiddle});
     $display ("`$self->get_instance_path()`: ExpSumRight=%h sumRight=%h guardRight=%b stickyRight=%b",ExpSumRight, sumRight,guardRight, stickyRight);
     $display ("`$self->get_instance_path()`: ExpSumCenter=%h sumCenter=%h guardCenter=%b stickyCenter=%b",ExpSumCenter, sumCenter,guardCenter, stickyCenter);
