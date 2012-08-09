@@ -135,7 +135,7 @@ module `mname`(
 
   assign Expbase_pp0 = ZeroDiff? 0 : ((ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB);
   assign Expbase_pp1 = ZeroDiff? 0 : ~LShiftAmtWide;
-  assign Expbase_ci  = ZeroDiff & op2[`$manB_width+1`];
+  assign Expbase_ci  = ~ZeroDiff;
  
   //Subtraction + LZA
   
@@ -148,12 +148,9 @@ module `mname`(
                                  , .a(Expbase_pp0[`$shift_width-1`:0])
                                  , .b(max_shift_dec) );
 
-  //assign max_shift_mask= {max_shift_dec[manB_width+1:2],max_shift_dec[1] | max_shift_dec[0]};
-  assign max_shift_mask[`$manB_width+1`] = max_shift_dec[1] | max_shift_dec[0]; //The mask has one at Expbase_pp0 - 1 position
-  
-//; for (my $i=$manB_width ; $i>=0 ; $i--)
+//; for (my $i=0 ; $i<$manB_width+2 ; $i++)
 //; {
-  assign max_shift_mask[`$i`] = max_shift_dec[`$manB_width-$i+2`]; 
+  assign max_shift_mask[`$i`] = max_shift_dec[`$manB_width-$i+1`]; 
 //; }
 
 
@@ -176,14 +173,12 @@ module `mname`(
   //normalization
 
   assign shiftedDiff = {1'b0,diff} << LshiftAmt;
-  assign LZA_wrong = Expbase_ci? shiftedDiff[`$manB_width+2`] : shiftedDiff[`$manB_width+1`]; 
+  assign LZA_wrong = shiftedDiff[`$manB_width+2`]; 
   assign mostSticky = (| shiftedDiff[`$manB_width-$manA_width-1`:0]);
-  assign {ManDiff, Guard, Sticky} = shiftedDiff[`$manB_width+2`] ? 
+  assign {ManDiff, Guard, Sticky} = LZA_wrong ? 
         {shiftedDiff[`$manB_width+2`:`$manB_width-$manA_width+2`],
          mostSticky | shiftedDiff[`$manB_width-$manA_width+1`] | shiftedDiff[`$manB_width-$manA_width`]}
-        : shiftedDiff[`$manB_width+1`] ?
-                          {shiftedDiff[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky | shiftedDiff[`$manB_width-$manA_width`]}
-                         :{shiftedDiff[`$manB_width`:`$manB_width-$manA_width`],mostSticky};
+        : {shiftedDiff[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky | shiftedDiff[`$manB_width-$manA_width`]};
 
   assign ZeroDiff= (diff==0);
 
@@ -208,7 +203,7 @@ module `mname`(
                                    .sum0(ExpDiff1), .co0(co_dummy1),
                                    .sum1(ExpDiff2), .co1(co_dummy2));
   
-  assign ExpDiff = ZeroDiff ? 0 : shiftedDiff[`$manB_width+2`]? ExpDiff2 : shiftedDiff[`$manB_width+1`]? ExpDiff1 :ExpDiff0; // handle total cancelation case
+  assign ExpDiff = ZeroDiff ? 0 : LZA_wrong? ExpDiff2 : ExpDiff1; // handle total cancelation case
   assign SignDiff = ZeroDiff ? 0 : a_gt_b ^ SignB;
 
 //; if ($verif_mode =~ /ON/){

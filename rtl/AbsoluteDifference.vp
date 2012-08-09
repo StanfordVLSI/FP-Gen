@@ -76,7 +76,7 @@ module `mname`(
   logic [`$width-1`:0] pp0, pp1, g, p, G, P;
   logic cout;
 //; if( $LZA_enable) {
-  logic [`$width-1`:0] k, LZA_mask, LZD_mask;
+  logic [`$width-1`:0] k, LZA_mask;
   logic [`$width`:0] LZA_dec;
 //; }
  
