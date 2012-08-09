@@ -97,7 +97,7 @@ module `mname` (
   logic [`$exp_width-1`:0] FarExpSum, CloseExpDiff, ExpSum;
   logic [`$exp_width + $frac_width`:0] FinalSum, A_p1, A_p2;
   logic SignA, ZeroExpA, ZeroExpA_p1, zeroSigA, ZeroA, ZeroResult, NANorInfA, InfA, NANA, ResultIsInfinity, ResultIsA, ResultIsNotSpecial, SignSum, Guard, Sticky, SignInfinity, SignSpecial, ShiftSum, FarShiftSum, CloseShiftDiff, CloseExpbase_ci;
-  logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, SignResult, Overflow, RoundInc, denormResult, subtract, IncExpA;
+  logic SignFarSum, FarGuard, FarSticky, ZeroFarSum, FarOverflow, CloseGuard, CloseSticky, CloseDiffSign, ZeroCloseDiff, CloseOverflow, SignResult, Overflow, RoundInc, denormResult, subtract, IncExpA;
   logic FX, FV, FU, FI, Tiny;
   logic FI_p2, ResultIsInfinity_p2, ResultIsA_p2, ResultIsNotSpecial_p2, SignInfinity_p2, SignSpecial_p2;
   logic subtract_p, ResultIsClose_p, ResultIsA_p, ResultIsClose_p2;
@@ -213,7 +213,7 @@ module `mname` (
                                        .stall(stall), .clk(clk) , .reset(reset),
                                        .valid_out(valid_close),
   //; }
-                                       .ManDiff_out(CloseManDiff), .ExpDiff_out(CloseExpDiff),
+                                       .ManDiff_out(CloseManDiff), .ExpDiff_out(CloseExpDiff), .Overflow_out(CloseOverflow),
                                        .SignDiff_out(CloseDiffSign) , .ZeroDiff_out(ZeroCloseDiff),
                                        .Guard_out(CloseGuard), .Sticky_out(CloseSticky),
                                        .Expbase_pp0(CloseExpbase_pp0), .Expbase_pp1(CloseExpbase_pp1), .Expbase_ci(CloseExpbase_ci),
@@ -233,7 +233,7 @@ module `mname` (
 
   assign {ManSum, ExpSum, SignResult, Guard, Sticky, ZeroResult, Overflow , ShiftSum} = 
                     ResultIsClose_p2?
-                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, 1'b0, CloseShiftDiff}
+                    {CloseManDiff, CloseExpDiff, CloseDiffSign, CloseGuard, CloseSticky, ZeroCloseDiff, CloseOverflow, CloseShiftDiff}
                    :{FarManSum   , FarExpSum   , SignFarSum   , FarGuard  , FarSticky  , ZeroFarSum   , FarOverflow, FarShiftSum};
 
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
