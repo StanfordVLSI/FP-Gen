@@ -143,7 +143,7 @@ module `mname`(
  
   // Divide the additions to 3 regions:
   // - Lower Part (manA_width): Use for sticky bit calculation Rsticky
-  assign RSticky= (~ExpA_gt_ExpB & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
+  assign RSticky= (ExpA_gt_ExpB & IncA? ~ci : |shift_out[`$manA_width-1`:0]) | (~|shift_out[`$manB_width+$manA_width-1`:`$manA_width`] & (|shift_in)); // RSticky calculated before inversion
 
   // - Middle Part (manB_width-manA_width-1): calculate sum using subtract& ~RSticky as an input
 
