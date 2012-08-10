@@ -88,9 +88,8 @@
 //; # Declare some local variables
 //; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
 //;
-//; my $pp_count = ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
-//; $pp_count -=1 if ((!$useInc) && ($booth==1));
-//; my $pp_width = $width+3*$booth;
+//; my $pp_count = ($booth==1)? $width : ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
+//; my $pp_width = ($booth==1 && !$useInc)? $width+2 : $width+3*$booth;
 //;
 //; # Inform the world about the partial products properties
 //; parameter(Name=>'PPWidth', Val=>$pp_width, Force=>1, 
@@ -112,17 +111,16 @@ module `mname`(
    
    //; if ($booth==1) {
    //;   if ($useInc){
-   assign pp[0] = xinc ? {y, 3'b0} : `$pp_width`'b0; // add an extra y if xinc
-   assign pp[1] = yinc ? {1'b0, x, 2'b0} : `$pp_width`'b0; // add an extra x if yinc
-   assign pp[2] = y[0] ? {2'b0, x, 1'b0}: `$pp_width`'b0;
-   assign pp[3] = y[1] ? {2'b0, x, xinc & yinc } : {`$pp_width-1`'b0, xinc & yinc };//an extra 1 if xinc AND yinc
-   //;     for (my $i=4; $i<=$pp_count; $i++){
-   assign pp[`$i`] = y[`$i-2`] ? {2'b0, x, 1'b0}: `$pp_width`'b0;
+   assign pp[0] = xinc ? {1'b0, y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
+   assign pp[1] = yinc & y[0] ? {1'b0, x, 2'b0} : yinc | y[0] ? {2'b0, x, 1'b0} : `$pp_width`'b0; // add an extra x if yinc
+   assign pp[2] = y[1] ? {2'b0, x, xinc & yinc } : {`$pp_width-1`'b0, xinc & yinc };//an extra 1 if xinc AND yinc
+   //;     for (my $i=3; $i<=$pp_count; $i++){
+   assign pp[`$i`] = y[`$i-1`] ? {2'b0, x, 1'b0}: `$pp_width`'b0;
    //;     }
    //;   }
    //;   else{ # i.e., no useInc...
    //;     for (my $i=0; $i<$pp_count; $i++){
-   assign pp[`$i`] = y[`$i`] ?  {2'b0, x, 1'b0} : `$pp_width`'b0;
+   assign pp[`$i`] = y[`$i`] ?  {2'b0, x} : `$pp_width`'b0;
    //;     }   
    //;   }
    //;
