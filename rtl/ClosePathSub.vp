@@ -200,7 +200,7 @@ module `mname`(
   
   assign ExpDiff = ZeroDiff ? 0 : LZA_wrong? ExpDiff2[`$exp_width-1`:0] : ExpDiff1[`$exp_width-1`:0]; // handle total cancelation case
   assign SignDiff = ZeroDiff ? 0 : a_gt_b ^ SignB;
-  assign Overflow = ~ZeroDiff & ( (|ExpDiff2[`$ExtendedExp_width-1`:`$exp_width`]) | (&ExpDiff2[`$exp_width-1`:0]) );
+  assign Overflow = ~ZeroDiff & ( (|ExpDiff2[`$ExtendedExp_width-1`:`$exp_width`]) | ( LZA_wrong & (&ExpDiff2[`$exp_width-1`:0])) );
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off
