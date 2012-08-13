@@ -118,7 +118,7 @@ set min_compressed_column 100000;
 
 foreach_in_collection CSA_cell $CSA_cells {
 
-    regexp {column_([0-9]*)/csa([0-9]*)_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_level CSA_column row_index compressed_CSA_column;
+    regexp {column_([0-9]*).csa([0-9]*)_([0-9]*)_([0-9]*)} [get_object_name $CSA_cell] matched CSA_level CSA_column row_index compressed_CSA_column;
 
     if { $CSA_column > $max_column } {
       set max_column $CSA_column
@@ -148,7 +148,7 @@ set BoothPath [get_object_name [get_cells -hierarchical "Booth"]];
 set TreePath  [get_object_name [get_cells -hierarchical "Tree"]];
   
 for { set compressed_column $min_compressed_column } { $compressed_column <= $max_compressed_column} { incr compressed_column } {
-  set csa_column_cells [get_cells "${TreePath}/column_*/csa*_*_${compressed_column}/*"];
+  set csa_column_cells [get_cells -regexp "${TreePath}/column_.*csa.*_.*_${compressed_column}/.*"];
   set csa_odd_column_width 0.0;
   set csa_even_column_width 0.0;
   foreach_in_collection csa_column_cell $csa_column_cells {
@@ -166,7 +166,7 @@ for { set compressed_column $min_compressed_column } { $compressed_column <= $ma
   }
 
   set booth_column_index [expr $compressed_column-$min_compressed_column];
-  set booth_column_cells [get_cells "${BoothPath}/BoothEnc_u*/cell_${booth_column_index}/*"];
+  set booth_column_cells [get_cells -regexp "${BoothPath}/BoothEnc_u.*cell_${booth_column_index}/.*"];
   set booth_odd_column_width  0.0;
   set booth_even_column_width 0.0;
   foreach_in_collection booth_column_cell $booth_column_cells {
@@ -207,7 +207,7 @@ set booth_sel_count -1;
 
 foreach_in_collection booth_sel_cell $booth_sel_cells {
 
-  regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9]*)} [get_object_name $booth_sel_cell] matched booth_sel_row booth_sel_col;
+  regexp {BoothEnc_u([0-9]*).Booth_sel_([0-9]*)} [get_object_name $booth_sel_cell] matched booth_sel_row booth_sel_col;
 
   if { $booth_sel_row >= $booth_encoder_count } {
     set booth_encoder_count [expr $booth_sel_row+1]
@@ -221,7 +221,7 @@ foreach_in_collection booth_sel_cell $booth_sel_cells {
 set max_boothSel_column_width 0.0;
 set total_boothSel_column_width 0.0;
 for { set booth_sel_col 0 } { $booth_sel_col < $booth_sel_count} { incr booth_sel_col } {
-  set boothSel_column_cells [get_cells "${BoothPath}/BoothEnc_u*/Booth_sel_${booth_sel_col}/*"];
+  set boothSel_column_cells [get_cells -regexp "${BoothPath}/BoothEnc_u.*Booth_sel_${booth_sel_col}/.*"];
   set boothSel_column_width 0.0;
   foreach_in_collection boothSel_column_cell $boothSel_column_cells {
     set boothSel_column_width [expr $boothSel_column_width+[get_attribute $boothSel_column_cell width]];
@@ -409,14 +409,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       if { ($column_count-1-$column) % $booth_select_cadence == 0 } {
         set boothSel_index [expr ($column_count-1-$column) / $booth_select_cadence];
         for {set boothEnc_index 0} { $boothEnc_index < $booth_encoder_count } {incr boothEnc_index} {
-          set boothSel_child_cells [get_cells "${BoothPath}/BoothEnc_u${boothEnc_index}/Booth_sel_${boothSel_index}/*"];
+          set boothSel_child_cells [get_cells -regexp "${BoothPath}/BoothEnc_u${boothEnc_index}.Booth_sel_${boothSel_index}/.*"];
           add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} \
                     ${DESIGN_TARGET}::rp_tree -column $boothEnc_index -row $current_rp_column -height $boothSel_aspect_ratio;
         }
       } else {
 
         for {set row_index 0} { $row_index < $max_row } {incr row_index} {
-          set CSA_child_cells [get_cells "${TreePath}/column_*/csa*_${row_index}_${column_index}/*"];
+          set CSA_child_cells [get_cells -regexp "${TreePath}/column_.*csa.*_${row_index}_${column_index}/.*"];
           add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_TARGET}::rp_tree \
                     -column $row_index -row $current_rp_column;
         }
@@ -425,7 +425,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
           incr current_rp_column;
           for {set row_index 0} { $row_index < $booth_encoder_count } {incr row_index} {
             set booth_column_index_plus [expr $booth_column_index + 1];
-            set booth_cell [get_cells "${BoothPath}/BoothEnc_u${row_index}/cell_${booth_column_index}/* Booth/BoothEnc_u${row_index}/cell_${booth_column_index_plus}/*"];
+            set booth_cell [get_cells -regexp "${BoothPath}/BoothEnc_u${row_index}.cell_${booth_column_index}/.* Booth/BoothEnc_u${row_index}.cell_${booth_column_index_plus}/.*"];
             add_cells_to_rp_group $booth_cell rp_booth_${row_index}_${booth_column_index} ${DESIGN_TARGET}::rp_tree \
                     -column $row_index -row $current_rp_column;
           }
@@ -451,7 +451,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
       set boothSel_name [get_object_name $boothSel_cell];
 
-      regexp {BoothEnc_u([0-9]*)/Booth_sel_([0-9])} $boothSel_name matched boothEnc_index boothSel_index;
+      regexp {BoothEnc_u([0-9]*).Booth_sel_([0-9])} $boothSel_name matched boothEnc_index boothSel_index;
       set boothSel_column [expr $rp_column_count -1 - ($booth_sel_count-1-$boothSel_index)*$rp_column_count/$booth_sel_count];
 
       set column_occupied($boothSel_column) 1;
@@ -475,7 +475,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
       set CSA_name [get_object_name $CSA_cell];
 
-      regexp {column_([0-9]*)/csa([0-9]*)_([0-9]*)_([0-9]*)} $CSA_name matched CSA_level CSA_column row_index compressed_CSA_column;
+      regexp {column_([0-9]*).csa([0-9]*)_([0-9]*)_([0-9]*)} $CSA_name matched CSA_level CSA_column row_index compressed_CSA_column;
       set is_odd_row [expr $row_index%2];
       set column_index [expr 2*($compressed_CSA_column-$min_compressed_column)+$is_odd_row];
       set column_position [expr $column_index + $column_offset($column_index)];
@@ -498,7 +498,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
     foreach_in_collection booth_cell $booth_cells {
 
       set booth_cell_name [get_object_name $booth_cell];
-      regexp {BoothEnc_u([0-9]*)/cell_([0-9]*)} $booth_cell_name  matched row_index booth_column_index;
+      regexp {BoothEnc_u([0-9]*).cell_([0-9]*)} $booth_cell_name  matched row_index booth_column_index;
       set is_odd_row [expr $row_index%2];
       set column_index [expr 2*$booth_column_index+$is_odd_row ];
       set column_position [expr $column_index + $column_offset($column_index)];
@@ -616,10 +616,18 @@ if { [info exists ENABLE_MANUAL_PLACEMENT] } {
 route_opt -initial_route_only
 route_opt -skip_initial_route -effort medium -power
 
-
 extract_rc
 
 save_mw_cel -as ${DESIGN_TARGET}_final
+
+change_names -rule verilog -hierarchy
+
+if {[info exists ENABLE_MANUAL_PLACEMENT]} {
+  write_verilog SAIF/$ICC_OPT_NETLIST
+} else {
+  write_verilog SAIF/$ICC_NETLIST
+}
+
 
 file mkdir reports
 
@@ -627,59 +635,18 @@ report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}.$target
 
 remove_attribute [current_design] local_link_library
 
-
-
 set link_library $link_library_0v8
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
-report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.avg_power.rpt
-
-if { $PipelineDepth > 0 } {
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.muladd_power.rpt
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.add_power.rpt
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.mul_power.rpt
-  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
-  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
-}
 
 set link_library $link_library_0v9
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
-report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.avg_power.rpt
 
-if { $PipelineDepth > 0 } {
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.muladd_power.rpt
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.add_power.rpt
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.mul_power.rpt
-  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
-  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
-}
 
 set link_library $link_library_1v0
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
-report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.avg_power.rpt
-if { $PipelineDepth > 0 } {
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 {adder_mode multiplier_mode}
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.muladd_power.rpt
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.add_power.rpt
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.mul_power.rpt
-}
-
 
 exit
 

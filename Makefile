@@ -67,6 +67,7 @@ GENESIS_DBG_LEVEL := 0
 # List of generated verilog files
 GENESIS_VLOG_LIST := genesis_vlog.vf
 GENESIS_SYNTH_LIST := $(GENESIS_VLOG_LIST:%.vf=%.synth.vf)
+GENESIS_VERIF_LIST := $(GENESIS_VLOG_LIST:%.vf=%.verif.vf)
 
 # Input xml/cfg files, input parameters
 GENESIS_CFG_XML	:=
@@ -126,6 +127,7 @@ endif
 ##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
 ##############################################
 SIMV = $(RUNDIR)/simv
+
 SIM_TOP = top_$(FPPRODUCT)
 
 VERILOG_ENV :=		 
@@ -140,7 +142,10 @@ VERILOG_LIBS := 	-y $(RUNDIR)					\
 			-y $(SYNOPSYS)/dw/sim_ver/			\
 			+incdir+$(SYNOPSYS)/dw/sim_ver/			\
 			-y $(SYNOPSYS)/packages/gtech/src_ver/		\
-			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/  
+			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/     \
+                        -v $(TCBN45GS_VERILOG)                          \
+                        -v $(TCBN45GSLVT_VERILOG)                       \
+                        -v $(TCBN45GSHVT_VERILOG)
 
 
 # "-sverilog" enables system verilog
@@ -167,7 +172,6 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				+noportcoerce         				\
 				-ld $(VCS_CC) -debug_pp				\
 				-top $(SIM_TOP)					\
-				-f $(RUNDIR)/$(GENESIS_VLOG_LIST) 		\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
 
 # "+vpdbufsize+100" limit the internal buffer to 100MB (forces flushing to disk)
@@ -225,9 +229,16 @@ ifdef APPENDIX
   SYNTH_DIR_NAME 	:= $(SYNTH_DIR_NAME)_$(APPENDIX)
 endif
 SYNTH_HOME	= $(DESIGN_HOME)/synthesis
-SYNTH_RUNDIR 	= $(RUNDIR)/synthesis/$(SYNTH_DIR_NAME)
+SYNTH_RUNDIR	= $(RUNDIR)/synthesis/$(SYNTH_DIR_NAME)
+SYNTH_SAIF	= $(SYNTH_RUNDIR)/SAIF
 SYNTH_LOGS	= $(SYNTH_RUNDIR)/log
-DC_LOG 		= $(SYNTH_LOGS)/dc.log
+DC_NETLIST	= $(DESIGN_TARGET).${VT}_${VOLTAGE}.$(TARGET_DELAY).mapped.v
+ICC_NETLIST	= $(DESIGN_TARGET).${VT}_${VOLTAGE}.$(TARGET_DELAY).routed.v
+ICC_OPT_NETLIST = $(DESIGN_TARGET).${VT}_${VOLTAGE}_optimized.$(TARGET_DELAY).routed.v
+DC_LOG	= $(SYNTH_LOGS)/dc.log
+DC_PWR_LOG = $(SYNTH_LOGS)/pwr_dc.log 
+DC_SIMV	= $(SYNTH_SAIF)/dc_simv
+
 
 SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
 			set RUNDIR $(RUNDIR); 			\
@@ -237,18 +248,48 @@ SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
 			set target_delay $(TARGET_DELAY); 	\
 			set io2core $(IO2CORE);  		\
 			set SmartRetiming $(SMART_RETIMING);  	\
-			set EnableClockGating $(CLK_GATING);
+			set EnableClockGating $(CLK_GATING);    \
+                        set DC_NETLIST $(DC_NETLIST);		\
+                        set ICC_NETLIST $(ICC_NETLIST);		\
+                        set ICC_OPT_NETLIST $(ICC_OPT_NETLIST);
+
+
 DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
+DC_PWR_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/report_power_dc.tcl"
 
 ## Additional Flags for ICC
 ICC_LOG 		:= $(SYNTH_LOGS)/icc.log
+ICC_PWR_LOG 		:= $(SYNTH_LOGS)/pwr_icc.log
+ICC_SIMV 		:= $(SYNTH_SAIF)/icc_simv
+
 ICC_OPT_LOG 		:= $(SYNTH_LOGS)/icc_opt.log
+ICC_OPT_PWR_LOG 	:= $(SYNTH_LOGS)/pwr_icc_opt.log
+ICC_OPT_SIMV 		:= $(SYNTH_SAIF)/icc_opt_simv
 
 ICC_COMMAND_STRING = "$(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
+ICC_PWR_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/report_power_icc.tcl"
+
 ICC_OPT_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; $(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/multiplier_icc.tcl"
+ICC_OPT_PWR_COMMAND_STRING = "set ENABLE_MANUAL_PLACEMENT 1; $(SET_SYNTH_PARAMS)  source -echo -verbose $(SYNTH_HOME)/report_power_icc.tcl"
+
+
 
 # For activity factor extraction (SAIF)
 SAIF_FILE 	= $(SYNTH_RUNDIR)/$(FPPRODUCT).saif
+DC_ADD_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).dc.add.saif
+DC_MUL_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).dc.mul.saif
+DC_AVG_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).dc.avg.saif
+DC_MULADD_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).dc.muladd.saif
+ICC_ADD_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc.add.saif
+ICC_MUL_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc.mul.saif
+ICC_AVG_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc.avg.saif
+ICC_MULADD_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc.muladd.saif
+ICC_OPT_ADD_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc_opt.add.saif
+ICC_OPT_MUL_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc_opt.mul.saif
+ICC_OPT_AVG_SAIF_FILE	= $(SYNTH_SAIF)/$(FPPRODUCT).icc_opt.avg.saif
+ICC_OPT_MULADD_SAIF_FILE= $(SYNTH_SAIF)/$(FPPRODUCT).icc_opt.muladd.saif
+
+
 # No saif dependency if not USE_SAIF
 ifneq ($(USE_SAIF),0)
   SAIF_DEPENDENCY = $(SAIF_FILE)
@@ -259,6 +300,7 @@ endif
 # one another, not to any absolute number.
 SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+NumTrans=1000				\
+			+Silent					\
 			+SignIsPos_DistWeight=50		\
 			+Zero_DistWeight=10	 		\
 			+Denorm100_DistWeight=1			\
@@ -273,9 +315,7 @@ SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+One_DistWeight=10			\
 			+PointOneOneOne_DistWeight=1		\
 			+EzAndSml_DistWeight=1			\
-			+Random_DistWeight=200			\
-                        +MulWeight=30                           \
-                        +AddWeight=40
+			+Random_DistWeight=200
 
 ######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
 
@@ -326,7 +366,7 @@ $(SIMV):	$(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
-	vcs  $(VERILOG_COMPILE_FLAGS) $(COMP) 2>&1 | tee comp_bb.log 
+	vcs  $(VERILOG_COMPILE_FLAGS) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log 
 
 
 # IBM's fpgen rules:
@@ -388,7 +428,7 @@ $(SAIF_FILE): $(SIMV)
 .PHONY: force_dc run_dc dc_clean
 
 force_dc: dc_clean run_dc
-run_dc: $(DC_LOG)
+run_dc: $(DC_PWR_LOG)
 $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
@@ -402,22 +442,81 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
+$(DC_SIMV): $(DC_LOG)
+	@echo ""
+	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_SAIF)"; then 	\
+		mkdir -p $(SYNTH_SAIF);		\
+	fi
+	(cd $(SYNTH_SAIF); 							\
+	vcs $(VERILOG_COMPILE_FLAGS) $(SYNTH_SAIF)/$(DC_NETLIST) $(RUNDIR)/genesis_verif/*.v -o dc_simv $(COMP) 2>&1 | tee comp_dc_bb.log	\
+	)
+
+$(DC_AVG_SAIF_FILE): $(DC_SIMV)
+	@echo ""
+	@echo Now Running dc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 +AddWeight=40 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.avg.saif	\
+	)
+
+$(DC_ADD_SAIF_FILE): $(DC_SIMV)
+	@echo ""
+	@echo Now Running dc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 +AddWeight=100 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.add.saif	\
+	)
+
+$(DC_MUL_SAIF_FILE): $(DC_SIMV)
+	@echo ""
+	@echo Now Running dc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=100 +AddWeight=0 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.mul.saif	\
+	)
+
+$(DC_MULADD_SAIF_FILE): $(DC_SIMV)
+	@echo ""
+	@echo Now Running dc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 +AddWeight=0 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.muladd.saif	\
+	)
+
+$(DC_PWR_LOG): $(DC_AVG_SAIF_FILE) $(DC_MULADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(SYNTH_HOME)/report_power_dc.tcl
+	@echo ""
+	@echo Now Running DC SHELL: Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	(cd $(SYNTH_RUNDIR); 							\
+	dc_shell-xg-t -64bit -x $(DC_PWR_COMMAND_STRING) 2>&1 | tee -i $(DC_PWR_LOG)	\
+	)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_PWR_LOG)
+
 dc_clean:
 	@echo ""
 	@echo Removing previous DC run log
 	@echo =============================================
-	\rm -f $(DC_LOG)
+	\rm -f $(DC_LOG) $(DC_PWR_LOG)
 
 # IC Compiler rules:
 .PHONY: force_icc run_icc icc_clean
 .PHONY: force_icc_opt run_icc_opt icc_opt_clean
 
 force_icc: icc_clean run_icc
-run_icc: $(ICC_LOG)
+run_icc: $(ICC_PWR_LOG)
 force_icc_opt: icc_opt_clean run_icc_opt
-run_icc_opt: $(ICC_OPT_LOG)
+run_icc_opt: $(ICC_OPT_PWR_LOG)
 
-$(ICC_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_LOG): $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler: Making $@ because of $?
 	@echo =============================================
@@ -428,7 +527,67 @@ $(ICC_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/mul
 	hostname -A > $(SYNTH_RUNDIR)/run_icc.hostname;				\
 	icc_shell -64bit -x $(ICC_COMMAND_STRING) 2>&1 | tee -i $(ICC_LOG)	\
 	)
-	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_LOG)
+#	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_LOG)
+
+$(ICC_SIMV): $(ICC_LOG)
+	@echo ""
+	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_SAIF)"; then 	\
+		mkdir -p $(SYNTH_SAIF);		\
+	fi
+	(cd $(SYNTH_SAIF); 							\
+	vcs $(VERILOG_COMPILE_FLAGS) $(SYNTH_SAIF)/$(ICC_NETLIST) $(RUNDIR)/genesis_verif/*.v -o icc_simv $(COMP) 2>&1 | tee comp_icc_bb.log	\
+	)
+
+$(ICC_AVG_SAIF_FILE): $(ICC_SIMV)
+	@echo ""
+	@echo Now Running icc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 +AddWeight=40 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.avg.saif	\
+	)
+
+$(ICC_ADD_SAIF_FILE): $(ICC_SIMV)
+	@echo ""
+	@echo Now Running icc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 +AddWeight=100 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.add.saif	\
+	)
+
+$(ICC_MUL_SAIF_FILE): $(ICC_SIMV)
+	@echo ""
+	@echo Now Running icc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=100 +AddWeight=0 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.mul.saif	\
+	)
+
+$(ICC_MULADD_SAIF_FILE): $(ICC_SIMV)
+	@echo ""
+	@echo Now Running icc_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 +AddWeight=0 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.muladd.saif	\
+	)
+
+$(ICC_PWR_LOG): $(ICC_AVG_SAIF_FILE) $(ICC_MULADD_SAIF_FILE) $(ICC_MUL_SAIF_FILE) $(ICC_ADD_SAIF_FILE) $(SYNTH_HOME)/report_power_icc.tcl
+	@echo ""
+	@echo Now Running ICC SHELL: Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	(cd $(SYNTH_RUNDIR); 							\
+	icc_shell -64bit -x $(ICC_PWR_COMMAND_STRING) 2>&1 | tee -i $(ICC_PWR_LOG)	\
+	)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_PWR_LOG)
+
 
 icc_clean:
 	@echo ""
@@ -436,7 +595,7 @@ icc_clean:
 	@echo =============================================
 	\rm -f $(ICC_LOG)
 
-$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler OPT: Making $@ because of $?
 	@echo =============================================
@@ -447,7 +606,67 @@ $(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)
 	hostname -A > $(SYNTH_RUNDIR)/run_icc_opt.hostname;			\
 	icc_shell -64bit -x $(ICC_OPT_COMMAND_STRING) 2>&1 | tee -i $(ICC_OPT_LOG)	\
 	)
-	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_LOG)
+#	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_LOG)
+
+$(ICC_OPT_SIMV): $(ICC_OPT_LOG)
+	@echo ""
+	@echo Now Compiling Gate Level optimized ICC SAIF testbench : Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_SAIF)"; then 	\
+		mkdir -p $(SYNTH_SAIF);		\
+	fi
+	(cd $(SYNTH_SAIF); 							\
+	vcs $(VERILOG_COMPILE_FLAGS) $(SYNTH_SAIF)/$(ICC_OPT_NETLIST) $(RUNDIR)/genesis_verif/*.v -o icc_opt_simv $(COMP) 2>&1 | tee comp_icc_bb.log	\
+	)
+
+$(ICC_OPT_AVG_SAIF_FILE): $(ICC_OPT_SIMV)
+	@echo ""
+	@echo Now Running icc_opt_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 +AddWeight=40 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.avg.saif	\
+	)
+
+$(ICC_OPT_ADD_SAIF_FILE): $(ICC_OPT_SIMV)
+	@echo ""
+	@echo Now Running icc_opt_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 +AddWeight=100 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.add.saif	\
+	)
+
+$(ICC_OPT_MUL_SAIF_FILE): $(ICC_OPT_SIMV)
+	@echo ""
+	@echo Now Running icc_opt_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=100 +AddWeight=0 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.mul.saif	\
+	)
+
+$(ICC_OPT_MULADD_SAIF_FILE): $(ICC_OPT_SIMV)
+	@echo ""
+	@echo Now Running icc_opt_simv for gate level SAIF extraction: Making $@ because of $?
+	@echo ==============================================================
+	(cd $(SYNTH_SAIF); 			\
+	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 +AddWeight=0 $(RUN) 2>&1 | tee run_saif_bb.log;	\
+	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.muladd.saif	\
+	)
+
+$(ICC_OPT_PWR_LOG): $(ICC_OPT_AVG_SAIF_FILE) $(ICC_OPT_MULADD_SAIF_FILE) $(ICC_OPT_MUL_SAIF_FILE) $(ICC_OPT_ADD_SAIF_FILE) $(SYNTH_HOME)/report_power_icc.tcl
+	@echo ""
+	@echo Now Running ICC SHELL: Making $@ because of $?
+	@echo =============================================
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	(cd $(SYNTH_RUNDIR); 							\
+	icc_shell -64bit -x $(ICC_OPT_PWR_COMMAND_STRING) 2>&1 | tee -i $(ICC_OPT_PWR_LOG)	\
+	)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_PWR_LOG)
+
 
 icc_opt_clean:
 	@echo ""

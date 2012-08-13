@@ -93,3 +93,45 @@ if {![info exists DESIGN_TARGET]} {
 # Information: Skipping clock gating on design BoothSel_unq1_33, since there are no registers. (PWR-806)
 suppress_message {OPT-170 PWR-806}
 
+
+
+
+proc report_DESIGN_power {args} {
+
+
+  global link_library;
+  global DESIGN_TARGET;
+  global target_delay;
+  global APPENDIX;
+  global link_library_0v8;
+  global link_library_0v9;
+  global link_library_1v0;
+
+  parse_proc_arguments -args $args results
+  foreach argname [array names results] { 
+    set [regsub {\-} $argname ""] $results($argname);
+  }
+
+  reset_switching_activity
+
+  read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input SAIF/${DESIGN_TARGET}.dc.${inst_name}.saif -verbose
+
+  remove_attribute -quiet [current_design] local_link_library
+
+  set link_library $link_library_0v8
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.$config_name.${inst_name}_power.rpt
+
+  set link_library $link_library_0v9
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.$config_name.${inst_name}_power.rpt
+
+  set link_library $link_library_1v0
+  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.$config_name.${inst_name}_power.rpt
+
+}
+
+define_proc_attributes report_DESIGN_power -info "Reports power for FPGen for different instructions." \
+  -define_args \
+  {{config_name "name of configuration: mapped, routed" config_name string required}
+   {inst_name "name of instruction: add, mul, muladd, avg" inst_name string required}}
+
+

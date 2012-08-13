@@ -2,6 +2,8 @@
 
 export TSMCHOME=/cad/synopsys_EDK2/TSMCHOME
 
+#Verilog simulations libraries
+export TSMC_VERILOG_DIR=$TSMCHOME/digital/Front_End/verilog
 
 #main standard cell libraries
 export TSMC_LIB_DIR=$TSMCHOME/digital/Front_End/timing_power_noise/NLDM
@@ -26,6 +28,8 @@ export TCBN45GS_SVT_BC_1V0=$TSMC_LIB_DIR/$TCBN45GSNAME/tcbn45gsbwpbc1d1.db
 
 export TCBN45GS_SVT_MW=$TSMC_MWLIB_DIR/$TCBN45GSNAME/frame_only_VHV_0d5_0/tcbn45gsbwp
 
+export TCBN45GS_VERILOG=$TSMC_VERILOG_DIR/tcbn45gsbwp_110b/tcbn45gsbwp.v
+
 
 #Second: Low Vt libraries
 
@@ -40,6 +44,8 @@ export TCBN45GS_LVT_BC_1V0=$TSMC_LIB_DIR/$TCBN45GSLVTNAME/tcbn45gsbwplvtbc1d1.db
 
 export TCBN45GSLVT_MW=$TSMC_MWLIB_DIR/$TCBN45GSLVTNAME/frame_only_VHV_0d5_0/tcbn45gsbwplvt
 
+export TCBN45GSLVT_VERILOG=$TSMC_VERILOG_DIR/tcbn45gsbwplvt_110b/tcbn45gsbwplvt.v
+
 #Third: High Vt libraries
 
 export TCBN45GSHVTNAME=tcbn45gsbwphvt_110a
@@ -52,6 +58,8 @@ export TCBN45GS_HVT_WC_1V0=$TSMC_LIB_DIR/$TCBN45GSHVTNAME/tcbn45gsbwphvtwc0d9.db
 export TCBN45GS_HVT_BC_1V0=$TSMC_LIB_DIR/$TCBN45GSHVTNAME/tcbn45gsbwphvtbc1d1.db
 
 export TCBN45GSHVT_MW=$TSMC_MWLIB_DIR/$TCBN45GSHVTNAME/frame_only_VHV_0d5_0/tcbn45gsbwphvt
+
+export TCBN45GSHVT_VERILOG=$TSMC_VERILOG_DIR/tcbn45gsbwphvt_110b/tcbn45gsbwphvt.v
 
 
 
