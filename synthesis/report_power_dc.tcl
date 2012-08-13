@@ -13,12 +13,12 @@ read_file -format ddc $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc
 link
 
 if { $PipelineDepth > 0 } {
-  report_DESIGN_power "mapped" "add";
-  report_DESIGN_power "mapped" "mul";
-  report_DESIGN_power "mapped" "muladd";  
+  report_DESIGN_power "dc" "mapped" "add" $USE_GATE_SAIF;
+  report_DESIGN_power "dc" "mapped" "mul" $USE_GATE_SAIF;
+  report_DESIGN_power "dc" "mapped" "muladd" $USE_GATE_SAIF;  
 }
 
-report_DESIGN_power "mapped" "avg"
+report_DESIGN_power "dc" "mapped" "avg" $USE_GATE_SAIF
 
 set target_library [set ${VT}_[string tolower $Voltage]_target_libs]
 set link_library [set link_library_[string tolower $Voltage] ]

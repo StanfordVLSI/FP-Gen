@@ -55,18 +55,11 @@ if { $PipelineDepth > 0 } {
 
   
   create_clock $CLK -period $CLK_PERIOD
-  set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
-  set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
-  set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
-  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
-  set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
-
+  set_DESIGN_switching_activity "avg"
   if { [file exists ${DESIGN_TARGET}.saif] } {
-    read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input ${DESIGN_TARGET}.saif -verbose
+    set_DESIGN_switching_activity "avg" ${DESIGN_TARGET}.saif
     report_saif -hier -rtl_saif -missing
   }
-
 
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
   #set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]

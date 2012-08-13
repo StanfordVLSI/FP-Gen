@@ -94,30 +94,20 @@ if {![info exists DESIGN_TARGET]} {
 suppress_message {OPT-170 PWR-806}
 
 
+proc set_DESIGN_switching_activity {args} {
 
-
-proc report_DESIGN_power {args} {
-
-
-  global link_library;
   global DESIGN_TARGET;
-  global target_delay;
-  global APPENDIX;
-  global USE_GATE_SAIF;
-  global link_library_0v8;
-  global link_library_0v9;
-  global link_library_1v0;
-
+  set saif_file ""
   parse_proc_arguments -args $args results
   foreach argname [array names results] { 
     set [regsub {\-} $argname ""] $results($argname);
   }
 
-
-  if { $USE_GATE_SAIF } {
-    reset_switching_activity
-    read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input SAIF/${DESIGN_TARGET}.dc.${inst_name}.saif -verbose
-  } else {
+  if { $saif_file=="" } {
+    set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
+    set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
+    set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
+    set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
     if { $inst_name=="add" } {
       set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
       set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
@@ -131,6 +121,45 @@ proc report_DESIGN_power {args} {
       set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
       set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
     }
+  } else {
+    read_saif -auto_map_names -instance top_$DESIGN_TARGET/$DESIGN_TARGET -input $saif_file -verbose
+  }
+}
+
+define_proc_attributes set_DESIGN_switching_activity -info "Sets the switching activity factors on the design." \
+  -define_args \
+  {{inst_name "name of instruction: add, mul, muladd, avg" inst_name string required}
+   {saif_file "saif file to read from" inst_name string optional}}
+
+
+
+proc report_DESIGN_power {args} {
+
+
+  global link_library;
+  global DESIGN_TARGET;
+  global target_delay;
+  global APPENDIX;
+  global link_library_0v8;
+  global link_library_0v9;
+  global link_library_1v0;
+
+  parse_proc_arguments -args $args results
+  foreach argname [array names results] { 
+    set [regsub {\-} $argname ""] $results($argname);
+  }
+
+  if { $saif_type=="icc" && [info exists ENABLE_MANUAL_PLACEMENT] } {
+    set saif_type "icc_opt";
+  }
+
+  
+  
+  reset_switching_activity
+  if { $use_saif } {
+    set_DESIGN_switching_activity $inst_name SAIF/$DESIGN_TARGET.$saif_type.$inst_name.saif
+  } else {
+    set_DESIGN_switching_activity $inst_name
   }
 
   remove_attribute -quiet [current_design] local_link_library
@@ -148,7 +177,9 @@ proc report_DESIGN_power {args} {
 
 define_proc_attributes report_DESIGN_power -info "Reports power for FPGen for different instructions." \
   -define_args \
-  {{config_name "name of configuration: mapped, routed" config_name string required}
-   {inst_name "name of instruction: add, mul, muladd, avg" inst_name string required}}
+  {{saif_type "type of saif file used:dc, icc, icc_opt" saif_type string required}
+   {config_name "name of configuration: mapped, routed" config_name string required}
+   {inst_name "name of instruction: add, mul, muladd, avg" inst_name string required}
+   {use_saif "use saif file" integer int required}}
 
 

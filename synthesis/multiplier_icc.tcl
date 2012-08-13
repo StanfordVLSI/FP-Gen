@@ -95,15 +95,6 @@ import_designs $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc -format 
 set ICC_SAIF_FILE $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.saif
 if { [file exists $ICC_SAIF_FILE] } {
   read_saif -input $ICC_SAIF_FILE -instance_name $DESIGN_TARGET
-} else {
-  set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
-  set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
-  set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
-  if { $PipelineDepth > 0 } {
-    set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
-    set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
-    set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
-  }
 }
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
@@ -285,7 +276,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set port_size [sizeof_collection $b_ports];
 
 
-  if { [ string equal $DESIGN_TARGET "FP_Gen_unq1" ] } {
+  if { [ string equal $DESIGN_TARGET "FPGen" ] } {
 
     set c_ports [get_ports {c[*]}] 
     foreach_in_collection c_port $c_ports {
@@ -329,7 +320,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 
 if { [info exists ENABLE_MANUAL_PLACEMENT] } {
-   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_TARGET "FP_Gen_unq1" ]]; 
+   set FixedHeightFloorPlan [expr [info exists ENABLE_MANUAL_PLACEMENT] && $max_compressed_column > 0 && ![ string equal $DESIGN_TARGET "FPGen" ]]; 
 } else {
    set FixedHeightFloorPlan 0; 
 }
@@ -337,7 +328,7 @@ if { [info exists ENABLE_MANUAL_PLACEMENT] } {
 
 
 if { ![info exists core_utilization_ratio] } {
-    set core_utilization_ratio 0.5
+    set core_utilization_ratio 0.7
 }
 
 if {$FixedHeightFloorPlan} {
@@ -362,12 +353,6 @@ if {$FixedHeightFloorPlan} {
  	-right_io2core $io2core \
   	-top_io2core $io2core \
   	-start_first_row
-}
-
-if { [file exists ${DESIGN_HOME}/top.saif] } {
-  report_saif 
-  report_saif -hier > reports/${DESIGN_TARGET}.mapped.saif.rpt
-  write_saif -output icc_out.saif
 }
 
 set placement_site_height [get_attribute [get_core_areas] tile_height];
@@ -603,13 +588,12 @@ route_group -all_clock_nets -search_repair_loop 15
 save_mw_cel -as ${DESIGN_TARGET}_after_CTS
 
 
-if { [info exists ENABLE_MANUAL_PLACEMENT] } {
-#HACK FIXME
-#if { $FixedHeightFloorPlan } {
-#  estimate_fp_area -sizing_type fixed_height
-#} else {
-  estimate_fp_area -sizing_type fixed_aspect_ratio
-#}
+if { $DESIGN_TARGET != "FPGen" } {
+  if { $FixedHeightFloorPlan } {
+    estimate_fp_area -sizing_type fixed_height
+  } else {
+    estimate_fp_area -sizing_type fixed_aspect_ratio
+  }
 }
 
 #routing

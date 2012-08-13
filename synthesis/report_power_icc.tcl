@@ -7,7 +7,7 @@ source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 saif_map -start
 
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
-  set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_optimized_LIB 
+  set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_optimized_LIB
 } else {
   set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_LIB
 }
@@ -15,12 +15,19 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 open_mw_lib $MW_DESIGN_LIBRARY
 open_mw_cel ${DESIGN_TARGET}_final
 
+set saif_type [expr $USE_ICC_GATE_SAIF?"icc":"dc"]
+set use_saif [expr $USE_ICC_GATE_SAIF | $USE_GATE_SAIF]
+
 if { $PipelineDepth > 0 } {
-  report_DESIGN_power "routed" "add";
-  report_DESIGN_power "routed" "mul";
-  report_DESIGN_power "routed" "muladd";  
+  report_DESIGN_power $saif_type "routed" "add" $use_saif;
+  report_DESIGN_power $saif_type "routed" "mul" $use_saif;
+  report_DESIGN_power $saif_type "routed" "muladd" $use_saif;  
 }
 
-report_DESIGN_power "routed" "avg"
+report_DESIGN_power $saif_type "routed" "avg" $use_saif
+
+
+
+
 
 exit
