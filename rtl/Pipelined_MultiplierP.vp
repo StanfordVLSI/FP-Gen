@@ -148,13 +148,13 @@ module `mname`(
         enable <= next_enable;
 
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-   logic [`$width-1`:0] a_`$i`,b_`$i`;
-   logic valid_`$i`;       
+   reg [`$width-1`:0] a_`$i`,b_`$i`;
+   reg valid_`$i`;       
 //;     if ($useInc=~ /YES/){
-   logic ainc_`$i`, binc_`$i`;
+   reg ainc_`$i`, binc_`$i`;
 //;     }
 //;     if ($useMP){
-   logic mp_mode_`$i`;
+   reg mp_mode_`$i`;
 //;     }
 
     always @(posedge clk)
