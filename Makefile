@@ -747,10 +747,10 @@ clean: genesis_clean synthesis_clean
 	\rm -f graph_*.m
 	\rm -rf $(IBM_TRGT_DIR)
 	\rm -f $(SAIF_FILE)
-	\rm -f TEST_PASS
-	\rm -f TEST_FAIL
 
 cleanall: clean 
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
 	\rm -rf genesis*
+	\rm -f TEST_PASS
+	\rm -f TEST_FAIL
