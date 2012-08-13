@@ -103,6 +103,7 @@ proc report_DESIGN_power {args} {
   global DESIGN_TARGET;
   global target_delay;
   global APPENDIX;
+  global USE_GATE_SAIF;
   global link_library_0v8;
   global link_library_0v9;
   global link_library_1v0;
@@ -112,9 +113,25 @@ proc report_DESIGN_power {args} {
     set [regsub {\-} $argname ""] $results($argname);
   }
 
-  reset_switching_activity
 
-  read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input SAIF/${DESIGN_TARGET}.dc.${inst_name}.saif -verbose
+  if { $USE_GATE_SAIF } {
+    reset_switching_activity
+    read_saif -auto_map_names -instance top_${DESIGN_TARGET}/${DESIGN_TARGET} -input SAIF/${DESIGN_TARGET}.dc.${inst_name}.saif -verbose
+  } else {
+    if { $inst_name=="add" } {
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+    } elseif { $inst_name=="mul" } {
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
+    } elseif { $inst_name=="muladd" } {
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+    } elseif { $inst_name=="avg" } {
+      set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
+      set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
+    }
+  }
 
   remove_attribute -quiet [current_design] local_link_library
 

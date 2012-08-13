@@ -221,6 +221,7 @@ TARGET_DELAY 	?= $(SYN_CLK_PERIOD_PS)
 SMART_RETIMING 	?= 0
 CLK_GATING 	?= 1
 USE_SAIF	?= 1
+USE_GATE_SAIF	?= 1
 
 # flags for dc/icc
 DESIGN_TARGET	= $(FPPRODUCT)
@@ -249,6 +250,7 @@ SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
 			set io2core $(IO2CORE);  		\
 			set SmartRetiming $(SMART_RETIMING);  	\
 			set EnableClockGating $(CLK_GATING);    \
+			set USE_GATE_SAIF $(USE_GATE_SAIF);    \
                         set DC_NETLIST $(DC_NETLIST);		\
                         set ICC_NETLIST $(ICC_NETLIST);		\
                         set ICC_OPT_NETLIST $(ICC_OPT_NETLIST);
@@ -294,6 +296,13 @@ ICC_OPT_MULADD_SAIF_FILE= $(SYNTH_SAIF)/$(FPPRODUCT).icc_opt.muladd.saif
 ifneq ($(USE_SAIF),0)
   SAIF_DEPENDENCY = $(SAIF_FILE)
 endif
+
+ifneq ($(USE_GATE_SAIF),0)
+  DC_SAIF_DEPENDENCY = $(DC_AVG_SAIF_FILE) $(DC_MULADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_ADD_SAIF_FILE)
+  ICC_SAIF_DEPENDENCY = $(ICC_AVG_SAIF_FILE) $(ICC_MULADD_SAIF_FILE) $(ICC_MUL_SAIF_FILE) $(ICC_ADD_SAIF_FILE)
+  ICC_OPT_SAIF_DEPENDENCY = $(ICC_OPT_AVG_SAIF_FILE) $(ICC_OPT_MULADD_SAIF_FILE) $(ICC_OPT_MUL_SAIF_FILE) $(ICC_OPT_ADD_SAIF_FILE)
+endif
+
 
 # Each one of the following weights control the relative frequency of that type of fp number generated. 
 # Except for 'SignIsPos' which is percent positive numbers, the weights are relative to 
@@ -489,7 +498,7 @@ $(DC_MULADD_SAIF_FILE): $(DC_SIMV)
 	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.muladd.saif	\
 	)
 
-$(DC_PWR_LOG): $(DC_AVG_SAIF_FILE) $(DC_MULADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(SYNTH_HOME)/report_power_dc.tcl
+$(DC_PWR_LOG): $(DC_SAIF_DEPENDENCY) $(DC_LOG) $(SYNTH_HOME)/report_power_dc.tcl
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
 	@echo =============================================
@@ -576,7 +585,7 @@ $(ICC_MULADD_SAIF_FILE): $(ICC_SIMV)
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.muladd.saif	\
 	)
 
-$(ICC_PWR_LOG): $(ICC_AVG_SAIF_FILE) $(ICC_MULADD_SAIF_FILE) $(ICC_MUL_SAIF_FILE) $(ICC_ADD_SAIF_FILE) $(SYNTH_HOME)/report_power_icc.tcl
+$(ICC_PWR_LOG): $(ICC_SAIF_DEPENDENCY) $(ICC_LOG) $(SYNTH_HOME)/report_power_icc.tcl
 	@echo ""
 	@echo Now Running ICC SHELL: Making $@ because of $?
 	@echo =============================================
@@ -655,7 +664,7 @@ $(ICC_OPT_MULADD_SAIF_FILE): $(ICC_OPT_SIMV)
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.muladd.saif	\
 	)
 
-$(ICC_OPT_PWR_LOG): $(ICC_OPT_AVG_SAIF_FILE) $(ICC_OPT_MULADD_SAIF_FILE) $(ICC_OPT_MUL_SAIF_FILE) $(ICC_OPT_ADD_SAIF_FILE) $(SYNTH_HOME)/report_power_icc.tcl
+$(ICC_OPT_PWR_LOG): $(ICC_OPT_SAIF_DEPENDENCY) $(ICC_OPT_LOG) $(SYNTH_HOME)/report_power_icc.tcl
 	@echo ""
 	@echo Now Running ICC SHELL: Making $@ because of $?
 	@echo =============================================
