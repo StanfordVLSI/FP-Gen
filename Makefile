@@ -138,14 +138,25 @@ VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)
 
 SYNOPSYS := /hd/cad/synopsys/dc_shell/latest
 
-VERILOG_LIBS := 	-y $(RUNDIR)					\
+VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/dw/sim_ver/			\
 			+incdir+$(SYNOPSYS)/dw/sim_ver/			\
 			-y $(SYNOPSYS)/packages/gtech/src_ver/		\
-			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/     \
-                        -v $(TCBN45GS_VERILOG)                          \
-                        -v $(TCBN45GSLVT_VERILOG)                       \
-                        -v $(TCBN45GSHVT_VERILOG)
+			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/
+
+ifndef TCBN45GS_VERILOG
+  $(error ERROR TCBN45GS_VERILOG not defined)
+endif
+ifndef TCBN45GSLVT_VERILOG
+  $(error ERROR TCBN45GSLVT_VERILOG not defined)
+endif
+ifndef TCBN45GSHVT_VERILOG
+  $(error ERROR TCBN45GSHVT_VERILOG not defined)
+endif
+
+VERILOG_GATE_LIBS :=	-v $(TCBN45GS_VERILOG)                          \
+			-v $(TCBN45GSLVT_VERILOG)                       \
+			-v $(TCBN45GSHVT_VERILOG)
 
 
 # "-sverilog" enables system verilog
@@ -170,7 +181,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-debug_pp					\
 				-timescale=1ps/1ps				\
 				+noportcoerce         				\
-				-ld $(VCS_CC) -debug_pp				\
+				-ld $(VCS_CC) 					\
 				-top $(SIM_TOP)					\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
 
@@ -344,12 +355,12 @@ all: run
 #############################
 # phony rules for verilog generation process
 .PHONY: gen genesis_clean
-gen: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST)
+gen: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
 
 # This is the rule to activate Genesis2 generator to generate verilog 
 # files (_unqN.v) from the genesis (.vp) program.
 # Use "make gen GEN=<genesis2_gen_flags>" to add elaboration time flags
-$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML) $(GENESIS_CFG_SCRIPT)
+$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST): $(GENESIS_INPUTS) $(GENESIS_CFG_XML) $(GENESIS_CFG_SCRIPT)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
@@ -361,9 +372,9 @@ genesis_clean:
 	@echo Cleanning previous runs of Genesis
 	@echo ===================================
 	@if test -f "genesis_clean.cmd"; then 	\
-		tcsh genesis_clean.cmd;	\
+		 genesis_clean.cmd;		\
 	fi
-	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST)
+	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
 ###### END OF Genesis2 Rules #######
 
 
@@ -375,7 +386,7 @@ genesis_clean:
 .PHONY: comp
 comp: $(SIMV)
 
-$(SIMV):	$(GENESIS_VLOG_LIST)
+$(SIMV):$(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
@@ -462,8 +473,11 @@ $(DC_SIMV): $(DC_LOG)
 	@if test ! -d "$(SYNTH_SAIF)"; then 	\
 		mkdir -p $(SYNTH_SAIF);		\
 	fi
-	(cd $(SYNTH_SAIF); 							\
-	vcs $(VERILOG_COMPILE_FLAGS) $(SYNTH_SAIF)/$(DC_NETLIST) $(RUNDIR)/genesis_verif/*.v -o dc_simv $(COMP) 2>&1 | tee comp_dc_bb.log	\
+	(cd $(SYNTH_SAIF);								\
+	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
+	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
+	vcs $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST)   	\
+	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o dc_simv $(COMP) 2>&1 | tee comp_dc_bb.log	\
 	)
 
 $(DC_AVG_SAIF_FILE): $(DC_SIMV)
@@ -549,8 +563,11 @@ $(ICC_SIMV): $(ICC_LOG)
 	@if test ! -d "$(SYNTH_SAIF)"; then 	\
 		mkdir -p $(SYNTH_SAIF);		\
 	fi
-	(cd $(SYNTH_SAIF); 							\
-	vcs $(VERILOG_COMPILE_FLAGS) $(SYNTH_SAIF)/$(ICC_NETLIST) $(RUNDIR)/genesis_verif/*.v -o icc_simv $(COMP) 2>&1 | tee comp_icc_bb.log	\
+	(cd $(SYNTH_SAIF);								\
+	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
+	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
+	vcs $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(ICC_NETLIST) 		\
+	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o icc_simv $(COMP) 2>&1 | tee comp_icc_bb.log	\
 	)
 
 $(ICC_AVG_SAIF_FILE): $(ICC_SIMV)
@@ -628,8 +645,11 @@ $(ICC_OPT_SIMV): $(ICC_OPT_LOG)
 	@if test ! -d "$(SYNTH_SAIF)"; then 	\
 		mkdir -p $(SYNTH_SAIF);		\
 	fi
-	(cd $(SYNTH_SAIF); 							\
-	vcs $(VERILOG_COMPILE_FLAGS) $(SYNTH_SAIF)/$(ICC_OPT_NETLIST) $(RUNDIR)/genesis_verif/*.v -o icc_opt_simv $(COMP) 2>&1 | tee comp_icc_bb.log	\
+	(cd $(SYNTH_SAIF);								\
+	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
+	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
+	vcs $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(ICC_OPT_NETLIST) 	\
+	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o icc_opt_simv $(COMP) 2>&1 | tee comp_icc_bb.log	\
 	)
 
 $(ICC_OPT_AVG_SAIF_FILE): $(ICC_OPT_SIMV)
