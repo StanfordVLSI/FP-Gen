@@ -372,7 +372,7 @@ genesis_clean:
 	@echo Cleanning previous runs of Genesis
 	@echo ===================================
 	@if test -f "genesis_clean.cmd"; then 	\
-		 genesis_clean.cmd;		\
+		 ./genesis_clean.cmd;		\
 	fi
 	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
 ###### END OF Genesis2 Rules #######
