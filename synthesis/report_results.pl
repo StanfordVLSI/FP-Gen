@@ -33,7 +33,7 @@ foreach $file (@files) {
       if ( $_ =~ /data arrival time\s+-?(\d+\.?\d*)/ && $1 < $mapped_delay) {    
 	$mapped_delay = $1;
       }
-      if ( $_ =~ /slack\s+\(\w*\)\s*(-?\d+\.?\d*)/ && $1 < $mapped_worst_slack) {    
+      if ( $_ =~ /slack\s+\([^\)]*\)\s*(-?\d+\.?\d*)/ && $1 < $mapped_worst_slack) {    
 	$mapped_worst_slack = $1;
       }
     }
@@ -84,7 +84,7 @@ foreach $file (@files) {
       if ( $_ =~ /data arrival time\s+-?(\d+\.?\d*)/ && $1 < $routed_delay) {    
 	    $routed_delay = $1;
       }
-      if ( $_ =~ /slack\s+\(\w*\)\s*(-?\d+\.?\d*)/ && $1 < $routed_worst_slack) {    
+      if ( $_ =~ /slack\s+\([^\)]*\)\s*(-?\d+\.?\d*)/ && $1 < $routed_worst_slack) {    
 	$routed_worst_slack = $1;
       }
     }
@@ -133,7 +133,7 @@ foreach $file (@files) {
       if ( $_ =~ /data arrival time\s+-?(\d+\.?\d*)/ && $1 < $optimized_delay) {    
 	    $optimized_delay = $1;
       }
-      if ( $_ =~ /slack\s+\(\w*\)\s*(-?\d+\.?\d*)/ && $1 < $optimized_worst_slack) {    
+      if ( $_ =~ /slack\s+\([^\)]*\)\s*(-?\d+\.?\d*)/ && $1 < $optimized_worst_slack) {    
 	$optimized_worst_slack = $1;
       }
     }
