@@ -104,7 +104,7 @@ module `mname`(
    logic [`2*$width+1`:0] multp_out0, multp_out1; // sign extended by 2 because of booth encoding
    
 
-//;        my $pipein = generate(  'Pinned_pipeline',  'MultP_pipeline',  Width=> 2*$width+3 , PipelineDepth=>$pipeline_depth);
+//;        my $pipein = generate(  'FF_pipeline',  'MultP_pipeline',  Width=> 2*$width+3 , PipelineDepth=>$pipeline_depth, Retime=>'YES');
    `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset), 
                                .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .valid_out(valid_out) );
 

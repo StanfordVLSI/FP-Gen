@@ -89,9 +89,9 @@ module `mname`(
   logic Guard, Sticky, Overflow, ShiftExponent, SignSum, ZeroSum;
 
 //; if ($pipeline_depth>0) {
-//;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
+//;   my $pipe_in = generate(  'FF_pipeline',  'pipe_in',  
 //;                             Width=> $manA_width + $manB_width + 3*$ExtendedExp_width + 6,
-//;                             PipelineDepth => $pipeline_depth-1);
+//;                             PipelineDepth => $pipeline_depth-1, Retime=>'YES');
   `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpA_gt_ExpB_in}) ,
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB, ExpDifference, ZeroA, ZeroB, ExpA_gt_ExpB}),

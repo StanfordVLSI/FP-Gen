@@ -89,9 +89,9 @@ module `mname`(
 
 
 //; if ($pipeline_depth>0) {
-//;   my $pipe_in = generate(  'Pinned_pipeline',  'pipe_in',  
+//;   my $pipe_in = generate(  'FF_pipeline',  'pipe_in',  
 //;                             Width=> $manA_width + $manB_width + 2*$ExtendedExp_width + 3,
-//;                             PipelineDepth => $pipeline_depth-1);
+//;                             PipelineDepth => $pipeline_depth-1, Retime=>'YES');
   `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in}) ,
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB}),

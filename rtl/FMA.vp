@@ -204,7 +204,7 @@ module `mname` (
 
 
 //;  if ($pipeline_depth>1) {
-//;    my $rnd_pipe = generate('Pinned_pipeline','fma_pipe', Width=> 3, PipelineDepth=> $pipeline_depth-1);
+//;    my $rnd_pipe = generate('FF_pipeline','fma_pipe', Width=> 3, PipelineDepth=> $pipeline_depth-1, Retime=> 'YES');
 
   `$rnd_pipe ->instantiate()` (
        .in(rnd) , 
@@ -229,9 +229,7 @@ module `mname` (
 
 
 //;  if ($pipeline_depth-$mulp_pipeline_depth>0) {
-//;    my $inc_pipe = $enable_forwarding =~ /YES/?
-//;           generate('Pinned_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1)
-//;          :generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1, Retime=> 'YES');
+//;    my $inc_pipe = generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1, Retime=> 'YES');
   `$inc_pipe ->instantiate()` (
        .in({z_preIncm,IncZm, statusm}) , 
        .valid_in(valid_inc), .clk(clk) , .stall(stall_in), .reset(reset), 

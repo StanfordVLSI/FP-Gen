@@ -109,7 +109,7 @@ module `mname`(
 //; if( $DW_mode eq 'ON' ){
   logic [`$width-1`:0]    a_in,b_in;
 //;   if ($total_pipeline_depth>0) {
-//;     my $pipein = generate(  'Pinned_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>$total_pipeline_depth);
+//;     my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$width , PipelineDepth=>$total_pipeline_depth, Retime=>'YES');
   `$pipein ->instantiate()` ( .in({a,b}) , .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), .out({a_in, b_in}), .valid_out(valid_out) );
 //;   } else {
   assign {a_in,b_in} = {a,b};

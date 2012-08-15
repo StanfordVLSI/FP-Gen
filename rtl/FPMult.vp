@@ -131,14 +131,14 @@ module `mname`(
    assign ZeroExpB_prePipeline  =  ~|b[`$exp_width + $frac_width - 1`:`$frac_width`];
 
 //; if ($pipeline_depth > 0 ) {
-//;   my $pipein = generate(  'Pinned_pipeline',  'pipein',  Width=> 2*$exp_width + 2*$frac_width + 8 , PipelineDepth => $pipeline_depth);
+//;   my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$exp_width + 2*$frac_width + 8 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipein ->instantiate()` ( .in ({a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline, adder_mode}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset),
                               .out({A_pl,B_pl,IncA_pl,IncB_pl,mp_mode_pl, ZeroExpA, ZeroExpB, adder_mode_pl}),
                               .valid_out(valid_out) );
 
 
-//;   my $pipeA0 = generate(  'Pinned_pipeline',  'pipe_A0',  Width=> $exp_width + $frac_width + 2 , PipelineDepth => 1);
+//;   my $pipeA0 = generate(  'FF_pipeline',  'pipe_A0',  Width=> $exp_width + $frac_width + 2 , PipelineDepth => 1, Retime=>'YES');
   `$pipeA0 ->instantiate()` ( .in ({a,forward_a}) , .out({a0,forward_a0}),
                               .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset),
                               .valid_out(valid_A0) );
@@ -272,7 +272,7 @@ module `mname`(
     else
       stalled <= stall;
 
-//;   my $normalization_pipe = generate('Pinned_pipeline','norm_stage', Width=> $product_width+$shift_width+1, PipelineDepth=> 1);
+//;   my $normalization_pipe = generate('FF_pipeline','norm_stage', Width=> $product_width+$shift_width+1, PipelineDepth=> 1, Retime=>'YES');
     `$normalization_pipe ->instantiate()` (
        .in({ManAB_unnormalized,shiftAmount}) , .valid_in(stall_request), .clk(clk) , .stall(1'b0), .reset(reset), 
        .out( {ManAB_unnormalized_m,shiftAmount_m}), .valid_out(valid_ManAB) );

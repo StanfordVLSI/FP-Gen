@@ -150,11 +150,11 @@ module `mname` (
 // the A, far and close path are clock gated based on the used path. they get the mantissa result in N cycles and the exponent in N-1 cycles
 
 
-//;   my $pipeA = generate(  'Pinned_pipeline',  'pipe_A',  Width=> $exp_width + $frac_width+1, PipelineDepth => $pipeline_depth-1);
+//;   my $pipeA = generate(  'FF_pipeline',  'pipe_A',  Width=> $exp_width + $frac_width+1, PipelineDepth => $pipeline_depth-1, Retime=>'YES');
   `$pipeA ->instantiate()` ( .in(A) , .valid_in(valid_in & ResultIsA), .clk(clk) , .stall(stall), .reset(reset), 
                              .out(A_p1),
                              .valid_out(valid_A) );
-//;   my $pipeA2 = generate(  'Pinned_pipeline',  'pipe_A2',  Width=> $exp_width + $frac_width+1, PipelineDepth => ($pipeline_depth>0?1:0));
+//;   my $pipeA2 = generate(  'FF_pipeline',  'pipe_A2',  Width=> $exp_width + $frac_width+1, PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
   `$pipeA2 ->instantiate()` ( .in(A_p1) , .valid_in(valid_A), .clk(clk) , .stall(stall), .reset(reset), 
                              .out(A_p2),
                              .valid_out(valid_A2) );

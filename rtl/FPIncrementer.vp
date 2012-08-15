@@ -54,26 +54,20 @@ module `mname` (
     output logic [`$exp_width + $frac_width`:0] out);
 	
 
-  wire [`$frac_width`:0] ManA, ManOut, ManInc;
-  wire [`$exp_width-1`:0] ExpA, ExpOut;
-  wire SignA, denormA, InfA, NANA, IncCarryOut, IncExp;
+  wire [`$frac_width`:0] ManA, ManInc;
+  wire [`$exp_width-1`:0] ExpA, ExpInc;
+  wire SignA, denormA, InfA, NANA;
   wire [`$exp_width + $frac_width`:0] OutInc;
 
   assign SignA = a[`$exp_width + $frac_width`];
-  assign ExpA = a[`$exp_width + $frac_width-1`:`$frac_width`];
-
+  assign ExpA  = a[`$exp_width + $frac_width-1`:`$frac_width`];
   assign denormA = ~|ExpA;
-  assign ManA = { ~denormA , a[`$frac_width-1`:0]};
+  assign ManA  = { ~denormA , a[`$frac_width-1`:0]};
 
   assign ManInc = ManA + 1;
-  assign IncCarryOut = & ManA;
-  assign ManOut = IncCarryOut ? {IncCarryOut,{(`$frac_width`){1'b0}}} : ManInc;
-  
-  assign IncExp = IncCarryOut | (denormA & ManInc[`$frac_width`]) ;
-  assign ExpOut = IncExp? ExpA+1 : ExpA;
- 
-  assign OutInc = {SignA, ExpOut,ManOut[`$frac_width-1`:0]   };
+  assign ExpInc = ((& ManA) | (denormA & ManInc[`$frac_width`])) ? ExpA+1 : ExpA;
 
+  assign OutInc = {SignA, ExpInc, ManInc[`$frac_width-1`:0]   };
 
   assign out = ainc? OutInc: a;
 
@@ -81,7 +75,7 @@ module `mname` (
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
-    $display ("ExpOut=%h ManOut=%h OutInc=%h",ExpOut, ManOut, OutInc);
+    $display ("OutInc=%h out=%h", OutInc, out);
 end
 // synopsys translate_on
 //; }

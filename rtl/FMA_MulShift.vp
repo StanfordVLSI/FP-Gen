@@ -102,7 +102,7 @@ module `mname` (
 //; }
 
 //; if($pipeline_depth > 0 ){
-//;   my $pipeC1 = generate(  'Pinned_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+11  , PipelineDepth => 1);
+//;   my $pipeC1 = generate(  'FF_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+11  , PipelineDepth => 1, , Retime=>'YES');
   `$pipeC1 ->instantiate()` ( .in({a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c, adder_mode}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                               .out({a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0,adder_mode0}),
@@ -225,7 +225,7 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
                                 .out({ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final}),
                                 .valid_out(valid_out) );
 
-//;   my $pipeA = generate(  'FF_pipeline',  'pipe_A',  Width=> $frac_width+2 , PipelineDepth => $pipeline_depth-1);
+//;   my $pipeA = generate(  'FF_pipeline',  'pipe_A',  Width=> $frac_width+2 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
   `$pipeA ->instantiate()` ( .in( { ~denormA0 , a0[`$frac_width -1`:0], ainc0} ) , .out({ManA_final, ainc_final}),
                              .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
                              .valid_out(valid_ManA) );
@@ -262,9 +262,7 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
   assign ExpC1  = c1[`$exp_width + $frac_width -1`:`$frac_width`];
   assign ManC1 = { (IncExpC0|~denormC0) , c1[`$frac_width -1`:0]};
 //; if($pipeline_depth > 1 ){
-//;   my $align_pipe = ($enable_forwarding =~ /YES/)?
-//;      generate('Pinned_pipeline','align_pipe', Width=> $frac_width+$shift_width+1, PipelineDepth=> $pipeline_depth-1)
-//;    : generate('FF_pipeline','align_pipe', Width=> $frac_width+$shift_width+1, PipelineDepth=> $pipeline_depth-1, Retime=> 'YES');
+//;   my $align_pipe = generate('FF_pipeline','align_pipe', Width=> $frac_width+$shift_width+1, PipelineDepth=> $pipeline_depth-1, Retime=> 'YES');
   `$align_pipe ->instantiate()` ( .in({ManC1,RshiftAmt}) , .valid_in(valid0), .clk(clk) , .stall(stall), .reset(reset), 
                             .out({ManC2,RshiftAmt2}), .valid_out(valid_r) );
 //; } else {

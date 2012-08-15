@@ -80,7 +80,7 @@
 //; my $pipeline_depth = parameter( Name=>'PipelineDepth', Val=>8 , Min=>(($enable_forwarding =~ /YES/)?5:0), Max=>20,
 //;                                 Doc=>"!FUNCTIONAL! Pipeline depth" );
 //; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
-//; my $default_mul_pipeline_depth = floor(4*$muladd_pipeline_depth /7);
+//; my $default_mul_pipeline_depth = floor($pipeline_depth / 2);
 //; my $min_mul_pipeline_depth = ($enable_forwarding =~ /YES/) ? 2 : 0 ;
 //; if ( $default_mul_pipeline_depth < $min_mul_pipeline_depth) {
 //;   $default_mul_pipeline_depth = $min_mul_pipeline_depth;
@@ -186,7 +186,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //; if ($mul_pipeline_depth>0) {
 //;   my $pipe_forward = generate(  'FF_pipeline',  'pipe_exp_forward',
 //;                              Width=> 2*$ExtendedExp_width+2,
-//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO',
+//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'YES',
 //;                              EnableForwarding => $enable_forwarding);
   `$pipe_forward->instantiate()` ( .in({ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec}) ,
 //;     if ($enable_forwarding =~ /YES/) {
@@ -201,7 +201,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 
 //;   my $pipe_forward2 = generate(  'FF_pipeline',  'pipe_c_forward',
 //;                              Width=> $exp_width+$frac_width+3,
-//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO',
+//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'YES',
 //;                              EnableForwarding => $enable_forwarding);
   `$pipe_forward2->instantiate()` ( .in({c, 2'b0}) ,
 //;     if ($enable_forwarding =~ /YES/) {
@@ -215,7 +215,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 
 //;   my $pipe_forward3 = generate(  'FF_pipeline',  'pipe_rnd_forward',
 //;                              Width=> 3,
-//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'NO');
+//;                              PipelineDepth => $mul_pipeline_depth, Retime=>'YES');
   `$pipe_forward3->instantiate()` ( .in(rnd) ,.valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out(rnd_add), .valid_out(valid_rnd) );
 //; } else {
@@ -278,9 +278,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 
 
 //; if ($enable_forwarding =~ /YES/) {
-//;    my $inc_pipe = $enable_forwarding =~ /YES/?
-//;           generate('Pinned_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1)
-//;          :generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1, Retime=> 'YES');
+//;    my $inc_pipe = generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 10 , PipelineDepth=> 1, Retime=> 'YES');
   `$inc_pipe ->instantiate()` (
        .in({z_preInc,IncZ, status_init}) , 
        .valid_in(valid_add), .clk(clk) , .stall(stall), .reset(reset), 
