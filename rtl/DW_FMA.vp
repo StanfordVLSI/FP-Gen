@@ -68,10 +68,10 @@
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //;
-//; my $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['NO'],
+//; my $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES','NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>6, Min=> 0, Max=>12,
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>6, Min=> (($enable_forwarding =~ /YES/)?1:0), Max=>12,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $retiming ;
 //; if( $pipeline_depth > 1 ){
@@ -115,14 +115,24 @@ module `mname` (
 
    assign stall_request = 1'b0 ;
    
-  logic [`$exp_width + $frac_width`:0] 	a2, b2, c2;
+  logic [`$exp_width + $frac_width`:0] 	ain, bin, cin, a2, b2, c2;
   logic [2:0] 				rnd2;
 
-//;   if($pipeline_depth > 0 ){
-//;    my $fma_pipe = generate('Pinned_pipeline','fma_pipe', 
-//;                         Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth);
 
-  `$fma_pipe ->instantiate()` ( .in({a,b,c, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall_in), .reset(reset), 
+//; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
+  assign ain = forward_a? z:a;
+  assign bin = forward_b? z:b;
+  assign cin = forward_c? z:c;
+//; } else {
+  assign {ain,bin,cin} = {a,b,c};
+//; }
+  
+//;   if($pipeline_depth > 0 ){
+//;    my $fma_pipe = ($enable_forwarding =~ /YES/)?
+//;         generate('FF_pipeline','fma_pipe', Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth, Retime=> 'YES')
+//;        :generate('Pinned_pipeline','fma_pipe', Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth);
+
+  `$fma_pipe ->instantiate()` ( .in({ain,bin,cin, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall_in), .reset(reset), 
                                 .out({a2,b2,c2, rnd2}), .valid_out(valid_out) );
 //;   } else {
   assign {a2,b2,c2, rnd2} = {a,b,c, rnd};

@@ -38,6 +38,7 @@
 //; my $pipeline_depth = $FP_obj->get_param('PipelineDepth');
 //; my $mul_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('MulPipelineDepth') : 0 ;
 //; my $add_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('AddPipelineDepth') : 0 ;
+//; my $forward_cycle      = $arch eq 'DW_FMA' ? $pipeline_depth : $pipeline_depth-1;
 //;
 //; #######################################################################
 //; # Export Derived Paramters for Parent's Use
@@ -50,6 +51,7 @@
 //; parameter( Name=>'PipelineDepth'    , Val=>$pipeline_depth     , Doc=>'',, force=>1 );
 //; parameter( Name=>'MulPipelineDepth' , Val=>$mul_pipeline_depth , Doc=>'' , force=>1 );
 //; parameter( Name=>'AddPipelineDepth' , Val=>$add_pipeline_depth , Doc=>'' , force=>1 );
+//; parameter( Name=>'ForwardCycle'     , Val=>$forward_cycle , Doc=>'' , force=>1 );
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );

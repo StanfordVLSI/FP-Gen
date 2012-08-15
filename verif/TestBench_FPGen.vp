@@ -34,6 +34,7 @@
 //; my $pipeline_depth       = $FP_obj->get_param('PipelineDepth');
 //; my $test_denormals       = $FP_obj->get_param('EnableDenormals');
 //; my $mul_pipeline_depth   = $FP_obj->get_param('MulPipelineDepth') ;
+//; my $forward_cycle        = $FP_obj->get_param('ForwardCycle');
 //;
 //; my $vector_file = parameter(Name=>'TestVectorFile', Val=>'',
 //;                             Doc=>"Name of the input testvector file");
@@ -45,7 +46,6 @@
 //;                      "(can AND SHOULD be overriden at runtime using the '+Seed=value' command line notation)");
 //;
 //; # local variables
-//; my $forward_cycle = $pipeline_depth-1;
 //; my $forward_cycle_a = $forward_cycle;
 //; my $forward_cycle_b = $forward_cycle;
 //; my $forward_cycle_c = $forward_cycle;
@@ -271,9 +271,13 @@ program automatic `mname` (
 	       
 	       if ( `$forward_A->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
-		    && expected_q.size() >= `$forward_cycle_a` ) begin
+		    && i > `$forward_cycle_a` ) begin
 		  forward_a = 1'b1;
-		  TransGenA.ForceFPNum(expected_q[`$pipeline_depth-$forward_cycle_a-1`]);
+                //; if ($forward_cycle_a==$pipeline_depth){   
+		  TransGenA.ForceFPNum( expectedZ);
+                //; } else {
+		  TransGenA.ForceFPNum( expected_q[`$pipeline_depth-$forward_cycle_a-1`]);
+                //; }
 	       end 
 	       else  begin
 		  forward_a = 1'b0;
@@ -288,9 +292,13 @@ program automatic `mname` (
                end	       
 	       else if ( `$forward_B->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
-		    && expected_q.size() >= `$forward_cycle_b` ) begin
-		  forward_b = 1'b1;   
+		    && i > `$forward_cycle_b` ) begin
+		  forward_b = 1'b1;
+                //; if ($forward_cycle_b==$pipeline_depth){   
+		  TransGenB.ForceFPNum( expectedZ);
+                //; } else {
 		  TransGenB.ForceFPNum( expected_q[`$pipeline_depth-$forward_cycle_b-1`]);
+                //; }
 	       end 
 	       else  begin
 		  forward_b = 1'b0;
@@ -305,9 +313,12 @@ program automatic `mname` (
                end	       
 	       if ( (|`$forward_C->iname()`.forward)
 		    // check the if there is result in pipeline for forwarding
-		    && expected_q.size() >= `$forward_cycle_c` ) begin
+		    && i > `$forward_cycle_c` ) begin
 		  forward_c = `$forward_C->iname()`.forward;
-		  TransGenC.ForceFPNum(expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit]);
+                  if (`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit < 0)
+                    TransGenC.ForceFPNum(expectedZ);
+                  else
+		    TransGenC.ForceFPNum(expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit]);
 	       end 
 	       else  begin
 		  forward_c = 0;
