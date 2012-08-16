@@ -68,10 +68,6 @@ if {$target_delay==-1} {
   set target_delay max
 }
 
-if { [file exists ${DESIGN_HOME}/top.saif] } {
-  saif_map -start
-}
-
 if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_optimized_LIB
 } else {
@@ -91,11 +87,6 @@ open_mw_lib $MW_DESIGN_LIBRARY
 #import_designs $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.v -format verilog -top $DESIGN_TARGET -cel $DESIGN_TARGET
 #read_sdc $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.sdc
 import_designs $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc -format ddc -top $DESIGN_TARGET -cel $DESIGN_TARGET
-
-set ICC_SAIF_FILE $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.saif
-if { [file exists $ICC_SAIF_FILE] } {
-  read_saif -input $ICC_SAIF_FILE -instance_name $DESIGN_TARGET
-}
 
 derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_net $MW_GROUND_NET -ground_pin $MW_GROUND_PORT -create_port top
 
@@ -586,6 +577,7 @@ derive_pg_connection -power_net $MW_POWER_NET -power_pin $MW_POWER_PORT -ground_
 
 # Clock tree synthesis
 set_delay_calculation -clock_arnoldi
+set_clock_tree_options -clock_tree clk -max_transition 0.150 -max_capacitance 0.100 -max_fanout 20 -max_buffer_levels 20 -target_early_delay 0.000 -target_skew 0.000 -buffer_relocation TRUE -gate_sizing FALSE -delay_insertion FALSE -buffer_sizing TRUE -gate_relocation TRUE
 clock_opt -only_cts -no_clock_route -cts_effort high
 clock_opt -no_clock_route -only_psyn -power -area_recovery
 optimize_clock_tree -buffer_sizing -gate_sizing -effort high

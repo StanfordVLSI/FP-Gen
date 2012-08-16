@@ -115,7 +115,6 @@ write_sdc -nosplit $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.sdc
 
 if { [file exists ${DESIGN_TARGET}.saif] } {
   report_saif -hier > reports/${DESIGN_TARGET}.mapped.saif.rpt
-  write_saif -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.saif 
 }
 
 report_area  > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
