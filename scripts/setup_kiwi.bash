@@ -13,6 +13,15 @@ module load starrc
 module load FPGen
 module load numbers
 
+### Queue If Licenses Are Unavailable
+export SNPSLMD_QUEUE=true
+export SNPS_MAX_WAITTIME=7200
+export SNPS_MAX_QUEUETIME=7200
+
+### Prototype NUMBERS
+export PATH=/hd/cad/numbers/0020/src:$PATH
+export PYTHONPATH=/hd/cad/numbers/0020/src:$PYTHONPATH
+
 
 # For synthesis
 . $FPGEN/synthesis/synSetup/synopsys_startup/library_TSMC_45.sh

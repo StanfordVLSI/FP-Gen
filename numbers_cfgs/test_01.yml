@@ -1,0 +1,53 @@
+clean_rules: clean
+cleanup: 1
+delay_make_variable: SYN_CLK_PERIOD
+env:
+    FPGEN: /horowitz/users/jbrunhav/jb_co_p4_3/ChipGen/FP-Gen
+design:
+-   top_FPGen.FPGen.Architecture: FMA
+    top_FPGen.FPGen.FMA.FractionWidth: 10
+    top_FPGen.FPGen.FMA.ExponentWidth: 5
+-   top_FPGen.FPGen.Architecture: CMA
+    top_FPGen.FPGen.CMA.FractionWidth: 10
+    top_FPGen.FPGen.CMA.ExponentWidth: 5
+-   top_FPGen.FPGen.Architecture: FMA
+    top_FPGen.FPGen.FMA.FractionWidth: 10
+    top_FPGen.FPGen.FMA.ExponentWidth: 5
+-   top_FPGen.FPGen.Architecture: CMA
+    top_FPGen.FPGen.CMA.FractionWidth: 10
+    top_FPGen.FPGen.CMA.ExponentWidth: 5
+-   top_FPGen.FPGen.Architecture: FMA
+    top_FPGen.FPGen.FMA.FractionWidth: 10
+    top_FPGen.FPGen.FMA.ExponentWidth: 5
+-   top_FPGen.FPGen.Architecture: CMA
+    top_FPGen.FPGen.CMA.FractionWidth: 10
+    top_FPGen.FPGen.CMA.ExponentWidth: 5
+make_params:
+-   VT: lvt
+    VOLTAGE: 1v0
+-   VT: lvt
+    VOLTAGE: 1v0
+-   VT: lvt
+    VOLTAGE: 1v0
+-   VT: lvt
+    VOLTAGE: 1v0
+design_title: FMA
+eval_rules: comp run rollup1 run_dc rollup2 run_icc rollup3 run_icc_opt rollup4
+gen_rules: gen
+rollup_rules: rollup1
+genesis_cfg_xml_variable: GENESIS_CFG_XML
+genesis_hierarchy_variable: GENESIS_HIERARCHY
+make_arguments: USE_SAIF=1
+makefile: Makefile
+param_make_variable: GENESIS_PARAMS
+rollup_destination: data_2012_08_05/rollup
+rollup_variable: ROLLUP_TARGET
+runs: 6
+setupfile: scripts/setup_kiwi.bash
+target_delay: 
+-    0.5
+-    0.5
+-    0.7
+-    0.7
+-    0.9
+-    0.9

@@ -676,15 +676,34 @@ synthesis_clean:
 ROLLUP_TARGET ?= $(DESIGN_TITLE)_Rollup.target
 
 .PHONY: rollup1  rollup2 rollup3 report_results
+
+ROLLUP_CMD = perl $(DESIGN_HOME)/scripts/BB_rollup.pl -d $(FPPRODUCT) \
+		 			 	 -t $(ROLLUP_TARGET) \
+						 DC_LOG=$(DC_LOG) \
+						 ICC_LOG=$(ICC_LOG) \
+						 ICC_OPT_LOG=$(ICC_OPT_LOG) \
+						 DESIGN_FILE=BB_$(FPPRODUCT).design \
+	                                   	 VT=$(VT) \
+						 Voltage=$(VOLTAGE) \
+						 target_delay=$(TARGET_DELAY) \
+						 io2core=$(IO2CORE) \
+						 SmartRetiming=$(SMART_RETIMING) \
+						 EnableClockGating=$(CLK_GATING)
+
 rollup1: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
-                                   VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
+	$(ROLLUP_CMD)
+
 rollup2: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
-                                   VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
+	$(ROLLUP_CMD)
+
 rollup3: 
-	perl scripts/BB_rollup.pl -d $(DESIGN_TITLE) -t $(ROLLUP_TARGET) DESIGN_FILE=BB_$(DESIGN_TITLE).design \
-                                   VT=$(VT) Voltage=$(VOLTAGE) target_delay=$(TARGET_DELAY) io2core=$(IO2CORE)
+	$(ROLLUP_CMD)
+
+rollup4: 
+	$(ROLLUP_CMD)
+
+
+
 report_results:
 	cd synthesis ; perl report_results.pl ;
 

@@ -4,6 +4,11 @@ use strict;
 use warnings ;
 use Getopt::Std;
 
+#use lib "$ENV{FPGEN}/perl_libs/YAML-0.84/lib";
+use YAML ;
+
+use Storable;
+
 my %options ;
 getopts("hp:d:t:", \%options);
 
@@ -30,6 +35,8 @@ my $Target_Voltage = extractMakeVal( "Voltage" ) ;  $Target_Voltage =~ s/v/./ ;
 my $Target_Delay   = extractMakeVal( "target_delay" ) ;
 my $IO2CORE        = extractMakeVal( "io2core" ) ;
 my $designFile     = extractMakeVal( "DESIGN_FILE" );
+my $SmartRetiming  = extractMakeVal( "SmartRetiming" );
+my $EnableClockGating =extractMakeVal( "EnableClockGating" );
 
 -e $designFile or die "Error: Sorry DesignFile is missing....\n" ;
 my $designString = `cat $designFile` ;
@@ -40,41 +47,63 @@ if( scalar( @pipeRes ) ){
     $options{p} = 0 ;
 }
 
-open( TARGET , "| tee $options{t}" );
 
+my %globalConfig ;
+$globalConfig{TOP}{VT}                =  $VT ;
+$globalConfig{TOP}{Target_Voltage}    =  $Target_Voltage ;
+$globalConfig{TOP}{Target_Delay}      =  $Target_Delay ;
+$globalConfig{TOP}{IO2CORE}           =  $IO2CORE ;
+$globalConfig{TOP}{designFile}        =  $designFile ;
+$globalConfig{TOP}{SmartRetiming}     =  $SmartRetiming ;
+$globalConfig{TOP}{EnableClockGating} =  $EnableClockGating ;
+
+$globalConfig{INFO}{DC_LOG}      = extractMakeVal("DC_LOG") ;
+$globalConfig{INFO}{ICC_LOG}     = extractMakeVal("ICC_LOG") ;
+$globalConfig{INFO}{ICC_OPT_LOG} = extractMakeVal("ICC_OPT_LOG") ;
 
 my $compStatus = 1 ;
 -e "comp_bb.log" or $compStatus = 0 ;
 `grep Error comp_bb.log | grep :` and $compStatus = 0 ;
+$globalConfig{STAT}{Compile} =  $compStatus ;
 
 my $runStatus = 1 ;
 -e "run_bb.log" or  $runStatus = 0 ;
 `grep Error run_bb.log | grep :` and $runStatus = 0 ;
+$globalConfig{STAT}{Run} = $runStatus ;
 
 my $synStatus = 1 ;
--e "syn_bb.log" or $synStatus = 0 ;
-`grep Error syn_bb.log | grep :` and $synStatus = 0 ;
-`grep Fatal syn_bb.log | grep :` and $synStatus = 0 ;
+-e $globalConfig{INFO}{DC_LOG} or $synStatus = 0 ;
+`grep Error $globalConfig{INFO}{DC_LOG} | grep :` and $synStatus = 0 ;
+`grep Fatal $globalConfig{INFO}{DC_LOG} | grep :` and $synStatus = 0 ;
+$globalConfig{STAT}{Synthesis} = $synStatus ;
+
+my $synStatus2 = 1 ;
+-e $globalConfig{INFO}{ICC_LOG} or $synStatus2 = 0 ;
+`grep Error $globalConfig{INFO}{ICC_LOG} | grep :` and $synStatus2 = 0 ;
+`grep Fatal $globalConfig{INFO}{ICC_LOG} | grep :` and $synStatus2 = 0 ;
+$globalConfig{STAT}{PlaceRoute} = $synStatus ;
+
+my $synStatus3 = 1 ;
+-e $globalConfig{INFO}{ICC_OPT_LOG} or $synStatus3 = 0 ;
+`grep Error $globalConfig{INFO}{ICC_OPT_LOG} | grep :` and $synStatus3 = 0 ;
+`grep Fatal $globalConfig{INFO}{ICC_OPT_LOG} | grep :` and $synStatus3 = 0 ;
+$globalConfig{STAT}{OptPlaceRoute} = $synStatus ;
+
 
 #get a sorted list of all report files
 my @files = <synthesis/*/reports/*.mapped.timing.rpt>;
-#print "design, Vth, Vdd, mapped delay, routed delay, optimized delay, mapped core area, routed core area, optimized core area, mapped dynamic power, routed dynamic power, optimized dynamic power, mapped leakage power, routed leakage power, optimized leakage power\n";
-
-unless( scalar( @files) ){
-    print TARGET "INFO_VT:$VT\n" ;
-    print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
-    print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
-    print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
-    print TARGET "INFO_TARGET:1\n" ;
-    print TARGET "STAT_Comp_Good:$compStatus\n" ;
-    print TARGET "STAT_Run_Good:$runStatus\n" ;
-    print TARGET "STAT_Synthesis_Good:$synStatus\n" ;
-}
+my %r  ;
+my $ri = -1 ;
 
 foreach my $file ( @files ) {
    
     $file =~ /(.vt_\dv\d_.*)\/reports\/(.*)\.(.vt)_(\dv\d)\.(.*)\.mapped\.timing\.rpt/;
 
+    $ri++ ;
+    $ri++ ;
+    my $rj = $ri - 1  ;
+    #$r{result}[$ri] = \%globalConfig;
+    #$r{result}[$rj] = \%globalConfig;
 
     my $folder_name=$1;
     my $design_name = $2;
@@ -84,21 +113,30 @@ foreach my $file ( @files ) {
     my $prefix = "$design_name.${vt}_$vdd.$target_delay";
     my $optimized_prefix = "$design_name.optimized.${vt}_$vdd.$target_delay";
 
+    $folder_name = "syn_" . $folder_name ;
+
+    print "\t\tINFO: Checking folder $folder_name at synthesis/$folder_name/reports \n" ;
+    print "\t\tINFO: Checking prefix $prefix\n" ;
+    print `ls synthesis/$folder_name/reports/ | grep $prefix` ;
+    print "\t\tINFO: Checking prefix $optimized_prefix\n" ;
+    print `ls synthesis/$folder_name/reports/ | grep $optimized_prefix` ;
+
+
+
     my $vdd_param = $vdd; $vdd_param =~ s/v/./ ;
 
-    print TARGET "INFO_DESIGN:$design_name\n" ;
-    print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
-    print TARGET "TOP.Voltage:$vdd_param\n" ;
-    print TARGET "TOP.VT:$vt\n" ;
+    $r{result}[$ri]{INFO}{DESIGN} = $design_name;
+    $r{result}[$ri]{INFO}{DESIGN_NAME} = $options{d} ;
+    $r{result}[$ri]{TOP}{Voltage} = $vdd_param ;
+    $r{result}[$ri]{TOP}{VT} = $vt ;
+    $r{result}[$ri]{TOP}{RP} = 1 ;
 
-    print TARGET "STAT_Comp_Good:$compStatus\n" ;
-    print TARGET "STAT_Run_Good:$runStatus\n" ;
-    print TARGET "STAT_Synthesis_Good:$synStatus\n" ;
-    
-    #STAT for 
+    $r{result}[$rj]{INFO}{DESIGN} = $design_name;
+    $r{result}[$rj]{INFO}{DESIGN_NAME} = $options{d} ;
+    $r{result}[$rj]{TOP}{Voltage} = $vdd_param ;
+    $r{result}[$rj]{TOP}{RP} = 0 ;
 
-
-    my @report_files = <synthesis/$folder_name/reports/$prefix.mapped.timing.*>;
+    my @report_files = <synthesis/$folder_name/reports/$prefix.mapped.timing.rpt>;
     scalar( @report_files ) or warn "Missing mapped timing\n" ;
     my $mapped_delay = 1000;
     my $design_timing_mapped_good = 0 ;
@@ -114,14 +152,25 @@ foreach my $file ( @files ) {
 	`grep slack $report_file | grep MET`      and $design_timing_mapped_good = 1 ;
 	`grep slack $report_file | grep VIOLATED` and $design_timing_mapped_good = 0 ;
     }
-    
+   
+
+    #FIXME -> Grab 
+    #Area
+    #-----------------------------------
+    #Combinational Area:     3067.066845
+    #Noncombinational Area:  1967.212807
+    #Net Area:                  0.000000
+    #-----------------------------------
+    #Cell Area:              5034.279652
+    #Design Area:            5034.279652
+
   my $mapped_core_area="-1";
-  @report_files = <synthesis/$folder_name/reports/$design_name.${vt}.$target_delay.mapped.area.*>;
+  @report_files = <synthesis/$folder_name/reports/$prefix.mapped.qor.rpt>;
     scalar( @report_files ) or warn "Missing mapped area\n" ;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
     while(<REPORTFILE>) {
-      if ( $_ =~ /Total cell area:\s+(\d+\.?\d*)/ ) {
+      if ( $_ =~ /Design Area:\s+(\d+\.?\d*)/ ) {
 	  $mapped_core_area = $1;
 	  $mapped_core_area = $mapped_core_area / 1000000.0 ;
       }
@@ -131,7 +180,7 @@ foreach my $file ( @files ) {
 
   my $mapped_dynamic_power="-1";
   my $mapped_leakage_power="-1";
-  @report_files = <synthesis/$folder_name/reports/$prefix.mapped.power.*>;
+  @report_files = <synthesis/$folder_name/reports/$prefix.mapped.muladd_power.*>;
     scalar( @report_files ) or warn "Missing mapped power\n" ;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -197,7 +246,7 @@ foreach my $file ( @files ) {
 
   my $routed_dynamic_power="-1";
   my $routed_leakage_power="-1";
-  @report_files = <synthesis/$folder_name/reports/$prefix.routed.power.*>;
+  @report_files = <synthesis/$folder_name/reports/$prefix.routed.muladd_power.*>;
     scalar( @report_files ) or warn "Missing routed power\n" ;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -262,7 +311,7 @@ foreach my $file ( @files ) {
 
   my $optimized_dynamic_power="";
   my $optimized_leakage_power="";
-  @report_files = <synthesis/$folder_name/reports/$optimized_prefix.routed.power.*>;
+  @report_files = <synthesis/$folder_name/reports/$optimized_prefix.routed.muladd_power.*>;
     scalar( @report_files ) or warn "Missing optimized power\n" ;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
@@ -320,133 +369,138 @@ foreach my $file ( @files ) {
     my $routed_energy_per_op = $routed_dynamic_energy + $optimized_leakage_power * ($Target_Delay/1000.0); #pJ/op
     my $optimized_energy_per_op = $optimized_dynamic_energy + $optimized_leakage_power * ($Target_Delay/1000.0); #pJ/op
 
-    #RP RESULTS
-    print TARGET "INFO_VT:$VT\n" ;
-    print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
-    print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
-    print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
+   $r{result}[$ri]{INFO}{VT} = $VT ;
+   $r{result}[$ri]{INFO}{TARGET_VOLTAGE} = $Target_Voltage ;
+   $r{result}[$ri]{INFO}{TARGET_DELAY} =  ($Target_Delay/1000.0) ;
+   $r{result}[$ri]{INFO}{IO2CORE} = $IO2CORE ;
     if( ($VT eq $vt) and ($vdd_param eq $Target_Voltage) and ($target_delay eq $Target_Delay) ){
-	print TARGET "INFO_TARGET:1\n" ;
+	$r{result}[$ri]{INFO}{TARGET} = 1 ;
     } else {
-	print TARGET "INFO_TARGET:0\n" ;
+	$r{result}[$ri]{INFO}{TARGET}  = 0 ;
     }
-    print TARGET "INFO_DESIGN:$design_name\n" ;
-    print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
-    print TARGET "TOP.Voltage:$vdd_param\n" ;
-    print TARGET "TOP.VT:$vt\n" ;
-    print TARGET "TOP.RP:YES\n" ;
-    print TARGET "STAT_Comp_Good:$compStatus\n" ;
-    print TARGET "STAT_Run_Good:$runStatus\n" ;
-    print TARGET "STAT_Synthesis_Good:$synStatus\n" ;
-    print TARGET "STAT_Timing_Good:$synStatus\n" ; 
-    print TARGET "COST_Mapped_Delay:$mapped_delay\n" ;
-    print TARGET "COST_Routed_Delay:$routed_delay\n" ;
-    print TARGET "COST_Optimized_Delay:$optimized_delay\n" ;
-    print TARGET "COST_Delay:$optimized_delay\n" ;
-    print TARGET "COST_Mapped_Area:$mapped_core_area\n" ;
-    print TARGET "COST_Routed_Area:$routed_core_area\n" ;
-    print TARGET "COST_Optimized_Area:$optimized_core_area\n" ;
-    print TARGET "COST_Area:$optimized_core_area\n" ;
-    print TARGET "COST_Mapped_Dyn_Power:$mapped_dynamic_power\n" ;
-    print TARGET "COST_Routed_Dyn_Power:$routed_dynamic_power\n" ;
-    print TARGET "COST_Optimized_Dyn_Power:$optimized_dynamic_power\n" ;
-    print TARGET "COST_Dyn_Power:$optimized_dynamic_power\n" ;
-    print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_energy\n" ;
-    print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_energy\n" ;
-    print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_energy\n" ;
-    print TARGET "COST_Dyn_Energy:$optimized_dynamic_energy\n" ;
-    print TARGET "COST_Mapped_Leak_Power:$mapped_leakage_power\n" ;
-    print TARGET "COST_Routed_Leak_Power:$routed_leakage_power\n" ;
-    print TARGET "COST_Optimized_Leak_Power:$optimized_leakage_power\n";
-    print TARGET "COST_Leak_Power:$optimized_leakage_power\n";
+   $r{result}[$ri]{INFO}{DESIGN} = $design_name ;
+   $r{result}[$ri]{INFO}{DESIGN_NAME} = $options{d} ;
+   $r{result}[$ri]{TOP}{Voltage} = $vdd_param ;
+   $r{result}[$ri]{TOP}{VT} = $vt ;
+   $r{result}[$ri]{TOP}{RP} = 'YES' ;
+   $r{result}[$ri]{STAT}{Comp_Good} = $compStatus ;
+   $r{result}[$ri]{STAT}{Run_Good} = $runStatus ;
+   $r{result}[$ri]{STAT}{Synthesis_Good} = $synStatus ;
+   $r{result}[$ri]{STAT}{Timing_Good} = $synStatus ; 
+   $r{result}[$ri]{COST}{Mapped_Delay} = $mapped_delay ;
+   $r{result}[$ri]{COST}{Routed_Delay} = $routed_delay ;
+   $r{result}[$ri]{COST}{Optimized_Delay} = $optimized_delay ;
+   $r{result}[$ri]{COST}{Delay} = $optimized_delay ;
+   $r{result}[$ri]{COST}{Mapped_Area} = $mapped_core_area ;
+   $r{result}[$ri]{COST}{Routed_Area} = $routed_core_area ;
+   $r{result}[$ri]{COST}{Optimized_Area} = $optimized_core_area ;
+   $r{result}[$ri]{COST}{Area} = $optimized_core_area ;
+   $r{result}[$ri]{COST}{Mapped_Dyn_Power} = $mapped_dynamic_power ;
+   $r{result}[$ri]{COST}{Routed_Dyn_Power} = $routed_dynamic_power ;
+   $r{result}[$ri]{COST}{Optimized_Dyn_Power} = $optimized_dynamic_power ;
+   $r{result}[$ri]{COST}{Dyn_Power} = $optimized_dynamic_power ;
+   $r{result}[$ri]{COST}{Mapped_Dyn_Energy} = $mapped_dynamic_energy ;
+   $r{result}[$ri]{COST}{Routed_Dyn_Energy} = $routed_dynamic_energy ;
+   $r{result}[$ri]{COST}{Optimized_Dyn_Energy} = $optimized_dynamic_energy ;
+   $r{result}[$ri]{COST}{Dyn_Energy} = $optimized_dynamic_energy ;
+   $r{result}[$ri]{COST}{Mapped_Leak_Power} = $mapped_leakage_power ;
+   $r{result}[$ri]{COST}{Routed_Leak_Power} = $routed_leakage_power ;
+   $r{result}[$ri]{COST}{Optimized_Leak_Power} = $optimized_leakage_power;
+   $r{result}[$ri]{COST}{Leak_Power} = $optimized_leakage_power;
 
-    print TARGET "COST_Mapped_Energy_per_Operation:$mapped_energy_per_op\n";
-    print TARGET "COST_Routed_Energy_per_Operation:$routed_energy_per_op\n";
-    print TARGET "COST_Optimized_Energy_per_Operation:$optimized_energy_per_op\n";
-    print TARGET "COST_Energy_per_Operation:$optimized_energy_per_op\n";
+   $r{result}[$ri]{COST}{Mapped_Energy_per_Operation} = $mapped_energy_per_op;
+   $r{result}[$ri]{COST}{Routed_Energy_per_Operation} = $routed_energy_per_op;
+   $r{result}[$ri]{COST}{Optimized_Energy_per_Operation} = $optimized_energy_per_op;
+   $r{result}[$ri]{COST}{Energy_per_Operation} = $optimized_energy_per_op;
 
-    print TARGET "PERF_Mapped_Throughput:$mapped_throughput\n";
-    print TARGET "PERF_Routed_Throughput:$routed_throughput\n";
-    print TARGET "PERF_Optimized_Throughput:$optimized_throughput\n";
-    print TARGET "PERF_Throughput:$optimized_throughput\n";
+   $r{result}[$ri]{PERF}{Mapped_Throughput} = $mapped_throughput;
+   $r{result}[$ri]{PERF}{Routed_Throughput} = $routed_throughput;
+   $r{result}[$ri]{PERF}{Optimized_Throughput} = $optimized_throughput;
+   $r{result}[$ri]{PERF}{Throughput} = $optimized_throughput;
 
-    print TARGET "PERF_Mapped_Throughput_Density:$mapped_throughput_Density\n";
-    print TARGET "PERF_Routed_Throughput_Density:$routed_throughput_Density\n";
-    print TARGET "PERF_Optimized_Throughput_Density:$optimized_throughput_Density\n";
-    print TARGET "PERF_Throughput_Density:$optimized_throughput_Density\n";
+   $r{result}[$ri]{PERF}{Mapped_Throughput_Density} = $mapped_throughput_Density;
+   $r{result}[$ri]{PERF}{Routed_Throughput_Density} = $routed_throughput_Density;
+   $r{result}[$ri]{PERF}{Optimized_Throughput_Density} = $optimized_throughput_Density;
+   $r{result}[$ri]{PERF}{Throughput_Density} = $optimized_throughput_Density;
 
-    print TARGET "INFO_Suggest_Delay:$optimized_delay\n";
-    print TARGET "INFO_Mapped_Comb_Cell_Count:$mapped_comb_cell_count\n";
-    print TARGET "INFO_Mapped_Seq_Cell_Count:$mapped_seq_cell_count\n";
-    print TARGET "INFO_Routed_Comb_Cell_Count:$routed_comb_cell_count\n";
-    print TARGET "INFO_Routed_Seq_Cell_Count:$routed_seq_cell_count\n";
-    print TARGET "INFO_Optimized_Comb_Cell_Count:$optimized_comb_cell_count\n";
-    print TARGET "INFO_Optimized_Seq_Cell_Count:$optimized_seq_cell_count\n";
-    print TARGET "INFO_Comb_Cell_Count:$optimized_comb_cell_count\n";
-    print TARGET "INFO_Seq_Cell_Count:$optimized_seq_cell_count\n";
-    print TARGET "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+   $r{result}[$ri]{INFO}{Suggest_Delay} = $optimized_delay;
+   $r{result}[$ri]{INFO}{Mapped_Comb_Cell_Count} = $mapped_comb_cell_count;
+   $r{result}[$ri]{INFO}{Mapped_Seq_Cell_Count} = $mapped_seq_cell_count;
+   $r{result}[$ri]{INFO}{Routed_Comb_Cell_Count} = $routed_comb_cell_count;
+   $r{result}[$ri]{INFO}{Routed_Seq_Cell_Count} = $routed_seq_cell_count;
+   $r{result}[$ri]{INFO}{Optimized_Comb_Cell_Count} = $optimized_comb_cell_count;
+   $r{result}[$ri]{INFO}{Optimized_Seq_Cell_Count} = $optimized_seq_cell_count;
+   $r{result}[$ri]{INFO}{Comb_Cell_Count} = $optimized_comb_cell_count;
+   $r{result}[$ri]{INFO}{Seq_Cell_Count} = $optimized_seq_cell_count;
+
     #NON-RP RESULT
-    print TARGET "INFO_VT:$VT\n" ;
-    print TARGET "INFO_TARGET_VOLTAGE:$Target_Voltage\n" ;
-    print TARGET "INFO_TARGET_DELAY:" . ($Target_Delay/1000.0) . "\n" ;
-    print TARGET "INFO_IO2CORE:$IO2CORE\n" ;
-    print TARGET "INFO_TARGET:0\n" ;
-    print TARGET "INFO_DESIGN:$design_name\n" ;
-    print TARGET "INFO_DESIGN_NAME:$options{d}\n" ;
-    print TARGET "TOP.Voltage:$vdd_param\n" ;
-    print TARGET "TOP.VT:$vt\n" ;
-    print TARGET "TOP.RP:NO\n" ;
-    print TARGET "STAT_Comp_Good:$compStatus\n" ;
-    print TARGET "STAT_Run_Good:$runStatus\n" ;
-    print TARGET "STAT_Synthesis_Good:$synStatus\n" ;
-    print TARGET "STAT_Timing_Good:$synStatus\n" ;
-    print TARGET "COST_Mapped_Delay:$mapped_delay\n" ;
-    print TARGET "COST_Routed_Delay:$routed_delay\n" ;
-    print TARGET "COST_Optimized_Delay:$optimized_delay\n" ;
-    print TARGET "COST_Delay:$routed_delay\n" ;
-    print TARGET "COST_Mapped_Area:$mapped_core_area\n" ;
-    print TARGET "COST_Routed_Area:$routed_core_area\n" ;
-    print TARGET "COST_Optimized_Area:$optimized_core_area\n" ;
-    print TARGET "COST_Area:$routed_core_area\n" ;
-    print TARGET "COST_Mapped_Dyn_Power:$mapped_dynamic_power\n" ;
-    print TARGET "COST_Routed_Dyn_Power:$routed_dynamic_power\n" ;
-    print TARGET "COST_Optimized_Dyn_Power:$optimized_dynamic_power\n" ;
-    print TARGET "COST_Dyn_Power:$routed_dynamic_power\n" ;
-    print TARGET "COST_Mapped_Dyn_Energy:$mapped_dynamic_energy\n" ;
-    print TARGET "COST_Routed_Dyn_Energy:$routed_dynamic_energy\n" ;
-    print TARGET "COST_Optimized_Dyn_Energy:$optimized_dynamic_energy\n" ;
-    print TARGET "COST_Dyn_Energy:$routed_dynamic_energy\n" ;
-    print TARGET "COST_Mapped_Leak_Power:$mapped_leakage_power\n" ;
-    print TARGET "COST_Routed_Leak_Power:$routed_leakage_power\n" ;
-    print TARGET "COST_Optimized_Leak_Power:$optimized_leakage_power\n";
-    print TARGET "COST_Leak_Power:$routed_leakage_power\n";
+   $r{result}[$rj]{INFO}{VT} = $VT ;
+   $r{result}[$rj]{INFO}{TARGET_VOLTAGE} = $Target_Voltage ;
+   $r{result}[$rj]{INFO}{TARGET_DELAY} = " . ($Target_Delay/1000.0) . " ;
+   $r{result}[$rj]{INFO}{IO2CORE} = $IO2CORE ;
+   $r{result}[$rj]{INFO}{TARGET} = 0 ;
+   $r{result}[$rj]{INFO}{DESIGN} = $design_name ;
+   $r{result}[$rj]{INFO}{DESIGN_NAME} = $options{d} ;
+   $r{result}[$rj]{TOP}{Voltage} = $vdd_param ;
+   $r{result}[$rj]{TOP}{VT} = $vt ;
+   $r{result}[$rj]{TOP}{RP} = 'NO' ;
+   $r{result}[$rj]{STAT}{Comp_Good} = $compStatus ;
+   $r{result}[$rj]{STAT}{Run_Good} = $runStatus ;
+   $r{result}[$rj]{STAT}{Synthesis_Good} = $synStatus ;
+   $r{result}[$rj]{STAT}{Timing_Good} = $synStatus ;
+   $r{result}[$rj]{COST}{Mapped_Delay} = $mapped_delay ;
+   $r{result}[$rj]{COST}{Routed_Delay} = $routed_delay ;
+   $r{result}[$rj]{COST}{Optimized_Delay} = $optimized_delay ;
+   $r{result}[$rj]{COST}{Delay} = $routed_delay ;
+   $r{result}[$rj]{COST}{Mapped_Area} = $mapped_core_area ;
+   $r{result}[$rj]{COST}{Routed_Area} = $routed_core_area ;
+   $r{result}[$rj]{COST}{Optimized_Area} = $optimized_core_area ;
+   $r{result}[$rj]{COST}{Area} = $routed_core_area ;
+   $r{result}[$rj]{COST}{Mapped_Dyn_Power} = $mapped_dynamic_power ;
+   $r{result}[$rj]{COST}{Routed_Dyn_Power} = $routed_dynamic_power ;
+   $r{result}[$rj]{COST}{Optimized_Dyn_Power} = $optimized_dynamic_power ;
+   $r{result}[$rj]{COST}{Dyn_Power} = $routed_dynamic_power ;
+   $r{result}[$rj]{COST}{Mapped_Dyn_Energy} = $mapped_dynamic_energy ;
+   $r{result}[$rj]{COST}{Routed_Dyn_Energy} = $routed_dynamic_energy ;
+   $r{result}[$rj]{COST}{Optimized_Dyn_Energy} = $optimized_dynamic_energy ;
+   $r{result}[$rj]{COST}{Dyn_Energy} = $routed_dynamic_energy ;
+   $r{result}[$rj]{COST}{Mapped_Leak_Power} = $mapped_leakage_power ;
+   $r{result}[$rj]{COST}{Routed_Leak_Power} = $routed_leakage_power ;
+   $r{result}[$rj]{COST}{Optimized_Leak_Power} = $optimized_leakage_power;
+   $r{result}[$rj]{COST}{Leak_Power} = $routed_leakage_power;
 
-    print TARGET "COST_Mapped_Energy_per_Operation:$mapped_energy_per_op\n";
-    print TARGET "COST_Routed_Energy_per_Operation:$routed_energy_per_op\n";
-    print TARGET "COST_Optimized_Energy_per_Operation:$optimized_energy_per_op\n";
-    print TARGET "COST_Energy_per_Operation:$routed_energy_per_op\n";
+   $r{result}[$rj]{COST}{Mapped_Energy_per_Operation} = $mapped_energy_per_op;
+   $r{result}[$rj]{COST}{Routed_Energy_per_Operation} = $routed_energy_per_op;
+   $r{result}[$rj]{COST}{Optimized_Energy_per_Operation} = $optimized_energy_per_op;
+   $r{result}[$rj]{COST}{Energy_per_Operation} = $routed_energy_per_op;
 
-    print TARGET "PERF_Mapped_Throughput:$mapped_throughput\n";
-    print TARGET "PERF_Routed_Throughput:$routed_throughput\n";
-    print TARGET "PERF_Optimized_Throughput:$optimized_throughput\n";
-    print TARGET "PERF_Throughput:$routed_throughput\n";
+   $r{result}[$rj]{PERF}{Mapped_Throughput} = $mapped_throughput;
+   $r{result}[$rj]{PERF}{Routed_Throughput} = $routed_throughput;
+   $r{result}[$rj]{PERF}{Optimized_Throughput} = $optimized_throughput;
+   $r{result}[$rj]{PERF}{Throughput} = $routed_throughput;
 
-    print TARGET "PERF_Mapped_Throughput_Density:$mapped_throughput_Density\n";
-    print TARGET "PERF_Routed_Throughput_Density:$routed_throughput_Density\n";
-    print TARGET "PERF_Optimized_Throughput_Density:$optimized_throughput_Density\n";
-    print TARGET "PERF_Throughput_Density:$routed_throughput_Density\n";
+   $r{result}[$rj]{PERF}{Mapped_Throughput_Density} = $mapped_throughput_Density;
+   $r{result}[$rj]{PERF}{Routed_Throughput_Density} = $routed_throughput_Density;
+   $r{result}[$rj]{PERF}{Optimized_Throughput_Density} = $optimized_throughput_Density;
+   $r{result}[$rj]{PERF}{Throughput_Density} = $routed_throughput_Density;
 
 
-    print TARGET "INFO_Suggest_Delay:$optimized_delay\n";
-    print TARGET "INFO_Mapped_Comb_Cell_Count:$mapped_comb_cell_count\n";
-    print TARGET "INFO_Mapped_Seq_Cell_Count:$mapped_seq_cell_count\n";
-    print TARGET "INFO_Routed_Comb_Cell_Count:$routed_comb_cell_count\n";
-    print TARGET "INFO_Routed_Seq_Cell_Count:$routed_seq_cell_count\n";
-    print TARGET "INFO_Optimized_Comb_Cell_Count:$optimized_comb_cell_count\n";
-    print TARGET "INFO_Optimized_Seq_Cell_Count:$optimized_seq_cell_count\n";
-    print TARGET "INFO_Comb_Cell_Count:$routed_comb_cell_count\n";
-    print TARGET "INFO_Seq_Cell_Count:$routed_seq_cell_count\n";
-    print TARGET "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
-
+   $r{result}[$rj]{INFO}{Suggest_Delay} = $optimized_delay;
+   $r{result}[$rj]{INFO}{Mapped_Comb_Cell_Count} = $mapped_comb_cell_count;
+   $r{result}[$rj]{INFO}{Mapped_Seq_Cell_Count} = $mapped_seq_cell_count;
+   $r{result}[$rj]{INFO}{Routed_Comb_Cell_Count} = $routed_comb_cell_count;
+   $r{result}[$rj]{INFO}{Routed_Seq_Cell_Count} = $routed_seq_cell_count;
+   $r{result}[$rj]{INFO}{Optimized_Comb_Cell_Count} = $optimized_comb_cell_count;
+   $r{result}[$rj]{INFO}{Optimized_Seq_Cell_Count} = $optimized_seq_cell_count;
+   $r{result}[$rj]{INFO}{Comb_Cell_Count} = $routed_comb_cell_count;
+   $r{result}[$rj]{INFO}{Seq_Cell_Count} = $routed_seq_cell_count;
 
 }
+
+open( TARGET , ">$options{t}" ) ;
+
+print( TARGET  Dump(\%r) );
+print Dump( \%r ) ;
+close( TARGET ) ;
+
+print "Pushed result to $options{t}\n" ;

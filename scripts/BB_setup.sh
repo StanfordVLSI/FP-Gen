@@ -1,7 +1,7 @@
 
 
-source synthesis/synSetup/synopsys_startup/setup.sh 
-source synthesis/synSetup/synopsys_startup/library_TSMC_45.sh
+#source synthesis/synSetup/synopsys_startup/setup.sh 
+#source synthesis/synSetup/synopsys_startup/library_TSMC_45.sh
 
 source /hd/cad/modules/tcl/init/bash
 
