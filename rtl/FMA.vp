@@ -70,42 +70,52 @@
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!");
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!",
+//;                           Opt=>'No');
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
-//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!");
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!",
+//;                           Opt=>'No');
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
 //;                           List=>['YES','NO'], 
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
-//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
+//;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!",
+//;                           Opt=>'No');
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
-//; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
+//; 	 		    Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!",
+//;                         Opt=>'No');
 //;
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>20,
-//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!",
+//;                       Opt=>'Yes');
 //; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
 //; my $default_mulp_pipeline_depth = floor($muladd_pipeline_depth/2);
 //; if ( $enable_forwarding =~ /YES/ && $default_mulp_pipeline_depth<2) {
 //;   $default_mulp_pipeline_depth = 2;
 //; }
 //; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>$default_mulp_pipeline_depth, Min=>0, Max=> $muladd_pipeline_depth,
-//;                       Doc=>"Pipeline depth of the multiplier tree !FUNCTIONAL!");
+//;                       Doc=>"Pipeline depth of the multiplier tree !FUNCTIONAL!",
+//;                       Opt=>'Yes');
 //; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
-//; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
+//; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!",
+//;                       Opt=>'Yes');
 //; my $retiming ;
 //; if( $pipeline_depth > 1 ){
 //;   $retiming = parameter(Name=>'Retiming', Val=>1, List=>[ 0, 1 ] , 
-//;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!");
+//;                       Doc=>"Should retiming be run in synthesis !IMPLEMENTATION!",
+//;                       Opt=>'No');
 //;   $retiming or $self->error( "Error: HACK-> Parameter may only be 1\n" ) ;
 //; } else {
 //;   $retiming = parameter(Name=>'Retiming', Val=>0, List=>[ 0, 1 ] ,
-//;                       Doc=>"Should retiming be run in synthesis !FUNCTIONAL!");
+//;                       Doc=>"Should retiming be run in synthesis !FUNCTIONAL!",
+//;                       Opt=>'No');
 //;   $retiming and $self->error( "Error: HACK-> Parameter may only be 0\n" ) ;
 //; }
 //;
 //; if( $pipeline_depth > 1 ){
 //;   parameter(Name=>'SmartRetiming', Val=>0, List=>[ 0, 1 ] , 
-//;                       Doc=>"Retiming Should Force Multp to one cycle !IMPLEMENTATION!");
+//;                       Doc=>"Retiming Should Force Multp to one cycle !IMPLEMENTATION!",
+//;                       Opt=>'Yes');
 //; } 
 //;
 //; # And some local variables
