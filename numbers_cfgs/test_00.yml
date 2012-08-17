@@ -1,8 +1,6 @@
 clean_rules: clean
 cleanup: 1
 delay_make_variable: SYN_CLK_PERIOD
-env:
-    FPGEN: /horowitz/users/jbrunhav/jb_co_p4_3/ChipGen/FP-Gen
 design:
 -   top_FPGen.FPGen.Architecture: FMA
     top_FPGen.FPGen.FMA.FractionWidth: 10
