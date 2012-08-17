@@ -7,9 +7,11 @@ source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 file mkdir reports
 file mkdir SAIF
 
+
 if { [file exists ${DESIGN_TARGET}.saif] } {
   saif_map -start
 }
+
 
 analyze -format sverilog [glob ${RUNDIR}/genesis_synth/*.v]
 elaborate $DESIGN_TARGET -architecture verilog -library DEFAULT
@@ -18,16 +20,11 @@ check_design
 
 
 set HEDGE 0.8
-set PATH_RATIO 0.8 
+set PATH_RATIO 0.8
 
 if { $PipelineDepth > 0 } {
 
-  set CLK clk
-  set RST reset
-  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
-  
-  ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME
-       
+  ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME       
   if { $Retiming && $SmartRetiming } {
     current_design MultiplierP_unq1
     set cycle_multiplier 1;
@@ -53,7 +50,29 @@ if { $PipelineDepth > 0 } {
     #set_dont_touch [get_cells -hierarchical MUL0] true
   }  
 
-  
+  if { [shell_is_in_topographical_mode] } {
+    # Enable power prediction for this DC-T session using clock tree estimation.
+    set_power_prediction true
+    if { ${MIN_ROUTING_LAYER} != ""} {
+      set_ignored_layers -min_routing_layer ${MIN_ROUTING_LAYER}
+    }
+    if { ${MAX_ROUTING_LAYER} != ""} {
+      set_ignored_layers -max_routing_layer ${MAX_ROUTING_LAYER}
+    }
+
+    report_ignored_layers
+        
+    #SAMEH
+    set_preferred_routing_direction -layers {M1 M3 M5 M7 M9} -direction horizontal
+    set_preferred_routing_direction -layers {M2 M4 M6 M8 AP} -direction vertical
+
+    set HEDGE 1
+  } 
+
+  set CLK clk
+  set RST reset
+  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
+
   create_clock $CLK -period $CLK_PERIOD
   set_DESIGN_switching_activity "avg"
   if { [file exists ${DESIGN_TARGET}.saif] } {
@@ -78,7 +97,10 @@ if { $PipelineDepth > 0 } {
   if { $EnableClockGating } {
     lappend COMPILE_COMMAND "-gate_clock"
   }
-  echo $COMPILE_COMMAND 
+  echo $COMPILE_COMMAND
+  if {[shell_is_in_topographical_mode]} {
+    eval "$COMPILE_COMMAND -check_only"
+  } 
   eval $COMPILE_COMMAND
 
    #Reset Constraints for ICC
@@ -117,7 +139,11 @@ if { [file exists ${DESIGN_TARGET}.saif] } {
   report_saif -hier > reports/${DESIGN_TARGET}.mapped.saif.rpt
 }
 
-report_area  > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
+if {[shell_is_in_topographical_mode]} {
+  report_area -physical > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
+} else {
+  report_area  > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
+}
 
 check_design > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.check_design.rpt
 
@@ -137,5 +163,10 @@ report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.qor.
 set link_library $link_library_1v0
 report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
+
+if {[shell_is_in_topographical_mode]} {
+  # write_milkyway uses: mw_logic1_net, mw_logic0_net and mw_design_library variables from dc_setup.tcl
+  write_milkyway -overwrite -output ${DESIGN_TARGET}_DCT
+}
 
 exit

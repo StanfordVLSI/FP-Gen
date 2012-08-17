@@ -464,7 +464,7 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	fi
 	@echo "Host: `hostname -A`" > $(SYNTH_RUNDIR)/run_dc.stats
 	@echo "Start: `date`" >> $(SYNTH_RUNDIR)/run_dc.stats
-	cd $(SYNTH_RUNDIR); dc_shell-xg-t -64bit -x $(DC_COMMAND_STRING) 2>&1 | tee -i $(DC_LOG)
+	cd $(SYNTH_RUNDIR); dc_shell-xg-t -64bit -topo -x $(DC_COMMAND_STRING) 2>&1 | tee -i $(DC_LOG)
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc.stats
 	perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
@@ -512,7 +512,7 @@ $(DC_PWR_LOG): $(DC_SAIF_DEPENDENCY) $(DC_LOG) $(SYNTH_HOME)/report_power_dc.tcl
 		mkdir -p $(SYNTH_LOGS);		\
 	fi
 	cd $(SYNTH_RUNDIR);	 							\
-	dc_shell-xg-t -64bit -x $(DC_PWR_COMMAND_STRING) 2>&1 | tee -i $(DC_PWR_LOG)
+	dc_shell-xg-t -64bit -topo -x $(DC_PWR_COMMAND_STRING) 2>&1 | tee -i $(DC_PWR_LOG)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_PWR_LOG)
 
 dc_clean:

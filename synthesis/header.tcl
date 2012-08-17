@@ -78,11 +78,26 @@ if {![info exists EnableClockGating]} {
   set EnableClockGating 1
 }
 
+set $Voltage [string tolower $Voltage]
 
 set_host_options -max_cores 2
 
-set target_library [set ${VT}_[string tolower $Voltage]_target_libs]
-set link_library [set link_library_[string tolower $Voltage] ]
+set target_library [set ${VT}_${Voltage}_target_libs]
+set link_library [set link_library_${Voltage}]
+
+if { $Voltage=="0v9"} {
+  set wc_voltage ""
+} elseif { $Voltage  =="1v0"} {
+  set wc_voltage "0d9"
+} else {
+  set wc_voltage "0d72"
+}
+
+if { $VT=="svt" } {
+  set library_name "tcbn45gsbwpwc${wc_voltage}"
+} else {
+  set library_name "tcbn45gsbwp${VT}wc${wc_voltage}"
+}
 
 if {![info exists DESIGN_TARGET]} {
     exit 7;
@@ -92,6 +107,31 @@ if {![info exists DESIGN_TARGET]} {
 # Information: Changed wire load model for 'BoothCell_unq1_1451' from 'ZeroWireload' to 'ZeroWireload'. (OPT-170)
 # Information: Skipping clock gating on design BoothSel_unq1_33, since there are no registers. (PWR-806)
 suppress_message {OPT-170 PWR-806}
+
+if { $synopsys_program_name == "dc_shell" && [shell_is_in_topographical_mode] } {
+  set MW_DESIGN_LIBRARY ${DESIGN_TARGET}_${VT}_${target_delay}_LIB
+  if { ![file isdirectory $MW_DESIGN_LIBRARY] } {
+     create_mw_lib \
+            -tech $TECH_FILE \
+            -bus_naming_style {[%d]} \
+            -mw_reference_library $mw_ref_lib_dbs \
+            $MW_DESIGN_LIBRARY
+  } else {
+     set_mw_lib_reference $MW_DESIGN_LIBRARY -mw_reference_library $mw_ref_lib_dbs
+  }
+
+  open_mw_lib $MW_DESIGN_LIBRARY
+
+  check_library
+
+  set_tlu_plus_files \
+      -max_tluplus $TLUPLUS_MAX_FILE \
+      -min_tluplus $TLUPLUS_MIN_FILE \
+      -tech2itf_map $MAP_FILE               ;# set the tlu plus files
+
+  check_tlu_plus_files
+}
+
 
 
 proc set_DESIGN_switching_activity {args} {
