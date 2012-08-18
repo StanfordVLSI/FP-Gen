@@ -427,13 +427,13 @@ run: $(SIMV)
 	@echo ""
 	@echo Now Running simv
 	@echo ==================================================
-	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) 2>&1 | tee run_bb.log
+	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) -l run_bb.log
 
 run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
 	@echo ""Architecture
 	@echo Now Running simv using IBM\'s fpgen generated vectors
 	@echo ==================================================
-	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) 2>&1 | tee run_bb.log
+	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) -l run_bb.log
 
 
 # DC & ICC Run rules:

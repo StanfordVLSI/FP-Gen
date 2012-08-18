@@ -85,7 +85,10 @@ RET_VAL=\$?
 if [ \$RET_VAL == 0 ]; then
     exit
 else
-    echo "Failed! Moving to attempt number $i"
+    echo ""
+    echo ""
+    echo "   ---> Run Failed! Moving to attempt number $i"
+    echo ""
     @ARGV
 fi
 END_OF_SCRIPT
@@ -97,7 +100,9 @@ RET_VAL=\$?
 if [ \$RET_VAL == 0 ]; then
     exit
 else
-    echo "Failed! Saving command line to rerun.cmd"
+    echo ""
+    echo ""
+    echo "   ---> Run Failed! Saving command line to rerun.cmd"
     echo \"@saved_argv\" >> rerun.cmd
 fi
 END_OF_SCRIPT
