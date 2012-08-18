@@ -1,0 +1,123 @@
+#!/usr/bin/perl
+
+$usage = "jsub version 0.3 -- leverich\@stanford.edu
+Synopsis:
+   jsub is a speck of a Perl script designed to make life with Torque
+   a little bit more pleasant. It mimics the functionality of LSF's
+   bsub; that is, you can directly specify the command (and arguments)
+   that you want to submit as a batch job rather than having to write
+   a submission script. It also supports non-shell interactive jobs.
+
+Usage:
+   jsub [-Q] [-max_jobs number] [<qsub args> ..] -- <command> [<args> ..]
+
+     -Q   Shortcut for -o /dev/null -e /dev/null
+     -max_jobs n  Limits the number of simultaneous jobs by the user to 'n'
+     -rerun n    Rerun the command over and over, up to n times if it failed
+
+   jsub automatically sets the following qsub arguments:
+     -V -d \"<CWD>\" -N <truncated name>
+
+   See qsub(1B) for details on qsub arguments.
+
+Example:
+   # jsub -I -- hostname
+   qsub: waiting for job 379.cyclades-master.stanford.edu to start
+   qsub: job 379.cyclades-master.stanford.edu ready
+
+   campari.Stanford.EDU
+
+   qsub: job 379.cyclades-master.stanford.edu completed
+";
+$max_jobs = 0; # No real limit unless specified
+$rerun = 0; # No rerun unless specified
+@saved_argv = ($0, @ARGV);
+@saved_argv = map {if ($_=~/\s/) {"'".$_."'"} else{$_}} @saved_argv; # retain the string structure
+while (scalar @ARGV and $ARGV[0] ne "--") {
+    if (defined $ARGV[0] && $ARGV[0] eq '-max_jobs'){
+	shift @ARGV; # through the flag
+	die "ERROR: Missing argument for -max_jobs\n\n$usage" unless @ARGV;
+	$max_jobs = shift @ARGV; # keep the number
+	die "ERROR: Argument for -max_jobs must be a number\n\n$usage" unless $max_jobs =~ /^\d+$/;
+    }elsif (defined $ARGV[0] && $ARGV[0] eq '-rerun'){
+	shift @ARGV; # through the flag
+	die "ERROR: Missing argument for -rerun\n\n$usage" unless @ARGV;
+	$rerun = shift @ARGV; # keep the number
+	die "ERROR: Argument for -rerun must be a number\n\n$usage" unless $rerun =~ /^\d+$/;
+    }else{
+	push @QARG, shift @ARGV;
+    }
+}
+
+shift @ARGV; # dump the --
+
+$name = join("", @ARGV);
+$name =~ s/[\W_]//g;
+$name = substr($name, 0, 15);
+chomp ($CWD = `pwd`);
+
+
+if (grep /-Q/, @QARG) {
+    push @QARG, (qw:-j oe -o /tmp -e /tmp:);
+    @QARG = grep !/-Q/, @QARG;
+}
+
+push @QARG, "-V";
+push @QARG, "-d", "$CWD";
+push @QARG, "-N", "$name";
+
+unless (scalar @ARGV) {
+    print $usage;
+    exit 1;
+}
+
+chomp ($tempfile = `mktemp -p "$ENV{HOME}" .jsub.tmp.XXXXXXXXXX`);
+push @QARG, "-S", "$tempfile" if grep /-I/, @QARG;
+open TMP, ">$tempfile" or die $!;
+print TMP "#!/bin/bash\n";
+@ARGV = map {if ($_=~/\s/) {"'".$_."'"} else{$_}} @ARGV; # retain the string structure
+print TMP join(" ", @ARGV), "\n";
+
+# Handle builtin reruns
+for($i=2; $i<=$rerun;$i++){
+    print TMP <<END_OF_SCRIPT;
+RET_VAL=\$?
+if [ \$RET_VAL == 0 ]; then
+    exit
+else
+    echo "Failed! Moving to attempt number $i"
+    @ARGV
+fi
+END_OF_SCRIPT
+}
+
+# Enable manual reruns later
+print TMP <<END_OF_SCRIPT;
+RET_VAL=\$?
+if [ \$RET_VAL == 0 ]; then
+    exit
+else
+    echo "Failed! Saving command line to rerun.cmd"
+    echo \"@saved_argv\" >> rerun.cmd
+fi
+END_OF_SCRIPT
+
+
+chmod 0755, $tempfile;
+close TMP;
+unshift @QARG, $tempfile unless grep /-I/, @QARG;
+
+# Limit number of jobs based on user name
+$whoami = `whoami`; chomp($whoami);
+$num_jobs_cmd = "qstat | grep $whoami | wc -l";
+$numJobs = `$num_jobs_cmd`; chomp($numJobs);
+if ($max_jobs){
+    print STDERR "Max jobs limitation set for $whoami to $max_jobs\n";
+    while ($numJobs >= $max_jobs){
+	print STDERR "$numJobs already in action by $whoami... Sleeping... \n";
+	sleep(60);
+	$numJobs = `$num_jobs_cmd`; chomp($numJobs);
+    }
+}
+system("/usr/bin/qsub", @QARG);
+unlink($tempfile);

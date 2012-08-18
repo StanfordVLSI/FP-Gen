@@ -26,6 +26,9 @@ export PYTHONPATH=/hd/cad/numbers/0020/src:$PYTHONPATH
 # For synthesis
 . $FPGEN/synthesis/synSetup/synopsys_startup/library_TSMC_45.sh
 
+# For jsub
+alias jsub $FPGEN/scripts/jsub
+
 # For Ofer's debug env
 #setenv GENESIS_LIBS "$CHIPGEN/bin/PerlLibs"
 #set path=($GENESIS_LIBS/Genesis2 $path)
