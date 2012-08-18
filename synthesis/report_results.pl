@@ -176,10 +176,14 @@ foreach $file (@files) {
   }
 
   $hostname="";
-  @report_files = <$folder_name/run_dc.hostname>;
+  @report_files = <$folder_name/run_dc.stats>;
   foreach $report_file (@report_files) {
     open (REPORTFILE,"<$report_file") || die "Can't open $report_file $!";
-    $hostname =  <REPORTFILE> ;
+    while(<REPORTFILE>) {
+      if ( $_ =~ /Host: (.*)/ ) {
+        $hostname = $1;   
+      }
+    }
     close REPORTFILE;
   }
 
@@ -187,6 +191,6 @@ foreach $file (@files) {
   $clk_period_ns = $target_delay / 1000;
   if ($mapped_delay != 1000)
   {
-     print "$design_name, $appendix, $instruction_name, $vt, $vdd, $clk_period_ns, $mapped_worst_slack, $routed_worst_slack, $optimized_worst_slack, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power, $hostname";
+     print "$design_name, $appendix, $instruction_name, $vt, $vdd, $clk_period_ns, $mapped_worst_slack, $routed_worst_slack, $optimized_worst_slack, $mapped_core_area, $routed_core_area, $optimized_core_area, $mapped_dynamic_power, $routed_dynamic_power, $optimized_dynamic_power, $mapped_leakage_power, $routed_leakage_power, $optimized_leakage_power, $hostname\n";
   }
 }
