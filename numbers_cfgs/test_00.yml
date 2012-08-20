@@ -1,5 +1,5 @@
 clean_rules: clean
-cleanup: 1
+cleanup: 0
 delay_make_variable: SYN_CLK_PERIOD
 design:
 -   top_FPGen.FPGen.Architecture: FMA
@@ -9,14 +9,14 @@ make_params:
 -   VT: lvt
     VOLTAGE: 1v0
 design_title: FMA
-eval_rules: comp run rollup1 run_dc rollup2 run_icc rollup3 run_icc_opt rollup4
+eval_rules: comp run run_dc
 gen_rules: gen
 rollup_rules: rollup1
 genesis_cfg_xml_variable: GENESIS_CFG_XML
 genesis_hierarchy_variable: GENESIS_HIERARCHY
 local_design_space_destination: tmp/depot/lds
 logging_destination: tmp/depot/logs
-make_arguments: USE_SAIF=1
+make_arguments: USE_SAIF=1 USE_GATE_SAIF=1 USE_ICC_GATE_SAIF=1
 makefile: Makefile
 param_make_variable: GENESIS_PARAMS
 rollup_destination: tmp/depot/rollup

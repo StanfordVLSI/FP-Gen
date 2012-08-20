@@ -121,7 +121,7 @@ module `mname` (
 
 //; my $Mul_obj= generate('Pipelined_MultiplierP', 'MUL0', Width=>$frac_width+1, 
 //;                        PipelineDepth => ( ($enableMultiplePumping =~ /YES/)? -$pipeline_depth : $pipeline_depth), 
-//;                        UseInc=>$enable_forwarding, UseMP=>'NO');
+//;                        UseInc=>$enable_forwarding, UseMP=>'NO' );
 
    `$Mul_obj->instantiate()` 
      (

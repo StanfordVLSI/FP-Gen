@@ -34,7 +34,7 @@ make_params:
 -   VT: lvt
     VOLTAGE: 1v0
 design_title: FMA
-eval_rules: comp run rollup1 run_dc rollup2 run_icc rollup3 run_icc_opt rollup4
+eval_rules: comp run run_dc 
 gen_rules: gen
 rollup_rules: rollup1
 genesis_cfg_xml_variable: GENESIS_CFG_XML
