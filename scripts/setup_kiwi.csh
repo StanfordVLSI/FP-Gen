@@ -26,7 +26,7 @@ setenv PYTHONPATH /hd/cad/numbers/0020/src:$PYTHONPATH
 source $FPGEN/synthesis/synSetup/synopsys_startup/library_TSMC_45.csh
 
 # For jsub
-alias jsub $FPGEN/scripts/jsub
+alias $FPGEN/scripts/jsub jsub
 
 # For Ofer's debug env
 #setenv GENESIS_LIBS "$CHIPGEN/bin/PerlLibs"
