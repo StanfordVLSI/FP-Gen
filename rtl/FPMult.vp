@@ -122,7 +122,7 @@ module `mname`(
 //; } else {
    logic forward_a = 0;
    assign {a,b,ainc,binc} = {a_in,b_in,2'b0};
-   assign a1 = A_pl;
+   assign a1 = a0;//A_pl;
 //; }
 
 
