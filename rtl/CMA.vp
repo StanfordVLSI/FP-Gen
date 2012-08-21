@@ -77,6 +77,9 @@
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
+//; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
+//; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
+//;
 //; my $pipeline_depth = parameter( Name=>'PipelineDepth', Val=>8 , Min=>(($enable_forwarding =~ /YES/)?5:0), Max=>20,
 //;                                 Doc=>"!FUNCTIONAL! Pipeline depth" );
 //; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
@@ -145,7 +148,8 @@ module `mname` (
 //;                                              , ExponentWidth=>$exp_width
 //;                                              , EnableDenormals=>$enable_denormals
 //;                                              , FloatingDigits => 2
-//;                                              , EnableForwarding => $enable_forwarding,
+//;                                              , EnableForwarding => $enable_forwarding
+//;                                              , EnableMultiplePumping => $enableMultiplePumping
 //;                                              , PipelineDepth => $mul_pipeline_depth );
   `$CascadeMUL_obj->instantiate()` (
 //;      if ($verif_mode =~ /ON/){
