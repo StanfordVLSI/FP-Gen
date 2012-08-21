@@ -20,7 +20,11 @@ setenv SNPS_MAX_QUEUETIME 7200
 
 ### Prototype NUMBERS
 setenv PATH /hd/cad/numbers/0020/src:$PATH
-setenv PYTHONPATH /hd/cad/numbers/0020/src:$PYTHONPATH
+if ($?PYTHONPATH) then
+    setenv PYTHONPATH /hd/cad/numbers/0020/src:${PYTHONPATH}
+else 
+    setenv PYTHONPATH /hd/cad/numbers/0020/src
+endif
 
 # For synthesis
 source $FPGEN/synthesis/synSetup/synopsys_startup/library_TSMC_45.csh
