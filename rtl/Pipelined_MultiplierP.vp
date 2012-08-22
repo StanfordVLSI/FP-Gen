@@ -50,6 +50,11 @@
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
 //; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace', 'Array', 'ZM', 'OS1'], Opt=>'Yes' ,
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)");
+//; my $designware_mode = parameter(Name=>'Designware_MODE',
+//;                            Val=>'OFF', List=>['ON','OFF'], Opt=>'Yes',
+//;                            Doc=>"Designware mode determines whether or not ".
+//;                                 "designware codes are used instead of our ".
+//;                                 "design. !IMPLEMENTATION! ");
 //;
 
    
@@ -71,7 +76,7 @@ module `mname`(
     output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 //; if ($pipeline_depth==0){
-//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP);
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP , Designware_MODE=>$designware_mode);
 
    `$Mul_obj->instantiate()` (
 //; if ($verif_mode =~ /ON/){
@@ -108,7 +113,7 @@ module `mname`(
    `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset), 
                                .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .valid_out(valid_out) );
 
-//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP);
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, Designware_MODE=>$designware_mode);
    `$Mul_obj->instantiate()` (
 //;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),

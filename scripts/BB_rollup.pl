@@ -81,13 +81,13 @@ my $synStatus2 = 1 ;
 -e $globalConfig{INFO}{ICC_LOG} or $synStatus2 = 0 ;
 `grep Error $globalConfig{INFO}{ICC_LOG} | grep :` and $synStatus2 = 0 ;
 `grep Fatal $globalConfig{INFO}{ICC_LOG} | grep :` and $synStatus2 = 0 ;
-$globalConfig{STAT}{PlaceRoute} = $synStatus ;
+$globalConfig{STAT}{PlaceRoute} = $synStatus2 ;
 
 my $synStatus3 = 1 ;
 -e $globalConfig{INFO}{ICC_OPT_LOG} or $synStatus3 = 0 ;
 `grep Error $globalConfig{INFO}{ICC_OPT_LOG} | grep :` and $synStatus3 = 0 ;
 `grep Fatal $globalConfig{INFO}{ICC_OPT_LOG} | grep :` and $synStatus3 = 0 ;
-$globalConfig{STAT}{OptPlaceRoute} = $synStatus ;
+$globalConfig{STAT}{OptPlaceRoute} = $synStatus3 ;
 
 
 #get a sorted list of all report files
@@ -97,10 +97,20 @@ my $ri = -1 ;
 
 
 #SUB EXTRACT POWER REPORT
+#--------------------------------------------------------------------------------
+#                                       Switch   Int      Leak     Total
+#Hierarchy                              Power    Power    Power    Power    %
+#--------------------------------------------------------------------------------
+#FPGen                                     1.585    3.281 4.09e+05    5.275 100.0
+#CLOCK_TREE_EST                         5.72e-02 5.14e-02 2.58e+03    0.111   2.1
+#  FMA_inc_pipe_clk_gate_stages_reg_0_ (SNPS_CLOCK_GATE_HIGH_FF_pipeline_unq8)
+#                                       2.57e-02 4.76e-03  216.207 3.07e-02   0.6
+#  FMA_fma_pipe_clk_gate_valid_stages_reg (SNPS_CLOCK_GATE_HIGH_FF_pipeline_unq7_6)
+#                                       5.98e-03 4.73e-03  216.093 1.09e-02   0.2
 
 sub extractPowerReport{
     my $report_file = shift  or return ( -1 , -1 );
-
+    my $design_name = shift  or return ( -1 , -1 );
 
     my $dynamic_power_mW = -1 ;
     my $leakage_power_mW = -1 ;
@@ -108,11 +118,11 @@ sub extractPowerReport{
     while( my $line = <REPORTFILE> ) {
 	
 	#print $line . "\n" ;
-	if( $line =~ /$options{d}/ ){
-	    if( $line =~ /\d+/ ){
-		my @Line = split /\s+/ , $line ;
-		$dynamic_power_mW = $Line[4] * 1.0 ;
-		$leakage_power_mW = $Line[3] * 1.0 ;
+	if( $line =~ /$design_name/ ){
+	    if( $line =~ /\s(\d+.\S+)\s+(\d+.\S+)\s+(\d+.\S+)\s+(\d+.\S+)/ ) {
+		#print "$1 $2 $3 $4\n" ;  #Switch Power , Internal Power , Leak Power , Total Power 
+		$dynamic_power_mW = $1 * 1.0 + $2 * 1.0 ;
+		$leakage_power_mW = $3 * 1.0 / 1000000.0 ;
 	    }
 	}
 	
@@ -123,6 +133,47 @@ sub extractPowerReport{
     return ( $dynamic_power_mW  , $leakage_power_mW ) ;
 
 }
+
+
+
+#                                  Global cell area          Local cell area
+#                                  ------------------  ---------------------------- 
+#Hierarchical cell                 Absolute   Percent  Combi-     Noncombi-  Black
+#                                  Total      Total    national   national   boxes   Design
+#--------------------------------  ---------  -------  ---------  ---------  ------  ----------------------------------------
+#FPGen                             4705.9993    100.0    46.9224   222.6168  0.0000  FPGen
+#FMA_Incrementer                     88.2000      1.9    67.3848    20.8152  0.0000  FPIncrementer_unq1
+#FMA_MulShift                      1772.2908     37.7   502.5636   419.8320  0.0000  FMA_MulShift_unq1
+#FMA_MulShift/MUL0                  829.7856     17.6     4.5864    10.5840  0.0000  Pipelined_MultiplierP_unq1
+#FMA_MulShift/MUL0/MultP            804.5604     17.1     0.0000     0.0000  0.0000  MultiplierP_unq1
+#FMA_MulShift/MUL0/MultP/Booth      523.5552     11.1    14.6412   279.4176  0.0000  Booth_unq1
+
+sub extractAreaReport{
+    my $report_file = shift  or return ( -1 );
+    my $design_name = shift  or return ( -1 );
+
+    my $area_sqmm = -1 ;
+    open (REPORTFILE,"<$report_file") or return ( -1  ) ;
+    while( my $line = <REPORTFILE> ) {
+	
+	#print $line . "\n" ;
+	if( $line =~ /$design_name/ ){
+	    if( $line =~ /(\d+.\S+)\s+(\d+.\S+)\s+(\d+.\S+)\s+(\d+.\S+)\s+(\d+.\S+)/ ) {
+		#print "$1 $2 $3 $4\n" ;  #Abs Area , Foo , Comb Area , Non Comb Area  , Black Boxes
+		$area_sqmm = $1 * 1.0/1000000.0 ;
+	    }
+	}
+	
+    }
+
+    close( REPORTFILE );
+
+    return ( $area_sqmm ) ;
+
+}
+
+
+
 
 sub extracQorReport{
     my $report_file = shift or return ( -1 , -1 , -1 , -1 , -1 , -1 , -1 , -1  );
@@ -175,14 +226,18 @@ sub extracTimingReport{
     
     my $target_clk_period_nS = -1 ;
     my $clk_period_nS = -1 ;
+    my $lib_setup_time_nS = 0 ; 
 
     open( REPORTFILE , "<$report_file" ) or return  ($target_clk_period_nS , $clk_period_nS , -1 ) ;
     while(my $line=<REPORTFILE>) { 
+	if ( $line =~ /library setup time\s+-?(\d+\.?\d*)/ ) {    
+	    $lib_setup_time_nS = $1 ;
+	}
 	if ( $line =~ /data arrival time\s+-?(\d+\.?\d*)/ ) {    
-	    $clk_period_nS = $1;
+	    $clk_period_nS = $1 + $lib_setup_time_nS ;
 	}
 	if ( $line =~ /clock clk \(rise edge\)\s+-?(\d+\.?\d*)/ ) {    
-	    $target_clk_period_nS = $1;
+	    $target_clk_period_nS = $1 ;
 	}
     }
     close( REPORTFILE );
@@ -235,63 +290,55 @@ foreach my $file ( @files ) {
 
     #Collect Power Reports
     my @report_files ;
-        
-    @report_files = <synthesis/$folder_name/reports/$prefix.mapped.muladd_power.*>;
-    scalar( @report_files ) or warn "Missing mapped muladd power\n" ;
-    ( $r{result}[$ri]{COST}{Mapped_MulAdd_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_MulAdd_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Mapped_MulAdd_Dyn_Power_mW} , $r{result}[$rj]{COST}{Mapped_MulAdd_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Mapped_MulAdd_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_MulAdd_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$prefix.mapped.add_power.*>;
-    scalar( @report_files ) or warn "Missing mapped add power\n" ;
-    ( $r{result}[$ri]{COST}{Mapped_Add_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_Add_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Mapped_Add_Dyn_Power_mW} , $r{result}[$rj]{COST}{Mapped_Add_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Mapped_Add_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_Add_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$prefix.mapped.mul_power.*>;
-    scalar( @report_files ) or warn "Missing mapped mul power\n" ;
-    ( $r{result}[$ri]{COST}{Mapped_Mul_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_Mul_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Mapped_Mul_Dyn_Power_mW} , $r{result}[$rj]{COST}{Mapped_Mul_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Mapped_Mul_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_Mul_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$prefix.mapped.avg_power.*>;
-    scalar( @report_files ) or warn "Missing avg mul power\n" ;
-    ( $r{result}[$ri]{COST}{Mapped_Avg_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_Avg_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Mapped_Avg_Dyn_Power_mW} , $r{result}[$rj]{COST}{Mapped_Avg_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Mapped_Avg_Dyn_Power_mW} , $r{result}[$ri]{COST}{Mapped_Avg_Leak_Power_mW} ) ;
 
-    @report_files = <synthesis/$folder_name/reports/$prefix.routed.muladd_power.*>;
-    scalar( @report_files ) or warn "Missing routed muladd power\n" ;
-    ( $r{result}[$ri]{COST}{Routed_MulAdd_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_MulAdd_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Routed_MulAdd_Dyn_Power_mW} , $r{result}[$rj]{COST}{Routed_MulAdd_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Routed_MulAdd_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_MulAdd_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$prefix.routed.add_power.*>;
-    scalar( @report_files ) or warn "Missing routed add power\n" ;
-    ( $r{result}[$ri]{COST}{Routed_Add_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_Add_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Routed_Add_Dyn_Power_mW} , $r{result}[$rj]{COST}{Routed_Add_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Routed_Add_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_Add_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$prefix.routed.mul_power.*>;
-    scalar( @report_files ) or warn "Missing routed mul power\n" ;
-    ( $r{result}[$ri]{COST}{Routed_Mul_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_Mul_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Routed_Mul_Dyn_Power_mW} , $r{result}[$rj]{COST}{Routed_Mul_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Routed_Mul_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_Mul_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$prefix.routed.avg_power.*>;
-    scalar( @report_files ) or warn "Missing avg mul power\n" ;
-    ( $r{result}[$ri]{COST}{Routed_Avg_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_Avg_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Routed_Avg_Dyn_Power_mW} , $r{result}[$rj]{COST}{Routed_Avg_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Routed_Avg_Dyn_Power_mW} , $r{result}[$ri]{COST}{Routed_Avg_Leak_Power_mW} ) ;
+    my @event_names  = qw( muladd add mul avg );
+    my @event_Labels = qw( MulAdd Add Mul Avg  );
+    my @units        = ( $options{d} , "Pipelined_MultiplierP" , "LZA" , "CompoundAdder") ;
+    my @unit_Labels  = ( ""       , "_u_Pipelined_MultiplierP_" , "_u_LZA_" , "_u_CompoundAdder_") ;
+    my @pref         = ( "$prefix.mapped" , "$prefix.routed" , "$optimized_prefix.routed" ) ;  
+    my @pref_Labels  = ( "Mapped"         , "Routed"         , "Optimized" ) ;  
 
-    @report_files = <synthesis/$folder_name/reports/$optimized_prefix.routed.muladd_power.*>;
-    scalar( @report_files ) or warn "Missing opt muladd power\n" ;
-    ( $r{result}[$ri]{COST}{Optimized_MulAdd_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_MulAdd_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Optimized_MulAdd_Dyn_Power_mW} , $r{result}[$rj]{COST}{Optimized_MulAdd_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Optimized_MulAdd_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_MulAdd_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$optimized_prefix.routed.add_power.*>;
-    scalar( @report_files ) or warn "Missing opt add power\n" ;
-    ( $r{result}[$ri]{COST}{Optimized_Add_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_Add_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Optimized_Add_Dyn_Power_mW} , $r{result}[$rj]{COST}{Optimized_Add_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Optimized_Add_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_Add_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$optimized_prefix.routed.mul_power.*>;
-    scalar( @report_files ) or warn "Missing opt mul power\n" ;
-    ( $r{result}[$ri]{COST}{Optimized_Mul_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_Mul_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Optimized_Mul_Dyn_Power_mW} , $r{result}[$rj]{COST}{Optimized_Mul_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Optimized_Mul_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_Mul_Leak_Power_mW} ) ;
-    @report_files = <synthesis/$folder_name/reports/$optimized_prefix.routed.avg_power.*>;
-    scalar( @report_files ) or warn "Missing opt avg power\n" ;
-    ( $r{result}[$ri]{COST}{Optimized_Avg_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_Avg_Leak_Power_mW} ) = extractPowerReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{COST}{Optimized_Avg_Dyn_Power_mW} , $r{result}[$rj]{COST}{Optimized_Avg_Leak_Power_mW} ) = ( $r{result}[$ri]{COST}{Optimized_Avg_Dyn_Power_mW} , $r{result}[$ri]{COST}{Optimized_Avg_Leak_Power_mW} ) ;
+    for( my $unt = 0 ; $unt <= $#units ; $unt++ ){ 
+	for( my $pr = 0 ; $pr <= $#pref ; $pr++ ){
+	    for( my $evt = 0 ; $evt <= $#event_names ; $evt++ ){ 
+		my $eN = $event_names[$evt]; #print "$eN\n" ;
+		my $eL = $event_Labels[$evt]; #print "$eL\n" ;
+		my $uN = $units[$unt] ; #print "$uN\n" ;
+		my $uL = $unit_Labels[$unt] ; #print "$uL\n" ;
+		my $pN = $pref[$pr] ; #print "$pN\n" ;
+		my $pL = $pref_Labels[$pr] ;  #print "$pL\n" ;
+		
+		@report_files = <synthesis/$folder_name/reports/$pN.$eN\_power.*>;
+		scalar( @report_files ) or warn "Missing $pL $eL $uL power\n" ;
+		
+		print $pL."_".$uL.$eL."_Dyn_Power_mW\n" ;
+		print $pL."_".$uL.$eL."_Leak_Power_mW\n" ; 
 
-    $r{result}[$ri]{COST}{Dyn_Power_mW}  = $r{result}[$ri]{COST}{Optimized_Avg_Dyn_Power_mW};
-    $r{result}[$ri]{COST}{Leak_Power_mW} = $r{result}[$ri]{COST}{Optimized_Avg_Leak_Power_mW};
-    $r{result}[$rj]{COST}{Dyn_Power_mW}  = $r{result}[$rj]{COST}{Routed_Avg_Dyn_Power_mW};
-    $r{result}[$rj]{COST}{Leak_Power_mW} = $r{result}[$rj]{COST}{Routed_Avg_Leak_Power_mW};
-    
+		( $r{result}[$rj]{COST}{ $pL."_".$uL.$eL."_Dyn_Power_mW" } , 
+		  $r{result}[$rj]{COST}{ $pL."_".$uL.$eL."_Leak_Power_mW" } )  =
+		( $r{result}[$ri]{COST}{ $pL."_".$uL.$eL."_Dyn_Power_mW" } , 
+		  $r{result}[$ri]{COST}{ $pL."_".$uL.$eL."_Leak_Power_mW" }     ) = extractPowerReport( $report_files[0] , $uN ) ;
+
+
+
+		if( $pL eq "Optimized" ){
+		    ( $r{result}[$ri]{COST}{ $uL.$eL."_Dyn_Power_mW" } , 
+		      $r{result}[$ri]{COST}{ $uL.$eL."_Leak_Power_mW" } )  =
+		    ( $r{result}[$ri]{COST}{ $pL."_".$uL.$eL."_Dyn_Power_mW" } , 
+		      $r{result}[$ri]{COST}{ $pL."_".$uL.$eL."_Leak_Power_mW" }     ) ;
+		} elsif( $pL eq "Routed" ){
+		    ( $r{result}[$rj]{COST}{ $uL.$eL."_Dyn_Power_mW" } , 
+		      $r{result}[$rj]{COST}{ $uL.$eL."_Leak_Power_mW" } )  =
+		    ( $r{result}[$rj]{COST}{ $pL."_".$uL.$eL."_Dyn_Power_mW" } , 
+		      $r{result}[$rj]{COST}{ $pL."_".$uL.$eL."_Leak_Power_mW" }     ) ;
+		}
+	    } #End For Each Event 
+	} # End foreach prefix 
+    } # End foreach Unit
+   
+
+    $r{result}[$rj]{COST}{Dyn_Power_mW} = $r{result}[$rj]{COST}{MulAdd_Dyn_Power_mW} ;
+    $r{result}[$ri]{COST}{Dyn_Power_mW} = $r{result}[$ri]{COST}{MulAdd_Dyn_Power_mW} ;
 
     #Collect QOR Reports
     @report_files = <synthesis/$folder_name/reports/$prefix.mapped.qor.*>;
@@ -334,8 +381,8 @@ foreach my $file ( @files ) {
     # Extract Timing Information
     @report_files = <synthesis/$folder_name/reports/$prefix.mapped.timing.*>;
     scalar( @report_files ) or warn "Missing mapped timing\n" ;
-    ( $r{result}[$ri]{INFO}{Mapped_Target_Clk_Period_nS} , $r{result}[$ri]{COST}{Mapped_Clk_Period_nS} , $r{result}[$ri]{COST}{Mapped_Clk_Freq_Ghz} ) = extracTimingReport( $report_files[0] ) ;
-    ( $r{result}[$rj]{INFO}{Mapped_Target_Clk_Period_nS} , $r{result}[$rj]{COST}{Mapped_Clk_Period_nS} , $r{result}[$rj]{COST}{Mapped_Clk_Freq_Ghz} ) = extracTimingReport( $report_files[0] ) ;
+    ( $r{result}[$ri]{INFO}{Mapped_Target_Clk_Period_nS} , $r{result}[$ri]{COST}{Mapped_Clk_Period_nS} , $r{result}[$ri]{PERF}{Mapped_Clk_Freq_Ghz} ) = extracTimingReport( $report_files[0] ) ;
+    ( $r{result}[$rj]{INFO}{Mapped_Target_Clk_Period_nS} , $r{result}[$rj]{COST}{Mapped_Clk_Period_nS} , $r{result}[$rj]{PERF}{Mapped_Clk_Freq_Ghz} ) = extracTimingReport( $report_files[0] ) ;
                           
     @report_files = <synthesis/$folder_name/reports/$prefix.routed.timing.*>;
     scalar( @report_files ) or warn "Missing routed timing\n" ;
@@ -351,34 +398,56 @@ foreach my $file ( @files ) {
 
 
     # Calculate Energy
-    my @power_list  = qw( Mapped_MulAdd_Dyn_Power_mW      Mapped_Add_Dyn_Power_mW         Mapped_Mul_Dyn_Power_mW         Mapped_Avg_Dyn_Power_mW 
-	                  Routed_MulAdd_Dyn_Power_mW      Routed_Add_Dyn_Power_mW         Routed_Mul_Dyn_Power_mW         Routed_Avg_Dyn_Power_mW 
-	                  Optimized_MulAdd_Dyn_Power_mW   Optimized_Add_Dyn_Power_mW      Optimized_Mul_Dyn_Power_mW      Optimized_Avg_Dyn_Power_mW 
-	                  Dyn_Power_mW );
-    my @energy_list = qw( Mapped_MulAdd_Dyn_Energy_pJ     Mapped_Add_Dyn_Energy_pJ        Mapped_Mul_Dyn_Energy_pJ        Mapped_Avg_Dyn_Energy_pJ 
-	                  Routed_MulAdd_Dyn_Energy_pJ     Routed_Add_Dyn_Energy_pJ        Routed_Mul_Dyn_Energy_pJ        Routed_Avg_Dyn_Energy_pJ 
-	                  Optimized_MulAdd_Dyn_Energy_pJ  Optimized_Add_Dyn_Energy_pJ     Optimized_Mul_Dyn_Energy_pJ     Optimized_Avg_Dyn_Energy_pJ 
-	                  Dyn_Energy_pJ );
-    my @delay_list  = qw( Mapped_Target_Clk_Period_nS     Mapped_Target_Clk_Period_nS     Mapped_Target_Clk_Period_nS     Mapped_Target_Clk_Period_nS 
-                          Routed_Target_Clk_Period_nS     Routed_Target_Clk_Period_nS     Routed_Target_Clk_Period_nS     Routed_Target_Clk_Period_nS 
-                          Optimized_Target_Clk_Period_nS  Optimized_Target_Clk_Period_nS  Optimized_Target_Clk_Period_nS  Optimized_Target_Clk_Period_nS 
-                          Target_Clk_Period_nS );
-    for( my $i = 0 ; $i < scalar( @power_list ) ; $i++ ){
-	$r{result}[$ri]{COST}{$power_list[$i]} or die "Doesn't Exist.... $power_list[$i]" ;
-	$r{result}[$ri]{INFO}{$delay_list[$i]} or die "Doesn't Exist.... $delay_list[$i]" ;
-	if( $r{result}[$ri]{COST}{$power_list[$i]} < 0 or $r{result}[$ri]{INFO}{$delay_list[$i]} < 0 ){
-	    $r{result}[$ri]{COST}{$energy_list[$i]} = -1 ;
-	} else {
-	    $r{result}[$ri]{COST}{$energy_list[$i]} = $r{result}[$ri]{COST}{$power_list[$i]} * $r{result}[$ri]{INFO}{$delay_list[$i]} ; 
-	}
-	if( $r{result}[$ri]{COST}{$power_list[$i]} < 0 or $r{result}[$ri]{INFO}{$delay_list[$i]} < 0 ){
-	    $r{result}[$rj]{COST}{$energy_list[$i]} = -1 ;
-	} else {
-	    $r{result}[$rj]{COST}{$energy_list[$i]} = $r{result}[$rj]{COST}{$power_list[$i]} * $r{result}[$rj]{INFO}{$delay_list[$i]} ; 
+    @pref_Labels  = qw( Mapped Routed Optimized ) ;  
+    @event_Labels = qw( MulAdd Add Mul Avg );
+    @unit_Labels  = ( ""       , "_u_Pipelined_MultiplierP_" , "_u_LZA_" , "_u_CompoundAdder_") ;
+
+    for( my $unt = 0 ; $unt <= $#unit_Labels ; $unt++ ){ 
+	for( my $pr = 0 ; $pr <= $#pref_Labels ; $pr++ ){
+	    for( my $evt = 0 ; $evt <= $#event_Labels ; $evt++ ){ 
+		foreach my $ii ( $ri , $rj ){
+		    my $eL = $event_Labels[$evt]; #print "$eL\n" ;
+		    my $uL = $unit_Labels[$unt] ; #print "$uL\n" ;
+		    my $pL = $pref_Labels[$pr] ;  #print "$pL\n" ;
+		    
+		    my $power_name = $pL."_".$uL.$eL."_Dyn_Power_mW" ;
+		    my $leak_name  = $pL."_".$uL.$eL."_Leak_Power_mW" ;
+		    my $delay_name = $pL."_Target_Clk_Period_nS" ;
+		    
+		    my $d_eng_name = $pL."_".$uL.$eL."_Dyn_Energy_pJ" ;
+		    
+		    $r{result}[$ii]{COST}{$power_name} or die "Doesn't Exist.... $power_name" ;
+		    $r{result}[$ii]{COST}{$leak_name} or die "Doesn't Exist.... $leak_name" ;
+		    $r{result}[$ii]{INFO}{$delay_name} or die "Doesn't Exist.... $delay_name" ;
+
+		    if( $r{result}[$ii]{COST}{$power_name} < 0 or $r{result}[$ii]{INFO}{$delay_name} < 0 or $r{result}[$ii]{COST}{$leak_name} < 0 ){
+			$r{result}[$ii]{COST}{$d_eng_name} = -1 ;
+		    } else {
+			$r{result}[$ii]{COST}{$d_eng_name} = $r{result}[$ii]{COST}{$power_name} * $r{result}[$ii]{INFO}{$delay_name} ; 
+		    }
+		}
+	    }
 	}
     }
-    
 
+    for( my $unt = 0 ; $unt <= $#unit_Labels ; $unt++ ){ 
+	for( my $pr = 0 ; $pr <= $#pref ; $pr++ ){
+	    my $uN = $units[$unt] ; #print "$uN\n" ;
+	    my $uL = $unit_Labels[$unt] ; #print "$uL\n" ;
+	    my $pN = $pref[$pr] ; #print "$pN\n" ;
+	    my $pL = $pref_Labels[$pr] ;  #print "$pL\n" ;
+	    
+	    @report_files = <synthesis/$folder_name/reports/$design_name.$vt*.area.hier.*>;
+	    scalar( @report_files ) or warn "Missing area report $uL $pL\n" ;
+	    $r{result}[$ri]{COST}{ $pL."_".$uL."_Area_mmsq"} = extractAreaReport( $report_files[0] , $uN ) ;
+	    $r{result}[$rj]{COST}{ $pL."_".$uL."_Area_mmsq"} = extractAreaReport( $report_files[0] , $uN ) ;
+	    if( $pL eq "Optimized" ){
+		$r{result}[$ri]{COST}{ "_".$uL."_Area_mmsq"} = extractAreaReport( $report_files[0] , $uN ) ;
+	    } elsif( $pL eq "Routed" ) {
+		$r{result}[$rj]{COST}{ "_".$uL."_Area_mmsq"} = extractAreaReport( $report_files[0] , $uN ) ;
+	    }
+	}
+    }
 
 #    my $routed_core_area="-1";
 #    @report_files = <synthesis/$folder_name/reports/$design_name.${vt}.$target_delay.routed.area.*>;
@@ -454,6 +523,8 @@ foreach my $file ( @files ) {
    $r{result}[$ri]{STAT}{Comp_Good} = $compStatus ;
    $r{result}[$ri]{STAT}{Run_Good} = $runStatus ;
    $r{result}[$ri]{STAT}{Synthesis_Good} = $synStatus ;
+   $r{result}[$ri]{STAT}{PlaceRoute} = $synStatus2 ;
+   $r{result}[$ri]{STAT}{OptPlaceRoute} = $synStatus3 ;
    $r{result}[$ri]{STAT}{Timing_Good} = $synStatus ; 
    $r{result}[$ri]{INFO}{DC_LOG} = $globalConfig{INFO}{DC_LOG};
    $r{result}[$ri]{INFO}{ICC_LOG} = $globalConfig{INFO}{ICC_LOG};
@@ -473,6 +544,8 @@ foreach my $file ( @files ) {
    $r{result}[$rj]{STAT}{Comp_Good} = $compStatus ;
    $r{result}[$rj]{STAT}{Run_Good} = $runStatus ;
    $r{result}[$rj]{STAT}{Synthesis_Good} = $synStatus ;
+   $r{result}[$ri]{STAT}{PlaceRoute} = $synStatus2 ;
+   $r{result}[$ri]{STAT}{OptPlaceRoute} = $synStatus3 ;
    $r{result}[$rj]{STAT}{Timing_Good} = $synStatus ;
    $r{result}[$rj]{INFO}{DC_LOG} = $globalConfig{INFO}{DC_LOG};
    $r{result}[$rj]{INFO}{ICC_LOG} = $globalConfig{INFO}{ICC_LOG};
@@ -480,6 +553,24 @@ foreach my $file ( @files ) {
 
 
 }
+
+
+## CLEAN OUT -1 Fields 
+
+if( $r{result} ){
+    my $iiL = scalar( @{ $r{result} } ) ;
+    for( my $ii = 0 ; $ii < $iiL ; $ii+=1 ){
+	foreach my $jj ( keys %{$r{result}[$ii]} ){
+	    foreach my $kk ( keys $r{result}[$ii]{$jj} ){
+		if( $r{result}[$ii]{$jj}{$kk} eq '-1' ){
+		   # print "DELETED\n" ;
+		    delete $r{result}[$ii]{$jj}{$kk} ;
+		}
+	    }
+	}
+    }
+}
+
 
 open( TARGET , ">$options{t}" ) ;
 

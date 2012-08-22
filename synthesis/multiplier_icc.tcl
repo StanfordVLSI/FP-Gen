@@ -614,20 +614,21 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 file mkdir reports
 
 report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.routed.area.rpt
+report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.routed.area.hier.rpt
 
 remove_attribute [current_design] local_link_library
 
 set link_library $link_library_0v8
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
 
 set link_library $link_library_0v9
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
 
 
 set link_library $link_library_1v0
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
 
 exit

@@ -141,8 +141,10 @@ if { [file exists ${DESIGN_TARGET}.saif] } {
 
 if {[shell_is_in_topographical_mode]} {
   report_area -physical > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
+  report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.hier.rpt
 } else {
   report_area  > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.rpt
+  report_area  -hierarchy > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.area.hier.rpt
 }
 
 check_design > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.mapped.check_design.rpt
@@ -152,16 +154,16 @@ report_timing -loops > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.m
 remove_attribute [current_design] local_link_library
 
 set link_library $link_library_0v8
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing.rpt
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing.rpt
 report_timing -loops
 report_qor > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.qor.rpt
 
 set link_library $link_library_0v9
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v9.$target_delay.mapped.timing.rpt
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v9.$target_delay.mapped.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.qor.rpt
 
 set link_library $link_library_1v0
-report_timing -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
 
 if {[shell_is_in_topographical_mode]} {
