@@ -46,7 +46,7 @@ module `mname`
    int 		 clk_half_period;
    
    initial begin
-      clk <= 1'b0;
+      clk = 1'b0;
       reset <= 1'b1;
       calibrate_clk;
       fork
@@ -84,7 +84,7 @@ module `mname`
    task do_clk;
       while(1) begin
 	 #clk_half_period;
-	 clk <= ~clk;
+	 clk = ~clk;
       end
    endtask // do_clk
    
