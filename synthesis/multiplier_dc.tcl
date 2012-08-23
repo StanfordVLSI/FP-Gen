@@ -66,10 +66,15 @@ if { $PipelineDepth > 0 } {
     current_design MultiplierTree_unq1
     set_max_delay -from [all_inputs] -to [all_outputs] [expr $PATH_RATIO*$CLK_PERIOD]
     compile_ultra -no_autoungroup
-    current_design Pipelined_MultiplierP_unq1
+    if { $Architecture=="CMA" } {
+      set MUL_DESIGN "Multiplier_unq1";
+    } else {
+      set MUL_DESIGN "Pipelined_MultiplierP_unq1";
+    }
+    current_design $MUL_DESIGN
     create_clock $CLK -period $CLK_PERIOD
     set_output_delay 0.04 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ];
-    set_optimize_registers true -design Pipelined_MultiplierP_unq1
+    set_optimize_registers true -design $MUL_DESIGN
     eval $COMPILE_COMMAND
     remove_constraint -all
     current_design ${DESIGN_TARGET}
