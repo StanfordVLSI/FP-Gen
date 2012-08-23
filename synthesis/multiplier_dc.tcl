@@ -55,10 +55,17 @@ if { $PipelineDepth > 0 } {
   set CLK clk
   set RST reset
   set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000];
+  create_clock $CLK -period $CLK_PERIOD
+  set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
 
   if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
    set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
    set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
+  }
+  set_DESIGN_switching_activity "avg"
+  if { [file exists ${DESIGN_TARGET}.saif] } {
+    set_DESIGN_switching_activity "avg" ${DESIGN_TARGET}.saif
+    report_saif -hier -rtl_saif -missing
   }
 
   ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME       
@@ -83,16 +90,9 @@ if { $PipelineDepth > 0 } {
       set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
     }
   }
- 
 
   create_clock $CLK -period $CLK_PERIOD
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-
-  set_DESIGN_switching_activity "avg"
-  if { [file exists ${DESIGN_TARGET}.saif] } {
-    set_DESIGN_switching_activity "avg" ${DESIGN_TARGET}.saif
-    report_saif -hier -rtl_saif -missing
-  }
 
   set_optimize_registers true -design ${DESIGN_TARGET}
   echo $COMPILE_COMMAND
