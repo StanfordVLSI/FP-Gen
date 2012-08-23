@@ -50,11 +50,13 @@
 //;                            Doc=>"Designware mode determines whether or not ".
 //;                                 "designware codes are used instead of our ".
 //;                                 "design. !IMPLEMENTATION! ");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0 , Step=>1,
+//;                       Doc=>"Pipeline depth");
 //; my $booth ;
 //; my $tree ;
 //; if( $designware_mode eq 'OFF' ){
 //;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3, Opt=>'Yes' ,
-//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!"); 
 //;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace', 'Array', 'ZM', 'OS1'], Opt=>'Yes' ,
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
 //;    `touch place_MultiplierP.tcl` ; #create semaphore for placement
@@ -73,13 +75,28 @@ module `mname`(
     //; }	    
    //; if ($useInc){
     input logic 		  ainc, binc,
+   //; }
+   //; if ($pipeline_depth>0) {
+    input logic  clk , reset, valid_in, stall,
+    output logic  valid_out,
    //; }	    
     output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 
 
 //; if($designware_mode =~ /ON/){
-DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .out0(out0), .out1(out1) );
+    logic [`$width-1`:0] x, y;
+   //; if ($pipeline_depth>0) {
+   //;   my $pipe_XY = generate(  'FF_pipeline',  'pipe_XY',  
+   //;                             Width=> 2*$width , PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_XY->instantiate()` ( .in({a,b}) ,
+                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                              .out({x,y}), .valid_out(valid_out) );
+
+   //; } else {
+    assign {x,y} = {a, b};
+   //; }
+    DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(x), .b(y),.tc(1'b0), .out0(out0), .out1(out1) );
 
 //; }else{
 
@@ -93,7 +110,7 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
    //;				 UseInc=>($useInc)?"YES":"NO");
    //; }else{
    //;     $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
-   //;				 UseInc=>($useInc)?"YES":"NO");
+   //;				 UseInc=>($useInc)?"YES":"NO", PipelineDepth => $pipeline_depth);
    //; }	    
    //;
    //; # Now we can extract some properties from it: How many partial products and of of what widths
@@ -108,13 +125,17 @@ DW02_multp #(`$width`, `$width`, `2*$width+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .
 			      //; if ($verif_mode =~ /ON/){
 			      .dumptolog(dumptolog),
 			      //; }
-			      .x(a), .y(b),
+			      .x_in(a), .y_in(b),
                               //; if ($useMP){
 			      .mp_mode(mp_mode),
 			      //; }
 			      //; if ($useInc){
-			      .xinc(ainc), .yinc(binc),
+			      .xinc_in(ainc), .yinc_in(binc),
 			      //; }
+                              //; if ($pipeline_depth > 0 ) {
+                              .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset),
+                              .valid_out(valid_out),
+                              //; }
 			      .pp(pp)
 			      );
 

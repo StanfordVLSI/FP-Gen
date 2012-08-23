@@ -14,43 +14,11 @@ if { [file exists ${DESIGN_TARGET}.saif] } {
 
 
 analyze -format sverilog [glob ${RUNDIR}/genesis_synth/*.v]
-elaborate $DESIGN_TARGET -architecture verilog -library DEFAULT
+elaborate $DESIGN_TARGET
 link
 check_design
 
-
-set HEDGE 0.8
-set PATH_RATIO 0.8
-
-if { $PipelineDepth > 0 } {
-
-  ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME       
-  if { $Retiming && $SmartRetiming } {
-    current_design MultiplierP_unq1
-    set cycle_multiplier 1;
-    if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1 } {
-      set cycle_multiplier $MulpPipelineDepth;
-    }
-    set_max_delay [expr double($cycle_multiplier)*double($HEDGE)*double($PATH_RATIO)*double($target_delay)/1000] -from [all_inputs] -to [all_outputs]
-    compile_ultra -no_autoungroup
-
-#    if { $Architecture=="CMA" } {
-#       current_design FarPathAdd_unq1
-#       create_clock $CLK -period $CLK_PERIOD
-#       compile_ultra -no_autoungroup -retime
-#       optimize_registers -sync_transform decompose -print_critical_loop
-#       current_design ClosePathSub_unq1
-#       create_clock $CLK -period $CLK_PERIOD
-#       compile_ultra -no_autoungroup -retime
-#       optimize_registers -sync_transform decompose -print_critical_loop
-#    }
-
-
-    current_design ${DESIGN_TARGET}
-    #set_dont_touch [get_cells -hierarchical MUL0] true
-  }  
-
-  if { [shell_is_in_topographical_mode] } {
+if { [shell_is_in_topographical_mode] } {
     # Enable power prediction for this DC-T session using clock tree estimation.
     set_power_prediction true
     if { ${MIN_ROUTING_LAYER} != ""} {
@@ -67,42 +35,66 @@ if { $PipelineDepth > 0 } {
     set_preferred_routing_direction -layers {M2 M4 M6 M8 AP} -direction vertical
 
     set HEDGE 1
-  } 
+} else {
+    set HEDGE 0.8
+}  
+set PATH_RATIO 0.8
+
+set COMPILE_COMMAND "compile_ultra -no_autoungroup"
+
+if { $PipelineDepth > 0 } {
+
+  if { $Retiming } {
+    lappend COMPILE_COMMAND "-retime"
+  }
+
+  if { $EnableClockGating } {
+    lappend COMPILE_COMMAND "-gate_clock"
+  }
 
   set CLK clk
   set RST reset
-  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000]
+  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000];
+
+  if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
+   set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
+   set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
+  }
+
+  ## NOTE THAT THIS RETIMING ASSUMES THAT INPUT AND OUTPUT FLOPS ARE MARKED NO_RETIME       
+  if { $Retiming && $SmartRetiming && $Architecture!="DW_FMA"} {
+    current_design MultiplierTree_unq1
+    set_max_delay -from [all_inputs] -to [all_outputs] [expr $PATH_RATIO*$CLK_PERIOD]
+    compile_ultra -no_autoungroup
+    current_design Pipelined_MultiplierP_unq1
+    create_clock $CLK -period $CLK_PERIOD
+    set_output_delay 0.04 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ];
+    set_optimize_registers true -design Pipelined_MultiplierP_unq1
+    eval $COMPILE_COMMAND
+    remove_constraint -all
+    current_design ${DESIGN_TARGET}
+    if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
+      set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
+      set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
+    }
+  }
+ 
 
   create_clock $CLK -period $CLK_PERIOD
+  set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
+
   set_DESIGN_switching_activity "avg"
   if { [file exists ${DESIGN_TARGET}.saif] } {
     set_DESIGN_switching_activity "avg" ${DESIGN_TARGET}.saif
     report_saif -hier -rtl_saif -missing
   }
 
-  set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-  #set all_inputs_wo_rst_clk [remove_from_collection [remove_from_collection [all_inputs] [get_port $CLK]] [get_port $RST]]
-  #set_input_delay -clock $CLK [ expr $CLK_PERIOD*1/2 ] $all_inputs_wo_rst_clk
-
-  if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
-   set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
-   set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
-  }
   set_optimize_registers true -design ${DESIGN_TARGET}
-  set COMPILE_COMMAND "compile_ultra -no_autoungroup"
-
-  if { $Retiming } {
-    lappend COMPILE_COMMAND "-retime"
-  }
-  if { $EnableClockGating } {
-    lappend COMPILE_COMMAND "-gate_clock"
-  }
   echo $COMPILE_COMMAND
   if {[shell_is_in_topographical_mode]} {
     eval "$COMPILE_COMMAND -check_only"
   } 
   eval $COMPILE_COMMAND
-
    #Reset Constraints for ICC
   set CLK_PERIOD [expr double($target_delay)/1000]
   create_clock $CLK -period $CLK_PERIOD
@@ -123,7 +115,7 @@ if { $PipelineDepth > 0 } {
     set target_delay max
   }
 
-  compile_ultra -no_autoungroup
+  eval $COMPILE_COMMAND
 
   set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
 }

@@ -113,19 +113,17 @@
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //;
 //;
-//; my $num_outputs = 2**($booth-1);
+//; my $num_outputs = 2**($booth-1)+1;
 
 
 module `mname` (
     input logic [`$booth`:0]  y,
-    output logic [`$num_outputs-1`:0] sel_x            
+    output logic [`$num_outputs-1`:0] sel_x //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X          
 		);
-
-
 
    //;   if ($booth==2) {
    assign sel_x[0] = y[1] ~^ y[0];
-   assign sel_x[1] = (~y[2] & (~y[1]|~y[0])) | (y[2] & (y[1]|y[0]));
+   assign sel_x[1] = (~y[2] & ~y[0]) | (y[2] & y[1]) | (~y[1] & y[0]);
    //;   } else{
    logic [`$booth-1`:0]  y_edge_vector;
    assign y_edge_vector = y[`$booth`:1] ~^ y[`$booth-1`:0];
@@ -145,6 +143,7 @@ module `mname` (
    assign sel_x[7] = ~ (~y_edge_vector[3] & y_edge_vector[2] & y_edge_vector[1] & y_edge_vector[0]); // yedge = 1000 ==> +/-8X
    //;     }
    //;   }
+   assign sel_x[`$num_outputs-1`] = y[`$booth`];
 
    //; if ($verif_mode =~ /ON/){
 // synopsys translate_off

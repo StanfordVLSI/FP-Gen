@@ -84,12 +84,15 @@
 //;                       Doc=>"Signal bit widths");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0 , Step=>1,
+//;                       Doc=>"Pipeline depth");
 //;
 //; # Declare some local variables
 //; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
 //;
 //; my $pp_count = ($booth==1)? $width : ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
 //; my $pp_width = ($booth==1 && !$useInc)? $width+2 : $width+3*$booth;
+//; my $sel_width = 2**($booth-1)+1;
 //;
 //; # Inform the world about the partial products properties
 //; parameter(Name=>'PPWidth', Val=>$pp_width, Force=>1, 
@@ -98,22 +101,45 @@
 //;           Doc=>"This is the calculated number of partial products for Booth=$booth and Width=$width. ".
 //;                "Note that it includes a +1 to account for xinc and yinc");
 
+
 module `mname`(
    //; if ($verif_mode =~ /ON/){
     input logic dumptolog,
    //; }
-    input [`$width-1`:0] x, y,
+    input [`$width-1`:0] x_in, y_in,
    //; if ($useInc){
-    input 		 xinc, yinc,
+    input 		 xinc_in, yinc_in,
+   //; }
+   //; if ($pipeline_depth>0) {
+    input logic  clk , reset, valid_in, stall,
+    output logic  valid_out,
    //; }
     output [`$pp_width-1`:0] pp [0:`$pp_count+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
 		);
-   
+
+    logic [`$width-1`:0] x, y;
+    logic xinc, yinc;
+   //; if (!$useInc){
+    logic xinc_in, yinc_in;
+    assign {xinc_in, yinc_in} = 0; 
+   //; }
+   //; if ($pipeline_depth>0) {
+   //;   my $pipe_XY = generate(  'FF_pipeline',  'pipe_XY',  
+   //;                             Width=> 2*$width + 2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_XY->instantiate()` ( .in({x_in, y_in, xinc_in, yinc_in}) ,
+                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                              .out({x,y,xinc, yinc}), .valid_out(valid_out) );
+
+   //; } else {
+    assign {x,y,xinc, yinc} = {x_in, y_in, xinc_in, yinc_in};
+   //; }
+
+
    //; if ($booth==1) {
    //;   if ($useInc){
    assign pp[0] = xinc ? {1'b0, y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
    assign pp[1] = yinc & y[0] ? {1'b0, x, 2'b0} : yinc | y[0] ? {2'b0, x, 1'b0} : `$pp_width`'b0; // add an extra x if yinc
-   assign pp[2] = y[1] ? {2'b0, x, xinc & yinc } : {`$pp_width-1`'b0, xinc & yinc };//an extra 1 if xinc AND yinc
+   assign pp[2] = y[1] ? {2'b0, x, xinc & yinc } : {`$pp_width-1`'b0, xinc & yinc }; //an extra 1 if xinc AND yinc
    //;     for (my $i=3; $i<=$pp_count; $i++){
    assign pp[`$i`] = y[`$i-1`] ? {2'b0, x, 1'b0}: `$pp_width`'b0;
    //;     }
@@ -130,63 +156,111 @@ module `mname`(
    logic [`$extended_width`-1:0] extended_y;
    //;   if ($useInc) {
    // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
-   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,yinc};  //sign extension guarantees positive last partial product
+   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y_in,yinc_in};  //sign extension guarantees positive last partial product
    //;   }else{
-   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y,1'b0};  //sign extension guarantees positive last partial product
+   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y_in,1'b0};  //sign extension guarantees positive last partial product
    //;   }   
-   logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
-   logic [`$pp_count-1`:0] 	 S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended b
 
+   logic [`$pp_count*$sel_width-1`:0] sel_x_intermediate, sel_x; //Encoded select signals
+   //; if ($pipeline_depth>0) {
+   logic valid_sel_x;
+   //;   my $pipe_SelX = generate(  'FF_pipeline',  'pipe_SelX',  
+   //;                             Width=> $pp_count*$sel_width , PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_SelX->instantiate()` ( .in(sel_x_intermediate) ,
+                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                              .out(sel_x), .valid_out(valid_sel_x) );
 
-   
-   //;   # If booth==3 we need to prepare a 3*x and ~(3*x) products
+   //; } else {
+   assign sel_x = sel_x_intermediate;
+   //; }
+
    //;   if ($booth>=3) {
-   // Prepare the 3*X 
-   logic [`$width+1`:0] 	 x3;
-   //;   my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
-   `$HM3_obj->instantiate` (
-			    //; if ($verif_mode =~ /ON/){
-			    .dumptolog(dumptolog),
-			    //; }
-			    .x(x), .x3(x3));
+   logic [`$width+1`:0] x3, x3_intermediate;
+   //;     if ($pipeline_depth>0) {
+   logic valid_x3;
+   //;        my $pipe_X3 = generate(  'FF_pipeline',  'pipe_X3',  
+   //;                             Width=> $width + 2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_X3->instantiate()` ( .in({x3_intermediate) ,
+                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                              .out(x3), .valid_out(valid_x3) );
+
+   //;     } else {
+    assign x3 = x3_intermediate;
+   //;     }
    //;   }
-   
    //;   if ($booth>=4) {
-   // Prepare the 5*X 
-   logic [`$width+2`:0] 	 x5;
-   //;   my $HM5_obj = generate('HardMultiple5', 'HM5', Width=>$width);
-   `$HM5_obj->instantiate` (
-			    //; if ($verif_mode =~ /ON/){
-			    .dumptolog(dumptolog),
-			    //; }
-			    .x(x), .x5(x5));
+   logic [`$width+2`:0] x5, x7, x5_intermediate, x7_intermediate;
+   //;     if ($pipeline_depth>0) {
+   logic valid_x5x7;
+   //;        my $pipe_X5X7 = generate(  'FF_pipeline',  'pipe_X5X7',  
+   //;                             Width=> $width + 3 , PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_X5X7->instantiate()` ( .in({x5_intermediate, x7_intermediate}) ,
+                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                              .out({x5, x7}), .valid_out(valid_out) );
 
-   // Prepare the 7*X 
-   logic [`$width+2`:0] 	 x7;
-   //;   my $HM7_obj = generate('HardMultiple7', 'HM7', Width=>$width);
-   `$HM7_obj->instantiate` (
-			    //; if ($verif_mode =~ /ON/){
-			    .dumptolog(dumptolog),
-			    //; }
-			    .x(x), .x7(x7));
+   //;     } else {
+    assign {x5, x7} = {x5_intermediate, x7_intermediate};
+   //;     }
    //;   }
+ 
 
-   
-   // Instantiate the booth `$booth` encoders
-   //;   for(my $i=0; $i < $pp_count; $i++){
-   //;     my $BoothEnc_obj = generate('BoothEnc', "BoothEnc_u$i", BoothType=>$booth, Width=>$width);
+   //;   my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width);
    `$BoothEnc_obj->instantiate`
-     (.x(x), 
+     (.x(x_in), .extended_y(extended_y),
       //;   if ($booth>=3) {
-      .x3(x3),
+      .x3(x3_intermediate),
       //;   }
       //;   if ($booth>=4) {
-      .x5(x5), .x7(x7),
-      //;   }			     
-      .y(extended_y[`$booth*($i+1)`:`$booth*$i`]) , .pp(initial_pp[`$i`]), .S(S[`$i`]));
-   
-   //;   } # End of "for(my $i=0..."
+      .x5(x5_intermediate), .x7(x7_intermediate),
+      //;   }	     
+      .sel_x(sel_x_intermediate));
 
+   logic [`$width+2*$booth-3`:0]     x_padded;
+   assign x_padded = {`$booth-1`'b0, x, `$booth-1`'b0};
+
+  //;   if ($booth==3){
+   logic [`$width+1`:0] 	x3_padded;
+   assign x3_padded = x3; // yep, I know it's not really padded, but it's for the naming convention later   
+  //;   }elsif ($booth>=4) {
+   logic [`$width+3`:0] 	x3_padded;
+   assign x3_padded = {1'b0, x3, 1'b0};
+  //;   }
+   
+   logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
+   logic [`$pp_count-1`:0] 	 S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended y
+   //;       if ($booth==2) {
+   logic [`$width+2*$booth-3`:0] xn [0:`$pp_count-1`];
+   //;}
+
+   //;   for(my $i=0; $i < $pp_count; $i++){
+   //;     if ($booth==2) {
+   //;       my $BoothCell_obj = generate('Booth2SCell', "BoothEnc_u${i}_cell_0");
+   `$BoothCell_obj->instantiate` (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .S(S[`$i`]), .xn0(xn[`$i`][0]) );
+   //;     } else {
+   assign S[`$i`] = sel_x[`($i+1)*$sel_width-1`];
+   //;     }
+   //;     for(my $j=$booth-1; $j < $width+2*($booth-1); $j++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1 
+
+   //;       my $BoothCellIdx = $booth==2 ? $j : $j - ($booth-1);
+   //;       my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth);
+   `$BoothCell_obj->instantiate` 
+     (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), 
+      .x( {
+   //;       if ($booth>=4) {
+           x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
+   //;       }
+   //;       if ($booth>=3) {
+           x_padded[`$j-2`], x3_padded[`$j-2`],
+   //;       }
+           x_padded[`$j-1`] , x_padded[`$j`] } ),
+   //;       if ($booth==2) {
+           .xn1(xn[`$i`][`$j-1`]), .xn0(xn[`$i`][`$j`]),
+   //;       }
+      .pp(initial_pp[`$i`][`$j-$booth+1`]));
+   
+   //;     }
+   assign initial_pp[`$i`][`$width+$booth-1`] = ~S[`$i`];
+  //;   }
    
    // Finally, append the sign extenssions to the partial products
    //;   if ($useInc){

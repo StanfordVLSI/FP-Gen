@@ -31,13 +31,13 @@
 
 
 module `mname` (
-    input logic [2:0] y,
-    input logic [1:0] sel_x,
+    input logic [2:0] sel_x,
     output logic S, xn0           
 		);
 
-  assign xn0 = ~y[2];
-  assign S = y[2] & ~( sel_x[1] & sel_x[0] );
-
+  logic sign_x;
+  assign sign_x = sel_x[2];
+  assign xn0 = ~sign_x;
+  assign S = sign_x & ~( sel_x[1] & sel_x[0] );
    
 endmodule : `mname`

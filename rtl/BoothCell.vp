@@ -37,7 +37,7 @@
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //;
 //;
-//; my $num_inputs = 2**($booth-1);
+//; my $num_inputs = 2**($booth-1)+1;
 //; sub IsPowOfTwo {
 //;   my $num = shift or die;
 //;   return 1 if $num==0 || $num==1 || $num==2 || $num==4 || $num==8 || $num==16 || $num==32 || $num==64;
@@ -47,8 +47,8 @@
 
 
 module `mname` (
-    input logic [`$num_inputs-1`:0]		sel_x, x,
-    input logic [`$booth`:0]		y,                 	//y[`$booth`+K:K]
+    input logic [`$num_inputs-1`:0]  sel_x, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
+    input logic [`$num_inputs-2`:0]  x, 
    //;if ($booth==2) {
     input logic xn1,
     output logic xn0,
@@ -56,10 +56,11 @@ module `mname` (
     output logic 		pp               	// single bit of the relevant pp
 		);
 
-   logic S;
-   assign S = y[`$booth`];
+   logic sign_x;
+   assign sign_x = sel_x[`$num_inputs-1`];
+
    //;if ($booth==2) {
-   assign xn0 = ~S ^ x[0];
+   assign xn0 = ~ sign_x ^ x[0];
    assign pp = ~((sel_x[0] | xn0) & (sel_x[1] | xn1));
 
    //;} else {
@@ -82,7 +83,7 @@ module `mname` (
    //;   }
    assign pp_all = ~( `$str` pp_pow2);
    // Select pp or pp_b based on sign
-   assign pp = pp_all ^ S; // invert if S=1
+   assign pp = pp_all ^ sign_x; // invert if sign_x=1
 
    //;}
 

@@ -76,7 +76,7 @@ module `mname`(
     output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 //; if ($pipeline_depth==0){
-//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP , Designware_MODE=>$designware_mode);
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, Designware_MODE=>$designware_mode, PipelineDepth => 0);
 
    `$Mul_obj->instantiate()` (
 //; if ($verif_mode =~ /ON/){
@@ -92,6 +92,7 @@ module `mname`(
       .out0(out0), .out1(out1)
       );
 
+
 //; } elsif ($pipeline_depth>0){
 
    //; if ( ! ($useInc=~ /YES/)){
@@ -102,31 +103,36 @@ module `mname`(
    //; if ( !$useMP){
    logic mp_mode;
    assign mp_mode = 0;
-   //; }
+   //; } 
+   logic [`2*$width+1`:0] out0_intermediate ,out1_intermediate;
+   logic valid_mulp;
 
-   logic [`$width-1`:0] a_0,b_0;
-   logic ainc_0, binc_0, mp_mode_0;
-   logic [`2*$width+1`:0] multp_out0, multp_out1; // sign extended by 2 because of booth encoding
-   
 
-//;        my $pipein = generate(  'FF_pipeline',  'MultP_pipeline',  Width=> 2*$width+3 , PipelineDepth=>$pipeline_depth, Retime=>'YES');
-   `$pipein ->instantiate()` ( .in({a, ainc, b, binc,mp_mode}) , .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset), 
-                               .out({a_0, ainc_0, b_0, binc_0,mp_mode_0}), .valid_out(valid_out) );
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
+//;                           TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, PipelineDepth => 1, Designware_MODE=>$designware_mode);
 
-//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, Designware_MODE=>$designware_mode);
    `$Mul_obj->instantiate()` (
 //;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
 //;   }
-      .a(a_0), .b(b_0),
+      .a(a), .b(b),
 //;   if ($useMP){
       .mp_mode(mp_mode),
 //;   } 
 //;   if ($useInc=~ /YES/){
-      .ainc(ainc_0), .binc(binc_0),
+      .ainc(ainc), .binc(binc),
 //;   }
-      .out0(out0), .out1(out1)
+//;   if ($pipeline_depth > 0 ) {
+      .valid_in(valid_in), .stall(stall), .clk(clk) , .reset(reset),
+      .valid_out(valid_mulp),
+//;   }
+      .out0(out0_intermediate), .out1(out1_intermediate)
       );
+
+//;   my $pipeout = generate(  'FF_pipeline',  'MultP_pipeout',  Width=> 4*$width+4 , PipelineDepth=>$pipeline_depth-1, Retime=>'YES');
+   `$pipeout ->instantiate()` ( .in({out1_intermediate, out0_intermediate}) ,
+                               .valid_in(valid_mulp), .stall(stall), .clk(clk) , .reset(reset), 
+                               .out({out1, out0}), .valid_out(valid_out) );
 
 //; } else {
 

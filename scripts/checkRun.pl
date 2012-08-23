@@ -19,7 +19,7 @@ print "\n" ;
 open (MYFILE, $log_file) or error("Could not open $log_file");
 while (my $line = <MYFILE>) {
     $line =~ m/Fatal:/    and error("\tFatal error at Line $. of File $log_file: \n\t$line");
-    $line =~ m/Error:/    and error("\tError error at Line $. of File $log_file: \n\t$line");
+    $line =~ m/Error:.*^(\(CMD-036\))/    and error("\tError error at Line $. of File $log_file: \n\t$line"); # FIXME
     $line =~ m/Abort at / and error("\tAbort error at Line $. of File $log_file: \n\t$line");
 }
 close (MYFILE); 
