@@ -64,24 +64,24 @@
 //;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
-//;                           Min=>4, Step=>1, 
+//;                           Min=>4, Step=>1, Opt=>'No' ,
 //;                           Doc=>"!FUNCTIONAL! Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
-//;                           Min=>4, Step=>1, 
+//;                           Min=>4, Step=>1,  Opt=>'No' ,
 //;                           Doc=>"!FUNCTIONAL! Width of the exponent for the multiplier (default is IEEE Double, 11 bit)");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
-//;                           List=>['YES','NO'], 
+//;                           List=>['YES','NO'],  Opt=>'No' ,
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO)");
 //;
-//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
+//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'], Opt=>'No' ,
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
 //; my $enableMultiplePumping = parameter(Name=>'EnableMultiplePumping', Val=>'NO', List=>['YES', 'NO'],
-//; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!");
+//; 			  Doc=>"Use parallel MultiplierP unit !FUNCTIONAL!" ,  Opt=>'Yes' );
 //;
 //; my $pipeline_depth = parameter( Name=>'PipelineDepth', Val=>8 , Min=>(($enable_forwarding =~ /YES/)?5:0), Max=>20,
-//;                                 Doc=>"!FUNCTIONAL! Pipeline depth" );
+//;                                 Doc=>"!FUNCTIONAL! Pipeline depth"  , Opt=>'No' );
 //; my $muladd_pipeline_depth = ($enable_forwarding =~ /YES/ && $pipeline_depth>0) ? $pipeline_depth-1 : $pipeline_depth ;
 //; my $default_mul_pipeline_depth = floor($pipeline_depth / 2);
 //; my $min_mul_pipeline_depth = ($enable_forwarding =~ /YES/) ? 2 : 0 ;
@@ -89,7 +89,7 @@
 //;   $default_mul_pipeline_depth = $min_mul_pipeline_depth;
 //; }
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>$default_mul_pipeline_depth, Min=>$min_mul_pipeline_depth, Max=> $muladd_pipeline_depth  ,
-//;                       Doc=>"Multiplier Part Pipeline depth");
+//;                       Doc=>"Multiplier Part Pipeline depth" , Opt=>'No');
 //; my $add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth;
 //; parameter(Name=>'AddPipelineDepth', Val=>$add_pipeline_depth, Min=>$add_pipeline_depth, Max=> $add_pipeline_depth,
 //;                       Doc=>"Adder Part Pipeline depth");

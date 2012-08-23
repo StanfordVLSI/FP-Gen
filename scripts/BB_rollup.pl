@@ -430,6 +430,8 @@ foreach my $file ( @files ) {
 	}
     }
 
+    @pref =  ( "$design_name.${vt}_*.$target_delay.mapped" , "$design_name.${vt}_*$vdd.$target_delay.routed" , "$design_name.optimized.${vt}_*.$target_delay" );  
+
     for( my $unt = 0 ; $unt <= $#unit_Labels ; $unt++ ){ 
 	for( my $pr = 0 ; $pr <= $#pref ; $pr++ ){
 	    my $uN = $units[$unt] ; #print "$uN\n" ;
@@ -437,7 +439,7 @@ foreach my $file ( @files ) {
 	    my $pN = $pref[$pr] ; #print "$pN\n" ;
 	    my $pL = $pref_Labels[$pr] ;  #print "$pL\n" ;
 	    
-	    @report_files = <synthesis/$folder_name/reports/$design_name.$vt*.area.hier.*>;
+	    @report_files = <synthesis/$folder_name/reports/$pN.area.hier.*>;
 	    scalar( @report_files ) or warn "Missing area report $uL $pL\n" ;
 	    $r{result}[$ri]{COST}{ $pL."_".$uL."_Area_mmsq"} = extractAreaReport( $report_files[0] , $uN ) ;
 	    $r{result}[$rj]{COST}{ $pL."_".$uL."_Area_mmsq"} = extractAreaReport( $report_files[0] , $uN ) ;

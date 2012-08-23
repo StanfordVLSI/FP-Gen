@@ -58,21 +58,21 @@
 //;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
-//;                           Min=>4, Step=>1, 
+//;                           Min=>4, Step=>1, Opt=>'No' ,
 //;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!");
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
-//;                           Min=>4, Step=>1, 
+//;                           Min=>4, Step=>1,  Opt=>'No' ,
 //;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!");
 //; my $enable_denormals = parameter(Name=>'EnableDenormals', Val=>'YES', 
-//;                           List=>['YES','NO'], 
+//;                           List=>['YES','NO'],  Opt=>'No' ,
 //;                           Doc=>"Enable denormals parameters to enable handling denormal values ".
 //;                                "of inputs A and B correctly (YES/NO) !FUNCTIONAL!");
 //;
-//; my $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES','NO'],
+//; my $enable_forwarding  = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES','NO'],  Opt=>'No' ,
 //; 	 		   Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!");
 //;
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>6, Min=> (($enable_forwarding =~ /YES/)?1:0), Max=>12,
-//;                       Doc=>"Pipeline depth !FUNCTIONAL!");
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!" ,  Opt=>'No' );
 //; my $retiming ;
 //; if( $pipeline_depth > 1 ){
 //;   $retiming = parameter(Name=>'Retiming', Val=>1, List=>[ 0, 1 ] , 
