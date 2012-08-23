@@ -47,8 +47,8 @@
 
 
 module `mname` (
-    input logic [`$num_inputs-1`:0]  sel_x, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
-    input logic [`$num_inputs-2`:0]  x, 
+    input logic [`$num_inputs`:0]  sel_x, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
+    input logic [`$num_inputs-1`:0]  x, 
    //;if ($booth==2) {
     input logic xn1,
     output logic xn0,
@@ -57,7 +57,7 @@ module `mname` (
 		);
 
    logic sign_x;
-   assign sign_x = sel_x[`$num_inputs-1`];
+   assign sign_x = sel_x[`$num_inputs`];
 
    //;if ($booth==2) {
    assign xn0 = ~ sign_x ^ x[0];
