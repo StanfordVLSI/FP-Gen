@@ -37,7 +37,7 @@
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //;
 //;
-//; my $num_inputs = 2**($booth-1)+1;
+//; my $num_inputs = 2**($booth-1);
 //; sub IsPowOfTwo {
 //;   my $num = shift or die;
 //;   return 1 if $num==0 || $num==1 || $num==2 || $num==4 || $num==8 || $num==16 || $num==32 || $num==64;
