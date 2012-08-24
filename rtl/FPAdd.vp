@@ -67,7 +67,7 @@ module `mname` (
   //; }
     input logic [`$ExpB_width-1`:0] ExpB, ExpDifference,
     input logic [`$manB_width-1`:0] ManB,
-    input logic SignB, InfB, NANB, ZeroB, ResultIsClose, ExpA_gt_ExpB,
+    input logic SignB, InfB, NANB, ZeroB, ResultIsClose, ResultMaybeClose, ResultMaybeFar, ExpA_gt_ExpB,
     input logic [2:0] rnd,
   //; if ($pipeline_depth > 0 ) {
     input logic  clk , reset, valid_in, stall,
@@ -186,7 +186,7 @@ module `mname` (
                                     .ManB_in(ManB), .ExpB_in(ExpB), .SignB_in(SignB), .ZeroB_in(ZeroB),
                                     .ExpDifference_in(ExpDifference) , .ExpA_gt_ExpB_in(ExpA_gt_ExpB),
   //; if ($pipeline_depth > 0 ) {
-                                    .valid_in(valid_in & ~ResultIsClose & ResultIsNotSpecial ), .stall(stall), .clk(clk) , .reset(reset),
+                                    .valid_in(valid_in & ResultMaybeFar ), .stall(stall), .clk(clk) , .reset(reset),
                                     .valid_out(valid_far),
   //; }
                                     .ManSum_out(FarManSum), .ExpSum_out(FarExpSum), .SignSum_out(SignFarSum), .ZeroSum_out(ZeroFarSum),
@@ -209,7 +209,7 @@ module `mname` (
                                        .IncA_in(IncA),
   //; }
   //; if ($pipeline_depth > 0 ) {
-                                       .valid_in(valid_in & ResultIsClose ),
+                                       .valid_in(valid_in & ResultMaybeClose ),
                                        .stall(stall), .clk(clk) , .reset(reset),
                                        .valid_out(valid_close),
   //; }

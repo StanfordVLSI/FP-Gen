@@ -34,6 +34,10 @@
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>109, Min=>1, Step=>1,
 //;                       Doc=>"Width of signals !FUNCTIONAL!");
+//; my $eq_lb = parameter(Name=>'EqualityRangeLB', Val=>0, Min=>0, Max=>$width-1,
+//;                       Doc=>"Width of signals !FUNCTIONAL!");
+//; my $eq_ub = parameter(Name=>'EqualityRangeUB', Val=>$width-1, Min=>0, Max=>$width-1,
+//;                       Doc=>"Width of signals !FUNCTIONAL!");
 
 
 module `mname` (
@@ -52,7 +56,7 @@ module `mname` (
 
    DW01_csa #(`$width`) CSA ( .a(a),.b(b), .c(~sum), .ci(1'b0), .carry(v), .sum(w), .co(dummy_co));
 
-   assign equal = & (v^w);
+   assign equal = & (v[`$eq_ub`:`$eq_lb`]^w[`$eq_ub`:`$eq_lb`]);
 
 endmodule : `mname`
 

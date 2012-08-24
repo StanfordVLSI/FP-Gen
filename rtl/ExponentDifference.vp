@@ -49,18 +49,18 @@ module `mname`(
   input logic ExpA_ci,
   input logic ExpADecrementWhenShifting, SignA, ShiftA,  SignB, 
   output logic [`$ExtendedExp_width-1`:0] ExpDifference,
-  output logic ResultIsClose, ExpA_gt_ExpB);
+  output logic ResultIsClose, ResultMaybeClose, ResultMaybeFar, ExpA_gt_ExpB);
 
-  logic [`$ExtendedExp_width-1`:0] ExpDiff_pp0, ExpDiff_pp1, ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpDiffDec, ExpDiff, ExpDiffInc, ExpDiffShifted;
+  logic [`$ExtendedExp_width-1`:0] ExpA_ExpB_2_pp0, ExpA_ExpB_2_pp1, ExpA_ExpB_pp0, ExpA_ExpB_pp1, ExpA_ExpB_2, ExpA_ExpB_1, ExpA_ExpB, ExpA_ExpB_plus1, ExpDiffDec, ExpDiff, ExpDiffInc, ExpDiffShifted;
 
   logic ExpA_gt_ExpB_shifted, ExpDiff_Upper0s, ExpDiff_Upper1s, co_dummy0, co_dummy1, co_dummy2, co_dummy3, co_dummy4;
 
   // ExpA_pp0 + ExpA_pp1 + ExpA_ci = ExpA - 1
 
-  DW01_csa #(`$ExtendedExp_width`) CSA ( .a( ExpA_pp0), .b( ExpA_pp1), .c(~ExpB), .ci(ExpA_ci), .sum(ExpDiff_pp0), .carry(ExpDiff_pp1), .co(co_dummy0 ));
+  DW01_csa #(`$ExtendedExp_width`) CSA ( .a( ExpA_pp0), .b( ExpA_pp1), .c(~ExpB), .ci(ExpA_ci), .sum(ExpA_ExpB_2_pp0), .carry(ExpA_ExpB_2_pp1), .co(co_dummy0 ));
 
 
- // ExpDiff_pp0 + ExpDiff_pp1 = (ExpA-1)  + ~ExpB = ExpA - ExpB - 2 
+ // ExpA_ExpB_2_pp0 + ExpA_ExpB_2_pp1 = (ExpA-1)  + ~ExpB = ExpA - ExpB - 2 
 
 
 //; my $CompoundAdder_obj = generate('CompoundAdder', 'CA0', 
@@ -72,26 +72,39 @@ module `mname`(
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
-       .a(ExpDiff_pp0), .b(ExpDiff_pp1), 
+       .a(ExpA_ExpB_2_pp0), .b(ExpA_ExpB_2_pp1), 
        .sum0(ExpA_ExpB_2), .co0(co_dummy1),
        .sum1(ExpA_ExpB_1), .co1(co_dummy2));
 
   //Half adder for a+b+2
-  assign ExpA_ExpB = ExpDiff_pp0 + ExpDiff_pp1 + 2;
-  assign ExpA_ExpB_plus1 = ExpDiff_pp0 + ExpDiff_pp1 + 3;
+  assign ExpA_ExpB_pp0 = { ExpA_ExpB_2_pp1[`$ExtendedExp_width-1`:1]^ExpA_ExpB_2_pp0[`$ExtendedExp_width-1`:1], ExpA_ExpB_2_pp0[0]};
+  assign ExpA_ExpB_pp1 = { ExpA_ExpB_2_pp1[`$ExtendedExp_width-2`:1]&ExpA_ExpB_2_pp0[`$ExtendedExp_width-2`:1] , 1'b1, ExpA_ExpB_2_pp1[0]};
 
-// Result is close if expdiff is in the range of [0,2]: therefore we have following cases for result of ExpA-ExpB-2
-// a) ExpDifference = ExpB-ExpA-1    ---->   [-5,-3]
-// b) ExpDifference = ExpB-ExpA      ---->   [-4,-2]
-// c) ExpDifference = ExpB-ExpA+1    ---->   [-3,-1]
-// d) ExpDifference = ExpA-ExpB+1    ---->   [-3,-1]
-// e) ExpDifference = ExpA-ExpB      ---->   [-2, 0]
-// f) ExpDifference = ExpA-ExpB-1    ---->   [-1, 1]
+//; my $CompoundAdder_obj = generate('CompoundAdder', 'CA1', 
+//;                                                 , Width =>$ExtendedExp_width
+//;                                                 , EnableCarryIn => 'OFF'
+//;                                                 , ZeroWidth => 0);
 
- //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $ExtendedExp_width-4);
-   `$SC0_obj->instantiate` (.a(ExpDiff_pp0[`$ExtendedExp_width-1`:4]), .b(ExpDiff_pp1[`$ExtendedExp_width-1`:4]), .sum({ (`$ExtendedExp_width-4`){1'b0}}), .equal(ExpDiff_Upper0s));
- //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $ExtendedExp_width-4);
-   `$SC1_obj->instantiate` (.a(ExpDiff_pp0[`$ExtendedExp_width-1`:4]), .b(ExpDiff_pp1[`$ExtendedExp_width-1`:4]), .sum({ (`$ExtendedExp_width-4`){1'b1}}), .equal(ExpDiff_Upper1s));
+  `$CompoundAdder_obj->instantiate()`  (
+      //; if ($verif_mode =~ /ON/){
+       .dumptolog(dumptolog),
+      //; }
+       .a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), 
+       .sum0(ExpA_ExpB), .co0(co_dummy3),
+       .sum1(ExpA_ExpB_plus1), .co1(co_dummy4));
+
+// Result is close if expdiff is in the range of [0,2]: therefore we have following cases for result of ExpA-ExpB
+// a) ExpDifference = ExpB-ExpA-1    ---->   [-3,-1]
+// b) ExpDifference = ExpB-ExpA      ---->   [-2, 0]
+// c) ExpDifference = ExpB-ExpA+1    ---->   [-1, 1]
+// d) ExpDifference = ExpA-ExpB+1    ---->   [-1, 1]
+// e) ExpDifference = ExpA-ExpB      ---->   [ 0, 2]
+// f) ExpDifference = ExpA-ExpB-1    ---->   [ 1, 3]
+
+ //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $ExtendedExp_width, EqualityRangeLB => 2, EqualityRanceUB => $ExtendedExp_width-1 );
+   `$SC0_obj->instantiate` (.a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), .sum({ {(`$ExtendedExp_width-2`){1'b0}}, 2'b10} ), .equal(ExpDiff_Upper0s));
+ //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $ExtendedExp_width, EqualityRangeLB => 2, EqualityRanceUB => $ExtendedExp_width-1);
+   `$SC1_obj->instantiate` (.a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), .sum({ {(`$ExtendedExp_width-2`){1'b1}}, 2'b10} ), .equal(ExpDiff_Upper1s));
   
   assign ExpDiffDec = ExpA_ExpB_1[`$ExtendedExp_width-1`]?     ~ExpA_ExpB_2 : ExpA_ExpB_1; 
   assign ExpDiff    = ExpA_ExpB[`$ExtendedExp_width-1`]?       ~ExpA_ExpB_1 : ExpA_ExpB;
@@ -104,7 +117,9 @@ module `mname`(
   assign {ExpA_gt_ExpB, ExpDifference} = ShiftA? {ExpA_gt_ExpB_shifted, ExpDiffShifted} 
                                                : {~ExpA_ExpB_1[`$ExtendedExp_width-1`] , ExpDiff};
 
-  assign ResultIsClose = ((SignA ^ SignB) & ( ExpDiff_Upper0s | ExpDiff_Upper1s ) & (~|ExpDifference[4:2])) & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
+  assign ResultMaybeClose = (SignA ^ SignB) & ( ExpDiff_Upper0s | ExpDiff_Upper1s );
+  assign ResultMaybeFar = 1'b1;
+  assign ResultIsClose = ResultMaybeClose & ~ExpDifference[2] & ~(ExpDifference[1] & ExpDifference[0]) ; //0-2
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off

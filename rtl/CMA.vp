@@ -240,7 +240,8 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //; my $ED_obj = generate('ExponentDifference', 'ED', ExponentWidth=>$exp_width);
   `$ED_obj->instantiate()` (.ExpA_pp0(ExpC_pp0), .ExpA_pp1(ExpC_pp1), .ExpA_ci(ExpC_ci),
                 .ExpADecrementWhenShifting(ExpCDecrementWhenShifting), .SignA(SignC), .ShiftA(ShiftC), 
-                .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpA_gt_ExpB(ExpA_gt_ExpB)
+                .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference),
+                .ResultMaybeClose(ResultMaybeClose), .ResultMaybeFar(ResultMaybeFar), .ResultIsClose(ResultIsClose), .ExpA_gt_ExpB(ExpA_gt_ExpB)
   //; if ($verif_mode =~ /ON/){
               , .dumptolog(dumptolog)
   //; }
@@ -264,7 +265,8 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //;   }
                         .SignB(SignAB), .ExpB(ExpAB), .ManB(ManAB), .InfB(InfAB), .NANB(NANAB), .ZeroB(ZeroAB),
                         .rnd(rnd_add),
-                        .ExpDifference(ExpDifference), .ResultIsClose(ResultIsClose), .ExpA_gt_ExpB(ExpA_gt_ExpB),
+                        .ExpDifference(ExpDifference), .ExpA_gt_ExpB(ExpA_gt_ExpB),
+                        .ResultMaybeClose(ResultMaybeClose), .ResultMaybeFar(ResultMaybeFar), .ResultIsClose(ResultIsClose), 
                         .ExpZ_pp0(ExpZ_pp0), .ExpZ_pp1(ExpZ_pp1), .ExpZ_ci(ExpZ_ci),
                         .ExpZ_pp0_late(ExpZ_pp0_late), .ExpZ_pp1_late(ExpZ_pp1_late), .ExpZ_ci_late(ExpZ_ci_late),
                         .ExpZDecrementWhenShifting(ExpZDecrementWhenShifting), .ExpZDecrementWhenShifting_late(ExpZDecrementWhenShifting_late),
