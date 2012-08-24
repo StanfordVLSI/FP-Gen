@@ -60,7 +60,7 @@
 //; 			  Doc=>"Multi precision mode: Treat inputs as 2 numbers and produce 2 results.");
 //; my $floating_digits= parameter(Name=>'FloatingDigits', Val=>1,  List=>[1,2],
 //; 			   Doc=>"Number of digits before floating point");
-//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>floor($pipeline_depth/2),
+//; my $mulp_pipeline_depth = parameter(Name=>'MulpPipelineDepth', Val=>ceil($pipeline_depth/2),
 //;                       Doc=>"!FUNCTIONAL! MultiplierP Part Pipeline depth");
 //; my $add_pipeline_depth = $pipeline_depth - $mulp_pipeline_depth;
 //;

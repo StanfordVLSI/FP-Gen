@@ -157,47 +157,27 @@ module `mname`(
         enable <= next_enable;
 
 //;   for (my $i=0; $i<-$pipeline_depth; $i++){
-   reg [`$width-1`:0] a_`$i`,b_`$i`;
    reg valid_`$i`;       
-//;     if ($useInc=~ /YES/){
-   reg ainc_`$i`, binc_`$i`;
-//;     }
-//;     if ($useMP){
-   reg mp_mode_`$i`;
-//;     }
-
-    always @(posedge clk)
-    if (!stall & enable[`$i`])
-    begin
-      valid_`$i` <= valid_in;
-      if (valid_in)
-      begin
-        a_`$i`<=a;
-        b_`$i` <= b;
-//;     if ($useInc=~ /YES/){
-        ainc_`$i` <= ainc;
-        binc_`$i` <= binc;
-//;     }
-//;     if ($useMP){
-        mp_mode_`$i`<=mp_mode;
-//;     }
-      end
-    end
 
    logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
-//;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP);
+//;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
+//;                           TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, PipelineDepth => 1, Designware_MODE=>$designware_mode);
 
    `$Mul_obj->instantiate()` (
-//;     if ($verif_mode =~ /ON/){
+//;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
-//;     }
-      .a(a_`$i`), .b(b_`$i`),
-//;     if ($useMP=~ /YES/){
-      .mp_mode(mp_mode_`$i`),
-//;     }
-//;     if ($useInc=~ /YES/){
-      .ainc(ainc_`$i`), .binc(binc_`$i`),
-//;     }
+//;   }
+      .a(a), .b(b),
+//;   if ($useMP){
+      .mp_mode(mp_mode),
+//;   } 
+//;   if ($useInc=~ /YES/){
+      .ainc(ainc), .binc(binc),
+//;   }
+//;   if (-$pipeline_depth > 0 ) {
+      .valid_in(valid_in), .stall(stall | ~enable[`$i`]), .clk(clk) , .reset(reset),
+      .valid_out( valid_`$i` ),
+//;   }
       .out0(multp`$i`_out0), .out1(multp`$i`_out1)
       );
 

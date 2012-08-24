@@ -180,7 +180,7 @@ module `mname`(
    logic valid_x3;
    //;        my $pipe_X3 = generate(  'FF_pipeline',  'pipe_X3',  
    //;                             Width=> $width + 2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
-  `$pipe_X3->instantiate()` ( .in({x3_intermediate) ,
+  `$pipe_X3->instantiate()` ( .in(x3_intermediate) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                               .out(x3), .valid_out(valid_x3) );
 
