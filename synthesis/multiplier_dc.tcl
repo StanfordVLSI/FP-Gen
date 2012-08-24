@@ -64,6 +64,7 @@ if { $PipelineDepth > 0 } {
      current_instance $MultP_instance;
      set_multicycle_path $MulpPipelineDepth -from [get_cells -hierarchical * -filter {@is_sequential==true && @is_hierarchical == false}];
    }
+   current_instance;
    report_timing_requirements;
   }
 
