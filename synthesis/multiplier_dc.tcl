@@ -85,14 +85,13 @@ if { $PipelineDepth > 0 } {
     eval $COMPILE_COMMAND
     remove_constraint -all
     current_design ${DESIGN_TARGET}
+    create_clock $CLK -period $CLK_PERIOD
+    set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
     if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
       set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
       set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
     }
   }
-
-  create_clock $CLK -period $CLK_PERIOD
-  set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
 
   set_optimize_registers true -design ${DESIGN_TARGET}
   echo $COMPILE_COMMAND
