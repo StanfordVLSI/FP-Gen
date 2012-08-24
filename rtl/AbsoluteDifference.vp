@@ -68,7 +68,8 @@ module `mname`(
   input logic ainc,
  //; }
   input logic rsticky_b,
-  output logic [`$width-1`:0] absdiff, 
+  output logic [`$width-1`:0] absdiff,
+  output logic absdiffzero,
   output logic a_gt_b
         );
 
@@ -95,6 +96,9 @@ module `mname`(
 //; if( $LZA_enable) {
   assign k = ~pp0 & ~pp1;
 //; }
+
+  // absdiffzero = (a-b)==0 = (a+~b)==-1
+  assign absdiffzero = &( {g[`$width-2`:0],1'b0} ^ p );
 
 //; my $SklanskyAdderTree_obj = generate('SklanskyAdderTree', 'PGTree', Width=>$width); 
 

@@ -78,81 +78,74 @@ module `mname`(
   assign IncA_in = 0;
   //; }
 
-  logic [`$manA_width-1`:0] ManA;
-  logic [`$manB_width-1`:0] ManB;
-  logic [`$ExtendedExp_width-1`:0] ExpA, ExpB; 
-  logic IncA, SignA, SignB, valid_middle;
-  logic [`$manA_width-1`:0] ManDiff;
-  logic [`$exp_width-1`:0] ExpDiff;
-  logic Guard, Sticky, Overflow, LZA_wrong, SignDiff, ZeroDiff;
-  logic [`$ExtendedExp_width-1`:0] LShiftAmtWide;
+  logic [`$manA_width-1`:0] ManA_P1;
+  logic [`$manB_width-1`:0] ManB_P1, manA_wide_P1;
+  logic [`$ExtendedExp_width-1`:0] ExpA_P1, ExpB_P1, ExpBig_P1, ExpBig_P2; 
+  logic IncA_P1, IncA_P2, SignA_P1, SignB_P1, SignB_P2, SignB_P3, valid_P1, valid_P2, valid_P3;
+  logic ZeroDiff_P2, ZeroDiff_P3;
+
+  logic [(1<<`$shift_width`)-1 : 0] max_shift_dec_P1;
+  logic [`$ExtendedExp_width-1`:0] LShiftAmtWide_P2;
 
 
-//; if ($pipeline_depth>0) {
-//;   my $pipe_in = generate(  'FF_pipeline',  'pipe_in',  
+//;   my $pipe_P1 = generate(  'FF_pipeline',  'pipe_P1',  
 //;                             Width=> $manA_width + $manB_width + 2*$ExtendedExp_width + 3,
-//;                             PipelineDepth => $pipeline_depth-1, Retime=>'YES');
-  `$pipe_in ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in}) ,
+//;                             PipelineDepth => ($pipeline_depth>2?$pipeline_depth-2:($pipeline_depth==2?1:0)),
+//;                             Retime=>'YES');
+  `$pipe_P1 ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in}) ,
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                               .out({ManA, IncA, ExpA, SignA, ManB, ExpB, SignB}),
-                               .valid_out(valid_middle) );
-
-//;   my $pipe_out = generate(  'FF_pipeline',  'pipe_out',
-//;                              Width=> $manA_width + $exp_width + 6,
-//;                              PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
-  `$pipe_out->instantiate()` ( .in({ManDiff, ExpDiff, Guard, Sticky, Overflow, LZA_wrong, SignDiff, ZeroDiff}) ,
-                                .valid_in(valid_middle), .clk(clk) , .stall(stall), .reset(reset), 
-                                .out({ManDiff_out, ExpDiff_out, Guard_out, Sticky_out, Overflow_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out}),
-                                .valid_out(valid_out) );
-//; } else {
-  assign {ManA, IncA, ExpA, SignA, ManB, ExpB, SignB} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in};
-  assign {ManDiff_out, ExpDiff_out, Guard_out, Sticky_out, Overflow_out, LZA_wrong_out, SignDiff_out, ZeroDiff_out} = {ManDiff, ExpDiff, Guard, Sticky, Overflow, LZA_wrong, SignDiff, ZeroDiff};
-//; } 
-
-  logic [`$manB_width-1`:0] manA_wide;
-  logic [`$ExtendedExp_width-1`:0] ExpDiff1_pp0, ExpDiff1_pp1, ExpDiff1, ExpDiff2;
-  logic [`$manB_width+1`:0] op1, op2, diff, max_shift_mask;
-  logic [`$manB_width+2`:0] shiftedDiff;
-  logic ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2, mostSticky, a_gt_b, co_dummy0, co_dummy1, co_dummy2, Overflow1;
-  logic [`$shift_width-1`:0] LshiftAmt;
-  logic [(1<<`$shift_width`)-1 : 0] max_shift_dec;
+                               .out({ManA_P1, IncA_P1, ExpA_P1, SignA_P1, ManB_P1, ExpB_P1, SignB_P1}),
+                               .valid_out(valid_P1) ); 
 
 
 
-  assign manA_wide = {1'b0,ManA,{(`$manB_width-$manA_width-1`){IncA}}}; //pad to the right with zeros for the mantissa
+  
+  logic [`$manB_width+1`:0] op1_P1, op1_P2, op2_P1, op2_P2,  max_shift_mask_P1, max_shift_mask_P2, diff_P2, diff_P3;
+  logic [`$manB_width+2`:0] shiftedDiff_P3;
+  logic ExpB_gt_ExpA_1_P1, ExpB_gt_ExpA_2_P1, ExpA_gt_ExpB_1_P1, ExpA_gt_ExpB_2_P1, mostSticky_P3, a_gt_b_P2, a_gt_b_P3, co_dummy0_P3, co_dummy1_P3, LZA_wrong_P3;
+  logic [`$shift_width-1`:0] LshiftAmt_P2, LshiftAmt_P3;
+  logic [`$ExtendedExp_width-1`:0] Expbase_pp0_P3, Expbase_pp1_P3, ExpDiff1_pp0_P3, ExpDiff1_pp1_P3, ExpDiff1_P3, ExpDiff2_P3;
 
-  assign ExpA_gt_ExpB_1 = ExpA[1] ^ ExpB[1]?  ~ExpA[0] &  ExpB[0] : ExpA[0] &  ~ExpB[0];
-  assign ExpA_gt_ExpB_2 = (ExpA[0] ~^ ExpB[0])  & (ExpA[2] ^ ExpB[2]?  ~ExpA[1] &  ExpB[1] : ExpA[1] &  ~ExpB[1]);
-  assign ExpB_gt_ExpA_1 = ExpA[1] ^ ExpB[1]?   ExpA[0] & ~ExpB[0] :~ExpA[0] &   ExpB[0];
-  assign ExpB_gt_ExpA_2 = (ExpA[0] ~^ ExpB[0]) & (ExpA[2] ^ ExpB[2]?   ExpA[1] & ~ExpB[1] :~ExpA[1] &   ExpB[1]);
+
+  assign manA_wide_P1 = {1'b0,ManA_P1,{(`$manB_width-$manA_width-1`){IncA_P1}}}; //pad to the right with zeros for the mantissa
+
+  assign ExpA_gt_ExpB_1_P1 = ExpA_P1[1] ^ ExpB_P1[1]?  ~ExpA_P1[0] &  ExpB_P1[0] : ExpA_P1[0] &  ~ExpB_P1[0];
+  assign ExpA_gt_ExpB_2_P1 = (ExpA_P1[0] ~^ ExpB_P1[0])  & (ExpA_P1[2] ^ ExpB_P1[2]?  ~ExpA_P1[1] &  ExpB_P1[1] : ExpA_P1[1] &  ~ExpB_P1[1]);
+  assign ExpB_gt_ExpA_1_P1 = ExpA_P1[1] ^ ExpB_P1[1]?   ExpA_P1[0] & ~ExpB_P1[0] :~ExpA_P1[0] &   ExpB_P1[0];
+  assign ExpB_gt_ExpA_2_P1 = (ExpA_P1[0] ~^ ExpB_P1[0]) & (ExpA_P1[2] ^ ExpB_P1[2]?   ExpA_P1[1] & ~ExpB_P1[1] :~ExpA_P1[1] &   ExpB_P1[1]);
 
 
 
-  assign op1 = ExpB_gt_ExpA_2? {2'b0 , manA_wide}
-                             : ExpB_gt_ExpA_1? {1'b0 ,manA_wide,IncA} : {manA_wide,IncA,IncA};
-  assign op2 = ExpA_gt_ExpB_2? {2'b0 , ManB}
-                             : ExpA_gt_ExpB_1? {1'b0 , ManB,1'b0} : {ManB,2'b0};
-
-  assign Expbase_pp0 = ZeroDiff? 0 : ((ExpA_gt_ExpB_1 | ExpA_gt_ExpB_2)? ExpA: ExpB);
-  assign Expbase_pp1 = ZeroDiff? 0 : ~LShiftAmtWide;
-  assign Expbase_ci  = ~ZeroDiff;
+  assign op1_P1 = ExpB_gt_ExpA_2_P1? {2'b0 , manA_wide_P1}
+                             : ExpB_gt_ExpA_1_P1? {1'b0 ,manA_wide_P1,IncA_P1} : {manA_wide_P1,IncA_P1,IncA_P1};
+  assign op2_P1 = ExpA_gt_ExpB_2_P1? {2'b0 , ManB_P1}
+                             : ExpA_gt_ExpB_1_P1? {1'b0 , ManB_P1,1'b0} : {ManB_P1,2'b0};
+  assign ExpBig_P1 =  (ExpA_gt_ExpB_1_P1 | ExpA_gt_ExpB_2_P1)? ExpA_P1: ExpB_P1;
  
   //Subtraction + LZA
   
   DW_decode_en #(`$shift_width`) U1 (
 //; if ( $ExtendedExp_width-1 > $shift_width ) {
-                                   .en(~|Expbase_pp0[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
+                                   .en(~|ExpBig_P1[`$ExtendedExp_width-2`:`$shift_width`])    // Disable if the exponent is big enough
 //; } else {
                                    .en(1'b1)
 //; }
-                                 , .a(Expbase_pp0[`$shift_width-1`:0])
-                                 , .b(max_shift_dec) );
+                                 , .a(ExpBig_P1[`$shift_width-1`:0])
+                                 , .b(max_shift_dec_P1) );
 
 //; for (my $i=0 ; $i<$manB_width+2 ; $i++)
 //; {
-  assign max_shift_mask[`$i`] = max_shift_dec[`$manB_width-$i+1`]; 
+  assign max_shift_mask_P1[`$i`] = max_shift_dec_P1[`$manB_width-$i+1`]; 
 //; }
 
+
+//;   my $pipe_P2 = generate(  'FF_pipeline',  'pipe_P2',  
+//;                             Width=> $ExtendedExp_width+3*$manB_width+8,
+//;                             PipelineDepth => ($pipeline_depth>2?1:0), Retime=>'YES');
+  `$pipe_P2 ->instantiate()` ( .in({ IncA_P1, SignB_P1, op1_P1, op2_P1,  max_shift_mask_P1, ExpBig_P1}) ,
+                               .valid_in(valid_P1), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({ IncA_P2, SignB_P2, op1_P2, op2_P2, max_shift_mask_P2, ExpBig_P2 }),
+                               .valid_out(valid_P2) ); 
 
 //; my $Abs_diff_obj = generate('AbsoluteDifference', 'manDiff', 
 //;                                                 , Width =>$manB_width+2
@@ -160,59 +153,71 @@ module `mname`(
 //;                                                 , useInc => ($useInc =~ /YES/)?1:0 );
 
 
-  `$Abs_diff_obj->instantiate()` (.a(op1),
+  `$Abs_diff_obj->instantiate()` (.a(op1_P2),
   //; if ($useInc =~ /YES/) {
-                                  .ainc(IncA),
+                                  .ainc(IncA_P2),
   //; }
-                                  .b(op2), .rsticky_b(1'b0), .absdiff(diff), .LZA_override_mask(max_shift_mask), .a_gt_b(a_gt_b),.LZA_count(LshiftAmt)
+                                  .b(op2_P2), .rsticky_b(1'b0), .absdiff(diff_P2), .LZA_override_mask(max_shift_mask_P2), .a_gt_b(a_gt_b_P2),.LZA_count(LshiftAmt_P2), .absdiffzero(ZeroDiff_P2)
   //; if ($verif_mode =~ /ON/){
                                 , .dumptolog(dumptolog)
   //; }
                                   ); // The shift amount
 
+  //calculate Expbase_pp0 - LShiftAmt + (0 | 1 | 2)
+  assign LShiftAmtWide_P2 = LshiftAmt_P2;
+
+  assign Expbase_pp0 = ZeroDiff_P2? 0 : ExpBig_P2;
+  assign Expbase_pp1 = ZeroDiff_P2? 0 : ~LShiftAmtWide_P2;
+  assign Expbase_ci  = ~ZeroDiff_P2;
+
   //normalization
 
-  assign shiftedDiff = {1'b0,diff} << LshiftAmt;
-  assign LZA_wrong = shiftedDiff[`$manB_width+2`]; 
-  assign mostSticky = (| shiftedDiff[`$manB_width-$manA_width-1`:0]);
-  assign {ManDiff, Guard, Sticky} = LZA_wrong ? 
-        {shiftedDiff[`$manB_width+2`:`$manB_width-$manA_width+2`],
-         mostSticky | shiftedDiff[`$manB_width-$manA_width+1`] | shiftedDiff[`$manB_width-$manA_width`]}
-        : {shiftedDiff[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky | shiftedDiff[`$manB_width-$manA_width`]};
+//;   my $pipe_P3 = generate(  'FF_pipeline',  'pipe_P3',  
+//;                             Width=> $manB_width+$shift_width+2*$ExtendedExp_width+5,
+//;                             PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
+  `$pipe_P3 ->instantiate()` ( .in({SignB_P2, ZeroDiff_P2, diff_P2, a_gt_b_P2, LshiftAmt_P2, Expbase_pp0, Expbase_pp1 }) ,
+                               .valid_in(valid_P2), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({SignB_P3, ZeroDiff_P3, diff_P3, a_gt_b_P3, LshiftAmt_P3, Expbase_pp0_P3, Expbase_pp1_P3  }),
+                               .valid_out(valid_out) );
 
-  assign ZeroDiff= (diff==0);
+  assign ExpDiff1_pp0_P3 = {Expbase_pp0_P3[`$ExtendedExp_width-1`:1] ^ Expbase_pp1_P3[`$ExtendedExp_width-1`:1], Expbase_pp0_P3[0] ^ ~Expbase_pp1_P3[0]};
+  assign ExpDiff1_pp1_P3 = {Expbase_pp0_P3[`$ExtendedExp_width-2`:1] & Expbase_pp1_P3[`$ExtendedExp_width-2`:1], Expbase_pp0_P3[0] | Expbase_pp1_P3[0],1'b1};
 
-
-  //calculate Expbase_pp0 - LShiftAmt + (0 | 1 | 2)
-  assign LShiftAmtWide = LshiftAmt;
-  assign ExpDiff1_pp0 = {Expbase_pp0[`$ExtendedExp_width-1`:1] ^ Expbase_pp1[`$ExtendedExp_width-1`:1], Expbase_pp0[0] ^ ~Expbase_pp1[0]};
-  assign ExpDiff1_pp1 = {Expbase_pp0[`$ExtendedExp_width-2`:1] & Expbase_pp1[`$ExtendedExp_width-2`:1], Expbase_pp0[0] | Expbase_pp1[0],1'b1};
-
-//; my $CompoundAdder_obj = generate('CompoundAdder', 'CA', 
-//;                                                 , Width =>$ExtendedExp_width);
+//; my $CompoundAdder_obj = generate('CompoundAdder', 'CA', Width =>$ExtendedExp_width);
   `$CompoundAdder_obj->instantiate()` (
             //; if ($verif_mode =~ /ON/){
                                    .dumptolog(dumptolog),
             //; }
-                                   .a(ExpDiff1_pp0), .b(ExpDiff1_pp1),
-                                   .sum0(ExpDiff1), .co0(co_dummy1),
-                                   .sum1(ExpDiff2), .co1(co_dummy2));
+                                   .a(ExpDiff1_pp0_P3), .b(ExpDiff1_pp1_P3),
+                                   .sum0(ExpDiff1_P3), .co0(co_dummy0_P3),
+                                   .sum1(ExpDiff2_P3), .co1(co_dummy1_P3));
+
+  assign shiftedDiff_P3 = {1'b0,diff_P3} << LshiftAmt_P3;
+  assign LZA_wrong_P3 = shiftedDiff_P3[`$manB_width+2`]; 
+  assign mostSticky_P3 = (| shiftedDiff_P3[`$manB_width-$manA_width-1`:0]);
+
+  assign {ManDiff_out, Guard_out, Sticky_out} = LZA_wrong_P3 ? 
+        {shiftedDiff_P3[`$manB_width+2`:`$manB_width-$manA_width+2`],
+         mostSticky_P3 | shiftedDiff_P3[`$manB_width-$manA_width+1`] | shiftedDiff_P3[`$manB_width-$manA_width`]}
+        : {shiftedDiff_P3[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky_P3 | shiftedDiff_P3[`$manB_width-$manA_width`]};
   
-  assign ExpDiff = ZeroDiff ? 0 : LZA_wrong? ExpDiff2[`$exp_width-1`:0] : ExpDiff1[`$exp_width-1`:0]; // handle total cancelation case
-  assign SignDiff = ZeroDiff ? 0 : a_gt_b ^ SignB;
-  assign Overflow = ~ZeroDiff & ( (|ExpDiff2[`$ExtendedExp_width-1`:`$exp_width`]) | ( LZA_wrong & (&ExpDiff2[`$exp_width-1`:0])) );
+  assign ExpDiff_out = ZeroDiff_P3 ? 0 : LZA_wrong_P3? ExpDiff2_P3[`$exp_width-1`:0] : ExpDiff1_P3[`$exp_width-1`:0]; // handle total cancelation case
+  assign SignDiff_out = ZeroDiff_P3 ? 0 : a_gt_b_P3 ^ SignB_P3;
+  assign Overflow_out = ~ZeroDiff_P3 & ( (|ExpDiff2_P3[`$ExtendedExp_width-1`:`$exp_width`]) | ( LZA_wrong_P3 & (&ExpDiff2_P3[`$exp_width-1`:0])) );
+  assign ZeroDiff_out = ZeroDiff_P3;
+  assign LZA_wrong_out = LZA_wrong_P3;
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
-    $display ("`$self->get_instance_path()`: ManA=%b",ManA);
-    $display ("`$self->get_instance_path()`: op1=%b op2=%b ",op1, op2);
-    $display ("`$self->get_instance_path()`: ExpB_gt_ExpA_1=%b, ExpB_gt_ExpA_2=%b, ExpA_gt_ExpB_1=%b, ExpA_gt_ExpB_2=%b",ExpB_gt_ExpA_1, ExpB_gt_ExpA_2, ExpA_gt_ExpB_1, ExpA_gt_ExpB_2);
-    $display ("`$self->get_instance_path()`: ExpDiff=%h ManDiff=%h Guard=%b Sticky=%b SignDiff=%b",ExpDiff, ManDiff, Guard, Sticky, SignDiff);
-    $display ("`$self->get_instance_path()`: Expbase_pp0=%h, LShiftAmtWide=%d ExpDiff1=%h ExpDiff2=%h",Expbase_pp0, LShiftAmtWide, ExpDiff1, ExpDiff2);
-    $display ("`$self->get_instance_path()`: diff=%h max_shift_mask=%h LshiftAmt=%d shiftedDiff=%h LZA_wrong=%b",diff, max_shift_mask, LshiftAmt, shiftedDiff, LZA_wrong);
-    $display ("`$self->get_instance_path()`: Expbase_pp0=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase_pp0,max_shift_dec,  SignA, SignB);
+    $display ("`$self->get_instance_path()`: ManA=%b",ManA_P1);
+    $display ("`$self->get_instance_path()`: op1=%b op2=%b ",op1_P2, op2_P2);
+    $display ("`$self->get_instance_path()`: ExpB_gt_ExpA_1=%b, ExpB_gt_ExpA_2=%b, ExpA_gt_ExpB_1=%b, ExpA_gt_ExpB_2=%b",ExpB_gt_ExpA_1_P1, ExpB_gt_ExpA_2_P1, ExpA_gt_ExpB_1_P1, ExpA_gt_ExpB_2_P1);
+    $display ("`$self->get_instance_path()`: ExpDiff=%h ManDiff=%h Guard=%b Sticky=%b SignDiff=%b",ExpDiff_out, ManDiff_out, Guard_out, Sticky_out, SignDiff_out);
+    $display ("`$self->get_instance_path()`: Expbase_pp0=%h, LShiftAmtWide=%d ExpDiff1=%h ExpDiff2=%h",Expbase_pp0, LShiftAmtWide_P2, ExpDiff1_P3, ExpDiff2_P3);
+    $display ("`$self->get_instance_path()`: diff=%h max_shift_mask=%h LshiftAmt=%d shiftedDiff=%h LZA_wrong=%b",diff_P3, max_shift_mask_P1, LshiftAmt_P2, shiftedDiff_P3, LZA_wrong_P3);
+    $display ("`$self->get_instance_path()`: Expbase_pp0=%h max_shift_dec=%h SignA=%b SignB=%b", Expbase_pp0,max_shift_dec_P1,  SignA_P1, SignB_P1);
 end
 // synopsys translate_on
 //; }
