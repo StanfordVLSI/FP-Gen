@@ -59,9 +59,14 @@ if { $PipelineDepth > 0 } {
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
 
   if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
-   set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
-   set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
+   set MultP_instances [get_cells -hierarchical * -filter {@ref_name == MultiplierP_unq1}];
+   foreach_in_collection MultP_instance $MultP_instances {
+     current_instance $MultP_instance;
+     set_multicycle_path $MulpPipelineDepth -from [get_cells -hierarchical * -filter {@is_sequential==true && @is_hierarchical == false}];
+   }
+   report_timing_requirements;
   }
+
   set_DESIGN_switching_activity "avg"
   if { [file exists ${DESIGN_TARGET}.saif] } {
     set_DESIGN_switching_activity "avg" ${DESIGN_TARGET}.saif

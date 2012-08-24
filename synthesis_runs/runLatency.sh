@@ -77,21 +77,21 @@ pushd CMA367MP
 make -f $FPGEN/Makefile gen GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"
 $FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS -I -- make -f $FPGEN/Makefile run GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.4 VT=lvt VOLTAGE=1v0 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.4 VT=lvt VOLTAGE=1v0
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.5 VT=lvt VOLTAGE=1v0 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.5 VT=lvt VOLTAGE=1v0
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.6 VT=lvt VOLTAGE=1v0 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.6 VT=lvt VOLTAGE=1v0
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.75 VT=lvt VOLTAGE=1v0 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=0.75 VT=lvt VOLTAGE=1v0
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=1 VT=svt VOLTAGE=0v9 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=1 VT=svt VOLTAGE=0v9
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=1.5 VT=svt VOLTAGE=0v8 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=1.5 VT=svt VOLTAGE=0v8
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=2 VT=svt VOLTAGE=0v8 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=2 VT=svt VOLTAGE=0v8
 
-$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=2.5 VT=hvt VOLTAGE=0v8 SMART_RETIMING=1
+$FPGEN/scripts/jsub -rerun 3 -max_jobs $MAX_JOBS  -l mppdepth=2 -l mem=8000m -- make -f $FPGEN/Makefile run_icc GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA top_FPGen.FPGen.CMA.PipelineDepth=7 top_FPGen.FPGen.CMA.EnableMultiplePumping=YES"  SYN_CLK_PERIOD=2.5 VT=hvt VOLTAGE=0v8
 
 
 popd
