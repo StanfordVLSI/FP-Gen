@@ -78,11 +78,11 @@ module `mname`(
     input logic [`$exp_width + $frac_width`:0] 	a_in, b_in,
    //; if ($enable_forwarding =~ /YES/){
     input logic forward_a, forward_b,	
-    input logic [`$exp_width + $frac_width`:0] z_preInc, z_postInc,
+    input logic [`$exp_width + $frac_width`:0] z_preInc,
     input logic IncZ,
    //; }
    //; if ($pipeline_depth>0) {
-    input logic  clk , reset, valid_in, stall_in, adder_mode, multiplier_mode,	       
+    input logic  clk , reset, valid_in, stall_in,	       
     output logic valid_out, stall_request,
    //; }
     output logic 			      SignAB_out, NANAB_out, InfAB_out, ZeroAB_out,
@@ -90,105 +90,64 @@ module `mname`(
     output logic [`$product_width - 1`: 0]    ManAB_out
 	       );
 
-   logic 			      SignAB, NANAB, InfAB, ZeroAB;
-   logic [`$exp_width + 1`:0] 	      ExpAB;
-   logic [`$product_width - 1`: 0]    ManAB;
-
-   logic [`$exp_width + $frac_width`:0] a,b, a0, a1, A_adder_mode, A_pl, B_pl;
-   logic ainc, binc, IncA_pl, IncB_pl, mp_mode_pl, adder_mode_pl, forward_a0, forward_a_pl, valid_A0, valid_A, valid_mul, valid_ManAB, valid_middle, stall;   
-   logic [`$frac_width - 1`:0] 		      SigA, SigB;
-   logic [`$frac_width`:0] 		      ManA, ManA1, manA_adder_mode, ManB;
-   logic [`$exp_width - 1`:0] 		      ExpA, ExpA_adder_mode, ExpB;
-   logic [`$exp_width + 1`:0] 		      bias_offset, Eab_ps0, Eab_ps1, ExpAB0, ExpAB1;
-   logic [`$product_width-1`: 0] 	      ManAB_unnormalized, ManAB_shifted, ManAB_normalized;
+   logic [`$exp_width - 1`:0] 	ExpA_P0, ExpB_P0;
+   logic [`$exp_width + 1`:0]   bias_offset, Eab_ps0_P0, Eab_ps1_P0, ExpAB0_P0, ExpAB1_P0, ExpAB_P0, ExpAB_PEnd;
+   logic [`$frac_width - 1`:0] 	SigA_P0, SigB_P0;
+   logic [`$frac_width`:0] 	ManA_P0, ManB_P0;
+   logic [`$exp_width + $frac_width`:0] A_P0,B_P0;
+   logic [`$product_width-1`: 0] ManAB_PEnd, ManAB_unnormalized_PEnd, ManAB_shifted_PEnd, ManAB_normalized_PEnd;
    //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger
-   logic [`$product_width`: 0] 		      ManAB_unnormalized_long;
-   logic 				      NANorInfA, NANorInfB, zeroSigA, zeroSigB, InfA;
-   logic 				      InfB, NANA, NANB, SignA, SignB, ZeroExpA, ZeroExpB, ZeroExpA_prePipeline, ZeroExpB_prePipeline, ZeroExpA_adder_mode;
-   logic 				      ZeroA, ZeroB, co_dummy0, co_dummy1, co_dummy2;
-   logic 				      co_dummy3, co_dummy4, shiftleft;
+   logic [`$product_width`: 0] 	ManAB_unnormalized_long_PEnd;
 
-   //; if ( ! $useMP){
-   logic mp_mode;
-   assign mp_mode = 0;
-   //; }
-
-
+   logic IncA_P0, IncB_P0 , stall, valid_Mult, valid_shiftAmount, valid_ManAB, valid_ExpAB;
+   logic NANorInfA_P0, NANorInfB_P0, InfA_P0, InfB_P0, NANA_P0, NANB_P0;
+   logic zeroSigA_P0, zeroSigB_P0, ZeroExpA_P0, ZeroExpB_P0;
+   logic SignA_P0, SignB_P0, denormA_P0, denormA_PEnd, denormB_P0, denormB_PEnd, shiftleft_P0, shiftleft_PEnd;
+   logic ZeroA_P0, ZeroA_PEnd, ZeroB_P0, ZeroB_PEnd;
+   logic SignAB_P0, SignAB_PEnd, NANAB_P0, NANAB_PEnd, InfAB_P0, InfAB_PEnd, ZeroAB_P0, ZeroAB_PEnd;
+   logic co_dummy0_P0, co_dummy1_P0, co_dummy2_P0, co_dummy3_P0, co_dummy4_P0;
 
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
-   assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
-   assign {b,binc} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
-   assign a1 = forward_a0? z_postInc : a0;
+   assign {A_P0,IncA_P0} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
+   assign {B_P0,IncB_P0} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
 //; } else {
    logic forward_a = 0;
-   assign {a,b,ainc,binc} = {a_in,b_in,2'b0};
-   assign a1 = a0;//A_pl;
+   assign {A_P0, B_P0,Ainc_P0,Binc_P0} = {a_in,b_in,2'b0};
 //; }
 
 
+   // Calculations for A
+   assign SignA_P0 = A_P0[ `$exp_width + $frac_width` ];
+   assign ExpA_P0  = A_P0[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
+   assign SigA_P0  = A_P0[`$frac_width - 1` : 0 ];
+   assign ZeroExpA_P0  =  ~|ExpA_P0;
+   assign ManA_P0 = { ~denormA_P0 , SigA_P0 };
+   assign zeroSigA_P0 = SigA_P0=={(`$frac_width`){IncA_P0}};
+   assign ZeroA_P0 = zeroSigA_P0 & ZeroExpA_P0 & ~IncA_P0;
+   assign NANorInfA_P0 = ( & ExpA_P0[`$exp_width - 1` : 1])  & ( ExpA_P0[0] | (IncA_P0 & zeroSigA_P0) )  ;
+   assign InfA_P0      =  zeroSigA_P0 & NANorInfA_P0;
+   assign NANA_P0      = ~zeroSigA_P0 & NANorInfA_P0;
 
-   assign ZeroExpA_prePipeline  =  ~|a[`$exp_width + $frac_width - 1`:`$frac_width`];
-   assign ZeroExpB_prePipeline  =  ~|b[`$exp_width + $frac_width - 1`:`$frac_width`];
-
-//; if ($pipeline_depth > 0 ) {
-//;   my $pipein = generate(  'FF_pipeline',  'pipein',  Width=> 2*$exp_width + 2*$frac_width + 8 , PipelineDepth => $pipeline_depth, Retime=>'YES');
-  `$pipein ->instantiate()` ( .in ({a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline, adder_mode}) ,
-                              .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset),
-                              .out({A_pl,B_pl,IncA_pl,IncB_pl,mp_mode_pl, ZeroExpA, ZeroExpB, adder_mode_pl}),
-                              .valid_out(valid_out) );
-
-
-//;   my $pipeA0 = generate(  'FF_pipeline',  'pipe_A0',  Width=> $exp_width + $frac_width + 2 , PipelineDepth => 1, Retime=>'YES');
-  `$pipeA0 ->instantiate()` ( .in ({a,forward_a}) , .out({a0,forward_a0}),
-                              .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset),
-                              .valid_out(valid_A0) );
-
-	
-//; my $pipeA1 = generate(  'FF_pipeline',  'pipe_A1',  Width=> $exp_width + $frac_width + 1 , PipelineDepth => $pipeline_depth-1, Retime=>'YES');
-  `$pipeA1 ->instantiate()` ( .in(a1) , .out(A_adder_mode),
-                              .valid_in(valid_A0), .clk(clk) , .stall(stall), .reset(reset), 
-                              .valid_out(valid_A) );
-//; } else  {
-  assign {A_pl,B_pl,IncA_pl,IncB_pl,mp_mode_pl, ZeroExpA, ZeroExpB } = {a,b,ainc,binc,mp_mode, ZeroExpA_prePipeline, ZeroExpB_prePipeline};
-  assign adder_mode_pl = 0;
-  assign A_adder_mode = a;
- 
-//; }
-
-
-   assign SignA = A_pl[ `$exp_width + $frac_width` ];
-   assign SignB = B_pl[ `$exp_width + $frac_width` ];
-   assign ExpA  = A_pl[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
-   assign ExpB  = B_pl[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
-   assign SigA  = A_pl[`$frac_width - 1` : 0 ];
-   assign SigB  = B_pl[`$frac_width - 1` : 0 ];
-
-   assign zeroSigA = SigA=={(`$frac_width`){IncA_pl}};
-   assign zeroSigB = SigB=={(`$frac_width`){IncB_pl}};
-
-   assign ZeroA = zeroSigA & ZeroExpA & ~IncA_pl;
-   assign ZeroB = zeroSigB & ZeroExpB & ~IncB_pl;
-
-   assign ManA = { ~ZeroExpA , SigA };
-   assign ManB = { ~ZeroExpB , SigB };
-
-   assign NANorInfA = ( & ExpA[`$exp_width - 1` : 1])  & ( ExpA[0] | (IncA_pl & zeroSigA) )  ;
-   assign NANorInfB = ( & ExpB[`$exp_width - 1` : 1])  & ( ExpB[0] | (IncB_pl & zeroSigB) )  ;
-
-   assign InfA      =  zeroSigA & NANorInfA;
-   assign InfB      =  zeroSigB & NANorInfB;
-
-   assign NANA      = ~zeroSigA & NANorInfA;
-   assign NANB      = ~zeroSigB & NANorInfB;
+   // Calculations for B
+   assign SignB_P0 = B_P0[ `$exp_width + $frac_width` ];
+   assign ExpB_P0  = B_P0[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
+   assign SigB_P0  = B_P0[`$frac_width - 1` : 0 ];
+   assign ZeroExpB_P0  =  ~|ExpB_P0;
+   assign ManB_P0 = { ~denormB_P0 , SigB_P0 };
+   assign zeroSigB_P0 = SigB_P0=={(`$frac_width`){IncB_P0}};
+   assign ZeroB_P0 = zeroSigB_P0 & ZeroExpB_P0 & ~IncB_P0;
+   assign NANorInfB_P0 = ( & ExpB_P0[`$exp_width - 1` : 1])  & ( ExpB_P0[0] | (IncB_P0 & zeroSigB_P0) )  ;
+   assign InfB_P0      =  zeroSigB_P0 & NANorInfB_P0;
+   assign NANB_P0      = ~zeroSigB_P0 & NANorInfB_P0;
    
-   assign NANAB = NANA | NANB | (InfA & ZeroB) | (InfB & ZeroA);
-   assign InfAB = (InfB | InfA) & ~NANAB ;
+   // Calculations for AB
+   assign NANAB_P0 = NANA_P0 | NANB_P0 | (InfA_P0 & ZeroB_P0) | (InfB_P0 & ZeroA_P0);
+   assign InfAB_P0 = (InfB_P0 | InfA_P0) & ~NANAB_P0 ;
+   assign ZeroAB_P0 = ZeroA_P0 | ZeroB_P0;
+   assign SignAB_P0 = SignA_P0 ^ SignB_P0;
+   assign shiftleft_P0 = zeroSigA_P0 & IncA_P0 & zeroSigB_P0 & IncB_P0 ;
 
-   assign ZeroAB = ZeroA | ZeroB;
-   assign SignAB = SignA ^ SignB;
-
-
-// bypass the flopped versions of A and B because the unit is pipelined internally
+   //Mantissa multiplication
 //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>$enable_forwarding, 
 //;                        MulpPipelineDepth=> $mulp_pipeline_depth, EnableMultiplePumping=> $enableMultiplePumping, 
 //;                        AddPipelineDepth=> $add_pipeline_depth , UseMP=>($useMP)?"YES":"NO");
@@ -197,56 +156,71 @@ module `mname`(
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
-      .a( { ~ZeroExpA_prePipeline, a[`$frac_width - 1` : 0 ] } ),
-      .b( { ~ZeroExpB_prePipeline, b[`$frac_width - 1` : 0 ] } ), 
+      .a( ManA_P0), .b( ManB_P0), 
 	       
       //; if ($useMP){
       .mp_mode(mp_mode),
       //; }
       //; if($enable_forwarding =~ /YES/){
-      .ainc(ainc), .binc(binc),
+      .ainc(IncA_P0), .binc(IncB_P0),
       //; }
       //; if ($pipeline_depth>0) {
-      .valid_in(valid_in & !adder_mode),
+      .valid_in(valid_in),
       .stall(stall), .clk(clk) , .reset(reset),
-      .valid_out(valid_mul),
+      .valid_out(valid_Mult),
       //; }
-      .out(ManAB_unnormalized_long)
+      .out(ManAB_unnormalized_long_PEnd)
       );
-  
-  assign shiftleft = zeroSigA & IncA_pl & zeroSigB & IncB_pl ;
 
-  assign ManAB_unnormalized = shiftleft?
-                                     ManAB_unnormalized_long[`$product_width`:1] 
-                                   : ManAB_unnormalized_long[`$product_width-1`:0];
+   assign ManAB_unnormalized_PEnd = shiftleft_PEnd?
+                                     ManAB_unnormalized_long_PEnd[`$product_width`:1] 
+                                   : ManAB_unnormalized_long_PEnd[`$product_width-1`:0];
+
+
+//;   my $pipe_AB = generate(  'FF_pipeline',  'pipe_AB',  
+//;                             Width=> 9,
+//;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_AB ->instantiate()` ( .in({ZeroA_P0, denormA_P0, ZeroB_P0, denormB_P0, ZeroAB_P0, SignAB_P0, NANAB_P0, InfAB_P0, shiftleft_P0}) ,
+                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({ZeroA_PEnd, denormA_PEnd, ZeroB_PEnd, denormB_PEnd, ZeroAB_PEnd, SignAB_PEnd, NANAB_PEnd, InfAB_PEnd, shiftleft_PEnd }),
+                               .valid_out(valid_out) );
 
 //; if ($enable_denormals=~ /YES/){
    // enable_denormals = YES
-    logic [`$exp_width + 1`:0] Eab_ps2, Eab_ps3, Eab_ps4, Eab_ps5;
-    logic [`$shift_width - 1`:0] LZD_A, LZD_B;
-    logic [`$frac_width`:0]  dec_a, dec_b;
-    logic [`$shift_width`:0] shiftAmount;
+    assign denormA_P0 = ZeroExpA_P0;
+    assign denormB_P0 = ZeroExpB_P0;
+
+    logic [`$exp_width + 1`:0] Eab_ps2_P0, Eab_ps3_P0, Eab_ps4_P0, Eab_ps5_P0;
+    logic [`$shift_width - 1`:0] LZD_A_P0, LZD_B_P0;
+    logic [`$frac_width`:0]  dec_a_P0, dec_b_P0;
+    logic [`$shift_width`:0] shiftAmount_P0, shiftAmount_PEnd;
 
 
-    // Eab = Ea + Eb - BIAS - LZD_A - LZD_B + ZeroExpA + ZeroExpB
-    //     = Ea + Eb + bias_offset + ~LZD_A + ~LZD_B + ZeroExpA + ZeroExpB (where bias_offset = -BIAS +2)
+    // Eab = Ea + Eb - BIAS - LZD_A - LZD_B + denormA + denormB
+    //     = Ea + Eb + bias_offset + ~LZD_A + ~LZD_B + denormA + denormB (where bias_offset = -BIAS +2)
 
     assign bias_offset = - {(`$exp_width-1`){1'b1}} + 2; // sign extend the bias to be exp_width+2=`$exp_width`+2 wide
 
-    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA_pl}), .enc(LZD_A) , .dec(dec_a));
-    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB_pl}), .enc(LZD_B) , .dec(dec_b));
-    assign shiftAmount = LZD_A + LZD_B;
+    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA_P0[`$frac_width`:1],ManA_P0[0]|IncA_P0}), .enc(LZD_A_P0) , .dec(dec_a_P0));
+    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB_P0[`$frac_width`:1],ManB_P0[0]|IncB_P0}), .enc(LZD_B_P0) , .dec(dec_b_P0));
+    assign shiftAmount_P0 = LZD_A_P0 + LZD_B_P0;
 
+//;   my $pipe_shiftAmount = generate(  'FF_pipeline',  'pipe_shiftAmount',  
+//;                             Width=> $shift_width+1,
+//;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_shiftAmount ->instantiate()` ( .in(shiftAmount_P0) ,
+                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out(shiftAmount_PEnd),
+                               .valid_out(valid_shiftAmount) );
 
-
-    DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0),.b(Eab_ps1),
-					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A}),
-					  .ci(ZeroExpA), .carry(Eab_ps2), .sum(Eab_ps3), 
-					  .co(co_dummy1) );
-    DW01_csa #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2),.b(Eab_ps3),
-					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
-					  .ci(ZeroExpB), .carry(Eab_ps4), .sum(Eab_ps5), 
-					  .co(co_dummy2) );
+    DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0_P0),.b(Eab_ps1_P0),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A_P0}),
+					  .ci(denormA_P0), .carry(Eab_ps2_P0), .sum(Eab_ps3_P0), 
+					  .co(co_dummy1_P0) );
+    DW01_csa #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2_P0),.b(Eab_ps3_P0),
+					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B_P0}),
+					  .ci(denormB_P0), .carry(Eab_ps4_P0), .sum(Eab_ps5_P0), 
+					  .co(co_dummy2_P0) );
    
    //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
    `$ExpAdd_obj->instantiate()` 
@@ -254,16 +228,16 @@ module `mname`(
       //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
       //; }
-      .a(Eab_ps4), .b(Eab_ps5), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4));
+      .a(Eab_ps4_P0), .b(Eab_ps5_P0), .sum0(ExpAB0_P0), .co0(co_dummy3_P0),  .sum1(ExpAB1_P0), .co1(co_dummy4_P0));
 
 //; if( $pipeline_depth > 0 ){
-    logic [`$product_width-1`: 0] ManAB_unnormalized_m;
-    logic [`$shift_width`:0] shiftAmount_m;
-    logic normalize_ManAB;
+    logic [`$product_width-1`: 0] ManAB_unnormalized_PNorm, ManAB_shifted_PNorm;
+    logic [`$shift_width`:0] shiftAmount_PNorm;
+    logic normalize_ManAB_PEnd;
     reg stalled;
 
-    assign normalize_ManAB = ~adder_mode_pl & (ZeroExpA | ZeroExpB) & ~ZeroAB;
-    assign stall_request = stalled? 0: normalize_ManAB ;
+    assign normalize_ManAB_PEnd = (denormA_PEnd | denormB_PEnd) & ~ZeroAB_PEnd;
+    assign stall_request = stalled? 0: normalize_ManAB_PEnd ;
     assign stall = stall_request | stall_in;
     
     always @(posedge clk)
@@ -274,20 +248,22 @@ module `mname`(
 
 //;   my $normalization_pipe = generate('FF_pipeline','norm_stage', Width=> $product_width+$shift_width+1, PipelineDepth=> 1, Retime=>'YES');
     `$normalization_pipe ->instantiate()` (
-       .in({ManAB_unnormalized,shiftAmount}) , .valid_in(stall_request), .clk(clk) , .stall(1'b0), .reset(reset), 
-       .out( {ManAB_unnormalized_m,shiftAmount_m}), .valid_out(valid_ManAB) );
+       .in({ManAB_unnormalized_PEnd,shiftAmount_PEnd}) , .valid_in(stall_request), .clk(clk) , .stall(1'b0), .reset(reset), 
+       .out( {ManAB_unnormalized_PNorm,shiftAmount_PNorm}), .valid_out(valid_ManAB) );
 
-    assign ManAB_shifted = ManAB_unnormalized_m << shiftAmount_m; 
-    assign ManAB_normalized = normalize_ManAB ? ManAB_shifted : ManAB_unnormalized;
+    assign ManAB_shifted_PNorm = ManAB_unnormalized_PNorm << shiftAmount_PNorm; 
+    assign ManAB_normalized_PEnd = normalize_ManAB_PEnd ? ManAB_shifted_PNorm : ManAB_unnormalized_PEnd;
 //; } else {
-    assign ManAB_normalized = ManAB_unnormalized << shiftAmount;
+    assign ManAB_normalized_PEnd = ManAB_unnormalized_PEnd << shiftAmount_PEnd;
 //; }
     
 
 //; }else{ 
           
    // enable_denormals = NO
-
+   assign denormA_P0 = 0;
+   assign denormB_P0 = 0; 
+   
    assign bias_offset = - {(`$exp_width-1`){1'b1}}; // sign extend the bias to be exp_width+2=`$exp_width`+2 wide
 
    //; my $ExpAdd_obj = generate('CompoundAdder', 'ExpAdd', Width=>($exp_width+2), EnableCarryIn=>'OFF', ZeroWidth=>0);   
@@ -296,54 +272,56 @@ module `mname`(
       //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
       //; }
-      .a(Eab_ps0), .b(Eab_ps1), .sum0(ExpAB0), .co0(co_dummy3),  .sum1(ExpAB1), .co1(co_dummy4)
+      .a(Eab_ps0_P0), .b(Eab_ps1_P0), .sum0(ExpAB0_P0), .co0(co_dummy3_P0),  .sum1(ExpAB1_P0), .co1(co_dummy4_P0)
       );
 
-    assign ManAB_normalized = ManAB_unnormalized;
+    assign ManAB_normalized_PEnd = ManAB_unnormalized_PEnd;
     assign stall = stall_in;
     assign stall_request = 0;
 //; }
 
-  DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
-					.ci(shiftleft), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
+  DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA_P0}),.b({2'b00, ExpB_P0}),.c(bias_offset),
+					.ci(shiftleft_P0), .carry(Eab_ps0_P0), .sum(Eab_ps1_P0), .co(co_dummy0_P0) );
 
 //;  if ($floating_digits==1) {
-  assign ExpAB = ZeroAB? 0 : ( ManAB_normalized[`$product_width-1`]? ExpAB1 : ExpAB0);
-  assign ManAB = ManAB_normalized[`$product_width-1`]? ManAB_normalized : {ManAB_normalized[`$product_width-2`:0],1'b0};
+  logic [`$exp_width + 1`:0] ExpAB0_PEnd, ExpAB1_PEnd;
+//;   my $pipe_ExpAB = generate(  'FF_pipeline',  'pipe_ExpAB',  
+//;                             Width=> 2*$exp_width + 4,
+//;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_ExpAB ->instantiate()` ( .in({ExpAB0_P0, ExpAB1_P0}) ,
+                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out( {ExpAB0_PEnd, ExpAB1_PEnd} ),
+                               .valid_out(valid_ExpAB) );
+  assign ExpAB_PEnd = ZeroAB_PEnd? 0 : ( ManAB_normalized_PEnd[`$product_width-1`]? ExpAB1_PEnd : ExpAB0_PEnd);
+  assign ManAB_PEnd = ManAB_normalized_PEnd[`$product_width-1`]? ManAB_normalized_PEnd : {ManAB_normalized_PEnd[`$product_width-2`:0],1'b0};
 //; } else {
-  assign ExpAB = ZeroAB? 0 : ExpAB0;
-  assign ManAB = ManAB_normalized;
+//;   my $pipe_ExpAB = generate(  'FF_pipeline',  'pipe_ExpAB',  
+//;                             Width=> $exp_width + 2,
+//;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
+  `$pipe_ExpAB ->instantiate()` ( .in(ExpAB_P0) ,
+                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out(ExpAB_PEnd),
+                               .valid_out(valid_ExpAB) );
+  assign ExpAB_P0 = ZeroAB_P0? 0 : ExpAB0_P0;
+  assign ManAB_PEnd = ManAB_normalized_PEnd;
 //; }
 
-
-//; if ($enable_denormals=~ /YES/){
-   assign ZeroExpA_adder_mode = ~| A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width`];
-//; } else {
-   assign ZeroExpA_adder_mode = 0;
-//; }
-   assign ExpA_adder_mode = {A_adder_mode[`$exp_width + $frac_width - 1`:`$frac_width+1`], A_adder_mode[`$frac_width`] | ZeroExpA_adder_mode};
-   assign manA_adder_mode = { ~ZeroExpA_adder_mode, A_adder_mode[`$frac_width - 1` : 0 ] };
    
-   assign {InfAB_out,NANAB_out, ZeroAB_out, SignAB_out} = adder_mode_pl? 
-                                                     {InfA,NANA, ZeroA, SignA}
-                                                   : {InfAB, NANAB, ZeroAB, SignAB};
-
-   assign {ExpAB_out, ManAB_out} = adder_mode_pl? 
-                                                     {2'b0,ExpA_adder_mode, 1'b0, manA_adder_mode, `$frac_width`'b0}
-                                                   : {ExpAB, ManAB};
+   assign {InfAB_out,NANAB_out, ZeroAB_out, SignAB_out} = {InfAB_PEnd, NANAB_PEnd, ZeroAB_PEnd, SignAB_PEnd};
+   assign {ExpAB_out, ManAB_out} = {ExpAB_PEnd, ManAB_PEnd};
 
 
 //; if ($verif_mode =~ /ON/){
 // synopsys translate_off
    always @(posedge dumptolog)
      begin
-	$display ("`$self->get_instance_path()`: ZeroExpA=0x%h ZeroA=0x%h InfA=0x%h ExpA=%h ManA=%h, SigA=%h IncA=0x%h",ZeroExpA, ZeroA, InfA, ExpA, ManA, SigA, IncA_pl);
-	$display ("`$self->get_instance_path()`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h",ZeroExpB, ZeroB, InfB, ExpB, ManB, SigB, IncB_pl);
-	$display ("`$self->get_instance_path()`: ExpAB=%h , ManAB=%h, SignAB=%h, NANAB=%h, InfAB=%h, ZeroAB=%h",ExpAB, ManAB, SignAB, NANAB, InfAB, ZeroAB);
-	$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0, ExpAB1);
-	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h", ManAB_unnormalized,ManAB_normalized,ManAB_unnormalized_long);
+	$display ("`$self->get_instance_path()`: ZeroExpA=0x%h ZeroA=0x%h InfA=0x%h ExpA=%h ManA=%h, SigA=%h IncA=0x%h", ZeroExpA_P0, ZeroA_P0, InfA_P0, ExpA_P0, ManA_P0, SigA_P0, IncA_P0);
+	$display ("`$self->get_instance_path()`: ZeroExpB=0x%h ZeroB=0x%h InfB=0x%h ExpB=%h ManB=%h, SigB=%h IncB=0x%h", ZeroExpB_P0, ZeroB_P0, InfB_P0, ExpB_P0, ManB_P0, SigB_P0, IncB_P0);
+	$display ("`$self->get_instance_path()`: ExpAB=%h , ManAB=%h, SignAB=%h, NANAB=%h, InfAB=%h, ZeroAB=%h", ExpAB_PEnd, ManAB_PEnd, SignAB_PEnd, NANAB_PEnd, InfAB_PEnd, ZeroAB_PEnd);
+	$display ("`$self->get_instance_path()`: ExpAB0=%h, ExpAB1=%h",ExpAB0_P0, ExpAB1_P0);
+	$display ("`$self->get_instance_path()`: ManAB_unnormalized =%h ManAB_normalized =%h ManAB_unnormalized_long =%h", ManAB_unnormalized_PEnd,ManAB_normalized_PEnd, ManAB_unnormalized_long_PEnd);
     //;if ($enable_denormals=~ /YES/){
-	$display ("`$self->get_instance_path()`: ManAB_shifted=%h shiftAmount=%h", ManAB_shifted, shiftAmount);
+	$display ("`$self->get_instance_path()`: ManAB_shifted=%h shiftAmount=%h", ManAB_shifted_PEnd, shiftAmount_PEnd);
     //;}
      end
 // synopsys translate_on

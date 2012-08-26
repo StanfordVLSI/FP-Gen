@@ -126,19 +126,72 @@ module `mname` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-  logic SignAB, NANAB, InfAB, ZeroAB, RStickyAB, ResultIsClose, ExpA_gt_ExpB, SignC, ExpABInc;
-  logic [`$ExtendedExp_width-1`:0] ExpDifference, ExpAB;
-  logic [`$product_width-1` : 0] ManAB;
+  logic SignA, NANA, InfA, ZeroA, SignAB, NANAB, InfAB, ZeroAB, SignAB_final, NANAB_final, InfAB_final, ZeroAB_final;
+  logic [`$ExtendedExp_width-1`:0] ExpDifference, ExpAB, ExpAB_final;
+  logic [`$product_width-1` : 0] ManAB, ManA, ManAB_final;
+
+  logic ResultIsClose, ResultMaybeClose, ResultMaybeFar, ExpA_gt_ExpB, SignC;
   logic [`$ExtendedExp_width-1` : 0] ExpC_pp0_init, ExpC_pp1_init, ExpC_pp0, ExpC_pp1, ExpZ_pp0, ExpZ_pp1, ExpZ_pp0_late, ExpZ_pp1_late;
   logic ExpC_ci_init, ExpC_ci, ExpZ_ci, ExpZ_ci_late;
-  logic [`$exp_width-1` : 0] ExpC;
+  logic [`$exp_width-1` : 0] ExpC, ExpA_P1, ExpA_PEnd;
   logic stall, SignC_init, ExpCdec, ExpCDecrementWhenShifting, ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, valid_ExpA, SignC_2, valid_c, valid_ExpC, IncC, IncC2, IncZ, IncZm, ZeroExpC, valid_rnd;
-  logic valid_mul, valid_add, ShiftZ, ShiftC, ShiftC2, SignZ;
+  logic valid_A1, valid_A_adder_mode, valid_mul, valid_add, ShiftZ, ShiftC, ShiftC2, SignZ;
   logic [`$mul_pipeline_depth-1`:0] forward_c_out, forward_c_out_dummy;
 
-  logic [`$exp_width + $frac_width`:0] z_preInc, z_preIncm, c2, forwarded_c;
+  logic [`$exp_width + $frac_width`:0] z_preInc, z_preIncm, c2, forwarded_c, A_in_P1, A_P1;
   logic [7:0] status_init;
   logic [2:0] rnd_add;
+
+  logic [`$frac_width-1`:0] SigA_P1;
+  logic [`$frac_width`:0] ManA_P1, ManA_PEnd;
+  logic  forward_a_P1, NANorInfA_P1, zeroSigA_P1, ZeroA_P1, ZeroA_PEnd, InfA_P1, InfA_PEnd, NANA_P1, NANA_PEnd, ZeroExpA_P1, denormA_P1, SignA_P1, SignA_PEnd;
+
+//; if($enable_forwarding =~ /YES/ ){
+   assign A_P1 = forward_a_P1? z : A_in_P1;
+//; } else {
+   assign A_P1 = A_in_P1;
+//; }
+   assign SignA_P1 = A_P1[ `$exp_width + $frac_width` ];
+   assign ZeroExpA_P1  = ~|A_P1[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
+   assign ExpA_P1  = { A_P1[`$exp_width + $frac_width - 1` :`$frac_width+1`] , A_P1[`$frac_width` ] | denormA_P1} ;
+   assign SigA_P1  = A_P1[`$frac_width - 1` : 0 ];
+   assign ManA_P1  = { ~denormA_P1 , SigA_P1 };
+   assign NANorInfA_P1 = & A_P1[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
+   assign zeroSigA_P1  = ~|A_P1[`$frac_width - 1` : 0 ];
+   assign ZeroA_P1     =  zeroSigA_P1 & ZeroExpA_P1;
+   assign InfA_P1      =  zeroSigA_P1 & NANorInfA_P1;
+   assign NANA_P1      = ~zeroSigA_P1 & NANorInfA_P1;
+//; if ($enable_denormals=~ /YES/){
+    assign denormA_P1 = ZeroExpA_P1;
+//; } else {
+    assign denormA_P1 = 0;
+//; }
+
+
+//;   my $pipe_A1 = generate(  'FF_pipeline',  'pipe_A1',  
+//;                             Width=> $exp_width+$frac_width+2,
+//;                             PipelineDepth => 1, Retime=>'YES');
+  `$pipe_A1 ->instantiate()` ( .in({forward_a, a}) ,
+                               .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({forward_a_P1, A_in_P1}),
+                               .valid_out(valid_A1) );
+
+//;   my $pipe_Arest = generate(  'FF_pipeline',  'pipe_Arest',  
+//;                             Width=> $frac_width+$exp_width+5,
+//;                             PipelineDepth => $mul_pipeline_depth-1 , Retime=>'YES');
+  `$pipe_Arest ->instantiate()` ( .in({SignA_P1, ExpA_P1, ManA_P1, InfA_P1, NANA_P1, ZeroA_P1}) ,
+                               .valid_in(valid_A1), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out({SignA_PEnd, ExpA_PEnd, ManA_PEnd, InfA_PEnd, NANA_PEnd, ZeroA_PEnd}),
+                               .valid_out(valid_A_adder_mode) );
+
+
+   assign {InfAB_final,NANAB_final, ZeroAB_final, SignAB_final} = valid_A_adder_mode? 
+                                                     {InfA_PEnd,NANA_PEnd, ZeroA_PEnd, SignA_PEnd}
+                                                   : {InfAB, NANAB, ZeroAB, SignAB};
+
+   assign {ExpAB_final, ManAB_final} = valid_A_adder_mode? 
+                                                     {2'b0,ExpA_PEnd, 1'b0, ManA_PEnd, `$frac_width`'b0}
+                                                   : {ExpAB, ManAB};
 
 //; if ($pipeline_depth>0){
   assign stall = stall_request | stall_in;
@@ -158,11 +211,11 @@ module `mname` (
                                   .a_in(a), .b_in(b),
 //;      if ($enable_forwarding =~ /YES/){
                                   .forward_a(forward_a), .forward_b(forward_b),	
-                                  .z_preInc(z_preInc), .IncZ(IncZ), .z_postInc(z),
+                                  .z_preInc(z_preInc), .IncZ(IncZ),
 //;      }
 //;      if ($mul_pipeline_depth>0){
-                                  .valid_in(valid_in), .clk(clk) , .stall_in(stall_in), .reset(reset),
-                                  .valid_out(valid_mul), .stall_request(stall_request), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode),
+                                  .valid_in(valid_in & !adder_mode), .clk(clk) , .stall_in(stall_in), .reset(reset),
+                                  .valid_out(valid_mul), .stall_request(stall_request),
 //;      }
                                   .SignAB_out(SignAB), .ExpAB_out(ExpAB) , .ManAB_out(ManAB),
                                   .NANAB_out(NANAB), .InfAB_out(InfAB), .ZeroAB_out(ZeroAB)
@@ -170,7 +223,7 @@ module `mname` (
                                   );
 
 //; if ($pipeline_depth>0 && $mul_pipeline_depth==0){
-    assign valid_mul = valid_in;
+   assign valid_mul = valid_in;
    assign stall_request = 1'b0;
    
 //; }
@@ -240,7 +293,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //; my $ED_obj = generate('ExponentDifference', 'ED', ExponentWidth=>$exp_width);
   `$ED_obj->instantiate()` (.ExpA_pp0(ExpC_pp0), .ExpA_pp1(ExpC_pp1), .ExpA_ci(ExpC_ci),
                 .ExpADecrementWhenShifting(ExpCDecrementWhenShifting), .SignA(SignC), .ShiftA(ShiftC), 
-                .ExpB(ExpAB), .SignB(SignAB), .ExpDifference(ExpDifference),
+                .ExpB(ExpAB_final), .SignB(SignAB_final), .ExpDifference(ExpDifference),
                 .ResultMaybeClose(ResultMaybeClose), .ResultMaybeFar(ResultMaybeFar), .ResultIsClose(ResultIsClose), .ExpA_gt_ExpB(ExpA_gt_ExpB)
   //; if ($verif_mode =~ /ON/){
               , .dumptolog(dumptolog)
@@ -263,7 +316,7 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
 //;   if ($enable_forwarding =~ /YES/) {
                         .IncA(IncC),
 //;   }
-                        .SignB(SignAB), .ExpB(ExpAB), .ManB(ManAB), .InfB(InfAB), .NANB(NANAB), .ZeroB(ZeroAB),
+                        .SignB(SignAB_final), .ExpB(ExpAB_final), .ManB(ManAB_final), .InfB(InfAB_final), .NANB(NANAB_final), .ZeroB(ZeroAB_final),
                         .rnd(rnd_add),
                         .ExpDifference(ExpDifference), .ExpA_gt_ExpB(ExpA_gt_ExpB),
                         .ResultMaybeClose(ResultMaybeClose), .ResultMaybeFar(ResultMaybeFar), .ResultIsClose(ResultIsClose), 
@@ -272,14 +325,14 @@ assign ExpC  = { c[ `$exp_width + $frac_width - 1` :`$frac_width + 1` ] , ZeroEx
                         .ExpZDecrementWhenShifting(ExpZDecrementWhenShifting), .ExpZDecrementWhenShifting_late(ExpZDecrementWhenShifting_late),
                         .ShiftZ(ShiftZ),
 //;   if ($add_pipeline_depth>0){
-                        .valid_in(valid_mul), .clk(clk) , .stall(stall), .reset(reset),
+                        .valid_in(valid_mul | valid_A_adder_mode), .clk(clk) , .stall(stall), .reset(reset),
                         .valid_out(valid_add),
 //;   } 
                         .Z(z_preInc), .IncZ(IncZ), .status(status_init)
                         );
 
 //; if ($add_pipeline_depth==0){
-  assign valid_add = valid_mul;
+  assign valid_add = valid_mul | valid_A_adder_mode;
 //; }
 
 
