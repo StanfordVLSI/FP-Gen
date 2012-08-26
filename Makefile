@@ -566,16 +566,16 @@ $(ICC_AVG_SAIF_FILE) $(ICC_ADD_SAIF_FILE) $(ICC_MUL_SAIF_FILE) $(ICC_MULADD_SAIF
 	@sleep 1;
 	cd $(SYNTH_SAIF); 								\
 	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
-	      +AddWeight=40 $(RUN) -l $(ICC_SIMV).avg_saif.log;				\
+	      +AddWeight=40 +IgnoreErrors $(RUN) -l $(ICC_SIMV).avg_saif.log;		\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.avg.saif;					\
 	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
-	      +AddWeight=100 $(RUN) -l $(ICC_SIMV).add_saif.log;			\
+	      +AddWeight=100 +IgnoreErrors $(RUN) -l $(ICC_SIMV).add_saif.log;		\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.add.saif;					\
 	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=100 	\
-	      +AddWeight=0 $(RUN) -l $(ICC_SIMV).mul_saif.log;				\
+	      +AddWeight=0 +IgnoreErrors $(RUN) -l $(ICC_SIMV).mul_saif.log;		\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.mul.saif;					\
 	$(ICC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
-	      +AddWeight=0 $(RUN) -l $(ICC_SIMV).muladd_saif.log;			\
+	      +AddWeight=0 +IgnoreErrors $(RUN) -l $(ICC_SIMV).muladd_saif.log;		\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.muladd.saif;
 
 
@@ -633,16 +633,16 @@ $(ICC_OPT_AVG_SAIF_FILE) $(ICC_OPT_ADD_SAIF_FILE) $(ICC_OPT_MUL_SAIF_FILE) $(ICC
 	@sleep 1;
 	cd $(SYNTH_SAIF); 								\
 	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
-	      +AddWeight=40 $(RUN) -l $(ICC_OPT_SIMV).avg_saif.log;			\
+	      +AddWeight=40 +IgnoreErrors $(RUN) -l $(ICC_OPT_SIMV).avg_saif.log;	\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.avg.saif;					\
 	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
-	      +AddWeight=100 $(RUN) -l $(ICC_OPT_SIMV).add_saif.log;			\
+	      +AddWeight=100 +IgnoreErrors $(RUN) -l $(ICC_OPT_SIMV).add_saif.log;	\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.add.saif;					\
 	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=100 \
-	      +AddWeight=0 $(RUN) -l $(ICC_OPT_SIMV).mul_saif.log;			\
+	      +AddWeight=0 +IgnoreErrors $(RUN) -l $(ICC_OPT_SIMV).mul_saif.log;	\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.mul.saif;					\
 	$(ICC_OPT_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
-	      +AddWeight=0 $(RUN) -l $(ICC_OPT_SIMV).muladd_saif.log;			\
+	      +AddWeight=0 +IgnoreErrors $(RUN) -l $(ICC_OPT_SIMV).muladd_saif.log;	\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).icc.muladd.saif;
 
 

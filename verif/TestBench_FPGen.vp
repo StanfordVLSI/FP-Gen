@@ -79,6 +79,7 @@ program automatic `mname` (
    string 							       vector_file = "`$vector_file`";
    int 								       verb = 1;
    int 								       result_tag;
+   int 								       ignore_errors=0;
    
    
    
@@ -448,7 +449,7 @@ program automatic `mname` (
 	       //; }
 	       
 	       // now check results...
-	       if (! GoldRef.CheckMultResult(TransRes, TransExpected)) begin
+	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
 		  dumptolog = 1'b1;
 		  #1;	      
 		  // Print some transaction information
@@ -546,15 +547,17 @@ program automatic `mname` (
 	       
 	       resultIsZero = z[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
 			      && z[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
-	       if(!(z == expectedZ || (resultIsZero==1 && expectIsZero==1)
-		    /* && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))*/
-		    || (expectNaN==1 && (status[2]==1)))) begin
-		  dumptolog = 1'b1;
-		  #1;
-		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
-		  result_tag = $fopen("TEST_FAIL","w");
-		  $fclose(result_tag);
-		  $finish(2);
+	       if (!ignore_errors) begin
+		  if(!(z == expectedZ || (resultIsZero==1 && expectIsZero==1)
+		       /* && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))*/
+		       || (expectNaN==1 && (status[2]==1)))) begin
+		     dumptolog = 1'b1;
+		     #1;
+		     $display("%t: \033[0;31mERROR Found\033[0m", $time);
+		     result_tag = $fopen("TEST_FAIL","w");
+		     $fclose(result_tag);
+		     $finish(2);
+		  end
 	       end
 	       r_Temp = Temp_q[0];
   	       Temp_q = Temp_q[1:$];
@@ -599,6 +602,10 @@ program automatic `mname` (
       if ( $test$plusargs("NumTrans") ) begin
 	 $value$plusargs("NumTrans=%d", num_trans);
 	 $display("\t%t:\tRuntime input +NumTrans=%d found",$time, num_trans);
+      end
+      if ( $test$plusargs("IgnoreErrors") ) begin
+	 $display("\n\t%t:\tWARNING IgnoreErrors was set -- all checks are disabled\n",$time);
+	 ignore_errors = 1;
       end
       if ( $test$plusargs("File") ) begin
 	 $value$plusargs("File=%s", vector_file);
