@@ -86,7 +86,7 @@ module `mname`(
   logic IncA_P1, IncA_P2, SignA_P1, SignA_P2, SignB_P1, SignB_P2, ZeroA_P1, ZeroA_P2, ZeroB_P1, ZeroB_P2, ExpA_gt_ExpB_P1, ExpA_gt_ExpB_P2, valid_P1, valid_P2, valid_P3, ManB_overnormal_P1, ManB_overnormal_P2, ManB_overnormal_P3;
   logic [`$manA_width-1`:0] ManSum_P3;
   logic [`$exp_width-1`:0] ExpSum_P3;
-  logic Guard_P3, Sticky_P3, Overflow_P3, ShiftExponent_P3, SignSum_P2, SignSum_P3, ZeroSum_P3;
+  logic Guard_P3, Sticky_P3, Overflow_P3, ShiftExponent_P3, SignSum_P2, SignSum_P3, ZeroSum_P2;
   logic [`$shift_width-1`:0] shift_amount_P1;
   logic [`$manB_width-1`:0] biggerFraction_P1, biggerFraction_P2, sum0_P2, sum1_P2;
   logic [`$manB_width+$manA_width-1`:0] shift_in_P1, shift_out_P1, shift_out_P2 , smallerFraction_P2;
