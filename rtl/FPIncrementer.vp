@@ -49,33 +49,28 @@ module `mname` (
    //; if ($verif_mode =~ /ON/){
     input logic dumptolog,
    //; }
-    input logic [`$exp_width + $frac_width`:0] a,
-    input logic ainc,
+    input logic SignA,
+    input logic [`$exp_width-1`:0] ExpA,
+    input logic [`$frac_width`:0] ManA,
+    input logic denormA , IncA,
     output logic [`$exp_width + $frac_width`:0] out);
-	
 
-  wire [`$frac_width`:0] ManA, ManInc;
-  wire [`$exp_width-1`:0] ExpA, ExpInc;
-  wire SignA, denormA, InfA, NANA;
-  wire [`$exp_width + $frac_width`:0] OutInc;
+  logic [`$frac_width`:0] ManInc;
+  logic [`$exp_width-1`:0] ExpInc;
+  logic IncExpA, overflow;	
+  assign {IncExpA, ManInc} = ManA + 1;
+  assign {overflow, ExpInc} = ExpA + 1;
 
-  assign SignA = a[`$exp_width + $frac_width`];
-  assign ExpA  = a[`$exp_width + $frac_width-1`:`$frac_width`];
-  assign denormA = ~|ExpA;
-  assign ManA  = { ~denormA , a[`$frac_width-1`:0]};
-
-  assign ManInc = ManA + 1;
-  assign ExpInc = ((& ManA) | (denormA & ManInc[`$frac_width`])) ? ExpA+1 : ExpA;
-
-  assign OutInc = {SignA, ExpInc, ManInc[`$frac_width-1`:0]   };
-
-  assign out = ainc? OutInc: a;
+  assign out[`$exp_width + $frac_width`] = SignA;
+  assign out[`$exp_width + $frac_width-1`:`$frac_width+1`] = (IncA & IncExpA)? ExpInc[`$exp_width-1`:1]: ExpA[`$exp_width-1`:1];
+  assign out[`$frac_width`] =  IncA? (IncExpA? ExpInc[0] : ManInc[`$frac_width`] & ExpA[0]): ManA[`$frac_width`] & ExpA[0];
+  assign out[`$frac_width-1`:0] = IncA? ManInc[`$frac_width-1`:0] : ManA[`$frac_width-1`:0];
 
 //; if( $verif_mode eq 'ON' ){
 // synopsys translate_off
 always @(posedge dumptolog)
 begin
-    $display ("OutInc=%h out=%h", OutInc, out);
+    $display ("out=%h", out);
 end
 // synopsys translate_on
 //; }

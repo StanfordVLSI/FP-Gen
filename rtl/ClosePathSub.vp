@@ -193,17 +193,18 @@ module `mname`(
                                    .sum1(ExpDiff2_P3), .co1(co_dummy1_P3));
 
   assign shiftedDiff_P3 = {1'b0,diff_P3} << LshiftAmt_P3;
-  assign LZA_wrong_P3 = shiftedDiff_P3[`$manB_width+2`]; 
+  assign LZA_wrong_P3 = shiftedDiff_P3[`$manB_width+2`];
+
   assign mostSticky_P3 = (| shiftedDiff_P3[`$manB_width-$manA_width-1`:0]);
 
+  assign SignDiff_out = a_gt_b_P3 ^ SignB_P3;
   assign {ManDiff_out, Guard_out, Sticky_out} = LZA_wrong_P3 ? 
         {shiftedDiff_P3[`$manB_width+2`:`$manB_width-$manA_width+2`],
          mostSticky_P3 | shiftedDiff_P3[`$manB_width-$manA_width+1`] | shiftedDiff_P3[`$manB_width-$manA_width`]}
         : {shiftedDiff_P3[`$manB_width+1`:`$manB_width-$manA_width+1`],mostSticky_P3 | shiftedDiff_P3[`$manB_width-$manA_width`]};
-  
-  assign ExpDiff_out = ZeroDiff_P3 ? 0 : LZA_wrong_P3? ExpDiff2_P3[`$exp_width-1`:0] : ExpDiff1_P3[`$exp_width-1`:0]; // handle total cancelation case
-  assign SignDiff_out = ZeroDiff_P3 ? 0 : a_gt_b_P3 ^ SignB_P3;
-  assign Overflow_out = ~ZeroDiff_P3 & ( (|ExpDiff2_P3[`$ExtendedExp_width-1`:`$exp_width`]) | ( LZA_wrong_P3 & (&ExpDiff2_P3[`$exp_width-1`:0])) );
+
+  assign ExpDiff_out = LZA_wrong_P3? ExpDiff2_P3[`$exp_width-1`:0] : ExpDiff1_P3[`$exp_width-1`:0]; // handle total cancelation case
+  assign Overflow_out = & ( (|ExpDiff2_P3[`$ExtendedExp_width-1`:`$exp_width`]) | ( LZA_wrong_P3 & (&ExpDiff2_P3[`$exp_width-1`:0])) );
   assign ZeroDiff_out = ZeroDiff_P3;
   assign LZA_wrong_out = LZA_wrong_P3;
 

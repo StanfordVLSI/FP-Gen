@@ -158,9 +158,11 @@ module `mname` (
     logic [`$wide_width-1`:0] shifted_C, shifted_Cm;
     logic SignC, NANC, InfC, ZeroC, SignCm, NANCm, InfCm, ZeroCm;
     logic [`$exp_width+1`:0] ExpBase, ExpBasem;
+    logic [`$exp_width-1`:0] ExpZ;
+    logic [`$frac_width`:0] ManZ;
     logic [2:0] rndm;
     logic [7:0] statusm;
-    logic IncZ, IncZm, valid_middle, valid_r, valid_inc;
+    logic SignZ, denormZ, IncZ, IncZm, valid_middle, valid_r, valid_inc;
 
 //; my $fma_mulshift = generate('FMA_MulShift','MulShift', FractionWidth=> $frac_width , ExponentWidth=> $exp_width,
 //;                          EnableDenormals=> $enable_denormals, EnableForwarding=> $enable_forwarding,
@@ -251,13 +253,19 @@ module `mname` (
 
 
 
+   assign SignZ = z_preInc[`$exp_width + $frac_width`];
+   assign ExpZ  = {z_preInc[`$exp_width + $frac_width-1`:`$frac_width+1`],z_preInc[`$frac_width`] | denormZ};
+   assign denormZ = ~|z_preInc[`$exp_width + $frac_width-1`:`$frac_width`];
+   assign ManZ  = { ~denormZ , z_preInc[`$frac_width-1`:0]};
+
+
 //;  my $fma_increment = generate('FPIncrementer','Incrementer', FractionWidth=> $frac_width , ExponentWidth=> $exp_width );
 
   `$fma_increment->instantiate()` (
    //; if ($verif_mode =~ /ON/){
     .dumptolog(dumptolog),
    //; }
-    .a(z_preInc), .ainc(IncZ), .out(z) );
+    .SignA(SignZ), .ExpA(ExpZ), .ManA(ManZ), .denormA(denormZ), .IncA(IncZ), .out(z) );
 
    //; if ($verif_mode =~ /ON/){
 	// synopsys translate_off
