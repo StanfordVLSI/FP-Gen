@@ -93,15 +93,15 @@ module `mname`(
 
    logic [`$exp_width - 1`:0] 	ExpA_P0, ExpB_P0, ExpAin_P0, ExpBin_P0;
    logic [`$exp_width + 1`:0]   bias_offset, Eab_ps0_P0, Eab_ps1_P0, ExpAB0_P0, ExpAB1_P0, ExpAB_P0, ExpAB_PEnd;
-   logic [`$frac_width - 1`:0] 	SigAin_P0, SigBin_P0;
+   logic [`$frac_width - 1`:0] 	SigA_P0, SigB_P0;
    logic [`$frac_width`:0] 	ManA_P0, ManB_P0, ManAin_P0, ManBin_P0;
    logic [`$product_width-1`: 0] ManAB_PEnd, ManAB_unnormalized_PEnd, ManAB_shifted_PEnd, ManAB_normalized_PEnd;
    //if IncA=IncB=1, ManA=ManB=`$frac_width`'b1, the product may be 1 bit larger
    logic [`$product_width`: 0] 	ManAB_unnormalized_long_PEnd;
 
    logic IncA_P0, IncB_P0 , stall, valid_Mult, valid_shiftAmount, valid_ManAB, valid_ExpAB;
-   logic NANorInfAin_P0, NANorInfBin_P0, InfA_P0, InfB_P0, NANA_P0, NANB_P0, InfAin_P0, InfBin_P0, NANAin_P0, NANBin_P0;
-   logic zeroSigAin_P0, zeroSigBin_P0, ZeroExpA_P0, ZeroExpB_P0, ZeroExpAin_P0, ZeroExpBin_P0;
+   logic NANorInfA_P0, NANorInfB_P0, InfA_P0, InfB_P0, NANA_P0, NANB_P0;
+   logic zeroSigA_P0, zeroSigB_P0, ZeroExpA_P0, ZeroExpB_P0, ZeroExpAin_P0, ZeroExpBin_P0;
    logic SignA_P0, SignB_P0, SignAin_P0, SignBin_P0, denormZ, denormAin_P0, denormA_P0, denormA_PEnd, denormBin_P0, denormB_P0, denormB_PEnd, shiftleft_P0, shiftleft_PEnd;
    logic ZeroA_P0, ZeroA_PEnd, ZeroB_P0, ZeroB_PEnd;
    logic SignAB_P0, SignAB_PEnd, NANAB_P0, NANAB_PEnd, InfAB_P0, InfAB_PEnd, ZeroAB_P0, ZeroAB_PEnd;
@@ -110,45 +110,50 @@ module `mname`(
    assign denormZ = ~ManZ[`$frac_width`];
 
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
-   assign {ExpA_P0,ManA_P0, SignA_P0, InfA_P0, NANA_P0, ZeroExpA_P0, denormA_P0, IncA_P0} = forward_a?
-                     {ExpZ,ManZ, SignZ, InfZ, NANZ, 1'b0, denormZ, IncZ}
-                    :{ExpAin_P0,ManAin_P0, SignAin_P0, InfAin_P0, NANAin_P0, ZeroExpAin_P0, denormAin_P0, 1'b0};
-   assign {ExpB_P0,ManB_P0, SignB_P0, InfB_P0, NANB_P0, ZeroExpB_P0, denormB_P0, IncB_P0} = forward_b? 
-                     {ExpZ,ManZ, SignZ, InfZ, NANZ, 1'b0, denormZ, IncZ}
-                    :{ExpBin_P0,ManBin_P0, SignBin_P0, InfBin_P0, NANBin_P0, ZeroExpBin_P0, denormBin_P0, 1'b0};
+   assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, denormA_P0, IncA_P0} = forward_a?
+                     {ExpZ,ManZ, SignZ, 1'b0, denormZ, IncZ}
+                    :{ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0, denormAin_P0, 1'b0};
+   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroExpB_P0, denormB_P0, IncB_P0} = forward_b? 
+                     {ExpZ,ManZ, SignZ, 1'b0, denormZ, IncZ}
+                    :{ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0, denormBin_P0, 1'b0};
 //; } else {
-   assign {ExpA_P0,ManA_P0, SignA_P0, InfA_P0, NANA_P0, ZeroExpA_P0, IncA_P0} = 
-          {ExpAin_P0,ManAin_P0, SignAin_P0, InfAin_P0, NANAin_P0, ZeroExpAin_P0,1'b0};
-   assign {ExpB_P0,ManB_P0, SignB_P0, InfB_P0, NANB_P0, ZeroB_P0, IncB_P0} = 
-          {ExpBin_P0,ManBin_P0, SignBin_P0, InfBin_P0, NANBin_P0, ZeroExpBin_P0,1'b0};
+   assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, IncA_P0} = 
+          {ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0,1'b0};
+   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroB_P0, IncB_P0} = 
+          {ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0,1'b0};
 //; }
 
 
-   // Calculations for A
+   // Calculations for Ain
    assign SignAin_P0 = a_in[ `$exp_width + $frac_width` ];
    assign ExpAin_P0  = a_in[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
-   assign SigAin_P0  = a_in[`$frac_width - 1` : 0 ];
    assign ZeroExpAin_P0  =  ~|ExpAin_P0;
-   assign ManAin_P0 = { ~denormAin_P0 , SigAin_P0 };
-   assign zeroSigAin_P0 = ~|SigAin_P0;
-   assign NANorInfAin_P0 = & ExpAin_P0  ;
-   assign InfAin_P0      =  zeroSigAin_P0 & NANorInfAin_P0;
-   assign NANAin_P0      = ~zeroSigAin_P0 & NANorInfAin_P0;
+   assign ManAin_P0 = { ~denormAin_P0 , a_in[`$frac_width - 1` : 0 ]};
 
-   // Calculations for B
+   //Calculation for A
+   assign SigA_P0      = ManA_P0[`$frac_width - 1` : 0 ];
+   assign zeroSigA_P0  = SigA_P0=={(`$frac_width`){IncA_P0}};
+   assign ZeroA_P0     = ~ManA_P0[`$frac_width`] & zeroSigA_P0 & ~IncA_P0 ;
+   assign NANorInfA_P0 = ( & ExpA_P0[`$exp_width - 1` : 1])  & ( ExpA_P0[0] | (IncA_P0 & zeroSigA_P0) )  ;
+   assign InfA_P0      =  zeroSigA_P0 & NANorInfA_P0;
+   assign NANA_P0      = ~zeroSigA_P0 & NANorInfA_P0;
+
+
+   // Calculations for Bin
    assign SignBin_P0 = b_in[ `$exp_width + $frac_width` ];
    assign ExpBin_P0  = b_in[`$exp_width + $frac_width - 1` : `$frac_width` ] ;
-   assign SigBin_P0  = b_in[`$frac_width - 1` : 0 ];
    assign ZeroExpBin_P0  =  ~|ExpBin_P0;
-   assign ManBin_P0 = { ~denormBin_P0 , SigBin_P0 };
-   assign zeroSigBin_P0 = ~|SigBin_P0;
-   assign NANorInfBin_P0 = & ExpBin_P0  ;
-   assign InfBin_P0      =  zeroSigBin_P0 & NANorInfBin_P0;
-   assign NANBin_P0      = ~zeroSigBin_P0 & NANorInfBin_P0;
+   assign ManBin_P0 = { ~denormBin_P0 , b_in[`$frac_width - 1` : 0 ] };
+
+   //Calculation for B
+   assign SigB_P0      = ManB_P0[`$frac_width - 1` : 0 ];
+   assign zeroSigB_P0  = SigB_P0=={(`$frac_width`){IncB_P0}};
+   assign ZeroB_P0     = ~ManB_P0[`$frac_width`] & zeroSigB_P0 & ~IncB_P0;
+   assign NANorInfB_P0 = ( & ExpB_P0[`$exp_width - 1` : 1])  & ( ExpB_P0[0] | (IncB_P0 & zeroSigB_P0) )  ;
+   assign InfB_P0      =  zeroSigB_P0 & NANorInfB_P0;
+   assign NANB_P0      = ~zeroSigB_P0 & NANorInfB_P0;
    
    // Calculations for AB
-   assign ZeroA_P0 = ~IncA_P0 & (~|ManA_P0);
-   assign ZeroB_P0 = ~IncB_P0 & (~|ManB_P0);
    assign NANAB_P0 = NANA_P0 | NANB_P0 | (InfA_P0 & ZeroB_P0) | (InfB_P0 & ZeroA_P0);
    assign InfAB_P0 = (InfB_P0 | InfA_P0) & ~NANAB_P0 ;
    assign ZeroAB_P0 = ZeroA_P0 | ZeroB_P0;
