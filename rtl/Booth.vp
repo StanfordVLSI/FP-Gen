@@ -193,7 +193,7 @@ module `mname`(
    //;     if ($pipeline_depth>0) {
    logic valid_x5x7;
    //;        my $pipe_X5X7 = generate(  'FF_pipeline',  'pipe_X5X7',  
-   //;                             Width=> $width + 3 , PipelineDepth => $pipeline_depth, Retime=>'YES');
+   //;                             Width=> 2*$width + 6 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipe_X5X7->instantiate()` ( .in({x5_intermediate, x7_intermediate}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                               .out({x5, x7}), .valid_out(valid_out) );
