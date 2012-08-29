@@ -209,8 +209,13 @@ module `mname` (
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
   `$rnd_obj->instantiate()` (.rnd(rnd_p2), .Sign(SignSum), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(IncSum), .MaxNum(RndMaxNum));
 
+   logic      MaxResult, InfAfterInc;
+   assign MaxResult = (ManSum == {(`$frac_width+1`){1'b1}}) & (ExpSum == {{(`$exp_width-1`){1'b1}}, 1'b0});
+   assign InfAfterInc =  MaxResult & IncSum;
+   
+   
   assign FX = ResultIsNotSpecial_p2 & (Guard | Sticky| Overflow);
-  assign FV = Overflow & ResultIsNotSpecial_p2;
+  assign FV = (Overflow | InfAfterInc) & ResultIsNotSpecial_p2;
   assign FU = ZeroSum & FX;
   assign MaxNum =  FV & RndMaxNum;
 
@@ -225,9 +230,8 @@ module `mname` (
               ^ { {(`$exp_width-1`){(FI_p2| ResultIsInfinity_p2|FV)}}, FI_p2 | ((ResultIsInfinity_p2|FV)?~MaxNum :ZeroSum)};
 
   assign {ShiftZ, InfZ, NANZ, ZeroZ, IncZ, SignZ} = FI_p2 ? 6'b001000
-                                  : (ResultIsInfinity_p2|FV) ?
-                                      {5'b01000, SignInfinity_p2}
-                                    : { ShiftSum , 2'b00, ZeroSum, IncSum, (ZeroSum?SignZero_p2:SignSum)};
+                      : (ResultIsInfinity_p2|FV) ? {5'b01000, SignInfinity_p2}
+                      : { ShiftSum , 2'b00, ZeroSum, IncSum, (ZeroSum?SignZero_p2:SignSum)};
 
 //; if ($verif_mode =~ /ON/){
   // synopsys translate_off
