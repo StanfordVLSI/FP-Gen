@@ -177,18 +177,18 @@ module `mname` (
   assign {denormA_P1, demormC} = 0;
 //; }
 
-
+//; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
 //;   my $pipe_A1 = generate(  'FF_pipeline',  'pipe_A1',  
-//;                             Width=> $exp_width+$frac_width+2,
-//;                             PipelineDepth => 1, Retime=>'YES');
-  `$pipe_A1 ->instantiate()` ( .in({forward_a, a}) ,
+//;                             Width=> $exp_width+$frac_width+1,
+//;                             PipelineDepth => $pipe_A1_depth, Retime=>'YES');
+  `$pipe_A1 ->instantiate()` ( .in(a) ,
                                .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
-                               .out({forward_a_P1, A_in_P1}),
+                               .out(A_in_P1),
                                .valid_out(valid_A1) );
 
 //;   my $pipe_Arest = generate(  'FF_pipeline',  'pipe_Arest',  
 //;                             Width=> $frac_width+$exp_width+5,
-//;                             PipelineDepth => $mul_pipeline_depth-1 , Retime=>'YES');
+//;                             PipelineDepth => $mul_pipeline_depth-$pipe_A1_depth , Retime=>'YES');
   `$pipe_Arest ->instantiate()` ( .in({SignA_P1, ExpA_P1, ManA_P1, InfA_P1, NANA_P1, ZeroA_P1}) ,
                                .valid_in(valid_A1), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({SignA_PEnd, ExpA_PEnd, ManA_PEnd, InfA_PEnd, NANA_PEnd, ZeroA_PEnd}),
