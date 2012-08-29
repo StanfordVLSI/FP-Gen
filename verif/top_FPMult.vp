@@ -112,9 +112,9 @@ module `mname` ();
 			     .forward_b(forward_b),
 			     // Set to be zero since we are not verifying 
 			     // the function of the following ports
-			     .z_preInc({`$input_width`{1'b0}}), 
-			     .z_postInc({`$input_width`{1'b0}}), 
-			     .IncZ(1'b0), 
+			     .ExpZ(`$exp_width`'b0),
+			     .ManZ(`$frac_width+1`'b0),
+			     .SignZ(1'b0), .InfZ(1'b0), .NANZ(1'b0), .ZeroZ(1'b0), .IncZ(1'b0),
                              //; }
 			     
    			     //; if ($pipeline_depth>0){
@@ -122,8 +122,7 @@ module `mname` ();
                              .clk(clk), 
 			     .reset(reset), 
 			     .valid_in(valid_in), 
-			     .stall_in(stall_in),			     
-                             .adder_mode(1'b0), .multiplier_mode(1'b0),
+			     .stall_in(stall_in),			  
 			     
 			     // ##### Outputs for Piped Design #####
 			     .valid_out(valid_out), 
