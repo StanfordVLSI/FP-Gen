@@ -88,6 +88,7 @@ module `mname`(
   logic [`$ExtendedExp_width-1`:0] LShiftAmtWide_P2;
 
 
+  //; if ($pipeline_depth>0) {
 //;   my $pipe_P1 = generate(  'FF_pipeline',  'pipe_P1',  
 //;                             Width=> $manA_width + $manB_width + 2*$ExtendedExp_width + 3,
 //;                             PipelineDepth => ($pipeline_depth>2?$pipeline_depth-2:($pipeline_depth==2?1:0)),
@@ -95,7 +96,10 @@ module `mname`(
   `$pipe_P1 ->instantiate()` ( .in({ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in}) ,
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ManA_P1, IncA_P1, ExpA_P1, SignA_P1, ManB_P1, ExpB_P1, SignB_P1}),
-                               .valid_out(valid_P1) ); 
+                               .valid_out(valid_P1) );
+   //; } else {
+   assign {ManA_P1, IncA_P1, ExpA_P1, SignA_P1, ManB_P1, ExpB_P1, SignB_P1} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in};
+   //; }
 
 
 
@@ -139,13 +143,17 @@ module `mname`(
 //; }
 
 
+  //; if ($pipeline_depth>0) {
 //;   my $pipe_P2 = generate(  'FF_pipeline',  'pipe_P2',  
 //;                             Width=> $ExtendedExp_width+3*$manB_width+8,
 //;                             PipelineDepth => ($pipeline_depth>2?1:0), Retime=>'YES');
   `$pipe_P2 ->instantiate()` ( .in({ IncA_P1, SignB_P1, op1_P1, op2_P1,  max_shift_mask_P1, ExpBig_P1}) ,
                                .valid_in(valid_P1), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ IncA_P2, SignB_P2, op1_P2, op2_P2, max_shift_mask_P2, ExpBig_P2 }),
-                               .valid_out(valid_P2) ); 
+                               .valid_out(valid_P2) );
+   //; } else {
+   assign { IncA_P2, SignB_P2, op1_P2, op2_P2, max_shift_mask_P2, ExpBig_P2 } = { IncA_P1, SignB_P1, op1_P1, op2_P1,  max_shift_mask_P1, ExpBig_P1};
+   //; }
 
 //; my $Abs_diff_obj = generate('AbsoluteDifference', 'manDiff', 
 //;                                                 , Width =>$manB_width+2
@@ -172,6 +180,8 @@ module `mname`(
 
   //normalization
 
+   
+  //; if ($pipeline_depth>0) {
 //;   my $pipe_P3 = generate(  'FF_pipeline',  'pipe_P3',  
 //;                             Width=> $manB_width+$shift_width+2*$ExtendedExp_width+5,
 //;                             PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
@@ -179,6 +189,9 @@ module `mname`(
                                .valid_in(valid_P2), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({SignB_P3, ZeroDiff_P3, diff_P3, a_gt_b_P3, LshiftAmt_P3, Expbase_pp0_P3, Expbase_pp1_P3  }),
                                .valid_out(valid_out) );
+   //; } else {
+   assign {SignB_P3, ZeroDiff_P3, diff_P3, a_gt_b_P3, LshiftAmt_P3, Expbase_pp0_P3, Expbase_pp1_P3  } = {SignB_P2, ZeroDiff_P2, diff_P2, a_gt_b_P2, LshiftAmt_P2, Expbase_pp0, Expbase_pp1 };
+   //; }
 
   assign ExpDiff1_pp0_P3 = {Expbase_pp0_P3[`$ExtendedExp_width-1`:1] ^ Expbase_pp1_P3[`$ExtendedExp_width-1`:1], Expbase_pp0_P3[0] ^ ~Expbase_pp1_P3[0]};
   assign ExpDiff1_pp1_P3 = {Expbase_pp0_P3[`$ExtendedExp_width-2`:1] & Expbase_pp1_P3[`$ExtendedExp_width-2`:1], Expbase_pp0_P3[0] | Expbase_pp1_P3[0],1'b1};

@@ -102,6 +102,7 @@ module `mname`(
   logic stickyRight_P3, guardRight_P3, stickyCenter_P3, guardCenter_P3, stickyLeft_P3, stickyUpperLeft_P3, guardLeft_P3, guardUpperLeft_P3, ExpSumCenterIsOne_P3;
 
 
+ //; if ($pipeline_depth>0) {
 //;   my $pipe_P1 = generate(  'FF_pipeline',  'pipe_P1',  
 //;                             Width=> $manA_width + $manB_width + 3*$ExtendedExp_width + 6,
 //;                             PipelineDepth => ($pipeline_depth>2?$pipeline_depth-2:($pipeline_depth==2?1:0)),
@@ -110,6 +111,9 @@ module `mname`(
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ManA_P1, IncA_P1, ExpA_P1, SignA_P1, ManB_P1, ExpB_P1, SignB_P1, ExpDifference_P1, ZeroA_P1, ZeroB_P1, ExpA_gt_ExpB_P1}),
                                .valid_out(valid_P1) );
+   //; } else {
+   assign {ManA_P1, IncA_P1, ExpA_P1, SignA_P1, ManB_P1, ExpB_P1, SignB_P1, ExpDifference_P1, ZeroA_P1, ZeroB_P1, ExpA_gt_ExpB_P1} = {ManA_in, IncA_in, ExpA_in, SignA_in, ManB_in, ExpB_in, SignB_in, ExpDifference_in, ZeroA_in, ZeroB_in, ExpA_gt_ExpB_in};
+   //; }
 
 
   assign subtract_P1 = SignA_P1 ^ SignB_P1;
@@ -131,6 +135,7 @@ module `mname`(
 
 
 
+ //; if ($pipeline_depth>0) {
 //;   my $pipe_P2 = generate(  'FF_pipeline',  'pipe_P2',  
 //;                             Width=> $ExtendedExp_width + 2* $manB_width + 1*$manA_width+9,
 //;                             PipelineDepth => ($pipeline_depth>2?1:0), Retime=>'YES');
@@ -138,6 +143,9 @@ module `mname`(
                                .valid_in(valid_P1), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({IncA_P2, ExpA_gt_ExpB_P2, ExtendedExpSum_P2, SignA_P2, SignB_P2, ZeroA_P2, ZeroB_P2, ManB_overnormal_P2, biggerFraction_P2, shift_out_P2, subtract_P2, zeroSmallerFraction_P2  }),
                                .valid_out(valid_P2) );
+   //; } else {
+   assign {IncA_P2, ExpA_gt_ExpB_P2, ExtendedExpSum_P2, SignA_P2, SignB_P2, ZeroA_P2, ZeroB_P2, ManB_overnormal_P2, biggerFraction_P2, shift_out_P2, subtract_P2, zeroSmallerFraction_P2  } = {IncA_P1, ExpA_gt_ExpB_P1, ExtendedExpSum_P1, SignA_P1, SignB_P1, ZeroA_P1, ZeroB_P1, ManB_overnormal_P1, biggerFraction_P1, shift_out_P1, subtract_P1, zeroSmallerFraction_P1  };
+   //; }
 
   // - Middle Part (manB_width-manA_width-1): calculate sum using subtract& ~RSticky as an input
 assign biggerFraction_ci_P2 = IncA_P2 & ExpA_gt_ExpB_P2;
@@ -192,6 +200,8 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
   assign Expbase_pp0 = ExtendedExpSum_P2[`$exp_width-1`:0];
   assign Expbase_pp1 = {(`$ExtendedExp_width`){~ManB_overnormal_P2}};
 
+   
+ //; if ($pipeline_depth>0) {
 //;   my $pipe_P3 = generate(  'FF_pipeline',  'pipe_P3',  
 //;                             Width=> $ExtendedExp_width+$manA_width+9 ,
 //;                             PipelineDepth => ($pipeline_depth>0?1:0), Retime=>'YES');
@@ -199,6 +209,9 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
                                .valid_in(valid_P2), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ExtendedExpSum_P3, ManB_overnormal_P3, sumUpper_P3, sumMiddleSticky_P3, RSticky_P3, SignSum_out, ZeroSum_out }),
                                .valid_out(valid_P3) );
+   //; } else {
+   assign {ExtendedExpSum_P3, ManB_overnormal_P3, sumUpper_P3, sumMiddleSticky_P3, RSticky_P3, SignSum_out, ZeroSum_out } = {ExtendedExpSum_P2, ManB_overnormal_P2, sumUpper_P2, sumMiddleSticky_P2, RSticky_P2, SignSum_P2, ZeroSum_P2  };
+   //; }
 
  //UPPERLEFT needed only for sum0
   assign stickyUpperLeft_P3 = sumUpper_P3[2] | stickyLeft_P3;

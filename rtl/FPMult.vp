@@ -107,7 +107,9 @@ module `mname`(
    logic SignAB_P0, SignAB_PEnd, NANAB_P0, NANAB_PEnd, InfAB_P0, InfAB_PEnd, ZeroAB_P0, ZeroAB_PEnd;
    logic co_dummy0_P0, co_dummy1_P0, co_dummy2_P0, co_dummy3_P0, co_dummy4_P0;
 
+   //; if ($enable_forwarding =~ /YES/){
    assign denormZ = ~ManZ[`$frac_width`];
+   //; }
 
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
    assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, denormA_P0, IncA_P0} = forward_a?
@@ -119,7 +121,7 @@ module `mname`(
 //; } else {
    assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, IncA_P0} = 
           {ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0,1'b0};
-   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroB_P0, IncB_P0} = 
+   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroExpB_P0, IncB_P0} = 
           {ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0,1'b0};
 //; }
 
@@ -158,8 +160,13 @@ module `mname`(
    assign InfAB_P0 = (InfB_P0 | InfA_P0) & ~NANAB_P0 ;
    assign ZeroAB_P0 = ZeroA_P0 | ZeroB_P0;
    assign SignAB_P0 = SignA_P0 ^ SignB_P0;
+   
+   //; if ($enable_forwarding =~ /YES/){
    assign shiftleft_P0 = (&ManZ) & IncA_P0 & IncB_P0 ;
-
+   //; } else {
+   assign shiftleft_P0 = IncA_P0 & IncB_P0 ;
+   //; }
+   
    //Mantissa multiplication
 //; my $Mul_obj = generate('Multiplier', 'Mult', Width=>$frac_width+1, UseInc=>$enable_forwarding, 
 //;                        MulpPipelineDepth=> $mulp_pipeline_depth, EnableMultiplePumping=> $enableMultiplePumping, 
@@ -190,6 +197,8 @@ module `mname`(
                                    : ManAB_unnormalized_long_PEnd[`$product_width-1`:0];
 
 
+   
+//; if ($pipeline_depth>0) {
 //;   my $pipe_AB = generate(  'FF_pipeline',  'pipe_AB',  
 //;                             Width=> 9,
 //;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
@@ -197,6 +206,11 @@ module `mname`(
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ZeroA_PEnd, denormA_PEnd, ZeroB_PEnd, denormB_PEnd, ZeroAB_PEnd, SignAB_PEnd, NANAB_PEnd, InfAB_PEnd, shiftleft_PEnd }),
                                .valid_out(valid_out) );
+   //; } else {
+   assign {ZeroA_PEnd, denormA_PEnd, ZeroB_PEnd, denormB_PEnd, ZeroAB_PEnd, SignAB_PEnd, NANAB_PEnd, InfAB_PEnd, shiftleft_PEnd } = {ZeroA_P0, denormA_P0, ZeroB_P0, denormB_P0, ZeroAB_P0, SignAB_P0, NANAB_P0, InfAB_P0, shiftleft_P0};
+   //; }
+
+   
 
 //; if ($enable_denormals=~ /YES/){
    // enable_denormals = YES
@@ -218,6 +232,9 @@ module `mname`(
     DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB_P0[`$frac_width`:1],ManB_P0[0]|IncB_P0}), .enc(LZD_B_P0) , .dec(dec_b_P0));
     assign shiftAmount_P0 = LZD_A_P0 + LZD_B_P0;
 
+
+   
+//; if ($pipeline_depth>0) {
 //;   my $pipe_shiftAmount = generate(  'FF_pipeline',  'pipe_shiftAmount',  
 //;                             Width=> $shift_width+1,
 //;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
@@ -225,6 +242,9 @@ module `mname`(
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out(shiftAmount_PEnd),
                                .valid_out(valid_shiftAmount) );
+   //; } else {
+   assign shiftAmount_PEnd = shiftAmount_P0;
+   //; }
 
     DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0_P0),.b(Eab_ps1_P0),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A_P0}),
@@ -259,10 +279,15 @@ module `mname`(
     else
       stalled <= stall;
 
+   
+//; if ($pipeline_depth>0) {
 //;   my $normalization_pipe = generate('FF_pipeline','norm_stage', Width=> $product_width+$shift_width+1, PipelineDepth=> 1, Retime=>'YES');
     `$normalization_pipe ->instantiate()` (
        .in({ManAB_unnormalized_PEnd,shiftAmount_PEnd}) , .valid_in(stall_request), .clk(clk) , .stall(1'b0), .reset(reset), 
        .out( {ManAB_unnormalized_PNorm,shiftAmount_PNorm}), .valid_out(valid_ManAB) );
+   //; } else {
+   assign {ManAB_unnormalized_PNorm,shiftAmount_PNorm} = {ManAB_unnormalized_PEnd,shiftAmount_PEnd};
+   //; }
 
     assign ManAB_shifted_PNorm = ManAB_unnormalized_PNorm << shiftAmount_PNorm; 
     assign ManAB_normalized_PEnd = normalize_ManAB_PEnd ? ManAB_shifted_PNorm : ManAB_unnormalized_PEnd;
@@ -297,6 +322,8 @@ module `mname`(
 
 //;  if ($floating_digits==1) {
   logic [`$exp_width + 1`:0] ExpAB0_PEnd, ExpAB1_PEnd;
+   
+//; if ($pipeline_depth>0) {
 //;   my $pipe_ExpAB = generate(  'FF_pipeline',  'pipe_ExpAB',  
 //;                             Width=> 2*$exp_width + 4,
 //;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
@@ -304,9 +331,15 @@ module `mname`(
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out( {ExpAB0_PEnd, ExpAB1_PEnd} ),
                                .valid_out(valid_ExpAB) );
+//; } else {
+   assign {ExpAB0_PEnd, ExpAB1_PEnd} = {ExpAB0_P0, ExpAB1_P0};
+   //; }
+   
   assign ExpAB_PEnd = ZeroAB_PEnd? 1 : ( ManAB_normalized_PEnd[`$product_width-1`]? ExpAB1_PEnd : ExpAB0_PEnd);
   assign ManAB_PEnd = ManAB_normalized_PEnd[`$product_width-1`]? ManAB_normalized_PEnd : {ManAB_normalized_PEnd[`$product_width-2`:0],1'b0};
 //; } else {
+  
+//; if ($pipeline_depth>0) { 
 //;   my $pipe_ExpAB = generate(  'FF_pipeline',  'pipe_ExpAB',  
 //;                             Width=> $exp_width + 2,
 //;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
@@ -314,6 +347,10 @@ module `mname`(
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out(ExpAB_PEnd),
                                .valid_out(valid_ExpAB) );
+   //; } else {
+   assign ExpAB_PEnd = ExpAB_P0;
+   //; }
+   
   assign ExpAB_P0 = ZeroAB_P0? 1 : ExpAB0_P0;
   assign ManAB_PEnd = ManAB_normalized_PEnd;
 //; }

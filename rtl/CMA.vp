@@ -120,6 +120,15 @@ module `mname` (
     output logic [7:0] 				status
    );
 
+   
+   //; if ($pipeline_depth == 0){
+   logic  valid_in, adder_mode, multiplier_mode, stall_in;
+   assign valid_in = 1'b1;
+   assign adder_mode = 1'b0;
+   assign multiplier_mode = 1'b0;
+   assign stall_in = 1'b0;
+   
+   //; }
 
   /* synopsys dc_tcl_script_begin
    set_ungroup [current_design] true
@@ -157,6 +166,7 @@ module `mname` (
    
 
 //; if($enable_forwarding =~ /YES/ ){
+   
 //;   my $pipe_forward_a1 = generate(  'FF_pipeline',  'pipe_forward_a1',  
 //;                             Width=> 1,
 //;                             PipelineDepth => 1, Retime=>'YES');
