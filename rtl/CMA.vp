@@ -153,9 +153,18 @@ module `mname` (
   logic [`$exp_width + $frac_width`:0] A_in_P1, A_P1;
   logic [7:0] status_init;
   logic [2:0] rnd_add;
-
+   logic      valid_forward_a1;
+   
 
 //; if($enable_forwarding =~ /YES/ ){
+//;   my $pipe_forward_a1 = generate(  'FF_pipeline',  'pipe_forward_a1',  
+//;                             Width=> 1,
+//;                             PipelineDepth => 1, Retime=>'YES');
+  `$pipe_forward_a1 ->instantiate()` ( .in(forward_a_P1) ,
+                               .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out(forward_a_P1),
+                               .valid_out(valid_forward_a1) );
+   
    assign A_P1 = forward_a_P1? z : A_in_P1;
 //; } else {
    assign A_P1 = A_in_P1;
