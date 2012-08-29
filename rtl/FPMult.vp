@@ -119,10 +119,10 @@ module `mname`(
                      {ExpZ,ManZ, SignZ, 1'b0, denormZ, IncZ}
                     :{ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0, denormBin_P0, 1'b0};
 //; } else {
-   assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, IncA_P0} = 
-          {ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0,1'b0};
-   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroExpB_P0, IncB_P0} = 
-          {ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0,1'b0};
+   assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, denormA_P0, IncA_P0} = 
+          {ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0, denormAin_P0, 1'b0};
+   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroExpB_P0, denormB_P0, IncB_P0} = 
+          {ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0, denormBin_P0,1'b0};
 //; }
 
 
