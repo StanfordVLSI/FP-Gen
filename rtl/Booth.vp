@@ -84,6 +84,7 @@
 //;                       Doc=>"Signal bit widths");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
+//; my $invert_sel = ($booth==2)? 'YES':'NO';
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0 , Step=>1,
 //;                       Doc=>"Pipeline depth");
 //;
@@ -196,7 +197,7 @@ module `mname`(
    //;                             Width=> 2*$width + 6 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipe_X5X7->instantiate()` ( .in({x5_intermediate, x7_intermediate}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                              .out({x5, x7}), .valid_out(valid_out) );
+                              .out({x5, x7}), .valid_out(valid_x5x7) );
 
    //;     } else {
     assign {x5, x7} = {x5_intermediate, x7_intermediate};
@@ -204,7 +205,7 @@ module `mname`(
    //;   }
  
 
-   //;   my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width);
+   //;   my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width, InvertSel => $invert_sel);
    `$BoothEnc_obj->instantiate`
      (.x(x_in), .extended_y(extended_y),
       //;   if ($booth>=3) {
@@ -234,7 +235,7 @@ module `mname`(
 
    //;   for(my $i=0; $i < $pp_count; $i++){
    //;     if ($booth==2) {
-   //;       my $BoothCell_obj = generate('Booth2SCell', "BoothEnc_u${i}_cell_0");
+   //;       my $BoothCell_obj = generate('Booth2SCell', "BoothEnc_u${i}_cell_0", InvertSel => $invert_sel);
    `$BoothCell_obj->instantiate` (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .S(S[`$i`]), .xn0(xn[`$i`][0]) );
    //;     } else {
    assign S[`$i`] = sel_x[`($i+1)*$sel_width-1`];
@@ -242,7 +243,7 @@ module `mname`(
    //;     for(my $j=$booth-1; $j < $width+2*($booth-1); $j++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1 
 
    //;       my $BoothCellIdx = $booth==2 ? $j : $j - ($booth-1);
-   //;       my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth);
+   //;       my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth, InvertSel => $invert_sel);
    `$BoothCell_obj->instantiate` 
      (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), 
       .x( {

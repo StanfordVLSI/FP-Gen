@@ -46,7 +46,7 @@
 //;                       Doc=>"Sub signal bit widths  !FUNCTIONAL!");
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>-4,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3, Opt=>'Yes' ,
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4, Opt=>'Yes' ,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
 //; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace', 'Array', 'ZM', 'OS1'], Opt=>'Yes' ,
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)");

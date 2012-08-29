@@ -48,10 +48,12 @@
 //; use POSIX qw(floor ceil); # For floor and ceiling rounding math
 //;
 //; # module parameters
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //; my $width = parameter(Name=>'Width', Val=>24, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
+//; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
+//;                       Doc=>"denotes if the select signals are inverted or not");
 //;
 //; # Declare some local variables
 //; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
@@ -90,7 +92,7 @@ module `mname` (
    //; }
 
    //; for(my $i=0; $i < $pp_count; $i++){
-   //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel", BoothType=>$booth);
+   //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel", BoothType=>$booth, InvertSel => $invert_sel);
    `$BoothSel_obj->instantiate` ( .y ( extended_y[`($i+1)*$booth`:`$i*$booth`] ) ,
                                   .sel_x ( sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`] ) );
    //; }

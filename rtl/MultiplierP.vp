@@ -55,7 +55,7 @@
 //; my $booth ;
 //; my $tree ;
 //; if( $designware_mode eq 'OFF' ){
-//;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>3, Opt=>'Yes' ,
+//;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4, Opt=>'Yes' ,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!"); 
 //;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace', 'Array', 'ZM', 'OS1'], Opt=>'Yes' ,
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");

@@ -35,7 +35,8 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
-//;
+//; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
+//;                       Doc=>"denotes if the select signals are inverted or not");
 //;
 //; my $num_inputs = 2**($booth-1);
 //; sub IsPowOfTwo {
@@ -56,12 +57,19 @@ module `mname` (
     output logic 		pp               	// single bit of the relevant pp
 		);
 
+   logic [`$num_inputs-1`:0] sel_x_local;
+  //; if ($invert_sel =~ /YES/){
+   assign sel_x_local = ~ sel_x[`$num_inputs-1`:0];
+  //; } else {
+   assign sel_x_local = sel_x[`$num_inputs-1`:0] ;
+  //; }
+
    logic sign_x;
    assign sign_x = sel_x[`$num_inputs`];
 
    //;if ($booth==2) {
    assign xn0 = ~ sign_x ^ x[0];
-   assign pp = ~((sel_x[0] | xn0) & (sel_x[1] | xn1));
+   assign pp = ~((~sel_x_local[0] | xn0) & (~sel_x_local[1] | xn1));
 
    //;} else {
 
@@ -71,7 +79,7 @@ module `mname` (
    // Mux 0, x1, x2, x4, x8 based on the edge vector
    //;   my $str = '';
    //;   for (my $i=0; $i<$num_inputs; $i++){
-   //;     $str = $str." (sel_x[${i}] | ~x[${i}])" if IsPowOfTwo($i+1);
+   //;     $str = $str." (~sel_x_local[${i}] | ~x[${i}])" if IsPowOfTwo($i+1);
    //;     $str = $str." &" if $i+1<$num_inputs && IsPowOfTwo($i+1);
    //;   }
    assign pp_pow2 = `$str`;
@@ -79,7 +87,7 @@ module `mname` (
    // Mux pp_pow2 and other multiples of x
    //;   $str = '';
    //;   for (my $i=0; $i<$num_inputs; $i++){
-   //;     $str = $str." (sel_x[${i}] | ~x[${i}]) &" if ! IsPowOfTwo($i+1);
+   //;     $str = $str." (~sel_x_local[${i}] | ~x[${i}]) &" if ! IsPowOfTwo($i+1);
    //;   }
    assign pp_all = ~( `$str` pp_pow2);
    // Select pp or pp_b based on sign
