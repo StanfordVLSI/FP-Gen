@@ -90,10 +90,7 @@ module `mname` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-//; if ( $enable_forwarding =~ /NO/){
-  logic IncA;
-  assign IncA=0; 
-//; }
+
 	
   logic [`$frac_width`:0] ManFarSum , ManCloseDiff, ManSum;
   logic [`$ExpB_width-1`:0] CloseExpbase_pp0, CloseExpbase_pp1, FarExpbase_pp0, FarExpbase_pp1, ExtendedExpA;
@@ -107,13 +104,26 @@ module `mname` (
   logic valid_Result, valid_Result2, valid_A, valid_A2, valid_far, valid_close;
   logic [2:0] rnd_p2;
 
+  logic      InfAAfterInc;
+//; if ( $enable_forwarding =~ /YES/){
+  logic      MaxA;
+  assign MaxA = (ManA == {(`$frac_width+1`){1'b1}}) & (ExpA == {{(`$exp_width-1`){1'b1}}, 1'b0});
+  assign InfAAfterInc =  (MaxA & IncA) | InfA;
+//; } else {
+  logic IncA;
+  assign IncA=0;
+  assign InfAAfterInc = InfA; 
+//; }
+
   assign ExtendedExpA = ExpA;
 
+
+
   
-  assign FI = NANA | NANB | (InfA & InfB & (SignA!=SignB));
-  assign ResultIsInfinity =   (InfA | InfB) & ~FI;
-  assign ResultIsNotSpecial = ~InfA & ~InfB & ~NANA & ~NANB;
-  assign SignInfinity = InfA ? SignA : SignB;
+  assign FI = NANA | NANB | (InfAAfterInc & InfB & (SignA!=SignB));
+  assign ResultIsInfinity =   (InfAAfterInc | InfB) & ~FI;
+  assign ResultIsNotSpecial = ~InfAAfterInc & ~InfB & ~NANA & ~NANB;
+  assign SignInfinity = InfAAfterInc ? SignA : SignB;
   assign SignZero = SignA & SignB;
   assign subtract = (SignA ^ SignB) & ~ZeroA & ~ZeroB;
 
@@ -209,13 +219,11 @@ module `mname` (
 //; my $rnd_obj = generate('Rndlogic', 'Rndlgc');
   `$rnd_obj->instantiate()` (.rnd(rnd_p2), .Sign(SignSum), .LSB(ManSum[0]), .Guard(Guard), .Sticky(Sticky), .Inc(IncSum), .MaxNum(RndMaxNum));
 
-   logic      MaxResult, InfAfterInc;
-   assign MaxResult = (ManSum == {(`$frac_width+1`){1'b1}}) & (ExpSum == {{(`$exp_width-1`){1'b1}}, 1'b0});
-   assign InfAfterInc =  MaxResult & IncSum;
+
    
    
   assign FX = ResultIsNotSpecial_p2 & (Guard | Sticky| Overflow);
-  assign FV = (Overflow | InfAfterInc) & ResultIsNotSpecial_p2;
+  assign FV = Overflow & ResultIsNotSpecial_p2;
   assign FU = ZeroSum & FX;
   assign MaxNum =  FV & RndMaxNum;
 
