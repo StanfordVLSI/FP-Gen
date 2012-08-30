@@ -90,9 +90,9 @@ module `mname` (
 
    //; if ($zero_width > 0){
    //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $zero_width);
-   `$SC0_obj->instantiate` (.a(in0[`$zero_width-1`:0]), .b(in1[`$zero_width-1`:0]), .sum({ (`$zero_width`){1'b0}}), .equal(zero0));
+   `$SC0_obj->instantiate` (.a(a[`$zero_width-1`:0]), .b(b[`$zero_width-1`:0]), .ci(ci), .sum({ (`$zero_width`){1'b0}}), .equal(zero0));
    //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $zero_width);
-   `$SC1_obj->instantiate` (.a(in0[`$zero_width-1`:0]), .b(in1[`$zero_width-1`:0]), .sum({ (`$zero_width`){1'b1}}), .equal(zero1));
+   `$SC1_obj->instantiate` (.a(a[`$zero_width-1`:0]), .b(b[`$zero_width-1`:0]), .ci(ci), .sum({ (`$zero_width`){1'b1}}), .equal(zero1));
    //; }
 
 

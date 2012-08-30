@@ -101,10 +101,10 @@ module `mname`(
 // e) ExpDifference = ExpA-ExpB      ---->   [ 0, 2]
 // f) ExpDifference = ExpA-ExpB-1    ---->   [ 1, 3]
 
- //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $ExtendedExp_width, EqualityRangeLB => 2, EqualityRanceUB => $ExtendedExp_width-1 );
-   `$SC0_obj->instantiate` (.a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), .sum({ {(`$ExtendedExp_width-2`){1'b0}}, 2'b10} ), .equal(ExpDiff_Upper0s));
- //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $ExtendedExp_width, EqualityRangeLB => 2, EqualityRanceUB => $ExtendedExp_width-1);
-   `$SC1_obj->instantiate` (.a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), .sum({ {(`$ExtendedExp_width-2`){1'b1}}, 2'b10} ), .equal(ExpDiff_Upper1s));
+ //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $ExtendedExp_width, EqualityRangeLB => 2);
+   `$SC0_obj->instantiate` (.a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), .ci(1'b0), .sum({ {(`$ExtendedExp_width-2`){1'b0}}, 2'b10} ), .equal(ExpDiff_Upper0s));
+ //; my $SC1_obj = generate('SumComparator', 'SC1', Width => $ExtendedExp_width, EqualityRangeLB => 2);
+   `$SC1_obj->instantiate` (.a(ExpA_ExpB_pp0), .b(ExpA_ExpB_pp1), .ci(1'b0), .sum({ {(`$ExtendedExp_width-2`){1'b1}}, 2'b10} ), .equal(ExpDiff_Upper1s));
   
   assign ExpDiffDec = ExpA_ExpB_1[`$ExtendedExp_width-1`]?     ~ExpA_ExpB_2 : ExpA_ExpB_1; 
   assign ExpDiff    = ExpA_ExpB[`$ExtendedExp_width-1`]?       ~ExpA_ExpB_1 : ExpA_ExpB;

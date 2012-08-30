@@ -42,6 +42,7 @@
 
 module `mname` (
     input [`$width-1`:0] a, b, sum,
+    input ci,
     output 		 equal
 		);
 
@@ -54,7 +55,7 @@ module `mname` (
    wire [`$width-1`:0] 	 v,w;
    wire 		 dummy_co;
 
-   DW01_csa #(`$width`) CSA ( .a(a),.b(b), .c(~sum), .ci(1'b0), .carry(v), .sum(w), .co(dummy_co));
+   DW01_csa #(`$width`) CSA ( .a(a),.b(b), .c(~sum), .ci(ci), .carry(v), .sum(w), .co(dummy_co));
 
    assign equal = & (v[`$eq_ub`:`$eq_lb`]^w[`$eq_ub`:`$eq_lb`]);
 

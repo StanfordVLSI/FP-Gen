@@ -99,7 +99,7 @@ module `mname`(
 
   logic OverflowCenter_P3, OverflowRight_P3, OverflowLeft_P3, OverflowUpperLeft_P3;
   logic subtract_P1, subtract_P2, zeroSmallerFraction_P1, zeroSmallerFraction_P2, RSticky_P2, RSticky_P3, biggerFraction_ci_P2, shift_out_ci_P2, co0_P2, co1_P2, zero0_P2, zero1_P2, sumMiddleSticky_P2, sumMiddleSticky_P3;
-  logic stickyRight_P3, guardRight_P3, stickyCenter_P3, guardCenter_P3, stickyLeft_P3, stickyUpperLeft_P3, guardLeft_P3, guardUpperLeft_P3, ExpSumCenterIsOne_P3;
+  logic stickyRight_P3, guardRight_P3, stickyCenter_P3, guardCenter_P3, stickyLeft_P3, stickyUpperLeft_P3, guardLeft_P3, guardUpperLeft_P3, ExpSumCenterIsOne_P3, ZeroSumMiddle_P2;
 
 
  //; if ($pipeline_depth>0) {
@@ -171,7 +171,13 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
 //; }
                                        );
 
-  assign ZeroSum_P2 = (ZeroA_P2 & ZeroB_P2) | (subtract_P2 & ~RSticky_P2 & (shift_out_P2[`$manB_width+$manA_width-1`:`$manA_width`]==biggerFraction_P2));
+   //; my $SC0_obj = generate('SumComparator', 'SC0', Width => $manB_width);
+   `$SC0_obj->instantiate` (.a(smallerFraction_P2[`$manB_width+$manA_width-1`:`$manA_width`]),
+                            .b(biggerFraction_P2),
+                            .ci(biggerFraction_ci_P2),
+                            .sum({ (`$manB_width`){!shift_out_ci_P2}}), .equal(ZeroSumMiddle_P2));
+
+  assign ZeroSum_P2 = (ZeroA_P2 & ZeroB_P2) | (subtract_P2 & ~RSticky_P2 & ZeroSumMiddle_P2 );
 
 //;if ($enable_denormals==1) {
   assign {sumUpper_P2,sumMiddle_P2, sumMiddleSticky_P2} =  subtract_P2 ?
