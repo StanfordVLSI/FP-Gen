@@ -175,7 +175,7 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
    `$SC0_obj->instantiate` (.a(smallerFraction_P2[`$manB_width+$manA_width-1`:`$manA_width`]),
                             .b(biggerFraction_P2),
                             .ci(biggerFraction_ci_P2),
-                            .sum({ (`$manB_width`){!shift_out_ci_P2}}), .equal(ZeroSumMiddle_P2));
+                            .sum({ (`$manB_width`){~shift_out_ci_P2}}), .equal(ZeroSumMiddle_P2));
 
   assign ZeroSum_P2 = (ZeroA_P2 & ZeroB_P2) | (subtract_P2 & ~RSticky_P2 & ZeroSumMiddle_P2 );
 
