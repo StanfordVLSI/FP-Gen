@@ -226,7 +226,10 @@ sub extracTimingReport{
     
     my $target_clk_period_nS = -1 ;
     my $clk_period_nS = -1 ;
-    my $lib_setup_time_nS = 0 ; 
+    my $lib_setup_time_nS = -1 ; 
+    my $worst_slack_nS = -1 ;
+    my $data_arrival_time_nS = -1 ;
+    my $clk_freq_Ghz = -1 ;
 
     open( REPORTFILE , "<$report_file" ) or return  ($target_clk_period_nS , $clk_period_nS , -1 ) ;
     while(my $line=<REPORTFILE>) { 
@@ -234,15 +237,26 @@ sub extracTimingReport{
 	    $lib_setup_time_nS = $1 ;
 	}
 	if ( $line =~ /data arrival time\s+-?(\d+\.?\d*)/ ) {    
-	    $clk_period_nS = $1 + $lib_setup_time_nS ;
+	    $data_arrival_time_nS = $1 ;
+	}
+	if ( $line =~ /slack\s+\S+\s+((-|\+)?\d+\.?\d*)/ ) {    
+	    $worst_slack_nS = $1; print "Slack $worst_slack_nS \n" ;
 	}
 	if ( $line =~ /clock clk \(rise edge\)\s+-?(\d+\.?\d*)/ ) {    
-	    $target_clk_period_nS = $1 ;
+	    $target_clk_period_nS = $1 ; print "Clock $target_clk_period_nS\n" ; print "Target Clock $globalConfig{TOP}{Target_Delay} \n" ;
 	}
     }
     close( REPORTFILE );
 
-    return ( $target_clk_period_nS , $clk_period_nS , 1.0 / $clk_period_nS ) ;
+    if( ($worst_slack_nS != -1 ) and ( $target_clk_period_nS != -1 ) ){
+	$clk_period_nS = $globalConfig{TOP}{Target_Delay}/1000.0 - $worst_slack_nS / ( $target_clk_period_nS / ($globalConfig{TOP}{Target_Delay}/1000.0)  ) ;
+    }
+    if(  $clk_period_nS != -1  ){
+	$clk_freq_Ghz = 1.0 / $clk_period_nS ;
+    }
+    
+
+    return ( $globalConfig{TOP}{Target_Delay}/1000.0 , $clk_period_nS , $clk_freq_Ghz ) ;
 }
 
 
@@ -563,7 +577,7 @@ if( $r{result} ){
     my $iiL = scalar( @{ $r{result} } ) ;
     for( my $ii = 0 ; $ii < $iiL ; $ii+=1 ){
 	foreach my $jj ( keys %{$r{result}[$ii]} ){
-	    foreach my $kk ( keys $r{result}[$ii]{$jj} ){
+	    foreach my $kk ( keys %{$r{result}[$ii]{$jj}} ){
 		if( $r{result}[$ii]{$jj}{$kk} eq '-1' ){
 		   # print "DELETED\n" ;
 		    delete $r{result}[$ii]{$jj}{$kk} ;
