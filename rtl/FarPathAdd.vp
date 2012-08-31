@@ -241,7 +241,7 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
   //RIGHT needed for ~sum0 and sum1
   assign stickyRight_P3   = sumMiddleSticky_P3 | RSticky_P3;
   assign {sumRight_P3,guardRight_P3}  = sumUpper_P3[`$manA_width`:0];
-  assign {ExpSumRight_P3, OverflowRight_P3} = {ExtendedExpSumDec_P3[`$exp_width-1`:0], |ExtendedExpSumDec_P3[`$ExtendedExp_width-1`:`$exp_width`]} ; //ExpSumRight - 1
+  assign {ExpSumRight_P3, OverflowRight_P3} = {ExtendedExpSumDec_P3[`$exp_width-1`:0], |ExtendedExpSumDec_P3[`$ExtendedExp_width-1`:`$exp_width`] | &ExtendedExpSumDec_P3[`$exp_width-1`:0]} ; //ExpSumRight - 1
 
   assign ExpSumCenterIsOne_P3  = ExpSumCenter_P3==1;
 
