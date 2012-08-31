@@ -49,11 +49,7 @@ module `mname` (
     output logic [`$width+2`:0] 	x7
 		);
    
-
-   //assign x7 = {~x[`$width-1`],~x[`$width-1`],~x[`$width-1`],~x} + {x,3'b0} + `$width+3`'b1;
-   assign x7 = 7*x;
-   
-
+   assign x7 = {x,3'b0} - {3'b0,x}; //8x-x
 
    //; if ($verif_mode =~ /ON/){
    always @(posedge dumptolog)
