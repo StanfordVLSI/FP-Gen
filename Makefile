@@ -450,11 +450,13 @@ $(SAIF_FILE): $(SIMV)
 
 
 # Design Compiler rules:
-.PHONY: force_dc run_dc dc_clean
+.PHONY: force_dc run_dc dc_clean run_dc_noSAIF
 
 force_dc: dc_clean run_dc
 run_dc: $(DC_PWR_LOG)
-$(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
+run_dc_noSAIF: $(DC_LOG)
+
+$(DC_LOG):  $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
 	@echo =============================================
@@ -468,7 +470,7 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc.stats
 	perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
-$(DC_SIMV): $(DC_LOG)
+$(DC_SIMV): $(SAIF_DEPENDENCY) $(DC_LOG)
 	@echo ""
 	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
 	@echo =============================================
@@ -522,15 +524,18 @@ dc_clean:
 	\rm -f $(DC_LOG) $(DC_PWR_LOG)
 
 # IC Compiler rules:
-.PHONY: force_icc run_icc icc_clean
-.PHONY: force_icc_opt run_icc_opt icc_opt_clean
+.PHONY: force_icc run_icc run_icc_noSAIF icc_clean
+.PHONY: force_icc_opt run_icc_opt run_icc_opt_noSAIF icc_opt_clean
 
 force_icc: icc_clean run_icc
 run_icc: $(ICC_PWR_LOG)
 force_icc_opt: icc_opt_clean run_icc_opt
 run_icc_opt: $(ICC_OPT_PWR_LOG)
 
-$(ICC_LOG): $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+run_icc_noSAIF: $(ICC_LOG)
+run_icc_opt_noSAIF: $(ICC_OPT_LOG)
+
+$(ICC_LOG): $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler: Making $@ because of $?
 	@echo =============================================
@@ -544,7 +549,7 @@ $(ICC_LOG): $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_icc.stats
 #	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_LOG)
 
-$(ICC_SIMV): $(ICC_LOG)
+$(ICC_SIMV): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(ICC_LOG)
 	@echo ""
 	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
 	@echo =============================================
@@ -598,7 +603,7 @@ icc_clean:
 	@echo =============================================
 	\rm -f $(ICC_LOG)
 
-$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_OPT_LOG): $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler OPT: Making $@ because of $?
 	@echo =============================================
@@ -612,7 +617,7 @@ $(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_H
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_icc_opt.stats
 #	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(ICC_OPT_LOG)
 
-$(ICC_OPT_SIMV): $(ICC_OPT_LOG)
+$(ICC_OPT_SIMV): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(ICC_OPT_LOG)
 	@echo ""
 	@echo Now Compiling Gate Level optimized ICC SAIF testbench : Making $@ because of $?
 	@echo =============================================

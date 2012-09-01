@@ -621,15 +621,24 @@ remove_attribute [current_design] local_link_library
 set link_library $link_library_0v8
 report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.qor.rpt
+if { [expr ![file exists ${DESIGN_TARGET}.saif]] } {
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.power.rpt
+}
 
 set link_library $link_library_0v9
 report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.qor.rpt
+if { [expr ![file exists ${DESIGN_TARGET}.saif]] } {
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.power.rpt
+}
 
 
 set link_library $link_library_1v0
 report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.qor.rpt
+if { [expr ![file exists ${DESIGN_TARGET}.saif]] } {
+report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.power.rpt
+}
 
 exit
 
