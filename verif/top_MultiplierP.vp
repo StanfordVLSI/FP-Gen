@@ -34,7 +34,7 @@
 
 module `mname` ();   
    //; # Generate the DUT here
-   //; my $Inst_obj = generate('MultiplierP' , 'MultiplierP' );
+   //; my $Inst_obj = generate_base('MultiplierP' , 'MultiplierP' );
 
    //; # Read what kind of DUT the user wanted so you can test it
    //; my $BW     = $Inst_obj->get_param('Width');

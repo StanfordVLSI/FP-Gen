@@ -28,7 +28,7 @@
 
 module `mname` ();   
    //; # Generate the DUT here
-   //; my $Inst_obj = generate('Multiplier' , 'Multiplier' );
+   //; my $Inst_obj = generate_base('Multiplier' , 'Multiplier' );
 
    //; # Read what kind of DUT the user wanted so you can test it
    //; my $BW     = $Inst_obj->get_param('Width');
