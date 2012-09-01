@@ -73,8 +73,11 @@ module `mname` ();
 
 DW02_multp #(`$BW`, `$BW`, `2*$BW+2`, 3) U1 ( .a(a), .b(b),.tc(1'b0), .out0(out0), .out1(out1) );
 
+   
+   //; if($useMP) {
 DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_ac ( .a(a[`$BW_sub-1`:0]), .b(b[`$BW_sub-1`:0]),.tc(1'b0), .out0(out0_ac), .out1(out1_ac) );
 DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_bd ( .a(a[`$BW-1`:`$BW-$BW_sub`]), .b(b[`$BW-1`:`$BW-$BW_sub`]),.tc(1'b0), .out0(out0_bd), .out1(out1_bd) );
+   //; }
    
 
 					  
