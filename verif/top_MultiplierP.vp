@@ -90,9 +90,12 @@ DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_bd ( .a(a[`$BW-1`:`$BW-$B
 			       //; if ($verif_mode =~ /ON/){
 			       .dumptolog(dumptolog),
 			       //; }
-
+			      //; if($useMP) {
 				.a({a[`$BW-1`:`$BW-$BW_sub`], mp_mode? `$BW-2*$BW_sub`'b0: a[`$BW-$BW_sub-1`:`$BW_sub`] ,a[`$BW_sub-1`:0]}), 
 				.b({b[`$BW-1`:`$BW-$BW_sub`], mp_mode? `$BW-2*$BW_sub`'b0: b[`$BW-$BW_sub-1`:`$BW_sub`] ,b[`$BW_sub-1`:0]}),
+			      //; } else {
+			      .a(a), .b(b),
+			      //; }
 				//; if ($useInc){
 				.ainc(IncA), 
 				.binc(IncB), 
