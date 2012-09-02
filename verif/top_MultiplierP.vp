@@ -41,7 +41,6 @@ module `mname` ();
    //; my $BW_sub = $Inst_obj->get_param('WidthSub');
    //; my $useInc = $Inst_obj->get_param('UseInc') eq 'YES';
    //; my $useMP  = $Inst_obj->get_param('UseMP');
-   //; my $booth  = $Inst_obj->get_param('BoothType');
    
    // local signals for DUT
    logic signed [`$BW-1`:0]     a, b;
