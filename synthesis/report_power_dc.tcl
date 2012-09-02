@@ -22,11 +22,11 @@ if { [get_ports clk] != [] } {
     report_DESIGN_power "dc" "mapped" "avg" $USE_GATE_SAIF
 } else {
     set link_library $link_library_0v8
-    report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.avg_power.rpt
+    report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.mapped.avg_power.rpt
     set link_library $link_library_0v9
-    report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.avg_power.rpt
+    report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.avg_power.rpt
     set link_library $link_library_1v0
-    report_power  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.avg_power.rpt
+    report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.avg_power.rpt
 }
 
 set target_library [set ${VT}_[string tolower $Voltage]_target_libs]

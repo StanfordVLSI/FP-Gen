@@ -613,8 +613,9 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
 
 file mkdir reports
 
-report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.routed.area.rpt
-report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.routed.area.hier.rpt
+
+report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}_${Voltage}.$target_delay.routed.area.rpt
+report_area  -physical -hierarchy > reports/${DESIGN_TARGET}.${APPENDIX}_${Voltage}.$target_delay.routed.area.hier.rpt
 
 remove_attribute [current_design] local_link_library
 
