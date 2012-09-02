@@ -114,21 +114,20 @@ if { $PipelineDepth > 0 } {
  
 } else {
 
-    #DELAY ONLY EVALUATION.
+    #DELAY ONLY EVALUATION.  
 
-  set CLK clk
-  set RST reset
-  set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000];
-  create_clock $CLK -period $CLK_PERIOD
-  set_output_delay 0 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ] 
-  set_switching_activity -toggle_rate 0.5 -base_clock $CLK -static_probability 0.5 -type inputs 
+  if {$target_delay!=-1} {
+    set_max_delay -from [all_inputs] -to [all_outputs] [expr double($HEDGE)*double($target_delay)/1000]
+    if {$target_delay==0} {
+      set target_delay min
+    }  
+  } else {
+    set target_delay max
+  }
 
   eval $COMPILE_COMMAND
 
-  set CLK_PERIOD [expr double($target_delay)/1000]
-  create_clock $CLK -period $CLK_PERIOD
-  set_output_delay 0 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-  set_switching_activity -toggle_rate 0.5 -base_clock $CLK -static_probability 0.5 -type inputs
+  set_max_delay -from [all_inputs] -to [all_outputs] [expr double($target_delay)/1000]
 }
 
 link
