@@ -251,6 +251,11 @@ sub extracTimingReport{
     if( ($worst_slack_nS != -1 ) and ( $target_clk_period_nS != -1 ) ){
 	$clk_period_nS = $globalConfig{TOP}{Target_Delay}/1000.0 - $worst_slack_nS / ( $target_clk_period_nS / ($globalConfig{TOP}{Target_Delay}/1000.0)  ) ;
     }
+    
+    # extract clk period for non-pipeline design (no clk signal)
+    if( ( $target_clk_period_nS == -1 ) and ($data_arrival_time_nS != -1 ) ) {
+	$clk_period_nS = $data_arrival_time_nS;
+    } 
     if(  $clk_period_nS != -1  ){
 	$clk_freq_Ghz = 1.0 / $clk_period_nS ;
     }
@@ -444,7 +449,7 @@ foreach my $file ( @files ) {
 	}
     }
 
-    @pref =  ( "$design_name.${vt}_*.$target_delay.mapped" , "$design_name.${vt}_*$vdd.$target_delay.routed" , "$design_name.optimized.${vt}_*.$target_delay" );  
+    @pref =  ( "$design_name.${vt}_*.$target_delay.mapped" , "$design_name.${vt}_*.$target_delay.routed" , "$design_name.optimized.${vt}_*.$target_delay" );  
 
     for( my $unt = 0 ; $unt <= $#unit_Labels ; $unt++ ){ 
 	for( my $pr = 0 ; $pr <= $#pref ; $pr++ ){
