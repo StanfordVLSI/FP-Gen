@@ -345,7 +345,7 @@ foreach my $file ( @files ) {
 		      $r{result}[$ri]{COST}{ $uL.$eL."_Leak_Power_mW" } )  =
 		    ( $r{result}[$ri]{COST}{ $pL."_".$uL.$eL."_Dyn_Power_mW" } , 
 		      $r{result}[$ri]{COST}{ $pL."_".$uL.$eL."_Leak_Power_mW" }     ) ;
-		} elsif( $pL eq "Routed" ){
+		} elsif( ($pL eq "Routed") and !defined($r{result}[$rj]{COST}{ $uL.$eL."_Dyn_Power_mW" }) ){
 		    ( $r{result}[$rj]{COST}{ $uL.$eL."_Dyn_Power_mW" } , 
 		      $r{result}[$rj]{COST}{ $uL.$eL."_Leak_Power_mW" } )  =
 		    ( $r{result}[$rj]{COST}{ $pL."_".$uL.$eL."_Dyn_Power_mW" } , 
