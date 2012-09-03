@@ -55,17 +55,21 @@ if { $PipelineDepth > 0 } {
   set CLK clk
   set RST reset
   set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000];
+
   create_clock $CLK -period $CLK_PERIOD
   set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
-
   if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
-   set MultP_instances [get_cells -hierarchical * -filter {@ref_name == MultiplierP_unq1}];
-   foreach_in_collection MultP_instance $MultP_instances {
-     current_instance $MultP_instance;
-     set_multicycle_path $MulpPipelineDepth -from [get_cells -hierarchical * -filter {@is_sequential==true && @is_hierarchical == false}];
-   }
-   current_instance;
-   report_timing_requirements;
+    set MultP_instances [get_cells -hierarchical * -filter {@ref_name == MultiplierP_unq1}];
+    set MultP_Flop_Pins {};
+    foreach_in_collection MultP_instance $MultP_instances {
+      current_instance $MultP_instance;
+      set_multicycle_path $MulpPipelineDepth -from [all_registers] ;
+      set MultP_Flop_Pins  [add_to_collection $MultP_Flop_Pins [all_registers -clock_pins]];
+    }
+    current_instance;
+    group_path -name MultiCycle -from $MultP_Flop_Pins -weight [expr 1.0/double($MulpPipelineDepth)];
+    report_path_group;
+    report_timing_requirements;
   }
 
   set_DESIGN_switching_activity "avg"
@@ -91,12 +95,21 @@ if { $PipelineDepth > 0 } {
     eval $COMPILE_COMMAND
     remove_constraint -all
     current_design ${DESIGN_TARGET}
+
     create_clock $CLK -period $CLK_PERIOD
     set_output_delay 0.15 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ]
     if { $EnableMultiplePumping == "YES" && $MulpPipelineDepth>1} {
-      set MultP_Path [get_object_name [get_cells -hierarchical * -filter "@ref_name == Pipelined_MultiplierP_unq1"]];
-      set_multicycle_path $MulpPipelineDepth -from [get_cells "${MultP_Path}/*" -filter {@is_sequential==true}]
+      set MultP_instances [get_cells -hierarchical * -filter {@ref_name == MultiplierP_unq1}];
+      set MultP_Flop_Pins {};
+      foreach_in_collection MultP_instance $MultP_instances {
+        current_instance $MultP_instance;
+        set_multicycle_path $MulpPipelineDepth -from [all_registers] ;
+        set MultP_Flop_Pins  [add_to_collection $MultP_Flop_Pins [all_registers -clock_pins]  ];
+      }
+      current_instance;
+      group_path -name MultiCycle -from $MultP_Flop_Pins -weight [expr 1.0/double($MulpPipelineDepth)];
     }
+
   }
 
   set_optimize_registers true -design ${DESIGN_TARGET}
@@ -117,7 +130,6 @@ if { $PipelineDepth > 0 } {
     #DELAY ONLY EVALUATION.
 
   set CLK clk
-  set RST reset
   set CLK_PERIOD [expr double($HEDGE)*double($target_delay)/1000];
   create_clock -name $CLK -period $CLK_PERIOD
   set_output_delay 0 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ] 
