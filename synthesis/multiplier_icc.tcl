@@ -124,7 +124,7 @@ set max_booth_column_width 0.0;
 set max_column_width 0.0;
 set total_csa_column_width 0.0;
 set total_booth_column_width 0.0;
-set core_utilization_ratio 0.5;
+set core_utilization_ratio 0.25;
 
 set BoothPath [get_object_name [get_cells -hierarchical "Booth"]];
 set TreePath  [get_object_name [get_cells -hierarchical "Tree"]];
