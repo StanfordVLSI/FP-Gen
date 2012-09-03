@@ -144,10 +144,8 @@ proc set_DESIGN_switching_activity {args} {
   }
 
   if { $saif_file=="" } {
-    set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
-      if { [get_ports clk] != [] } {
-	  set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
-      }
+      set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
+      set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
       if { [get_ports SI] != []} {
 	  set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
       }

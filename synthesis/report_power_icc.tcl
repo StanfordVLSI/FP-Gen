@@ -18,21 +18,12 @@ open_mw_cel ${DESIGN_TARGET}_final
 set saif_type [expr $USE_ICC_GATE_SAIF?"icc":"dc"]
 set use_saif [expr $USE_ICC_GATE_SAIF | $USE_GATE_SAIF]
 
-if { [get_ports clk] != [] } {
-    if { $PipelineDepth > 0 } {
-	report_DESIGN_power $saif_type "routed" "add" $use_saif;
-	report_DESIGN_power $saif_type "routed" "mul" $use_saif;
-	report_DESIGN_power $saif_type "routed" "muladd" $use_saif;  
-    }    
-    report_DESIGN_power $saif_type "routed" "avg" $use_saif
-} else {
-    set link_library $link_library_0v8
-    report_power -analysis_effort high -hierarchy -levels 3   > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.routed.avg_power.rpt
-    set link_library $link_library_0v9
-    report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.routed.avg_power.rpt
-    set link_library $link_library_1v0
-    report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.routed.avg_power.rpt
-}
+if { $PipelineDepth > 0 } {
+    report_DESIGN_power $saif_type "routed" "add" $use_saif;
+    report_DESIGN_power $saif_type "routed" "mul" $use_saif;
+    report_DESIGN_power $saif_type "routed" "muladd" $use_saif;  
+}    
+report_DESIGN_power $saif_type "routed" "avg" $use_saif
 
 
 
