@@ -673,6 +673,7 @@ synthesis_clean:
 
 #Rollup Rules:
 ##############################
+DESIGN_TITLE ?= $(FPPRODUCT)
 ROLLUP_TARGET ?= $(DESIGN_TITLE)_Rollup.target
 
 .PHONY: rollup1  rollup2 rollup3 report_results
@@ -691,7 +692,7 @@ ROLLUP_CMD = perl $(DESIGN_HOME)/scripts/BB_rollup.pl -d $(FPPRODUCT) \
 						 EnableClockGating=$(CLK_GATING)
 
 rollup1: 
-	$(ROLLUP_CMD)
+	$(ROLLUP_CMD) 2>&1 | tee -i rollup_bb.log
 
 rollup2: 
 	$(ROLLUP_CMD)
