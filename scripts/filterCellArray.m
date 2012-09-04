@@ -12,7 +12,9 @@ function out = filterCellArray (varargin)
     for i = 2:2:nargin
         array = varargin{i};
         value = varargin{i+1};
-        index = find (strcmp(array ,value));
+%         index = find (strcmp(array ,value));
+        match = regexp(array, ['\<', value, '\>'], 'once');
+        index = find(~cellfun('isempty',match));
         for i = 1:length(out)
             out{i} = out{i}(index);
         end

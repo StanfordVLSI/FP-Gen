@@ -1,7 +1,7 @@
 % Generate four graphs for MultiplierP data
 % Note: the second argument 'bitwidth' is just four graph titles and output
 % filename
-function plots(filename, bitwidth)
+function plot_for_multp(filename, bitwidth)
 
     fid = fopen(filename);
     data = {};
@@ -54,30 +54,30 @@ function plots(filename, bitwidth)
         COST_Optimized_Clk_Period_nS, COST_Optimized_Avg_Dyn_Energy_pJ, ...
         Vth, Vdd, TreeType, BoothType, Designware};
     
-    Designware_data = filterCellArray(ED_data, ED_data{11}, 'ON ');
-    OurDesign_data = filterCellArray(ED_data, ED_data{11}, 'OFF ');  
+    Designware_data = filterCellArray(ED_data, ED_data{11}, 'ON');
+    OurDesign_data = filterCellArray(ED_data, ED_data{11}, 'OFF');  
     
     OurDesign_Booth = cell(4, 1);
     for i = 1:4
-        OurDesign_Booth{i} = filterCellArray(OurDesign_data, OurDesign_data{10}, [num2str(i), ' ']);
+        OurDesign_Booth{i} = filterCellArray(OurDesign_data, OurDesign_data{10}, num2str(i));
     end
     
-    Wallace = filterCellArray(OurDesign_data, OurDesign_data{9}, 'Wallace ');
-    OS1 = filterCellArray(OurDesign_data, OurDesign_data{9}, 'OS1 ');
-    Array = filterCellArray(OurDesign_data, OurDesign_data{9}, 'Array ');
-	ZM = filterCellArray(OurDesign_data, OurDesign_data{9}, 'ZM ');
+    Wallace = filterCellArray(OurDesign_data, OurDesign_data{9}, 'Wallace');
+    OS1 = filterCellArray(OurDesign_data, OurDesign_data{9}, 'OS1');
+    Array = filterCellArray(OurDesign_data, OurDesign_data{9}, 'Array');
+	ZM = filterCellArray(OurDesign_data, OurDesign_data{9}, 'ZM');
     
     Wallace_Booth = cell(4, 1);
     for i = 1:4
-        Wallace_Booth{i} = filterCellArray(Wallace, Wallace{10}, [num2str(i), ' ']);
+        Wallace_Booth{i} = filterCellArray(Wallace, Wallace{10}, num2str(i));
     end
     
     % filter vt and vdd, just for sanity check
-    Designware_lvt_1v0 = filterCellArray(Designware_data, Designware_data{7},'lvt ', Designware_data{8},  '1.0 ');   
-    Wallace_lvt_1v0 = filterCellArray(OurDesign_data, OurDesign_data{7},'lvt ', OurDesign_data{8},  '1.0 ', OurDesign_data{9}, 'Wallace ');   
+    Designware_lvt_1v0 = filterCellArray(Designware_data, Designware_data{7},'lvt', Designware_data{8},  '1.0');   
+    Wallace_lvt_1v0 = filterCellArray(OurDesign_data, OurDesign_data{7},'lvt', OurDesign_data{8},  '1.0', OurDesign_data{9}, 'Wallace');   
     Wallace_lvt_1v0_Booth = cell(4, 1);
     for i = 1:4
-        Wallace_lvt_1v0_Booth{i} = filterCellArray(Wallace_lvt_1v0, Wallace_lvt_1v0{10}, [num2str(i), ' ']);
+        Wallace_lvt_1v0_Booth{i} = filterCellArray(Wallace_lvt_1v0, Wallace_lvt_1v0{10}, num2str(i));
     end
     
     % get frontier
