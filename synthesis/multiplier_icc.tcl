@@ -124,13 +124,13 @@ set max_booth_column_width 0.0;
 set max_column_width 0.0;
 set total_csa_column_width 0.0;
 set total_booth_column_width 0.0;
-set core_utilization_ratio 0.25;
+set core_utilization_ratio 0.4;
 
 set BoothPath [get_object_name [get_cells -hierarchical "Booth"]];
 set TreePath  [get_object_name [get_cells -hierarchical "Tree"]];
   
 for { set compressed_column $min_compressed_column } { $compressed_column <= $max_compressed_column} { incr compressed_column } {
-  set csa_column_cells [get_cells -of_objects [get_cells -hierarchical -regexp "csa.*_.*_${compressed_column}"]];
+  set csa_column_cells [get_cells -of_objects [get_cells -hierarchical -regexp ".*csa.*_.*_${compressed_column}"]];
   set csa_odd_column_width 0.0;
   set csa_even_column_width 0.0;
   foreach_in_collection csa_column_cell $csa_column_cells {
@@ -457,7 +457,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
         set column_index [expr 2*($compressed_CSA_column-$min_compressed_column)+$is_odd_row];
         set column_position [expr $column_index + $column_offset($column_index)];
         # Second: CSA cells
-        set CSA_child_cells  [get_cells -of_objects [get_cells -regexp -hierarchical "csa.*_${row_index}_${compressed_CSA_column}"]];
+        set CSA_child_cells  [get_cells -of_objects [get_cells -regexp -hierarchical ".*csa.*_${row_index}_${compressed_CSA_column}"]];
         add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_TARGET}::rp_tree \
                     -column [expr int(floor(1.5*$row_index))+1-$is_odd_row] -row $column_position;
 
