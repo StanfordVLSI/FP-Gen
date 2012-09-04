@@ -148,7 +148,7 @@ for { set compressed_column $min_compressed_column } { $compressed_column <= $ma
   }
 
   set booth_column_index [expr $compressed_column-$min_compressed_column];
-  set booth_column_cells [get_cells -of_objects [get_cells -hierarchical -regexp "BoothEnc_u.*cell_${booth_column_index}"]];
+  set booth_column_cells [get_cells -of_objects [get_cells -hierarchical -regexp ".*BoothEnc_u.*cell_${booth_column_index}"]];
   set booth_odd_column_width  0.0;
   set booth_even_column_width 0.0;
   foreach_in_collection booth_column_cell $booth_column_cells {
@@ -183,7 +183,7 @@ set average_column_width [expr ($average_csa_column_width + $average_booth_colum
 set USE_3_2_FLOORPLAN 0;
 
 set booth_sel_cells [get_cells -hierarchical "*Booth_sel_*"];
-set booth_cells [get_cells -hierarchical "BoothEnc_u*cell_*"];
+set booth_cells [get_cells -hierarchical "*BoothEnc_u*cell_*"];
 set booth_encoder_count 0;
 set booth_sel_count -1;
 
@@ -203,7 +203,7 @@ foreach_in_collection booth_sel_cell $booth_sel_cells {
 set max_boothSel_column_width 0.0;
 set total_boothSel_column_width 0.0;
 for { set booth_sel_col 0 } { $booth_sel_col < $booth_sel_count} { incr booth_sel_col } {
-  set boothSel_column_cells [get_cells -of_objects [get_cells -regexp -hierarchical "BoothEnc_u.*Booth_sel_${booth_sel_col}"]];
+  set boothSel_column_cells [get_cells -of_objects [get_cells -regexp -hierarchical ".*BoothEnc_u.*Booth_sel_${booth_sel_col}"]];
   set boothSel_column_width 0.0;
   foreach_in_collection boothSel_column_cell $boothSel_column_cells {
     set boothSel_column_width [expr $boothSel_column_width+[get_attribute $boothSel_column_cell width]];
@@ -385,14 +385,14 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
       if { ($column_count-1-$column) % $booth_select_cadence == 0 } {
         set boothSel_index [expr ($column_count-1-$column) / $booth_select_cadence];
         for {set boothEnc_index 0} { $boothEnc_index < $booth_encoder_count } {incr boothEnc_index} {
-          set boothSel_child_cells [get_cells -of_objects [get_cells -hierarchical -regexp "BoothEnc_u${boothEnc_index}.Booth_sel_${boothSel_index}"]];
+          set boothSel_child_cells [get_cells -of_objects [get_cells -hierarchical -regexp ".*BoothEnc_u${boothEnc_index}.Booth_sel_${boothSel_index}"]];
           add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} \
                     ${DESIGN_TARGET}::rp_tree -column $boothEnc_index -row $current_rp_column -height $boothSel_aspect_ratio;
         }
       } else {
 
         for {set row_index 0} { $row_index < $max_row } {incr row_index} {
-          set CSA_child_cells [get_cells -of_objects [get_cells -regexp -hierarchical "column_.*csa.*_${row_index}_${column_index}"]];
+          set CSA_child_cells [get_cells -of_objects [get_cells -regexp -hierarchical ".*column_.*csa.*_${row_index}_${column_index}"]];
           add_cells_to_rp_group $CSA_child_cells rp_CSA_${row_index}_${column_index} ${DESIGN_TARGET}::rp_tree \
                     -column $row_index -row $current_rp_column;
         }
@@ -401,7 +401,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
           incr current_rp_column;
           for {set row_index 0} { $row_index < $booth_encoder_count } {incr row_index} {
             set booth_column_index_plus [expr $booth_column_index + 1];
-            set booth_cell [get_cells -of_objects [get_cells -regexp -hierarchical "BoothEnc_u${row_index}.cell_${booth_column_index} BoothEnc_u${row_index}.cell_${booth_column_index_plus}"]];
+            set booth_cell [get_cells -of_objects [get_cells -regexp -hierarchical ".*BoothEnc_u${row_index}.cell_${booth_column_index} .*BoothEnc_u${row_index}.cell_${booth_column_index_plus}"]];
             add_cells_to_rp_group $booth_cell rp_booth_${row_index}_${booth_column_index} ${DESIGN_TARGET}::rp_tree \
                     -column $row_index -row $current_rp_column;
           }
@@ -431,7 +431,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
         set BoothSel_visited(${boothEnc_index},${boothSel_index}) 1;
         set boothSel_column [expr $rp_column_count -1 - ($booth_sel_count-1-$boothSel_index)*$rp_column_count/$booth_sel_count];
         set column_occupied($boothSel_column) 1;
-        set boothSel_child_cells [get_cells -of_objects [get_cells -regexp -hierarchical "BoothEnc_u${boothEnc_index}.Booth_sel_${boothSel_index}"]];
+        set boothSel_child_cells [get_cells -of_objects [get_cells -regexp -hierarchical ".*BoothEnc_u${boothEnc_index}.Booth_sel_${boothSel_index}"]];
         add_cells_to_rp_group $boothSel_child_cells rp_boothSel_${boothEnc_index}_${boothSel_index} ${DESIGN_TARGET}::rp_tree \
                     -column [expr int(floor(1.5*$boothEnc_index))] -row $boothSel_column -height $boothSel_aspect_ratio;
       }
@@ -482,7 +482,7 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
         set column_index [expr 2*$booth_column_index+$is_odd_row ];
         set column_position [expr $column_index + $column_offset($column_index)];
 
-        set booth_child_cells [get_cells -of_objects [get_cells -regexp -hierarchical "BoothEnc_u${row_index}.cell_${booth_column_index}"]];
+        set booth_child_cells [get_cells -of_objects [get_cells -regexp -hierarchical ".*BoothEnc_u${row_index}.cell_${booth_column_index}"]];
         add_cells_to_rp_group $booth_child_cells rp_booth_${row_index}_${booth_column_index} ${DESIGN_TARGET}::rp_tree \
                     -column [expr int(floor(1.5*$row_index))-$is_odd_row] -row $column_position;
       }
