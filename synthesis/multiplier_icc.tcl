@@ -223,7 +223,7 @@ if { $USE_3_2_FLOORPLAN } {
   set boothSel_aspect_ratio [expr int(ceil($max_boothSel_column_width/(2*$max_booth_column_width)))];
   set rp_column_count  [expr int(ceil(1.5*$column_count))] ;
 } else {
-  set boothSel_aspect_ratio [expr int(ceil($max_boothSel_column_width/$max_column_width))];
+  set boothSel_aspect_ratio [expr int(ceil(2*$max_boothSel_column_width/$max_column_width))];
   set rp_column_count  [expr 2*$column_count] ;
 }
 
