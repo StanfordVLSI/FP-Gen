@@ -92,7 +92,7 @@ module `mname` (
    //; }
 
    //; for(my $i=0; $i < $pp_count; $i++){
-   //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel", BoothType=>$booth, InvertSel => $invert_sel);
+   //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel_0", BoothType=>$booth, InvertSel => $invert_sel);
    `$BoothSel_obj->instantiate` ( .y ( extended_y[`($i+1)*$booth`:`$i*$booth`] ) ,
                                   .sel_x ( sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`] ) );
    //; }
