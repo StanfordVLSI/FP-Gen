@@ -181,6 +181,8 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-debug_pp					\
 				-timescale=1ps/1ps				\
 				+noportcoerce         				\
+				+vcs+lic+wait					\
+				-licqueue					\
 				-ld $(VCS_CC) 					\
 				-top $(SIM_TOP)					\
 				$(VERILOG_FILES) $(VERILOG_LIBS)
