@@ -48,6 +48,8 @@
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4, Opt=>'Yes' ,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
+//; my $modified = parameter(Name=>'ModifiedBooth', Val=> (($booth==1)?0:1), List=>[0 , 1],
+//;                       Doc=>"Use Modified Booth Algorithm");
 //; my $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace', 'Array', 'ZM', 'OS1'], Opt=>'Yes' ,
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)");
 //; my $designware_mode = parameter(Name=>'Designware_MODE',
@@ -76,7 +78,7 @@ module `mname`(
     output logic [`2*$width+1`:0] out0,out1 // sign extended by 2 because of booth encoding
 		    );
 //; if ($pipeline_depth==0){
-//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, BoothType=>$booth, TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, Designware_MODE=>$designware_mode, PipelineDepth => 0);
+//;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, BoothType=>$booth, TreeType=>$tree, ModifiedBooth=>$modified, UseInc=>$useInc, UseMP=>$useMP, Designware_MODE=>$designware_mode, PipelineDepth => 0);
 
    `$Mul_obj->instantiate()` (
 //; if ($verif_mode =~ /ON/){
@@ -109,7 +111,7 @@ module `mname`(
 
 
 //;   my $Mul_obj = generate('MultiplierP', 'MultP', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
-//;                           TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, PipelineDepth => 1, Designware_MODE=>$designware_mode);
+//;                           TreeType=>$tree, ModifiedBooth=>$modified, UseInc=>$useInc, UseMP=>$useMP, PipelineDepth => 1, Designware_MODE=>$designware_mode);
 
    `$Mul_obj->instantiate()` (
 //;   if ($verif_mode =~ /ON/){
@@ -161,7 +163,7 @@ module `mname`(
 
    logic [`2*$width+1`:0] multp`$i`_out0, multp`$i`_out1; // sign extended by 2 because of booth encoding
 //;     my $Mul_obj = generate('MultiplierP', "MultP_${i}", Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
-//;                           TreeType=>$tree, UseInc=>$useInc, UseMP=>$useMP, PipelineDepth => 1, Designware_MODE=>$designware_mode);
+//;                           TreeType=>$tree, ModifiedBooth=>$modified, UseInc=>$useInc, UseMP=>$useMP, PipelineDepth => 1, Designware_MODE=>$designware_mode);
 
    `$Mul_obj->instantiate()` (
 //;   if ($verif_mode =~ /ON/){
