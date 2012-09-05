@@ -113,8 +113,6 @@
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //; my $modified = parameter(Name=>'ModifiedBooth', Val=>1, List=>[0 , 1],
 //;                       Doc=>"Use Modified Booth Algorithm");
-//; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
-//;                       Doc=>"denotes if the select signals are inverted or not");
 //; my $useInc = parameter(Name=>'UseInc', Val=>'',Val=>1, List=>[0 , 1],
 //; 			   Doc=>"Pick '0' for A*B or pick '1' for (A+ainc)*(B+binc)");
 //;
@@ -127,44 +125,37 @@ module `mname` (
     output logic [`$num_outputs-1`:0] sel_x //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X          
 		);
 
-   logic [`$num_outputs-$modified-1`:0] sel_x_local;
-  //; if ($invert_sel =~ /YES/){
-   assign sel_x[`$num_outputs-$modified-1`:0] = ~ sel_x_local;
-  //; } else {
-   assign sel_x[`$num_outputs-$modified-1`:0] = sel_x_local;
-  //; }
-
    //; if ($modified) {
    //;   if ($booth==2) {
-   assign sel_x_local[0] =  y[1] ^  y[0];
-   assign sel_x_local[1] = (y[2] & ~y[1] & ~y[0]) | (~y[2] & y[1] & y[0]);
+   assign sel_x[0] =  y[1] ^  y[0];
+   assign sel_x[1] = (y[2] & ~y[1] & ~y[0]) | (~y[2] & y[1] & y[0]);
    //;   } else{
    logic [`$booth-1`:0]  y_edge_vector;
    assign y_edge_vector = y[`$booth`:1] ~^ y[`$booth-1`:0];
    //;     if ($booth==3) {
-   assign sel_x_local[0] =  y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 0x1 ==> +/-X
-   assign sel_x_local[1] = ~y_edge_vector[1] &  y_edge_vector[0]; // yedge = x10 ==> +/-2X 
-   assign sel_x_local[2] = ~y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 1x1 ==> +/-3X 
-   assign sel_x_local[3] = ~y_edge_vector[2] &  y_edge_vector[1] & y_edge_vector[0]; // yedge = 100 ==> +/-4X
+   assign sel_x[0] =  y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 0x1 ==> +/-X
+   assign sel_x[1] = ~y_edge_vector[1] &  y_edge_vector[0]; // yedge = x10 ==> +/-2X 
+   assign sel_x[2] = ~y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 1x1 ==> +/-3X 
+   assign sel_x[3] = ~y_edge_vector[2] &  y_edge_vector[1] & y_edge_vector[0]; // yedge = 100 ==> +/-4X
    //;     } elsif ($booth==4) {
-   assign sel_x_local[0] =  y_edge_vector[3] &  y_edge_vector[2] & ~y_edge_vector[0];  // yedge = 00x1 ==> +/-X
-   assign sel_x_local[1] =  y_edge_vector[3] & ~y_edge_vector[1] &  y_edge_vector[0];  // yedge = 0x10 ==> +/-2X 
-   assign sel_x_local[2] =  y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 01x1
-   assign sel_x_local[3] = ~y_edge_vector[2] &  y_edge_vector[1] &  y_edge_vector[0];  // yedge = x100 ==> +/-4X
-   assign sel_x_local[4] = ~y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0];// yedge = 11x1 ==> +/-5X
-   assign sel_x_local[5] = ~y_edge_vector[3] & ~y_edge_vector[1] &  y_edge_vector[0]; // yedge = 1x10 ==> +/-6X
-   assign sel_x_local[6] = ~y_edge_vector[3] &  y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 10x1 ==> +/-7X
-   assign sel_x_local[7] = ~y_edge_vector[3] &  y_edge_vector[2] &  y_edge_vector[1] & y_edge_vector[0]; // yedge = 1000 ==> +/-8X
+   assign sel_x[0] =  y_edge_vector[3] &  y_edge_vector[2] & ~y_edge_vector[0];  // yedge = 00x1 ==> +/-X
+   assign sel_x[1] =  y_edge_vector[3] & ~y_edge_vector[1] &  y_edge_vector[0];  // yedge = 0x10 ==> +/-2X 
+   assign sel_x[2] =  y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 01x1
+   assign sel_x[3] = ~y_edge_vector[2] &  y_edge_vector[1] &  y_edge_vector[0];  // yedge = x100 ==> +/-4X
+   assign sel_x[4] = ~y_edge_vector[3] & ~y_edge_vector[2] & ~y_edge_vector[0];// yedge = 11x1 ==> +/-5X
+   assign sel_x[5] = ~y_edge_vector[3] & ~y_edge_vector[1] &  y_edge_vector[0]; // yedge = 1x10 ==> +/-6X
+   assign sel_x[6] = ~y_edge_vector[3] &  y_edge_vector[2] & ~y_edge_vector[0]; // yedge = 10x1 ==> +/-7X
+   assign sel_x[7] = ~y_edge_vector[3] &  y_edge_vector[2] &  y_edge_vector[1] & y_edge_vector[0]; // yedge = 1000 ==> +/-8X
    //;     }
    //;   }
    assign sel_x[`$num_outputs-1`] = y[`$booth`];
    //; } elsif ($useInc) {
    //;   for(my $i=0; $i < $num_outputs; $i++){
-   assign sel_x_local[`$i`] = y[0]? y[`$num_inputs-1`:1]==`$i` : y[`$num_inputs-1`:1]==`$i+1`; 
+   assign sel_x[`$i`] = y[0]? y[`$num_inputs-1`:1]==`$i` : y[`$num_inputs-1`:1]==`$i+1`; 
    //;   }
    //; } else {
    //;   for(my $i=0; $i < $num_outputs-1; $i++){
-   assign sel_x_local[`$i`] = y==`$i+1`; 
+   assign sel_x[`$i`] = y==`$i+1`; 
    //;   }
    //; }
 
@@ -172,8 +163,8 @@ module `mname` (
 // synopsys translate_off
    always @(*) begin
       #1;
-    /* assert ($onehot(sel_x_local) || sel_x_local == `$num_outputs-1`'b0 || !$time)else begin
-	 $display("%t: ERROR: Bad select signals for booth`$booth` cell: select=`$num_outputs-1`b", $time, sel_x_local);
+    /* assert ($onehot(sel_x) || sel_x == `$num_outputs-1`'b0 || !$time)else begin
+	 $display("%t: ERROR: Bad select signals for booth`$booth` cell: select=`$num_outputs-1`b", $time, sel_x);
 	 $finish(2);
       end*/
    end

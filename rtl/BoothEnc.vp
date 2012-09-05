@@ -54,8 +54,6 @@
 //;                       Doc=>"Signal bit widths");
 //; my $useInc = parameter(Name=>'UseInc', Val=>'',Val=>1, List=>[0 , 1],
 //; 			   Doc=>"Pick '0' for A*B or pick '1' for (A+ainc)*(B+binc)");
-//; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
-//;                       Doc=>"denotes if the select signals are inverted or not");
 //; my $modified = parameter(Name=>'ModifiedBooth', Val=>1, List=>[0 , 1],
 //;                       Doc=>"Use Modified Booth Algorithm");
 //;
@@ -100,7 +98,7 @@ module `mname` (
 
    //; for(my $i=0; $i < $pp_count; $i++){
    //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel_0", BoothType=>$booth, 
-   //;                 UseInc => (!$modified && $useInc && !$i)?1:0, ModifiedBooth => $modified, InvertSel => $invert_sel);
+   //;                 UseInc => (!$modified && $useInc && !$i)?1:0, ModifiedBooth => $modified);
    `$BoothSel_obj->instantiate` ( 
    //;   if ( $modified ) {
                                   .y ( extended_y[`($i+1)*$booth`:`$i*$booth`] ) ,

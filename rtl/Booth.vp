@@ -86,8 +86,6 @@
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
 //; my $modified = parameter(Name=>'ModifiedBooth', Val=> ($booth==1)?0:1, List=>[0 , 1],
 //;                       Doc=>"Use Modified Booth Algorithm");
-//; my $invert_sel = ($booth==2 || $modified==0)? 'YES':'NO';
-//; my $invert_x = ($booth==1)? 'YES':'NO';
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0 , Step=>1, Doc=>"Pipeline depth");
 //;
 //; # Width of y is possibly augmented by 1 bit at LSB and $booth-($width % $booth) at MSB
@@ -200,7 +198,7 @@ module `mname`(
  
 
    //; my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width, UseInc => $useInc, 
-   //;                                         , ModifiedBooth => $modified, InvertSel => $invert_sel);
+   //;                                         , ModifiedBooth => $modified);
    `$BoothEnc_obj->instantiate`
      (.x(x_in), .extended_y(extended_y),
    //; if ($booth-$modified>=2) {
@@ -236,7 +234,7 @@ module `mname`(
    //;   }
    //;   for(my $i=0; $i < $pp_count; $i++){
    //;     if ($booth==2) {
-   //;       my $BoothCell_obj = generate('Booth2SCell', "BoothEnc_u${i}_cell_0", InvertSel => $invert_sel);
+   //;       my $BoothCell_obj = generate('Booth2SCell', "BoothEnc_u${i}_cell_0");
    `$BoothCell_obj->instantiate` (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .S(S[`$i`]), .xn0(xn[`$i`][0]) );
    //;     } else {
    assign S[`$i`] = sel_x[`($i+1)*$sel_width-1`];
@@ -249,7 +247,7 @@ module `mname`(
    //;   for(my $j=$booth-$modified; $j < $width+2*($booth-$modified); $j++){
    //;     my $BoothCellIdx = ($booth==2 && $modified)? $j : $j - ($booth-$modified);
    //;     my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth, 
-   //;            InvertSel => $invert_sel, InvertX => $invert_x, ModifiedBooth => $modified , UseInc => ($i==0)?$useInc:0 );
+   //;            , ModifiedBooth => $modified , UseInc => ($i==0)?$useInc:0 );
    `$BoothCell_obj->instantiate` 
      (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .sel_x_bar( ~ sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]),
       .x(  {

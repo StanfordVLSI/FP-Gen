@@ -27,8 +27,6 @@
 //; # Perl Libraries
 //;
 //;
-//; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
-//;                       Doc=>"denotes if the select signals are inverted or not");
 
 
 
@@ -40,10 +38,6 @@ module `mname` (
   logic sign_x;
   assign sign_x = sel_x[2];
   assign xn0 = ~sign_x;
-  //; if ($invert_sel =~ /YES/){
-   assign S = sign_x & ~( sel_x[1] & sel_x[0] );
-  //; } else {
-   assign S = sign_x & ( sel_x[1] | sel_x[0] );
-  //; }
+  assign S = sign_x & ( sel_x[1] | sel_x[0] );
    
 endmodule : `mname`
