@@ -109,27 +109,32 @@
 //; # get some values from the top
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>8,
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
+//; my $modified = parameter(Name=>'ModifiedBooth', Val=>1, List=>[0 , 1],
+//;                       Doc=>"Use Modified Booth Algorithm");
 //; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
 //;                       Doc=>"denotes if the select signals are inverted or not");
+//; my $useInc = parameter(Name=>'UseInc', Val=>'',Val=>1, List=>[0 , 1],
+//; 			   Doc=>"Pick '0' for A*B or pick '1' for (A+ainc)*(B+binc)");
 //;
 //;
-//; my $num_outputs = 2**($booth-1);
-
+//; my $num_outputs = 2**($booth-$modified)+$modified;
+//; my $num_inputs = $modified | $useInc? $booth+1  : $booth;
 
 module `mname` (
-    input logic [`$booth`:0]  y,
-    output logic [`$num_outputs`:0] sel_x //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X          
+    input logic [`$num_inputs-1`:0]  y,
+    output logic [`$num_outputs-1`:0] sel_x //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X          
 		);
 
-   logic [`$num_outputs-1`:0] sel_x_local;
+   logic [`$num_outputs-$modified-1`:0] sel_x_local;
   //; if ($invert_sel =~ /YES/){
-   assign sel_x[`$num_outputs-1`:0] = ~ sel_x_local;
+   assign sel_x[`$num_outputs-$modified-1`:0] = ~ sel_x_local;
   //; } else {
-   assign sel_x[`$num_outputs-1`:0] = sel_x_local;
+   assign sel_x[`$num_outputs-$modified-1`:0] = sel_x_local;
   //; }
 
+   //; if ($modified) {
    //;   if ($booth==2) {
    assign sel_x_local[0] =  y[1] ^  y[0];
    assign sel_x_local[1] = (y[2] & ~y[1] & ~y[0]) | (~y[2] & y[1] & y[0]);
@@ -152,8 +157,16 @@ module `mname` (
    assign sel_x_local[7] = ~y_edge_vector[3] &  y_edge_vector[2] &  y_edge_vector[1] & y_edge_vector[0]; // yedge = 1000 ==> +/-8X
    //;     }
    //;   }
-
-   assign sel_x[`$num_outputs`] = y[`$booth`];
+   assign sel_x[`$num_outputs-1`] = y[`$booth`];
+   //; } elsif ($useInc) {
+   //;   for(my $i=0; $i < $num_outputs; $i++){
+   assign sel_x_local[`$i`] = y[0]? y[`$num_inputs-1`:1]==`$i` : y[`$num_inputs-1`:1]==`$i+1`; 
+   //;   }
+   //; } else {
+   //;   for(my $i=0; $i < $num_outputs-1; $i++){
+   assign sel_x_local[`$i`] = y==`$i+1`; 
+   //;   }
+   //; }
 
    //; if ($verif_mode =~ /ON/){
 // synopsys translate_off

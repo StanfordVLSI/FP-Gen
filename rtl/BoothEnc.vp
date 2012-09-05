@@ -52,22 +52,29 @@
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
 //; my $width = parameter(Name=>'Width', Val=>24, Min=>1, Step=>1,
 //;                       Doc=>"Signal bit widths");
+//; my $useInc = parameter(Name=>'UseInc', Val=>'',Val=>1, List=>[0 , 1],
+//; 			   Doc=>"Pick '0' for A*B or pick '1' for (A+ainc)*(B+binc)");
 //; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
 //;                       Doc=>"denotes if the select signals are inverted or not");
+//; my $modified = parameter(Name=>'ModifiedBooth', Val=>1, List=>[0 , 1],
+//;                       Doc=>"Use Modified Booth Algorithm");
 //;
-//; # Declare some local variables
-//; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
+//; # Width of y is possibly augmented by 1 bit at LSB and $booth-($width % $booth) at MSB
+//; my $y_width = $width + ($useInc | $modified) + (($width%$booth || $modified)? $booth:0) - ( $width % $booth);
 //;
-//; my $pp_count = ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
-//; my $sel_width = 2**($booth-1)+1;
+//; # Number of partial product is rounded up from width/booth for booth and from width+1/booth for modified booth
+//; my $pp_count = ceil(($width + $modified) / $booth);
+//;
+//; # the number of select signals. the uppermost signal is sign in case of modified booth and spare signal in case of modified booth
+//; my $sel_width = 2**($booth-$modified)+$modified;
 
 module `mname` (
     input logic [`$width-1`:0]  x,
-    input logic [`$extended_width-1`:0] extended_y,
-      //;   if ($booth>=3) {
+    input logic [`$y_width-1`:0] extended_y,
+      //;   if ($booth-$modified>=2) {
     output logic [`$width+1`:0] x3,
       //;   }
-      //;   if ($booth>=4) {
+      //;   if ($booth-$modified>=3) {
     output logic [`$width+2`:0] x5, x7,
       //;   }
     output logic [`$pp_count*$sel_width-1`:0] sel_x
@@ -78,12 +85,12 @@ module `mname` (
    set_flatten true -effort high -phase true -design [current_design]
   */
 
-   //; if ($booth>=3) {
+   //; if ($booth-$modified>=2) {
    //;   my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);
    `$HM3_obj->instantiate`  (.x(x), .x3(x3));
    //; }
    
-   //; if ($booth>=4) {
+   //; if ($booth-$modified>=3) {
    //;   my $HM5_obj = generate('HardMultiple5', 'HM5', Width=>$width);
    `$HM5_obj->instantiate` ( .x(x), .x5(x5));
 
@@ -92,8 +99,20 @@ module `mname` (
    //; }
 
    //; for(my $i=0; $i < $pp_count; $i++){
-   //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel_0", BoothType=>$booth, InvertSel => $invert_sel);
-   `$BoothSel_obj->instantiate` ( .y ( extended_y[`($i+1)*$booth`:`$i*$booth`] ) ,
+   //;   my $BoothSel_obj = generate('BoothSel', "BoothEnc_u${i}_Booth_sel_0", BoothType=>$booth, 
+   //;                 UseInc => (!$modified && $useInc && !$i)?1:0, ModifiedBooth => $modified, InvertSel => $invert_sel);
+   `$BoothSel_obj->instantiate` ( 
+   //;   if ( $modified ) {
+                                  .y ( extended_y[`($i+1)*$booth`:`$i*$booth`] ) ,
+   //;   } elsif ( $useInc ) {
+   //;     if ( $i ) {
+                                  .y ( extended_y[`($i+1)*$booth`:`$i*$booth+1`] ) ,
+   //;     } else  {
+                                  .y ( extended_y[`$booth`:0] ) ,
+   //;     }
+   //;   } else {
+                                  .y ( extended_y[`($i+1)*$booth-1`:`$i*$booth`] ) ,
+   //;   }
                                   .sel_x ( sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`] ) );
    //; }
 

@@ -84,16 +84,22 @@
 //;                       Doc=>"Signal bit widths");
 //; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4,
 //;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)");
-//; my $invert_sel = ($booth==2)? 'YES':'NO';
-//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0 , Step=>1,
-//;                       Doc=>"Pipeline depth");
+//; my $modified = parameter(Name=>'ModifiedBooth', Val=> ($booth==1)?0:1, List=>[0 , 1],
+//;                       Doc=>"Use Modified Booth Algorithm");
+//; my $invert_sel = ($booth==2 || $modified==0)? 'YES':'NO';
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>0, Min=>0 , Step=>1, Doc=>"Pipeline depth");
 //;
-//; # Declare some local variables
-//; my $extended_width = $width + 1 + $booth - ( $width % $booth);   # extended_width = width is odd?  width+2: width+3
+//; # Width of y is possibly augmented by 1 bit at LSB and $booth-($width % $booth) at MSB
+//; my $y_width = $width + ($useInc | $modified) + (($width%$booth || $modified)? $booth:0) - ( $width % $booth);
 //;
-//; my $pp_count = ($booth==1)? $width : ceil(($width + 1) / $booth);  # pp_count = width is odd? (width+1)/2 : (width+2)/2
-//; my $pp_width = ($booth==1 && !$useInc)? $width+2 : $width+3*$booth;
-//; my $sel_width = 2**($booth-1)+1;
+//; # Number of partial product is rounded up from width/booth for booth and from width+1/booth for modified booth
+//; my $pp_count = ceil(($width + $modified) / $booth);
+//;
+//; # Width of partial product is width+booth and is augmented by 2booth for modified for sign extension and 2 booth for unmodified when there is increment signal
+//; my $pp_width = $modified? $width+3*$booth : $width + 2*$booth + $useInc * $booth;
+//;
+//; # the number of select signals. the uppermost signal is sign in case of modified booth and spare signal in case of modified booth
+//; my $sel_width = 2**($booth-$modified)+$modified;
 //;
 //; # Inform the world about the partial products properties
 //; parameter(Name=>'PPWidth', Val=>$pp_width, Force=>1, 
@@ -135,32 +141,19 @@ module `mname`(
     assign {x,y,xinc, yinc} = {x_in, y_in, xinc_in, yinc_in};
    //; }
 
-
-   //; if ($booth==1) {
-   //;   if ($useInc){
-   assign pp[0] = xinc ? {1'b0, y, 2'b0} : `$pp_width`'b0; // add an extra y if xinc
-   assign pp[1] = yinc & y[0] ? {1'b0, x, 2'b0} : yinc | y[0] ? {2'b0, x, 1'b0} : `$pp_width`'b0; // add an extra x if yinc
-   assign pp[2] = y[1] ? {2'b0, x, xinc & yinc } : {`$pp_width-1`'b0, xinc & yinc }; //an extra 1 if xinc AND yinc
-   //;     for (my $i=3; $i<=$pp_count; $i++){
-   assign pp[`$i`] = y[`$i-1`] ? {2'b0, x, 1'b0}: `$pp_width`'b0;
-   //;     }
-   //;   }
-   //;   else{ # i.e., no useInc...
-   //;     for (my $i=0; $i<$pp_count; $i++){
-   assign pp[`$i`] = y[`$i`] ?  {2'b0, x} : `$pp_width`'b0;
-   //;     }   
-   //;   }
-   //;
-   //; } # End of "if ($booth==1)..." 
-   //; elsif ($booth>=2) {
-
-   logic [`$extended_width`-1:0] extended_y;
-   //;   if ($useInc) {
-   // yinc added at position y[-1] will increase the partial products by X thereby producing xy+x = x(y+1)
-   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y_in,yinc_in};  //sign extension guarantees positive last partial product
-   //;   }else{
-   assign extended_y = {{(`$booth - ( $width % $booth) `) {1'b0} },y_in,1'b0};  //sign extension guarantees positive last partial product
-   //;   }   
+   logic [`$y_width`-1:0] extended_y;
+   assign extended_y = {
+   //; if ($width%$booth || $modified) {
+                                      {(`$booth - ( $width % $booth) `) {1'b0} },y_in
+   //; } else {
+                                      y_in
+   //; }
+   //; if ($useInc) {
+                                      , yinc_in
+   //; } elsif ($modified) {
+                                      , 1'b0
+   //; }
+                                              };
 
    logic [`$pp_count*$sel_width-1`:0] sel_x_intermediate, sel_x; //Encoded select signals
    //; if ($pipeline_depth>0) {
@@ -175,64 +168,71 @@ module `mname`(
    assign sel_x = sel_x_intermediate;
    //; }
 
-   //;   if ($booth>=3) {
+   //; if ($booth-$modified>=2) {
    logic [`$width+1`:0] x3, x3_intermediate;
-   //;     if ($pipeline_depth>0) {
+   //;   if ($pipeline_depth>0) {
    logic valid_x3;
-   //;        my $pipe_X3 = generate(  'FF_pipeline',  'pipe_X3',  
+   //;     my $pipe_X3 = generate(  'FF_pipeline',  'pipe_X3',  
    //;                             Width=> $width + 2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipe_X3->instantiate()` ( .in(x3_intermediate) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                               .out(x3), .valid_out(valid_x3) );
 
-   //;     } else {
+   //;   } else {
     assign x3 = x3_intermediate;
-   //;     }
    //;   }
-   //;   if ($booth>=4) {
+   //; }
+   //; if ($booth-$modified>=3) {
    logic [`$width+2`:0] x5, x7, x5_intermediate, x7_intermediate;
-   //;     if ($pipeline_depth>0) {
+   //;   if ($pipeline_depth>0) {
    logic valid_x5x7;
-   //;        my $pipe_X5X7 = generate(  'FF_pipeline',  'pipe_X5X7',  
+   //;      my $pipe_X5X7 = generate(  'FF_pipeline',  'pipe_X5X7',  
    //;                             Width=> 2*$width + 6 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipe_X5X7->instantiate()` ( .in({x5_intermediate, x7_intermediate}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                               .out({x5, x7}), .valid_out(valid_x5x7) );
 
-   //;     } else {
+   //;   } else {
     assign {x5, x7} = {x5_intermediate, x7_intermediate};
-   //;     }
    //;   }
+   //; }
  
 
-   //;   my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width, InvertSel => $invert_sel);
+   //; my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width, UseInc => $useInc, 
+   //;                                         , ModifiedBooth => $modified, InvertSel => $invert_sel);
    `$BoothEnc_obj->instantiate`
      (.x(x_in), .extended_y(extended_y),
-      //;   if ($booth>=3) {
+   //; if ($booth-$modified>=2) {
       .x3(x3_intermediate),
-      //;   }
-      //;   if ($booth>=4) {
+   //; }
+   //; if ($booth-$modified>=3) {
       .x5(x5_intermediate), .x7(x7_intermediate),
-      //;   }	     
+   //; }	     
       .sel_x(sel_x_intermediate));
 
-   logic [`$width+2*$booth-3`:0]     x_padded;
-   assign x_padded = {`$booth-1`'b0, x, `$booth-1`'b0};
 
-  //;   if ($booth==3){
-   logic [`$width+1`:0] 	x3_padded;
-   assign x3_padded = x3; // yep, I know it's not really padded, but it's for the naming convention later   
-  //;   }elsif ($booth>=4) {
-   logic [`$width+3`:0] 	x3_padded;
-   assign x3_padded = {1'b0, x3, 1'b0};
-  //;   }
-   
-   logic [`$width+$booth-1`:0] 	 initial_pp [0:`$pp_count-1`] ;
-   logic [`$pp_count-1`:0] 	 S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended y
-   //;       if ($booth==2) {
-   logic [`$width+2*$booth-3`:0] xn [0:`$pp_count-1`];
-   //;}
+   logic [`$width+2*($booth-$modified)-1`:0] x_padded;
+   //; if ($booth-$modified>=1){
+   assign x_padded = {`$booth-$modified`'b0, x , `$booth-$modified`'b0};
+   //; } else {
+   assign x_padded = x;
+   //; }
 
+   //; if ($booth-$modified>=2){
+   logic [`$width+2*($booth-$modified)-3`:0] x3_padded;
+   //;   if ($booth-$modified>=3){
+   assign x3_padded = {`$booth-$modified-2`'b0, x3 , `$booth-$modified-2`'b0};
+   //;   } else {
+   assign x3_padded = x3;
+   //;   }
+   //; }
+
+   logic [`$width+$booth-1`:0] initial_pp [0:`$pp_count-1`] ;
+   //; if ( $modified ) {
+   logic [`$pp_count-1`:0] S;  // S[`$pp_count-1`] is guaranteed to be 0 because of the sign extension of 0 in extended y
+   //;   if ($booth==2) {
+   logic [`$width+2*($booth-$modified)-1`:0] xn [0:`$pp_count-1`];
+   //;   }
    //;   for(my $i=0; $i < $pp_count; $i++){
    //;     if ($booth==2) {
    //;       my $BoothCell_obj = generate('Booth2SCell', "BoothEnc_u${i}_cell_0", InvertSel => $invert_sel);
@@ -240,46 +240,60 @@ module `mname`(
    //;     } else {
    assign S[`$i`] = sel_x[`($i+1)*$sel_width-1`];
    //;     }
-   //;     for(my $j=$booth-1; $j < $width+2*($booth-1); $j++){ # need to iterate from 0 to (width+booth-1), but shift by booth-1 
+   assign initial_pp[`$i`][`$width+$booth-1`] = ~S[`$i`];
+   //;   }
+   //; }
 
-   //;       my $BoothCellIdx = $booth==2 ? $j : $j - ($booth-1);
-   //;       my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth, InvertSel => $invert_sel);
+   //; for(my $i=0; $i < $pp_count; $i++){
+   //;   for(my $j=$booth-$modified; $j < $width+2*($booth-$modified); $j++){
+   //;     my $BoothCellIdx = ($booth==2 && $modified)? $j : $j - ($booth-$modified);
+   //;     my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth, 
+   //;            InvertSel => $invert_sel, ModifiedBooth => $modified , UseInc => ($i==0)?$useInc:0 );
    `$BoothCell_obj->instantiate` 
      (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), 
       .x( {
-   //;       if ($booth>=4) {
-           x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
-   //;       }
-   //;       if ($booth>=3) {
-           x_padded[`$j-2`], x3_padded[`$j-2`],
-   //;       }
-           x_padded[`$j-1`] , x_padded[`$j`] } ),
-   //;       if ($booth==2) {
-           .xn1(xn[`$i`][`$j-1`]), .xn0(xn[`$i`][`$j`]),
-   //;       }
-      .pp(initial_pp[`$i`][`$j-$booth+1`]));
-   
+   //;     if ($booth-$modified>=3) {
+            x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
    //;     }
-   assign initial_pp[`$i`][`$width+$booth-1`] = ~S[`$i`];
-  //;   }
+   //;     if ($booth-$modified>=2) {
+            x_padded[`$j-2`], x3_padded[`$j-2`],
+   //;     }
+           x_padded[`$j-1`], x_padded[`$j`] } ),
+   //;     if ($booth==2 && $modified) {
+           .xn1(xn[`$i`][`$j-1`]), .xn0(xn[`$i`][`$j`]),
+   //;     }
+           .pp(initial_pp[`$i`][`$j-$booth+$modified`]));
+   //;   } #j loop
+   //; } #i loop
    
    // Finally, append the sign extenssions to the partial products
+   //; if ($modified) { 
    //;   if ($useInc){
-   assign pp[0] = xinc ? {{(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}}} : 0;
+   assign pp[0] = xinc ? { {(`$booth`){1'b0}}, y, {(2*`$booth`){1'b0}} } : 0;
    assign pp[1] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
    assign pp[2] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[1], {(`$booth-2`){1'b0}}, S[0] & xinc & yinc , S[0] ^ (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
    //;     for(my $i=3; $i < $pp_count+1; $i++) {
    assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i-1`], {(`$booth-1`){1'b0}},S[`$i-2`]};
    //;     }
-   //;   }
-   //;   else { # i.e., not $useInc
+   //;   } else { # i.e., not $useInc
    assign pp[0] = {initial_pp[0][`$width+$booth-1`], {(`$booth`){S[0]}}, initial_pp[0][`$width+$booth-2`:0], {(`$booth`){1'b0}}};
    //;     for(my $i=1; $i < $pp_count; $i++) {
    assign pp[`$i`] = {1'b0, {(`$booth-1`){1'b1}}, initial_pp[`$i`], {(`$booth-1`){1'b0}},S[`$i-1`]};
    //;     }
-   
    //;   }
-   //; } # End of "elsif ($booth==2 || $booth==3)..."
+   //; } elsif ($useInc) {
+   assign pp[0] = xinc ? { y, {(2*`$booth`){1'b0}} } : 0;
+   assign pp[1] = {initial_pp[0], {(`$booth`){1'b0}}};
+   assign pp[2] = {initial_pp[1], {(`$booth-1`){1'b0}}, (xinc & yinc) };  //correction 1 is added for (x+1)(y+1) 
+   //;     for(my $i=3; $i < $pp_count+1; $i++) {
+   assign pp[`$i`] = { initial_pp[`$i-1`] , {(`$booth`){1'b0}} };
+   //;     }
+
+   //; } else {
+   //;     for(my $i=0; $i < $pp_count; $i++) {
+   assign pp[`$i`] = {{(`$booth`){1'b0}}, initial_pp[`$i`] };
+   //;     }
+   //; } 
 
 endmodule: `mname`
 

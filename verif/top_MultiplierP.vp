@@ -126,7 +126,7 @@ DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_bd ( .a(a[`$BW-1`:`$BW-$B
       
        #20;
 	 for (int i=0; i<num_trans; i++) begin
-	    $write("\n%t: Transaction #%0d: ", $time, i);
+
 	    a = {$random(seed),$random(seed)};
 	    b = {$random(seed),$random(seed)};
 	    IncA = 1'b0;
@@ -135,6 +135,7 @@ DW02_multp #(`$BW_sub`, `$BW_sub`, `2*$BW_sub+2`, 3) U_bd ( .a(a[`$BW-1`:`$BW-$B
 	    mp_mode = i%2;
             //;}
 	    #1;
+	    $write("\n%t: Transaction #%0d: a=%h b=%h expected=%h result=%h ", $time, i, a, b, expected, pp_sum[`2*$BW-1`:0]);
 
 	    //Compare results with DW.
 	    if((mp_mode & compare[1] & compare[2]) || (~mp_mode & compare[0]))

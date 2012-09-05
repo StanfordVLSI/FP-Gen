@@ -54,9 +54,12 @@
 //;                       Doc=>"Pipeline depth");
 //; my $booth ;
 //; my $tree ;
+//; my $modified;
 //; if( $designware_mode eq 'OFF' ){
 //;    $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>4, Opt=>'Yes' ,
-//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!"); 
+//;                       Doc=>"Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large)  !IMPLEMENTATION!");
+//;    $modified = parameter(Name=>'ModifiedBooth', Val=> (($booth==1)?0:1), List=>[0 , 1],
+//;                       Doc=>"Use Modified Booth Algorithm"); 
 //;    $tree = parameter(Name=>'TreeType', Val=>'Wallace', List=>['Wallace', 'Array', 'ZM', 'OS1'], Opt=>'Yes' ,
 //;                       Doc=>"Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree)  !IMPLEMENTATION!");
 //;    `touch place_MultiplierP.tcl` ; #create semaphore for placement
@@ -109,7 +112,7 @@ module `mname`(
    //;     $Booth_obj = generate('Booth_MP', 'Booth', Width=>$width, WidthSub=>$width_sub, BoothType=>$booth, 
    //;				 UseInc=>($useInc)?"YES":"NO");
    //; }else{
-   //;     $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, 
+   //;     $Booth_obj = generate('Booth', 'Booth', Width=>$width, BoothType=>$booth, ModifiedBooth => $modified,
    //;				 UseInc=>($useInc)?"YES":"NO", PipelineDepth => $pipeline_depth);
    //; }	    
    //;
@@ -166,7 +169,7 @@ module `mname`(
     * If BoothType>1 then MSBs are just sign extensions (in booth1 sign
     *    extensions are not used thus we can ignore them completely)
     * */
-   //; my $booth_offset = ($booth==1 && !$useInc)?  0 : $booth*($useInc+1);
+   //; my $booth_offset = (!$modified && !$useInc)?  0 : $booth*($useInc+1);
    //; if (2*$width+2+$booth_offset < $raw_out_w) {
     assign out0 = RawOut0[`2*$width+1+$booth_offset`:`$booth_offset`];
     assign out1 = RawOut1[`2*$width+1+$booth_offset`:`$booth_offset`];

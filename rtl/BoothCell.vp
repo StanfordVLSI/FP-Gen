@@ -20,9 +20,7 @@
  * 
  * 
  * Change bar:
- * -----------
- * Date           Author    Description
- * Nov 11, 2011   shacham   init version - 
+ * -----------hacham   init version - 
  *                          
  * ****************************************************************************/
 
@@ -33,12 +31,16 @@
 //;
 //;
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
-//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>2, Step=>1, Max=>8,
+//; my $booth = parameter(Name=>'BoothType', Val=>2, Min=>1, Step=>1, Max=>8,
 //;                       Doc=>"Booth type. Required parameter at instantiation.");
+//; my $modified = parameter(Name=>'ModifiedBooth', Val=>1, List=>[0 , 1],
+//;                       Doc=>"Use Modified Booth Algorithm");
+//; my $useInc = parameter(Name=>'UseInc', Val=>'',Val=>1, List=>[0 , 1],
+//; 			   Doc=>"Pick '0' for A*B or pick '1' for (A+ainc)*(B+binc)");
 //; my $invert_sel = parameter(Name=>'InvertSel', Val=>'YES', List=>['YES', 'NO'],
 //;                       Doc=>"denotes if the select signals are inverted or not");
 //;
-//; my $num_inputs = 2**($booth-1);
+//; my $num_inputs = 2**($booth-$modified)+$modified;
 //; sub IsPowOfTwo {
 //;   my $num = shift or die;
 //;   return 1 if $num==0 || $num==1 || $num==2 || $num==4 || $num==8 || $num==16 || $num==32 || $num==64;
@@ -48,52 +50,54 @@
 
 
 module `mname` (
-    input logic [`$num_inputs`:0]  sel_x, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
-    input logic [`$num_inputs-1`:0]  x, 
-   //;if ($booth==2) {
+    input logic [`$num_inputs-1`:0]  sel_x, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
+    input logic [`$num_inputs-1-$modified`:0]  x, 
+   //;if ($booth==2 && $modified) {
     input logic xn1,
     output logic xn0,
    //;}
     output logic 		pp               	// single bit of the relevant pp
 		);
 
-   logic [`$num_inputs-1`:0] sel_x_local;
+   logic [`$num_inputs-$modified-1`:0] sel_x_local;
   //; if ($invert_sel =~ /YES/){
-   assign sel_x_local = ~ sel_x[`$num_inputs-1`:0];
+   assign sel_x_local = ~ sel_x[`$num_inputs-$modified-1`:0];
   //; } else {
-   assign sel_x_local = sel_x[`$num_inputs-1`:0] ;
+   assign sel_x_local = sel_x[`$num_inputs-$modified-1`:0] ;
   //; }
 
+   //; if ($modified) {
    logic sign_x;
-   assign sign_x = sel_x[`$num_inputs`];
-
-   //;if ($booth==2) {
+   assign sign_x = sel_x[`$num_inputs-1`];
+   //; }
+   //; if ($booth==2 && $modified) {
    assign xn0 = ~ sign_x ^ x[0];
    assign pp = ~((~sel_x_local[0] | xn0) & (~sel_x_local[1] | xn1));
-
-   //;} else {
-
+   //; } else {
    logic pp_pow2; // this is for early signals such as 0, x, 2*x, 4*x, 8*x
-   logic pp_all;  // this is for late signals such as x3 x5 and x7
-
    // Mux 0, x1, x2, x4, x8 based on the edge vector
    //;   my $str = '';
-   //;   for (my $i=0; $i<$num_inputs; $i++){
-   //;     $str = $str." (~sel_x_local[${i}] | ~x[${i}])" if IsPowOfTwo($i+1);
-   //;     $str = $str." &" if $i+1<$num_inputs && IsPowOfTwo($i+1);
+   //;   my $extra_signal = (!$modified && $useInc)? 1 : 0;
+   //;   for (my $i=0; $i<$num_inputs-1+$extra_signal; $i++){
+   //;     $str = $str.($str?" &":"")." (~sel_x_local[${i}] | ~x[${i}])" if IsPowOfTwo($i+1);
    //;   }
    assign pp_pow2 = `$str`;
  
    // Mux pp_pow2 and other multiples of x
    //;   $str = '';
-   //;   for (my $i=0; $i<$num_inputs; $i++){
+   //;   for (my $i=0; $i<$num_inputs-1+$extra_signal; $i++){
    //;     $str = $str." (~sel_x_local[${i}] | ~x[${i}]) &" if ! IsPowOfTwo($i+1);
    //;   }
+   //;   if ($modified) {
+   logic pp_all;
    assign pp_all = ~( `$str` pp_pow2);
    // Select pp or pp_b based on sign
    assign pp = pp_all ^ sign_x; // invert if sign_x=1
+   //;   } else {
+   assign pp = ~( `$str` pp_pow2);
+   //;   }
+   //; }
 
-   //;}
 
 
    
