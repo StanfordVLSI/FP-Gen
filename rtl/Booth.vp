@@ -251,12 +251,16 @@ module `mname`(
    //;     my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth, 
    //;            InvertSel => $invert_sel, InvertX => $invert_x, ModifiedBooth => $modified , UseInc => ($i==0)?$useInc:0 );
    `$BoothCell_obj->instantiate` 
-     (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), 
-      .x(
-   //;     if ($invert_x =~ /YES/) {
-           ~
+     (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .sel_x_bar( ~ sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]),
+      .x(  {
+   //;     if ($booth-$modified>=3) {
+            x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
    //;     }
-           {
+   //;     if ($booth-$modified>=2) {
+            x_padded[`$j-2`], x3_padded[`$j-2`],
+   //;     }
+           x_padded[`$j-1`], x_padded[`$j`] } ),
+      .x_bar(  ~ {
    //;     if ($booth-$modified>=3) {
             x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
    //;     }

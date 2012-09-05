@@ -52,8 +52,8 @@
 
 
 module `mname` (
-    input logic [`$num_inputs-1`:0]  sel_x, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
-    input logic [`$num_inputs-$modified-1`:0]  x, 
+    input logic [`$num_inputs-1`:0]  sel_x, sel_x_bar, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X
+    input logic [`$num_inputs-$modified-1`:0]  x, x_bar, //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` 
    //;if ($booth==2 && $modified) {
     input logic xn1,
     output logic xn0,
@@ -63,14 +63,14 @@ module `mname` (
 
    logic [`$num_inputs-$modified-1`:0] sel_x_local;
   //; if ($invert_sel =~ /YES/){
-   assign sel_x_local = ~ sel_x[`$num_inputs-$modified-1`:0];
+   assign sel_x_local = sel_x_bar[`$num_inputs-$modified-1`:0];
   //; } else {
    assign sel_x_local = sel_x[`$num_inputs-$modified-1`:0] ;
   //; }
 
    logic [`$num_inputs-$modified-1`:0] x_local;
   //; if ($invert_x =~ /YES/){
-   assign x_local = ~ x[`$num_inputs-$modified-1`:0];
+   assign x_local = x_bar[`$num_inputs-$modified-1`:0];
   //; } else {
    assign x_local = x[`$num_inputs-$modified-1`:0] ;
   //; }
@@ -80,7 +80,9 @@ module `mname` (
    assign sign_x = sel_x[`$num_inputs-1`];
    //; }
    //; if ($booth==2 && $modified) {
-   assign xn0 = ~ sign_x ^ x_local[0];
+   logic sign_x_bar;
+   assign sign_x_bar = sel_x_bar[`$num_inputs-1`];
+   assign xn0 = ~ ( sign_x_bar & x[0] |  sign_x & x_bar[0]);
    assign pp = ~((~sel_x_local[0] | xn0) & (~sel_x_local[1] | xn1));
    //; } else {
    logic pp_pow2; // this is for early signals such as 0, x, 2*x, 4*x, 8*x
