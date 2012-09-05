@@ -23,6 +23,8 @@ $makeArguments =~ m/Voltage/      or die "Voltage not specified in BB_rollup.pl\
 $makeArguments =~ m/target_delay/ or die "target_delay not specified in BB_rollup.pl\n" ;
 $makeArguments =~ m/io2core/      or die "io2core not specified in BB_rollup.pl\n" ;
 $makeArguments =~ m/DESIGN_FILE/  or die "designFile not specified in BB_rollup.pl\n" ;
+$makeArguments =~ m/ /            or die "target for report tarball not specified in BB_rollup.pl\n" ;
+
 sub extractMakeVal{
     my $name  = shift ;
     my @Parse = $makeArguments =~ m/$name=(\S+)/ ;
@@ -37,6 +39,8 @@ my $IO2CORE        = extractMakeVal( "io2core" ) ;
 my $designFile     = extractMakeVal( "DESIGN_FILE" );
 my $SmartRetiming  = extractMakeVal( "SmartRetiming" );
 my $EnableClockGating =extractMakeVal( "EnableClockGating" );
+my $reportTarget   = extractMakeVal( "REPORT_TARGET" ) ;
+
 
 -e $designFile or die "Error: Sorry DesignFile is missing....\n" ;
 my $designString = `cat $designFile` ;
@@ -221,47 +225,64 @@ sub extracQorReport{
 
 }
 
+
+#  clock clk (rise edge)                                           0.1000     0.1000
+#  clock network delay (ideal)                                     0.0000     0.1000
+#  FMA_MulShift/ashr_12_clk_r_REG666_S13/CP (DFKCNQD1BWPLVT)       0.0000     0.1000 r
+#  library setup time                                             -0.0317     0.0683
+#  data required time                                                         0.0683
+#  ------------------------------------------------------------------------------------------------------
+#  data required time                                                         0.0683
+#  data arrival time                                                         -0.3294
+#  ------------------------------------------------------------------------------------------------------
+#  slack (VIOLATED)                                                          -0.2612
+
 sub extracTimingReport{
     my $report_file = shift or return ( -1 , -1 , -1 );
     
-    my $target_clk_period_nS = -1 ;
-    my $clk_period_nS = -1 ;
-    my $lib_setup_time_nS = -1 ; 
-    my $worst_slack_nS = -1 ;
-    my $data_arrival_time_nS = -1 ;
-    my $clk_freq_Ghz = -1 ;
+    my $target_clk_period_nS = $globalConfig{TOP}{Target_Delay}/1000.0 ;
 
-    open( REPORTFILE , "<$report_file" ) or return  ($target_clk_period_nS , $clk_period_nS , -1 ) ;
-    while(my $line=<REPORTFILE>) { 
-	if ( $line =~ /library setup time\s+-?(\d+\.?\d*)/ ) {    
-	    $lib_setup_time_nS = $1 ;
-	}
-	if ( $line =~ /data arrival time\s+-?(\d+\.?\d*)/ ) {    
-	    $data_arrival_time_nS = $1 ;
-	}
-	if ( $line =~ /slack\s+\S+\s+((-|\+)?\d+\.?\d*)/ ) {    
-	    $worst_slack_nS = $1; print "Slack $worst_slack_nS \n" ;
-	}
-	if ( $line =~ /clock clk \(rise edge\)\s+-?(\d+\.?\d*)/ ) {    
-	    $target_clk_period_nS = $1 ; print "Clock $target_clk_period_nS\n" ; print "Target Clock $globalConfig{TOP}{Target_Delay} \n" ;
-	}
-    }
-    close( REPORTFILE );
+    my $B_clk_period_nS = -1 ;
+    my $B_clk_freq_Ghz  = -1 ;
 
-    if( ($worst_slack_nS != -1 ) and ( $target_clk_period_nS != -1 ) ){
-	$clk_period_nS = $globalConfig{TOP}{Target_Delay}/1000.0 - $worst_slack_nS / ( $target_clk_period_nS / ($globalConfig{TOP}{Target_Delay}/1000.0)  ) ;
-    }
-    
-    # extract clk period for non-pipeline design (no clk signal)
-    if( ( $target_clk_period_nS == -1 ) and ($data_arrival_time_nS != -1 ) ) {
-	$clk_period_nS = $data_arrival_time_nS;
-    } 
-    if(  $clk_period_nS != -1  ){
-	$clk_freq_Ghz = 1.0 / $clk_period_nS ;
-    }
-    
+    my $reportStr = `cat $report_file` ;
 
-    return ( $globalConfig{TOP}{Target_Delay}/1000.0 , $clk_period_nS , $clk_freq_Ghz ) ;
+    my @clk_Rises =  $reportStr =~ /clock clk \(rise edge\)\s+-?(\d+\.?\d*)/g ;
+    my @slacks    =  $reportStr =~ /slack\s+\S+\s+((-|\+)?\d+\.?\d*)/g;
+
+    #print join( " " , @clk_Rises ) . "\n" ;
+    #print join( " " , @slacks ) . "\n" ;    
+
+    if( scalar( @clk_Rises ) == scalar( @slacks ) ){
+	for( my $i=0 ; $i < scalar( @slacks )/2 ; $i++ ){
+	    
+	    my $worst_slack_nS = $slacks[2*$i] ;          print " slack: $worst_slack_nS\n";
+	    my $path_delay_nS  = $clk_Rises[2*$i+1] ;   print " pathD: $path_delay_nS\n" ;
+	    
+	    my $clk_period_nS = $target_clk_period_nS - $worst_slack_nS / ( $path_delay_nS /  $target_clk_period_nS  ) ;
+	    my $clk_freq_Ghz = 1.0 / $clk_period_nS ;
+	    
+	    if( $clk_period_nS > $B_clk_period_nS ){
+		$B_clk_period_nS = $clk_period_nS ;
+		$B_clk_freq_Ghz  = $clk_freq_Ghz ;
+	    }
+	    
+	}
+    } elsif( scalar( @slacks ) ) { # Unpipelined case 
+
+	for( my $i=0 ; $i < scalar( @slacks )/2 ; $i++ ){
+	    my $worst_slack_nS = $slacks[2*$i] ;  
+	    my $clk_period_nS = $target_clk_period_nS - $worst_slack_nS ;
+	    my $clk_freq_Ghz = 1.0 / $clk_period_nS ;
+	    if( $clk_period_nS > $B_clk_period_nS ){
+		$B_clk_period_nS = $clk_period_nS ;
+		$B_clk_freq_Ghz  = $clk_freq_Ghz ;
+	    }
+	}
+
+    }
+
+    return ( $target_clk_period_nS , $B_clk_period_nS , $B_clk_freq_Ghz ) ;
 }
 
 
@@ -600,3 +621,21 @@ print Dump( \%r ) ;
 close( TARGET ) ;
 
 print "Pushed result to $options{t}\n" ;
+
+
+print "Creating tarball of reports at $reportTarget\n\n" ;
+
+-e "jb_tmp_reports" and `rm -rf jb_tmp_reports`  ;
+`mkdir jb_tmp_reports`  ;
+`cp synthesis/*/reports/* jb_tmp_reports/`  ;
+`tar -czvf $reportTarget jb_tmp_reports`  ;
+
+
+
+
+
+
+
+
+
+

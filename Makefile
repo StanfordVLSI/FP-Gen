@@ -678,6 +678,7 @@ ROLLUP_TARGET ?= $(DESIGN_TITLE)_Rollup.target
 
 .PHONY: rollup1  rollup2 rollup3 report_results
 
+REPORT_TARGET ?= reports.tar.gz
 ROLLUP_CMD = perl $(DESIGN_HOME)/scripts/BB_rollup.pl -d $(FPPRODUCT) \
 		 			 	 -t $(ROLLUP_TARGET) \
 						 DC_LOG=$(DC_LOG) \
@@ -689,7 +690,8 @@ ROLLUP_CMD = perl $(DESIGN_HOME)/scripts/BB_rollup.pl -d $(FPPRODUCT) \
 						 target_delay=$(TARGET_DELAY) \
 						 io2core=$(IO2CORE) \
 						 SmartRetiming=$(SMART_RETIMING) \
-						 EnableClockGating=$(CLK_GATING)
+						 EnableClockGating=$(CLK_GATING) \
+						 REPORT_TARGET=$(REPORT_TARGET) 
 
 rollup1: 
 	$(ROLLUP_CMD) 2>&1 | tee -i rollup_bb.log
