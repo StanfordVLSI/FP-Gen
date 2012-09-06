@@ -112,7 +112,7 @@ module `mname`(
    //; if ($verif_mode =~ /ON/){
     input logic dumptolog,
    //; }
-    input [`$width-1`:0] x_in, y_in,
+    input [`$width-1`:0] x_in, x_bar_in, y_in, y_bar_in,
    //; if ($useInc){
     input 		 xinc_in, yinc_in,
    //; }
@@ -123,7 +123,7 @@ module `mname`(
     output [`$pp_width-1`:0] pp [0:`$pp_count+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
 		);
 
-    logic [`$width-1`:0] x, y;
+    logic [`$width-1`:0] x, x_bar, y_bar, y;
     logic xinc, yinc;
    //; if (!$useInc){
     logic xinc_in, yinc_in;
@@ -134,13 +134,13 @@ module `mname`(
    //;                             Width=> 2*$width + 2 , PipelineDepth => $pipeline_depth, Retime=>'YES');
   `$pipe_XY->instantiate()` ( .in({x_in, y_in, xinc_in, yinc_in}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                              .out({x,y,xinc, yinc}), .valid_out(valid_out) );
-
+                              .out({x, y,xinc, yinc}), .valid_out(valid_out) );
+   assign {x_bar,y_bar} = ~{x,y};
    //; } else {
-    assign {x,y,xinc, yinc} = {x_in, y_in, xinc_in, yinc_in};
+   assign {x,x_bar,y,y_bar, xinc, yinc} = {x_in, x_bar_in, y_in, y_bar_in, xinc_in, yinc_in};
    //; }
 
-   logic [`$y_width`-1:0] extended_y;
+   logic [`$y_width`-1:0] extended_y, extended_y_bar;
    assign extended_y = {
    //; if ($width%$booth || $modified) {
                                       {(`$booth - ( $width % $booth) `) {1'b0} },y_in
@@ -154,7 +154,20 @@ module `mname`(
    //; }
                                               };
 
-   logic [`$pp_count*$sel_width-1`:0] sel_x_intermediate, sel_x; //Encoded select signals
+   assign extended_y_bar = {
+   //; if ($width%$booth || $modified) {
+                                      {(`$booth - ( $width % $booth) `) {1'b1} },y_bar_in
+   //; } else {
+                                      y_bar_in
+   //; }
+   //; if ($useInc) {
+                                      , ~yinc_in
+   //; } elsif ($modified) {
+                                      , 1'b1
+   //; }
+                                              };
+
+   logic [`$pp_count*$sel_width-1`:0] sel_x_intermediate, sel_x_bar_intermediate, sel_x, sel_x_bar; //Encoded select signals
    //; if ($pipeline_depth>0) {
    logic valid_sel_x;
    //;   my $pipe_SelX = generate(  'FF_pipeline',  'pipe_SelX',  
@@ -162,9 +175,9 @@ module `mname`(
   `$pipe_SelX->instantiate()` ( .in(sel_x_intermediate) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                               .out(sel_x), .valid_out(valid_sel_x) );
-
+   assign sel_x_bar = ~sel_x;
    //; } else {
-   assign sel_x = sel_x_intermediate;
+   assign {sel_x, sel_x_bar} = {sel_x_intermediate, sel_x_bar_intermediate};
    //; }
 
    //; if ($booth-$modified>=2) {
@@ -200,21 +213,22 @@ module `mname`(
    //; my $BoothEnc_obj = generate('BoothEnc', "BE", BoothType=>$booth, Width=>$width, UseInc => $useInc, 
    //;                                         , ModifiedBooth => $modified);
    `$BoothEnc_obj->instantiate`
-     (.x(x_in), .extended_y(extended_y),
+     (.x(x_in), .extended_y(extended_y), .extended_y_bar(extended_y_bar),
    //; if ($booth-$modified>=2) {
       .x3(x3_intermediate),
    //; }
    //; if ($booth-$modified>=3) {
       .x5(x5_intermediate), .x7(x7_intermediate),
    //; }	     
-      .sel_x(sel_x_intermediate));
+      .sel_x(sel_x_intermediate), .sel_x_bar(sel_x_bar_intermediate));
 
 
-   logic [`$width+2*($booth-$modified)-1`:0] x_padded;
+   logic [`$width+2*($booth-$modified)-1`:0] x_padded, x_bar_padded;
    //; if ($booth-$modified>=1){
    assign x_padded = {`$booth-$modified`'b0, x , `$booth-$modified`'b0};
+   assign x_bar_padded = {{(`$booth-$modified`){1'b1}}, x_bar , {(`$booth-$modified`){1'b1}} };
    //; } else {
-   assign x_padded = x;
+   assign {x_padded,x_bar_padded} = {x,x_bar};
    //; }
 
    //; if ($booth-$modified>=2){
@@ -249,7 +263,7 @@ module `mname`(
    //;     my $BoothCell_obj = generate('BoothCell', "BoothEnc_u${i}_cell_$BoothCellIdx", BoothType=>$booth, 
    //;            , ModifiedBooth => $modified , UseInc => ($i==0)?$useInc:0 );
    `$BoothCell_obj->instantiate` 
-     (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .sel_x_bar( ~ sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]),
+     (.sel_x(sel_x[`($i+1)*$sel_width-1`:`$i*$sel_width`]), .sel_x_bar( sel_x_bar[`($i+1)*$sel_width-1`:`$i*$sel_width`]),
       .x(  {
    //;     if ($booth-$modified>=3) {
             x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
@@ -258,14 +272,14 @@ module `mname`(
             x_padded[`$j-2`], x3_padded[`$j-2`],
    //;     }
            x_padded[`$j-1`], x_padded[`$j`] } ),
-      .x_bar(  ~ {
+      .x_bar(  {
    //;     if ($booth-$modified>=3) {
-            x_padded[`$j-3`], x7[`$j-3`], x3_padded[`$j-3`] , x5[`$j-3`],
+            x_bar_padded[`$j-3`], ~x7[`$j-3`], ~x3_padded[`$j-3`] , ~x5[`$j-3`],
    //;     }
    //;     if ($booth-$modified>=2) {
-            x_padded[`$j-2`], x3_padded[`$j-2`],
+            x_bar_padded[`$j-2`], ~x3_padded[`$j-2`],
    //;     }
-           x_padded[`$j-1`], x_padded[`$j`] } ),
+           x_bar_padded[`$j-1`], x_bar_padded[`$j`] } ),
    //;     if ($booth==2 && $modified) {
            .xn1(xn[`$i`][`$j-1`]), .xn0(xn[`$i`][`$j`]),
    //;     }

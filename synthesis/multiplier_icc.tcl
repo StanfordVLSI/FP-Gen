@@ -255,13 +255,15 @@ if {[info exists ENABLE_MANUAL_PLACEMENT]} {
   set a_ports [get_ports {a[*]}] 
   foreach_in_collection a_port $a_ports {
     regexp {a\[([0-9]*)\]} [get_object_name $a_port] matched port_number
-    set_pin_physical_constraints -side 1 $a_port -order [expr $port_number+1]
+    set_pin_physical_constraints -side 1 $a_port -order [expr 2*$port_number+1]
+    set_pin_physical_constraints -side 1 -pin_name a_bar[$port_number] -order [expr 2*$port_number+2]
   }
 
   set b_ports [get_ports {b[*]}] 
   foreach_in_collection b_port $b_ports {
     regexp {b\[([0-9]*)\]} [get_object_name $b_port] matched port_number
-    set_pin_physical_constraints -side 2 $b_port -order [expr $port_number+1]
+    set_pin_physical_constraints -side 2 $b_port -order [expr 2*$port_number+1]
+    set_pin_physical_constraints -side 2 -pin_name b_bar[$port_number] -order [expr 2*$port_number+2]
   }
 
   set port_size [sizeof_collection $b_ports];

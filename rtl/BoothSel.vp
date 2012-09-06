@@ -121,8 +121,8 @@
 //; my $num_inputs = $modified | $useInc? $booth+1  : $booth;
 
 module `mname` (
-    input logic [`$num_inputs-1`:0]  y,
-    output logic [`$num_outputs-1`:0] sel_x //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X          
+    input logic [`$num_inputs-1`:0]  y, y_bar,
+    output logic [`$num_outputs-1`:0] sel_x, sel_x_bar //MSB is a sign bit while others are 1 hot mux for selecting 1-`2**($booth-1)` X          
 		);
 
    //; if ($modified) {
@@ -148,15 +148,22 @@ module `mname` (
    assign sel_x[7] = ~y_edge_vector[3] &  y_edge_vector[2] &  y_edge_vector[1] & y_edge_vector[0]; // yedge = 1000 ==> +/-8X
    //;     }
    //;   }
-   assign sel_x[`$num_outputs-1`] = y[`$booth`];
-   //; } elsif ($useInc) {
-   //;   for(my $i=0; $i < $num_outputs; $i++){
-   assign sel_x[`$i`] = y[0]? y[`$num_inputs-1`:1]==`$i` : y[`$num_inputs-1`:1]==`$i+1`; 
-   //;   }
+   assign sel_x_bar[`$num_outputs-2`:0] = ~ sel_x[`$num_outputs-2`:0];
+
+   assign sel_x[`$num_outputs-1`]     = y[`$booth`];
+   assign sel_x_bar[`$num_outputs-1`] = y_bar[`$booth`];
+ 
    //; } else {
-   //;   for(my $i=0; $i < $num_outputs-1; $i++){
+   //;   if ($useInc) {
+   //;     for(my $i=0; $i < $num_outputs; $i++){
+   assign sel_x[`$i`] = y[0]? y[`$num_inputs-1`:1]==`$i` : y[`$num_inputs-1`:1]==`$i+1`; 
+   //;     }
+   //;   } else {
+   //;     for(my $i=0; $i < $num_outputs-1; $i++){
    assign sel_x[`$i`] = y==`$i+1`; 
+   //;     }
    //;   }
+   assign sel_x_bar= ~ sel_x;
    //; }
 
    //; if ($verif_mode =~ /ON/){

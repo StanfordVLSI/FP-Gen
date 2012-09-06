@@ -72,7 +72,7 @@ module `mname`(
    //; if ($verif_mode =~ /ON/){
     input logic 		  dumptolog,
    //; }
-    input logic [`$width-1`:0] 	  a,b,	       
+    input logic [`$width-1`:0] 	  a,a_bar, b, b_bar,	       
    //; if ($useMP){
     input logic                   mp_mode,
     //; }	    
@@ -128,7 +128,7 @@ module `mname`(
 			      //; if ($verif_mode =~ /ON/){
 			      .dumptolog(dumptolog),
 			      //; }
-			      .x_in(a), .y_in(b),
+			      .x_in(a), .x_bar_in(a_bar), .y_in(b), .y_bar_in(b_bar),
                               //; if ($useMP){
 			      .mp_mode(mp_mode),
 			      //; }

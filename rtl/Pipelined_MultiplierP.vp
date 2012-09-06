@@ -84,7 +84,7 @@ module `mname`(
 //; if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
 //; }
-      .a(a), .b(b),
+      .a(a), .a_bar(~a), .b(b), .b_bar(~b),
 //;   if ($useMP){
       .mp_mode(mp_mode),
 //;   } 
@@ -117,7 +117,7 @@ module `mname`(
 //;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
 //;   }
-      .a(a), .b(b),
+      .a(a), .a_bar(~a), .b(b), .b_bar(~b),
 //;   if ($useMP){
       .mp_mode(mp_mode),
 //;   } 
@@ -169,7 +169,7 @@ module `mname`(
 //;   if ($verif_mode =~ /ON/){
       .dumptolog(dumptolog),
 //;   }
-      .a(a), .b(b),
+      .a(a), .a_bar(~a), .b(b), .b_bar(~b),
 //;   if ($useMP){
       .mp_mode(mp_mode),
 //;   } 
