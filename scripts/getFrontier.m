@@ -1,9 +1,10 @@
-function [xo, yo] = getFrontier (xi, yi)
-    [x2, index] = sort(xi);
-    y2 = yi(index);
+function [xo, yo, index] = getFrontier (xi, yi)
+    [x2, idx] = sort(xi);
+    y2 = yi(idx);
     k = 1;
     xo = [];
     yo = [];
+    index = [];
     for i = 1:length(x2)
         if(isnan(y2(i)) || isnan(x2(i)))
             continue;
@@ -18,6 +19,7 @@ function [xo, yo] = getFrontier (xi, yi)
         if ( flag == true)
             xo(k,1) = x2(i);
             yo(k,1) = y2(i);
+            index(k,1) = idx(i);
             k = k +1;
         end
     end
