@@ -3,10 +3,10 @@
 use strict;
 use Getopt::Long;
 
-my $home_dir = $ENV{'PWD'};
+my $home_dir = $ENV{'FPGEN'};
 my $xml_dir = $home_dir . "/SysCfgs";
 my $synth_dir = $home_dir . "/synthesis";
-my $work_dir = $home_dir . "/work";
+my $work_dir = "./work";
 
 my $cluster = ();
 my $jobs = 50;
@@ -42,7 +42,7 @@ while ( $#xmls >= 0){
 	chdir("$xml");
 	print "Entering $work_dir/$xml\n";
 	print "Now making file for $xml...\n";
-	`make -f $home_dir/Makefile clean all GENESIS_CFG_XML=$xml_dir/$xml`;
+	`make -f $home_dir/Makefile clean all FPPRODUCT=FPMult GENESIS_CFG_XML=$xml_dir/$xml`;
 
 	# extract synthesis target
 	open(SYNTH_PAR,"$synth_dir/$synth_scr")||die("Could not open file.\n");	

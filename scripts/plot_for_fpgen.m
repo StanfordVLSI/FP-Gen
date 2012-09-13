@@ -198,7 +198,7 @@ function plot_for_fpgen(filename, bitwidth)
        DW_Mapped_data{3}, DW_Mapped_data{4},'-m^',...
        'LineWidth',2,'MarkerSize',9);
    set(gca,'fontsize',12);
-   title(['Efficiency Frontier for both ', num2str(bitwidth), 'bit FMA and CMA'],'fontsize',18);
+%    title(['Efficiency Frontier for both ', num2str(bitwidth), 'bit FMA and CMA'],'fontsize',18);
    
    xlabel('mm^2/GFLOPS','fontsize',18),grid
    ylabel('mW/GFLOPS','fontsize',18)
@@ -342,10 +342,10 @@ function plot_for_fpgen(filename, bitwidth)
        'LineWidth',2,'MarkerSize',6);
    set(gca,'fontsize',12);
    title(['Delay vs Power Efficiency(avg) for ', num2str(bitwidth), 'bit FMA&CMA'],'fontsize',16);
-    if(bitwidth == 32)
-    elseif (bitwidth == 64)
-        axis([0, 5, 10, 35]);
-    end
+%     if(bitwidth == 32)
+%     elseif (bitwidth == 64)
+%         axis([0, 5, 10, 35]);
+%     end
    xlabel('Average Delay (ns)','fontsize',16),grid
    ylabel('Power Efficiency (mW/GFLOPS)','fontsize',16)
    legend('3(FMA)', ...
@@ -372,12 +372,12 @@ function plot_for_fpgen(filename, bitwidth)
     saveas(gcf, ['FPGen_', num2str(bitwidth), '_figure5'], 'pdf');
     
     figure(6);   
-    plot(FMA_Mapped_data{10}, FMA_Mapped_data{9}, '-ro',...
-        CMA_Mapped_data{10}, CMA_Mapped_data{9}, '-bs',...   
+    plot(FMA_Mapped_data{10}, FMA_Mapped_data{9}, '-bo',...
+        CMA_Mapped_data{10}, CMA_Mapped_data{9}, '-rs',...   
         DW_Mapped_data{10}, DW_Mapped_data{9}, '-m^',...
        'LineWidth',2,'MarkerSize',6);
    set(gca,'fontsize',12);
-   title(['Energy Efficiency vs Delay for ', num2str(bitwidth), 'bit FMA&CMA'],'fontsize',16);
+%    title(['Energy Efficiency vs Delay for ', num2str(bitwidth), 'bit FMA&CMA'],'fontsize',16);
 
    xlabel('Benchmarked Latency * Clock Period (ns)','fontsize',16),grid
    ylabel('Energy Efficiency (pJ/FLOP)','fontsize',16)

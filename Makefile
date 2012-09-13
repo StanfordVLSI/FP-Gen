@@ -192,6 +192,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 # "+vpdfileswitchsize+1000" limits the wave file to 1G (then switch to next file)
 VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 				-l simv.log					\
+				+vcs+lic+wait					\
 				+vpdbufsize+100					\
 				+vpdfileswitchsize+100
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
@@ -250,6 +251,7 @@ DC_NETLIST	= $(DESIGN_TARGET).${VT}_${VOLTAGE}.$(TARGET_DELAY).mapped.v
 ICC_NETLIST	= $(DESIGN_TARGET).${VT}_${VOLTAGE}.$(TARGET_DELAY).routed.v
 ICC_OPT_NETLIST = $(DESIGN_TARGET).${VT}_${VOLTAGE}_optimized.$(TARGET_DELAY).routed.v
 DC_LOG	= $(SYNTH_LOGS)/dc.log
+DC_NOTOPO_LOG = $(SYNTH_LOGS)/dc_notopo.log
 DC_PWR_LOG = $(SYNTH_LOGS)/pwr_dc.log 
 DC_SIMV	= $(SYNTH_SAIF)/dc_simv
 
@@ -452,10 +454,30 @@ $(SAIF_FILE): $(SIMV)
 
 
 # Design Compiler rules:
-.PHONY: force_dc run_dc dc_clean
+.PHONY: force_dc run_dc dc_clean run_dc_notopo
 
 force_dc: dc_clean run_dc
 run_dc: $(DC_PWR_LOG)
+
+run_dc_notopo: $(DC_NOTOPO_LOG)
+
+
+$(DC_NOTOPO_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
+	@echo ""
+	@echo Now Running DC SHELL w/o topo: Making $@ because of $?
+	@echo =============================================
+	@sleep 1;
+	@if test ! -d "$(SYNTH_LOGS)"; then 					\
+		mkdir -p $(SYNTH_LOGS);						\
+	fi
+	@echo "Host: `hostname -A`" > $(SYNTH_RUNDIR)/run_dc_notopo.stats
+	@echo "Start: `date`" >> $(SYNTH_RUNDIR)/run_dc_notopo.stats
+	cd $(SYNTH_RUNDIR); dc_shell-xg-t -64bit -x $(DC_COMMAND_STRING) 2>&1 | tee -i $(DC_NOTOPO_LOG)
+	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc_notopo.stats
+	perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_NOTOPO_LOG)
+
+
+
 $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
@@ -521,7 +543,7 @@ dc_clean:
 	@echo ""
 	@echo Removing previous DC run log
 	@echo =============================================
-	\rm -f $(DC_LOG) $(DC_PWR_LOG)
+	\rm -f $(DC_LOG) $(DC_PWR_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
 
 # IC Compiler rules:
 .PHONY: force_icc run_icc icc_clean
@@ -600,7 +622,7 @@ icc_clean:
 	@echo =============================================
 	\rm -f $(ICC_LOG)
 
-$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler OPT: Making $@ because of $?
 	@echo =============================================

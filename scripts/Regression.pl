@@ -33,6 +33,7 @@ use Thread::Semaphore;
 use vars qw( %opts
 	     $nfail
 	     $npass
+             $total_trans
       	   );
 
 # some running parameters
@@ -46,8 +47,14 @@ my $cluster = 0;
 my $prefix = "FPGEN";
 my $email_file = "email.txt";
 my $results_file = "results";
-my @email_list = ('jimmypu07@gmail.com');
+#my @email_list = ('jimmypu07@gmail.com');
+my @email_list = ('jimmypu07@gmail.com', 'shacham@alumni.stanford.edu');
 my $send_email = 0;
+my $clean = 0;
+my $FMA = 0;
+my $CMA = 0;
+my $comment = 0;
+$total_trans = 0;
 
 
 ### lists defining config Genesis parameter space
@@ -98,7 +105,11 @@ GetOptions("cluster"                 => \$opts{cluster},
 	   "transactions=i"          => \$opts{transactions},
 	   "start=i"                 => \$opts{start},
 	   "stop=i"                  => \$opts{stop},
-           "help"                    => \$opts{help}
+           "help"                    => \$opts{help},
+	   "clean"                   => \$opts{clean},
+	   "FMA"                     => \$opts{FMA},
+	   "CMA"                     => \$opts{CMA},
+	   "comment=s"                 => \$opts{comment}
     );
 
 # Handling unknown options
@@ -136,6 +147,21 @@ if (defined $opts{start}) { $start_id = $opts{start}; }
 
 if (defined $opts{stop}) { $stop_id = $opts{stop}; }
 
+if (defined $opts{clean}) { $clean = 1; }
+
+if (defined $opts{FMA}) { $FMA = 1; }
+
+if (defined $opts{CMA}) { $CMA = 1; }
+
+if (defined $opts{comment}) { $comment = $opts{comment}; }
+
+if ($FMA || $CMA) {
+    pop(@archs); 
+    pop(@archs); # empty array
+    push(@archs, 'FMA') if ($FMA);
+    push(@archs, 'CMA') if ($CMA);
+}
+
 my $semaphore = Thread::Semaphore->new($nThreads);
 my $seed = 123;
 my $genesis_par = generate_genesis_arg();
@@ -144,6 +170,8 @@ my $cmd = "make -f \$FPGEN/Makefile clean run $genesis_par $run_arg";
 my @jobs = ();
 my @rundirs = ();
 
+### time stamp ###
+my $time_start = `date`;
 
 ### make the regression folder
 (my $second, my $minute, my $hour, my $day, my $month, my $year) = localtime();
@@ -181,20 +209,39 @@ my @test_results = <TESTRESULTS>;
 close TESTRESULTS;
 
 
-### make text file for email
-if ($send_email) {
-    open FILE, "> $email_file" or die "Can't open $email_file\n";
-    print FILE "Subject: Regression results $reg_rundir: $npass PASS, $nfail FAIL.\n";  
-    my $emails = join(", ",@email_list);
-    print FILE "To: $emails\n\n";
 
-    my $curDir = `pwd`;
-    print FILE "Regression Folder Path: $curDir\n\n";
-    foreach my $line (@test_results)
-    {
-	print FILE "$line";
-    }
-    close FILE;
+### time stamp ###
+my $time_finish = `date`;
+
+### make text file for email
+open FILE, "> $email_file" or die "Can't open $email_file\n";
+print FILE "Subject: Regression results $reg_rundir: $npass PASS, $nfail FAIL.\n";  
+my $emails = join(", ",@email_list);
+print FILE "To: $emails\n\n";
+
+# print some regression info
+my $curDir = `pwd`;
+print FILE "Regression Folder Path: $curDir";
+my $numberOfJobs = scalar(@jobs);
+my $avg_trans = $total_trans / $numberOfJobs;
+print FILE "Number of total jobs: $numberOfJobs\n";
+print FILE "Number of total transactions: $total_trans($avg_trans per job)\n";
+print FILE "Number of threads used: $nThreads\n";
+print FILE "Start time: $time_start";
+print FILE "Finish time: $time_finish";
+print FILE "Comment: $comment";
+
+print FILE "\n\n";
+
+# print the results
+foreach my $line (@test_results)
+{
+    print FILE "$line";
+}
+close FILE;
+
+if ($send_email) {
+    system("uuencode rerun_${prefix}.cmd rerun_${prefix}_cmd.txt >> $email_file"); # attachment
     system("sendmail -F \"$prefix-Regression\" -t < $email_file");
     print "Mail sent...\n\n\n";
 }
@@ -207,10 +254,19 @@ sub prepare_random_cfg {
     my $rundirs = @{shift(@_)};
     my $nJobs  = shift(@_);
     my $job_id = 0;
+    my $trans = $transactions;
+    my $quad_scale_factor = 1;
     while($job_id < $nJobs){
 	# randomize parameters
 	$arch = $archs[int(rand(scalar(@archs)))];
-	$precision = $precisions[int(rand(scalar(@precisions)))];	    
+	my $token = int(rand(scalar(@precisions) + $quad_scale_factor - 1));
+	if ($token < 3) {
+	    $precision = $precisions[$token];
+	    $trans = $transactions;
+	} else {
+	    $precision = $precisions[3];
+	    $trans = $transactions / $quad_scale_factor;
+	}
 	$frac_width = $frac_widths{"$precision"};
 	$exp_width = $exp_widths{"$precision"};
 	$tree = $trees[int(rand(scalar(@trees)))];
@@ -218,6 +274,8 @@ sub prepare_random_cfg {
 	$forwarding = $forwardings[int(rand(scalar(@forwardings)))];
 	$pipe_depth = $pipe_depths[int(rand(scalar(@pipe_depths)))];
 	$mult_pumping =$mult_pumpings[int(rand(scalar(@mult_pumpings)))];
+	
+
 
 	# check the pipeline depth if enabled forwarding
 	if ($forwarding eq 'YES') {
@@ -229,17 +287,20 @@ sub prepare_random_cfg {
 	}
 	# no mult pumping option when it is CMA
 	next if ($mult_pumping eq 'YES' && $arch eq 'CMA');
+	next if ($precision eq 'quad' && ($tree eq 'Array'));
 
 	# run a job
 	$job_id++;
-	
+	$total_trans += $trans;
+
 	my $rundir = $job_id;
 	mkdir($rundir);
 	push(@rundirs, $rundir);
 	$genesis_par = generate_genesis_arg();
-	$seed = int(rand(100000));
-	$run_arg = "RUN=\"+Seed=$seed +NumTrans=$transactions +Silent\"";
-	$cmd = "make -C $rundir -f \$FPGEN/Makefile clean run $genesis_par $run_arg";
+	$seed = int(rand(10000000));
+	$run_arg = "RUN=\"+Seed=$seed +NumTrans=$trans +Silent\"";
+	$cmd = "make -C $rundir -f \$FPGEN/Makefile run $genesis_par $run_arg";
+	if ($clean) { $cmd = $cmd . " clean"; }
 	
 	my $job_cfg = generate_cfg_name();
 	open(JOBCFG, ">${rundir}/jobcfg.txt");
@@ -248,7 +309,7 @@ sub prepare_random_cfg {
 
 	open(CMD, ">${rundir}/${prefix}.cmd");
 	print CMD "#! /bin/sh\n";
-	print CMD $cmd;
+	print CMD $cmd . ";";
 	close (CMD);
 	system("chmod u+x ${rundir}/${prefix}.cmd");
 	if($cluster) {
@@ -297,8 +358,11 @@ sub iterate_all_cfg {
 				$mult_pumping = $var_mult_pumping;
 				# no mult pumping option when it is CMA
 				next if ($mult_pumping eq 'YES' && $arch eq 'CMA');
+				next if ($precision eq 'quad' && $tree eq 'Array');
 				# run a job
 				$job_id++;
+				$total_trans += $transactions;
+				    
 				next if ($job_id < $start_id);
 			       	last if ($job_id > $stop_id);
 				
@@ -306,10 +370,11 @@ sub iterate_all_cfg {
 				mkdir($rundir);
 				push(@rundirs, $rundir);
 				$genesis_par = generate_genesis_arg();
-				$seed = int(rand(100000));
+				$seed = int(rand(10000000));
 				$run_arg = "RUN=\"+Seed=$seed +NumTrans=$transactions +Silent\"";
-				$cmd = "make -C $rundir -f \$FPGEN/Makefile clean run $genesis_par $run_arg";
-					
+				$cmd = "make -C $rundir -f \$FPGEN/Makefile run $genesis_par $run_arg";
+				if ($clean) { $cmd = $cmd . " clean"; }
+	
 				my $job_cfg = generate_cfg_name();
 				open(JOBCFG, ">${rundir}/jobcfg.txt");
 				print JOBCFG $job_cfg;
@@ -317,7 +382,7 @@ sub iterate_all_cfg {
 
 				open(CMD, ">${rundir}/${prefix}.cmd");
 				print CMD "#! /bin/sh\n";
-				print CMD $cmd;
+				print CMD $cmd . ";";
 				close (CMD);
 				system("chmod u+x ${rundir}/${prefix}.cmd");
 				if($cluster) {
@@ -385,6 +450,7 @@ sub run_test_checks
     foreach my $rundir ( @$rundirs )
     {
 	my $num_gen_warnings = 0;
+	system("touch rerun_${prefix}.cmd");
 	
 	if ( -e "$rundir/gen_bb.log"){
 	    $num_gen_warnings = `grep -c '[Ww][Aa][Rr][Nn][Ii][Nn][Gg]' $rundir/gen_bb.log`;
@@ -530,32 +596,34 @@ sub run_jobs_on_queue {
 	 $cur_jobs > 0 ||
 	 $done_job_index < $total_jobs) {
 
-    my $user_job_number = get_user_job_number();
-
-    if( ($job_index < $total_jobs) && ($cur_jobs < $batch_limit) && ($user_job_number < $user_batch_limit) ) {
-      $jobid = submit_job_to_queue($run_jobs[$job_index]);
-      if ($jobid == -1) {
-	$submitted_jobs{$jobid} = [$job_index, 'error'];
-      }
-      else {
-	$submitted_jobs{$jobid} = [$job_index, 'queued'];
-	$cur_jobs++;
-      }
-      $job_index++;
-    }
 
 
-    if( ($cur_jobs > 0) && ($cur_jobs == $batch_limit || $job_index >= $total_jobs) ) {
-      #wait for some job to complete
-      sleep(30);
-      (my $done_jobs_ref, $cur_jobs) = wait_for_jobs(\%submitted_jobs, $cur_jobs);
-      my @done_jobs = @{$done_jobs_ref};
-      foreach $jobid ( @done_jobs ) {
-	my $fin_test_index = $submitted_jobs{$jobid}->[0];
-	$submitted_jobs{$jobid}->[1] = 'done';
-	$done_job_index++
+      if( ($job_index < $total_jobs) && ($cur_jobs < $batch_limit)  ) {
+	  $jobid = submit_job_to_queue($run_jobs[$job_index]);
+	  if ($jobid == -1) {
+	      $submitted_jobs{$jobid} = [$job_index, 'error'];
+	  }
+	  else {
+	      $submitted_jobs{$jobid} = [$job_index, 'queued'];
+	      $cur_jobs++;
+	      
+	  }
+	  $job_index++;
       }
-    }
+
+
+      if( ($cur_jobs > 0) && ($cur_jobs == $batch_limit || $job_index >= $total_jobs) ) {
+	  #wait for some job to complete
+	  sleep(30);
+
+	  (my $done_jobs_ref, $cur_jobs) = wait_for_jobs(\%submitted_jobs, $cur_jobs);
+	  my @done_jobs = @{$done_jobs_ref};
+	  foreach $jobid ( @done_jobs ) {
+	      my $fin_test_index = $submitted_jobs{$jobid}->[0];
+	      $submitted_jobs{$jobid}->[1] = 'done';
+	      $done_job_index++
+	  }
+      }
   }
 }
 
@@ -697,7 +765,7 @@ sub submit_cmd
   my $logfile = "${rundir}/submission";
   my $cmd = "";
 
-  $cmd = "jsub -- ";
+  $cmd = "jsub  -o $rundir -e $rundir -- ";
 
   return $cmd;
 }
