@@ -622,7 +622,7 @@ icc_clean:
 	@echo =============================================
 	\rm -f $(ICC_LOG)
 
-$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
+$(ICC_OPT_LOG): $(SAIF_DEPENDENCY) $(DC_PWR_LOG) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_icc.tcl
 	@echo ""
 	@echo Now Running IC Compiler OPT: Making $@ because of $?
 	@echo =============================================
