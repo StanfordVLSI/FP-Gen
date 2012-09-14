@@ -19,11 +19,11 @@ setenv SNPS_MAX_WAITTIME 7200
 setenv SNPS_MAX_QUEUETIME 7200
 
 ### Prototype NUMBERS
-setenv PATH /hd/cad/numbers/0020/src:$PATH
+setenv PATH /hd/cad/numbers/0030/src:$PATH
 if ($?PYTHONPATH) then
-    setenv PYTHONPATH /hd/cad/numbers/0020/src:${PYTHONPATH}
+    setenv PYTHONPATH /hd/cad/numbers/0030/src:${PYTHONPATH}
 else 
-    setenv PYTHONPATH /hd/cad/numbers/0020/src
+    setenv PYTHONPATH /hd/cad/numbers/0030/src
 endif
 
 # For synthesis

@@ -19,8 +19,8 @@ export SNPS_MAX_WAITTIME=7200
 export SNPS_MAX_QUEUETIME=7200
 
 ### Prototype NUMBERS
-export PATH=/hd/cad/numbers/0020/src:$PATH
-export PYTHONPATH=/hd/cad/numbers/0020/src:$PYTHONPATH
+export PATH=/hd/cad/numbers/0030/src:$PATH
+export PYTHONPATH=/hd/cad/numbers/0030/src:$PYTHONPATH
 
 
 # For synthesis
