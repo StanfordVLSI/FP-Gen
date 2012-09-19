@@ -43,6 +43,7 @@ my $configuration =
 
 
 my @trees  = ( 'Wallace', 'Array', 'ZM', 'OS1' ) ;
+#my @trees  = ( 'Wallace', 'OS1' ) ;
 #my @trees  = ( 'Wallace') ;
 my @pipes  = ( 0) ;
 my @vts    = ( 'lvt' , 'svt' , 'hvt' );
@@ -61,19 +62,19 @@ my $width = 53 ;
 my $i = -1 ;
 foreach my $booth (@booths){
 foreach my $tree  (@trees){
-foreach my $pipe  (@pipes){
+#foreach my $pipe  (@pipes){
 foreach my $vt    (@vts){
 foreach my $delay (@delays){
     $i += 1 ; 
     #$i = 0 ;
 
-    $configuration->{'design'}[$i]{'top_MultiplierP.UseMP'}                       = '1' ;
-    $configuration->{'design'}[$i]{'top_MultiplierP.UseInc'}                      = 'YES' ;
+    $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.UseMP'}           = '1' ;
+    $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.UseInc'}          = 'YES' ;
     $configuration->{'design'}[$i]{'top_MultiplierP.VERIF_MODE'}                  = 'OFF' ;
     $configuration->{'design'}[$i]{'top_MultiplierP.SYNTH_MODE'}                  = 'ON' ;
     $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.Designware_MODE'} = 'OFF';
     $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.Width'}           = $width;
-    $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.PipelineDepth'}   = $pipe;
+#    $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.PipelineDepth'}   = $pipe;
     $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.TreeType'}        = $tree ;
     $configuration->{'design'}[$i]{'top_MultiplierP.MultiplierP.BoothType'}       = $booth ;
 
@@ -82,8 +83,10 @@ foreach my $delay (@delays){
 
     $configuration->{'target_delay'}[$i] = $delay;
 
-}}}}}
+}}}}
+#}
 
+if(0) {
 
 foreach my $width  ( 24, 53 ){
 foreach my $pipe  (@pipes){
@@ -105,7 +108,7 @@ foreach my $delay (@delays){
     $configuration->{'target_delay'}[$i] = $delay;
 }}}}
 
-
+}
 
 
 $i += 1 ; 

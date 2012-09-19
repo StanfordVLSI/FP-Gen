@@ -144,6 +144,8 @@ proc set_DESIGN_switching_activity {args} {
   }
 
   if { $saif_file=="" } {
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 mp_mode
+
       set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
       set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
       if { [get_ports SI] != []} {
@@ -168,6 +170,8 @@ proc set_DESIGN_switching_activity {args} {
   } else {
     read_saif -auto_map_names -instance top_$DESIGN_TARGET/$DESIGN_TARGET -input $saif_file -verbose
   }
+
+  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 mp_mode
 }
 
 define_proc_attributes set_DESIGN_switching_activity -info "Sets the switching activity factors on the design." \
