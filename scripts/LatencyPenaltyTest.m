@@ -7,5 +7,9 @@ LM = LM.data;
       end
   end
   
-  [C, h]= contour(L);
+  [C, h]= contour(L+1, 'LineWidth',2);
   clabel(C,h);
+  xlabel('MulAdd Latency','fontsize',16);
+  ylabel('Accumulation Latency','fontsize',16);
+  title('Effective Latency of SPEC CFP2000 Benchmark','fontsize',16);
+  grid on;
