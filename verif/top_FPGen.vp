@@ -38,97 +38,30 @@ module `mname` ();
    //; my $enable_denormals     = $FP_obj->get_param('EnableDenormals');
    //; my $product_width        = 2 * $frac_width + 2;
 
+//; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc', VERIF_MODE=>$verif_mode, FractionWidth => $frac_width,
+//;                         ExponentWidth => $exp_width, EnableForwarding=> $enable_forwarding, PipelineDepth =>$pipeline_depth,
+//;                         MulPipelineDepth=>$mul_pipeline_depth);
+
 
 // ##############################################################
 // ### Local Signals to Stitch the Bench to the DUT
 // ##############################################################
    
-//; if ($verif_mode =~ /ON/){
-// ##### Verification Signals #####		       
-	  logic 				     dumptolog;
-//; }		
-
-// ##### DUT INPUTS ######
-          logic [`$exp_width + $frac_width`:0]  a;
-          logic [`$exp_width + $frac_width`:0]  b;
-          logic [`$exp_width + $frac_width`:0]  c;
-	  logic [2:0] 			        rnd;		
-
-		
-//; if ($enable_forwarding =~ /YES/){
-// ##### Inputs For Forwarding #####
-          logic 				     forward_a; 
-          logic 				     forward_b; 
-          logic [`$mul_pipeline_depth`:0]            forward_c;
-//; }
-		
-//; if ($pipeline_depth>0){
-// ##### Inputs For Piped Design #####
-          logic 				     valid_in;
-          logic 				     adder_mode;
-          logic 				     multiplier_mode;
-          logic 				     stall_in;
-          logic 				     SI;
-          logic 				     SCAN_ENABLE; 
-          logic 				     test_mode;
-          logic 				     valid_out; 
-          logic 				     SO;
-//; }    
-
 // ##### GLOBALS ######
           logic 				     clk; 
           logic 				     reset;
-    
-		       
-// ##### Outputs ##### 
-          logic 				     stall_request;
-	  logic [`$exp_width + $frac_width`:0] z;
-	  logic [7:0] 			     status;
-
-
+          `$FPGen_ifc->instantiate()` ();
 
 // #######################################################################
 // ### A Clock and Reset Generator
 // #######################################################################
 //; my $clocker_obj = generate('clocker' , 'clocker', CLK_PERIOD=>1000, RST_PERIOD=>20);
-   `$clocker_obj->instantiate()` (.clk(clk), .reset(reset));
+   `$clocker_obj->instantiate()` ( .clk(clk), .reset(reset) );
       
 // #######################################################################
 // ### Instantiate Floating Point Multiply Add Unit as DEVICE UNDER TEST
 // #######################################################################  
-   `$FP_obj->instantiate()` (
-//;                           ###### Inputs ######		
-//;                           if ($verif_mode =~ /ON/){
-	   				                  .dumptolog(dumptolog),
-//;                           }		
-                                                          .a(a),
-                                                          .b(b),
-                                                          .c(c),
-			                                  .rnd(rnd),
-
-//;                           if ($enable_forwarding =~ /YES/){
-           				                 .forward_a(forward_a), 
-           				                 .forward_b(forward_b), 
-           				                 .forward_c(forward_c),
-//;                           }
-//;                           ###### GLOBALS ######		
-//;                           if ($pipeline_depth>0){
-           				                 .valid_in(valid_in),
-                                                         .stall_in(stall_in),		
-                                                         .adder_mode(adder_mode), .multiplier_mode(multiplier_mode),
-                                                         .SI(SI),
-           				                 .SCAN_ENABLE(SCAN_ENABLE), 
-            				                 .test_mode(test_mode),
-           				                 .valid_out(valid_out),
-                                                         .stall_request(stall_request),   
-           				                 .SO(SO),
-//;                           }    
-           				                 .clk(clk), 
-           				                 .reset(reset),   
-
-	                                                 .z(z),
-	   			                         .status(status)			     
-			     );
+   `$FP_obj->instantiate()` ( .clk(clk), .reset(reset), .FPGen_bus(FPGen_ifc.FPU) );
 
 
 
@@ -140,21 +73,6 @@ module `mname` ();
    // ------------------------ VERIFICATION HARNES ---------------------------//
    // Instantiate the TestGenerator here:
    //; my $TestBench_obj = generate('TestBench_FPGen', 'TestBench', DUT=>$FP_obj);
-   `$TestBench_obj->instantiate` (
-				  // outputs:
-				  .dumptolog(dumptolog),
-				  .a(a), .b(b), .c(c), .rnd(rnd),
-				  //; if ($enable_forwarding =~ /YES/){
-				  .forward_a(forward_a), .forward_b(forward_b), .forward_c(forward_c),
-				  //; }
-                            	  .clk(clk), .reset(reset),
-   			     	  //; if ($pipeline_depth>0){
-			     	  .stall_pipeline(stall_pipeline),  .SCAN_ENABLE(SCAN_ENABLE), .test_mode(test_mode),
-                             	  .SO(SO), .SI(SI),.valid_in(valid_in), .adder_mode(adder_mode), .multiplier_mode(multiplier_mode), .stall_in(stall_in),
-                                  .valid_out(valid_out), .stall_request(stall_request),
-   		            	  //; }
-				  // inputs
-				  .z(z),  .status(status)
-				  );
+   `$TestBench_obj->instantiate` ( .clk(clk), .reset(reset), .FPGen_bus(FPGen_ifc.Controller) );
    //; } # End of "if ($verif_mode..."
 endmodule : `mname`

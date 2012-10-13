@@ -135,8 +135,8 @@ module `mname` (
     input logic [2:0] 				rnd,
     input logic 				clk, reset,
    //; if ($pipeline_depth>0){
-    input logic 				valid_in, adder_mode, multiplier_mode, stall_in, SI, SCAN_ENABLE, test_mode,
-    output logic 				valid_out, SO, stall_request,
+    input logic 				valid_in, adder_mode, multiplier_mode, stall_in,
+    output logic 				valid_out, stall_request,
    //; }
 		
     output logic [`$exp_width + $frac_width`:0] z,

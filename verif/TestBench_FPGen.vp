@@ -53,23 +53,13 @@
 //; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2;
 //; my $fp_width = $frac_width + $exp_width + 1;
 //;
-program automatic `mname` (
-			   output logic 			       dumptolog,
-			   // signals to drive the design
-			   output logic [`$exp_width + $frac_width`:0] a, b, c,
-			   output logic [2:0] 			       rnd,
-			   //; if ($enable_forwarding eq 'YES'){
-			   output logic 			       forward_a, forward_b, 
-			   output logic [`$mul_pipeline_depth`:0]      forward_c,
-			   //; }			
-			   input logic 				       clk, reset,
-			   //; if ($pipeline_depth>0){
-			   output logic 			       stall_pipeline, SI, SCAN_ENABLE, test_mode, valid_in, adder_mode, multiplier_mode, stall_in,
-			   input logic 				       SO, valid_out, stall_request,
-			   //; }
-			   // results from the design
-			   input logic [`$exp_width + $frac_width`:0]  z,
-			   input logic [7:0] 			       status
+//; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc', VERIF_MODE=>'ON', FractionWidth => $frac_width,
+//;                         ExponentWidth => $exp_width, EnableForwarding=> $enable_forwarding, PipelineDepth =>$pipeline_depth,
+//;                         MulPipelineDepth=>$mul_pipeline_depth);
+
+
+program automatic `mname` (input logic 				       clk, reset,
+			   `$FPGen_ifc->mname`.Controller FPGen_bus
 			   );
 
    // Local variables and handles for controlling the simulation
@@ -111,8 +101,11 @@ program automatic `mname` (
    
    //; }
 
+   logic stall_requested;
    //; if ($pipeline_depth==0){
-   logic stall_request = 1'b0; // cheat here for
+   assign stall_requested = 1'b0; // cheat here for
+   //; } else {
+   assign stall_requested = FPGen_bus.stall_request;
    //; }
    
    // FP transaction handles
@@ -223,22 +216,22 @@ program automatic `mname` (
       //; }
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
-      dumptolog = 1'b0;
+      FPGen_bus.dumptolog = 1'b0;
       //; if ($pipeline_depth>0){
-      valid_in = 1'b0;
-      stall_in = 1'b0;
-      adder_mode = 1'b0;
-      multiplier_mode = 1'b0;
+      FPGen_bus.valid_in = 1'b0;
+      FPGen_bus.stall_in = 1'b0;
+      FPGen_bus.adder_mode = 1'b0;
+      FPGen_bus.multiplier_mode = 1'b0;
       `$FPGenControl_obj->iname()` = new();
       //; }
-      a = 0;
-      b = 0;
-      c = 0;
-      rnd = 3'b000;
+      FPGen_bus.a = 0;
+      FPGen_bus.b = 0;
+      FPGen_bus.c = 0;
+      FPGen_bus.rnd = 3'b000;
       //; if ($enable_forwarding eq 'YES'){
-      forward_a = 1'b0;
-      forward_b = 1'b0;
-      forward_c = 0;
+      FPGen_bus.forward_a = 1'b0;
+      FPGen_bus.forward_b = 1'b0;
+      FPGen_bus.forward_c = 0;
       //; }
    endtask // start_up_testbench
    
@@ -255,16 +248,16 @@ program automatic `mname` (
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 int i=0;
 	 while (i<num_trans) begin
-	    if(!stall_request) begin
+	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-	       valid_in = 1'b1;
+	       FPGen_bus.valid_in = 1'b1;
                `$FPGenControl_obj->iname()`.randomize();
-               adder_mode = `$FPGenControl_obj->iname()`.adder_mode;
-               multiplier_mode = `$FPGenControl_obj->iname()`.multiplier_mode;
+               FPGen_bus.adder_mode = `$FPGenControl_obj->iname()`.adder_mode;
+               FPGen_bus.multiplier_mode = `$FPGenControl_obj->iname()`.multiplier_mode;
                //; }
 	       i++;
 	       // Assign values to the lines
-	       dumptolog = 1'b0;
+	       FPGen_bus.dumptolog = 1'b0;
 	       //; if ($enable_forwarding eq 'YES'){
 	       `$forward_A->iname()`.randomize();
 	       `$forward_B->iname()`.randomize();
@@ -273,7 +266,7 @@ program automatic `mname` (
 	       if ( `$forward_A->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
 		    && i > `$forward_cycle_a` ) begin
-		  forward_a = 1'b1;
+		  FPGen_bus.forward_a = 1'b1;
                 //; if ($forward_cycle_a==$pipeline_depth){   
 		  TransGenA.ForceFPNum( expectedZ);
                 //; } else {
@@ -281,20 +274,20 @@ program automatic `mname` (
                 //; }
 	       end 
 	       else  begin
-		  forward_a = 1'b0;
+		  FPGen_bus.forward_a = 1'b0;
 		  TransGenA.randomize();
 	       end // else: !if( `$forward_A->iname()`.forward...
 	       // store the forward_a signal in the queue
-	       forward_a_q = {forward_a_q, forward_a};
+	       forward_a_q = {forward_a_q, FPGen_bus.forward_a};
 
-               if (adder_mode) begin
-                  forward_b = 1'b0;
+               if (FPGen_bus.adder_mode) begin
+                  FPGen_bus.forward_b = 1'b0;
                   TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
                end	       
 	       else if ( `$forward_B->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
 		    && i > `$forward_cycle_b` ) begin
-		  forward_b = 1'b1;
+		  FPGen_bus.forward_b = 1'b1;
                 //; if ($forward_cycle_b==$pipeline_depth){   
 		  TransGenB.ForceFPNum( expectedZ);
                 //; } else {
@@ -302,40 +295,40 @@ program automatic `mname` (
                 //; }
 	       end 
 	       else  begin
-		  forward_b = 1'b0;
+		  FPGen_bus.forward_b = 1'b0;
 		  TransGenB.randomize();
 	       end // else: !if( `$forward_B->iname()`.forward...
 	       // store the forward_b signal in the queue
-	       forward_b_q = {forward_b_q, forward_b};
+	       forward_b_q = {forward_b_q, FPGen_bus.forward_b};
 
-               if (multiplier_mode) begin
-                  forward_c = 1'b0;
+               if (FPGen_bus.multiplier_mode) begin
+                  FPGen_bus.forward_c = 1'b0;
                   TransGenC.ForceFPNum(0);	
                end	       
 	       if ( (|`$forward_C->iname()`.forward)
 		    // check the if there is result in pipeline for forwarding
 		    && i > `$forward_cycle_c` ) begin
-		  forward_c = `$forward_C->iname()`.forward;
+		  FPGen_bus.forward_c = `$forward_C->iname()`.forward;
                   if (`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit < 0)
                     TransGenC.ForceFPNum(expectedZ);
                   else
 		    TransGenC.ForceFPNum(expected_q[`$pipeline_depth-$forward_cycle_c-1`+`$forward_C->iname()`.hotbit]);
 	       end 
 	       else  begin
-		  forward_c = 0;
+		  FPGen_bus.forward_c = 0;
 		  TransGenC.randomize();
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
-	       forward_c_q = {forward_c_q, forward_c};
+	       forward_c_q = {forward_c_q, FPGen_bus.forward_c};
 	       //; } else {
 	       TransGenA.randomize();
-	       a = TransGenA.GetFPNum();	       
+	       FPGen_bus.a = TransGenA.GetFPNum();	       
 	          //; if ($pipeline_depth>0){
-               if (adder_mode)
+               if (FPGen_bus.adder_mode)
                     TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
                else 
 		 TransGenB.randomize();	
-	       if (multiplier_mode)
+	       if (FPGen_bus.multiplier_mode)
                     TransGenC.ForceFPNum(0);
                else TransGenC.randomize();
 	          //; } else {
@@ -343,16 +336,16 @@ program automatic `mname` (
 	       TransGenC.randomize();
 	          //; }
 	       //;}
-               a = TransGenA.GetFPNum();
-               b = TransGenB.GetFPNum();	
-	       c = TransGenC.GetFPNum();
+               FPGen_bus.a = TransGenA.GetFPNum();
+               FPGen_bus.b = TransGenB.GetFPNum();	
+	       FPGen_bus.c = TransGenC.GetFPNum();
 	       // calculate the expected result
-	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, rnd);
+	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, FPGen_bus.rnd);
 	       expected = GoldRef.Expected.GetFPNum();
 	       // store all the numbers in queques
-	       a_q = {a_q, a};
-	       b_q = {b_q, b};
-	       c_q = {c_q, c};
+	       a_q = {a_q, FPGen_bus.a};
+	       b_q = {b_q, FPGen_bus.b};
+	       c_q = {c_q, FPGen_bus.c};
 	       expected_q = {expected_q, expected};
 	    end
 	    @(negedge clk);#1;		// wait a clock cycle
@@ -364,16 +357,16 @@ program automatic `mname` (
 	 Temp = Memory[loc];
 	 Temp_q = {Temp_q, Temp};
 	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin	    
-	    if(!stall_request) begin
+	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-	       valid_in = 1'b1;
-               adder_mode = 1'b0;
-               multiplier_mode = 1'b0;
+	       FPGen_bus.valid_in = 1'b1;
+               FPGen_bus.adder_mode = 1'b0;
+               FPGen_bus.multiplier_mode = 1'b0;
                //; }
-	       rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
-	       a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
-	       b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
-	       c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];	    
+	       FPGen_bus.rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
+	       FPGen_bus.a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
+	       FPGen_bus.b = Temp[`$fp_width*3+20-1`:`$fp_width*2+20`];
+	       FPGen_bus.c = Temp[`$fp_width*2+20-1`:`$fp_width  +20`];	    
 	       loc = loc + 1;
 	       Temp = Memory[loc];
 	       Temp_q = {Temp_q, Temp};
@@ -393,8 +386,8 @@ program automatic `mname` (
       @(negedge clk);
       repeat(`$pipeline_depth`) begin
 	 @(negedge clk);
-	 // while stall_request is enable, wait another cycle
-	 while(stall_request) @(negedge clk);
+	 // while stall_requested is enable, wait another cycle
+	 while(stall_requested) @(negedge clk);
       end
       
       // @(negedge clk); 
@@ -402,7 +395,7 @@ program automatic `mname` (
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 int i=0;
 	 while (i<num_trans) begin
-	    if(!stall_request) begin
+	    if(!stall_requested) begin
 	       i++;
 	       if (verb) begin
 		  $display("\n%t: Transaction #%0d: ", $time, i);
@@ -418,7 +411,7 @@ program automatic `mname` (
 	       c_q = c_q[1:$];
 	       expected_q = expected_q[1:$];
 	       // restore FP models
-	       TransRes.ForceFPNum(z);
+	       TransRes.ForceFPNum(FPGen_bus.z);
 	       TransGenA.ForceFPNum(r_a);
 	       TransGenB.ForceFPNum(r_b);
 	       TransGenC.ForceFPNum(r_c);
@@ -450,7 +443,7 @@ program automatic `mname` (
 	       
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
-		  dumptolog = 1'b1;
+		  FPGen_bus.dumptolog = 1'b1;
 		  #1;	      
 		  // Print some transaction information
 		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
@@ -463,7 +456,7 @@ program automatic `mname` (
 			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
 		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
 			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
-		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, z, expectedZ);
+		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
 		  result_tag = $fopen("TEST_FAIL","w");
 		  $fclose(result_tag);
@@ -483,7 +476,7 @@ program automatic `mname` (
 			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
 		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
 			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
-		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, z, expectedZ);
+		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  end // if (verb)
 	       end 
 	    end
@@ -495,7 +488,7 @@ program automatic `mname` (
   	 Temp_q = Temp_q[1:$];
 	 while( !(r_Temp == 1'bx) ) begin
 	    
-	    if(!stall_request) begin	      
+	    if(!stall_requested) begin	      
 	       // X for inexact, O for overflow, U for underflow, V for invalid, and Z for zero-divide
 	       logic   FX, FO, FU, FV, FZ, expectNaN, expectIsZero, resultIsZero;
 	       
@@ -532,7 +525,7 @@ program automatic `mname` (
 		  $display("%t: Expect Result: \tSign = %h, Exp = %h, Man = %h, FO=%h FU=%h FV=%h FX=%h FZ=%h, NaN=%b", $time,
 			   expectedZ[`$fp_width-1`], expectedZ[`$fp_width-2`:`$frac_width`], expectedZ[`$frac_width-1`:0],FO, FU, FV, FX, FZ, expectNaN);
 		  $display("%t: FMA_Result: \tSign = %h, Exp = %h, Man = %h", $time,
-			   z[`$fp_width-1`], z[`$fp_width-2`:`$frac_width`], z[`$frac_width-1`:0]);
+			   FPGen_bus.z[`$fp_width-1`], FPGen_bus.z[`$fp_width-2`:`$frac_width`], FPGen_bus.z[`$frac_width-1`:0]);
 	       end
 	       
 	       /*
@@ -545,13 +538,13 @@ program automatic `mname` (
 		*/
 
 	       
-	       resultIsZero = z[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
-			      && z[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
+	       resultIsZero = FPGen_bus.z[`$fp_width-2`:`$frac_width`] == {(`$exp_width`){1'b0}} 
+			      && FPGen_bus.z[`$frac_width-1`:0]=={(`$frac_width`){1'b0}};
 	       if (!ignore_errors) begin
-		  if(!(z == expectedZ || (resultIsZero==1 && expectIsZero==1)
+		  if(!(FPGen_bus.z == expectedZ || (resultIsZero==1 && expectIsZero==1)
 		       /* && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))*/
-		       || (expectNaN==1 && (status[2]==1)))) begin
-		     dumptolog = 1'b1;
+		       || (expectNaN==1 && (FPGen_bus.status[2]==1)))) begin
+		     FPGen_bus.dumptolog = 1'b1;
 		     #1;
 		     $display("%t: \033[0;31mERROR Found\033[0m", $time);
 		     result_tag = $fopen("TEST_FAIL","w");

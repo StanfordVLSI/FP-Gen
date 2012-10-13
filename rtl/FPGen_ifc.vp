@@ -1,0 +1,117 @@
+/*************************************************************************
+ ** From Perforce:
+ **
+ ** $Id: $
+ ** $DateTime: $
+ ** $Change: $
+ ** $Author: $
+ *************************************************************************/
+
+
+
+/* *****************************************************************************
+ * File: cfg_ifc.vp
+ * 
+ * Description:
+ *    Basic interface for the JTAG
+ * 
+ * REQUIRED GENESIS PARAMETERS:
+ * ----------------------------
+ *    * NONE
+ * 
+ * 
+ * Inputs:
+ * -------
+ * 
+ * Outputs:
+ * --------
+ * 
+ * 
+ * Change bar:
+ * -----------
+ * Date          Author   Description
+ * Oct 11, 2010  zasgar  init version
+ * 
+ * ****************************************************************************/
+
+//;
+//; my $verif_mode = parameter(Name=>'VERIF_MODE',
+//;                            Val=>'ON', List=>['ON','OFF'],
+//;                            Doc=>"Verification mode determines whether or not ".
+//;                                 "monitors and drivers are on. Possible values ".
+//;                                 "are ON or Off." );
+//; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!",
+//;                           Opt=>'No');
+//; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
+//;                           Min=>4, Step=>1, 
+//;                           Doc=>"Width of the exponent for the multiplier (default is IEEE Double, 11 bit) !FUNCTIONAL!",
+//;                           Opt=>'No');
+//; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'YES', List=>['YES', 'NO'],
+//; 	 		    Doc=>"Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) !FUNCTIONAL!",
+//;                         Opt=>'No');
+//;
+//; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>20,
+//;                       Doc=>"Pipeline depth !FUNCTIONAL!", Opt=>'Yes');
+//; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>0, Min=>0) ;
+
+interface `mname`();
+
+
+//; ##### Verification Signals #####		       
+//; if ($verif_mode =~ /ON/){
+    logic dumptolog;
+//; }		
+
+    logic [`$exp_width + $frac_width`:0]  a, b, c, z;
+    logic [2:0] 			     rnd;
+    logic [7:0] 			     status;		
+		
+//; ##### Inputs For Forwarding #####
+//; if ($enable_forwarding =~ /YES/){
+    logic forward_a, forward_b; 
+    logic [`$mul_pipeline_depth`:0]       forward_c;
+//; }
+		
+//; ##### Inputs For Piped Design #####
+//; if ($pipeline_depth>0){
+    logic  stall_in, valid_in, adder_mode, multiplier_mode, stall_request, valid_out;
+//; }    
+		       
+  
+   modport FPU(// From the JTAG controller
+		      input a,b,c,
+		      input rnd,
+//; if ($verif_mode =~ /ON/){
+                      input dumptolog,
+//; }	
+//; if ($enable_forwarding =~ /YES/){
+                      input forward_a, forward_b, forward_c,                      
+//; }
+//; if ($pipeline_depth>0){
+                      input  stall_in, valid_in, adder_mode, multiplier_mode,
+                      output stall_request, valid_out,
+//; }
+		      output z, status
+		      );
+   
+   
+   modport Controller(
+		      output a,b,c,
+		      output rnd,
+//; if ($verif_mode =~ /ON/){
+                      output dumptolog,
+//; }	
+//; if ($enable_forwarding =~ /YES/){
+                      output forward_a, forward_b, forward_c,                      
+//; }
+//; if ($pipeline_depth>0){
+                      output  stall_in, valid_in, adder_mode, multiplier_mode,
+                      input stall_request, valid_out,
+//; }
+		      input z, status
+	      );
+   
+		  
+endinterface: `mname`
