@@ -36,6 +36,7 @@ module `mname` ();
    //; my $exp_width            = $FP_obj->get_param('ExponentWidth');
    //; my $enable_forwarding    = $FP_obj->get_param('EnableForwarding');
    //; my $enable_denormals     = $FP_obj->get_param('EnableDenormals');
+   //; my $interface_name       = $FP_obj->get_param('InterfaceName');
    //; my $product_width        = 2 * $frac_width + 2;
 
 //; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc', VERIF_MODE=>$verif_mode, FractionWidth => $frac_width,
@@ -50,7 +51,7 @@ module `mname` ();
 // ##### GLOBALS ######
           logic 				     clk; 
           logic 				     reset;
-          `$FPGen_ifc->instantiate()` ();
+          `$interface_name` FPGen_ifc();
 
 // #######################################################################
 // ### A Clock and Reset Generator

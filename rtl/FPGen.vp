@@ -57,6 +57,7 @@
 //; parameter( Name=>'MulPipelineDepth' , Val=>$mul_pipeline_depth , Doc=>'' , force=>1 );
 //; parameter( Name=>'AddPipelineDepth' , Val=>$add_pipeline_depth , Doc=>'' , force=>1 );
 //; parameter( Name=>'ForwardCycle'     , Val=>$forward_cycle , Doc=>'' , force=>1 );
+//; parameter( Name=>'InterfaceName'    , Val=>$FPGen_ifc->mname , Doc=>'' , force=>1);
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
 //; #parameter( Name=>'' , Val=>$ , Doc=>'' , force=>1 );
