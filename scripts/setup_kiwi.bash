@@ -1,7 +1,7 @@
 #load some modules to get some work done, this is probably what you need 
 . /cad/modules/tcl/init/bash
 module load base
-module load genesis2/r10905
+module load genesis2
 module load dc_shell
 module load matlab
 module load ncx
