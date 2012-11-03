@@ -53,7 +53,7 @@
 //; my $product_width = 2 * $frac_width + 2; # (leading one + frac_w) *2;
 //; my $fp_width = $frac_width + $exp_width + 1;
 //;
-//; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc', VERIF_MODE=>'ON', FractionWidth => $frac_width,
+//; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc', FractionWidth => $frac_width,
 //;                         ExponentWidth => $exp_width, EnableForwarding=> $enable_forwarding, PipelineDepth =>$pipeline_depth,
 //;                         MulPipelineDepth=>$mul_pipeline_depth);
 
@@ -216,7 +216,7 @@ program automatic `mname` (input logic 				       clk, reset,
       //; }
       $display("%t: TESTBENCH IS ALIVE (SEED=%d) -- NOW RUNNING %d TESTS...", $time, seed, num_trans);
       // some simulation wire values initialization
-      FPGen_bus.dumptolog = 1'b0;
+      //FPGen_bus.dumptolog = 1'b0;
       //; if ($pipeline_depth>0){
       FPGen_bus.valid_in = 1'b0;
       FPGen_bus.stall_in = 1'b0;
@@ -257,7 +257,7 @@ program automatic `mname` (input logic 				       clk, reset,
                //; }
 	       i++;
 	       // Assign values to the lines
-	       FPGen_bus.dumptolog = 1'b0;
+	       //FPGen_bus.dumptolog = 1'b0;
 	       //; if ($enable_forwarding eq 'YES'){
 	       `$forward_A->iname()`.randomize();
 	       `$forward_B->iname()`.randomize();
@@ -443,7 +443,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	       
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
-		  FPGen_bus.dumptolog = 1'b1;
+		  //FPGen_bus.dumptolog = 1'b1;
 		  #1;	      
 		  // Print some transaction information
 		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
@@ -544,7 +544,7 @@ program automatic `mname` (input logic 				       clk, reset,
 		  if(!(FPGen_bus.z == expectedZ || (resultIsZero==1 && expectIsZero==1)
 		       /* && !(FO==1 && status[1]==1) && !(FU==1 && (status[0]|status[3]==1))*/
 		       || (expectNaN==1 && (FPGen_bus.status[2]==1)))) begin
-		     FPGen_bus.dumptolog = 1'b1;
+		     //FPGen_bus.dumptolog = 1'b1;
 		     #1;
 		     $display("%t: \033[0;31mERROR Found\033[0m", $time);
 		     result_tag = $fopen("TEST_FAIL","w");

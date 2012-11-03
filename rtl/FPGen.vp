@@ -6,17 +6,8 @@
 //; ###############################################################################
 //; # PARAMETERIZATION
 //; #############################################################################/
-//;
-//; my $verif_mode = parameter(Name=>'VERIF_MODE',
-//;                            Val=>'ON', List=>['ON','OFF'],
-//;                            Doc=>"Verification mode determines whether or not ".
-//;                                 "monitors and drivers are on. Possible values ".
-//;                                 "are ON or Off." ); 
-//; my $synth_mode = parameter(Name=>'SYNTH_MODE',
-//;                            Val=>'OFF', List=>['ON','OFF'],
-//;                            Doc=>"Synthesis mode determines whether or not ".
-//;                                 "special synthesis constructs are used. ".
-//;                                 "Possible values are ON or Off.");
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //; my $arch = parameter(Name=>'Architecture', Val=>'FMA', List=>['CMA', 'FMA', 'DW_FMA'], Opt=>'No',
 //; 			       Doc=>"Which architecture implements Multiply Add? Cascade multiply accumulate ".
 //; 			            "or Fused or Designware component? (Pick:CMA/FMA) !FUNCTIONAL!");
@@ -26,7 +17,7 @@
 //; #############################################################################/
 //;
 //; # Generate the SubInstance here and derive Parameters
-//; my $FP_obj = generate( $arch , $arch , VERIF_MODE=>$verif_mode , SYNTH_MODE=>$synth_mode );
+//; my $FP_obj = generate( $arch , $arch );
 //; my $frac_width = $FP_obj->get_param('FractionWidth');
 //; my $exp_width = $FP_obj->get_param('ExponentWidth');
 //; my $enable_forwarding = $FP_obj->get_param('EnableForwarding');
@@ -40,7 +31,7 @@
 //; my $add_pipeline_depth = $arch eq 'CMA' ? $FP_obj->get_param('AddPipelineDepth') : 0 ;
 //; my $forward_cycle      = $arch eq 'DW_FMA' ? $pipeline_depth : $pipeline_depth-1;
 
-//; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc', VERIF_MODE=>$verif_mode, FractionWidth => $frac_width,
+//; my $FPGen_ifc = generate('FPGen_ifc', 'FPGen_ifc',  FractionWidth => $frac_width,
 //;                         ExponentWidth => $exp_width, EnableForwarding=> $enable_forwarding, PipelineDepth =>$pipeline_depth,
 //;                         MulPipelineDepth=>$mul_pipeline_depth);
 

@@ -33,13 +33,8 @@
  * Oct 11, 2010  zasgar  init version
  * 
  * ****************************************************************************/
-
-//;
-//; my $verif_mode = parameter(Name=>'VERIF_MODE',
-//;                            Val=>'ON', List=>['ON','OFF'],
-//;                            Doc=>"Verification mode determines whether or not ".
-//;                                 "monitors and drivers are on. Possible values ".
-//;                                 "are ON or Off." );
+//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
 //;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) !FUNCTIONAL!",
