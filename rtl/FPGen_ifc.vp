@@ -51,6 +51,10 @@
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!", Opt=>'Yes');
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>0, Min=>0) ;
 
+package FPGenPkg;
+    typedef enum { FMADD, FADD, FMUL, NOP} InstructionType;
+endpackage : FPGenPkg
+
 interface `mname`();
 
 
@@ -71,7 +75,8 @@ interface `mname`();
 		
 //; ##### Inputs For Piped Design #####
 //; if ($pipeline_depth>0){
-    logic  stall_in, valid_in, adder_mode, multiplier_mode, stall_request, valid_out;
+    logic  stall_in, valid_out, stall_request;
+    FPGenPkg::InstructionType opcode;
 //; }    
 		       
   
@@ -85,8 +90,8 @@ interface `mname`();
                       input forward_a, forward_b, forward_c,                      
 //; }
 //; if ($pipeline_depth>0){
-                      input  stall_in, valid_in, adder_mode, multiplier_mode,
-                      output stall_request, valid_out,
+                      input  stall_in, opcode,
+                      output valid_out, stall_request,
 //; }
 		      output z, status
 		      );
@@ -102,8 +107,8 @@ interface `mname`();
                       output forward_a, forward_b, forward_c,                      
 //; }
 //; if ($pipeline_depth>0){
-                      output  stall_in, valid_in, adder_mode, multiplier_mode,
-                      input stall_request, valid_out,
+                      output  stall_in, opcode,
+                      input valid_out, stall_request,
 //; }
 		      input z, status
 	      );

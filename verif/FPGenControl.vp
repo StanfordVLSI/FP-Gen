@@ -17,27 +17,24 @@
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
-//;  my  $add_weight = parameter(Name=>'AddWeight', Val=>5, Min=>0, Step=>1, Max=>100,
-//;	  		      Doc=>"Distribution weight for fowarding signal to be 1 (range is 0..100)");
-//;  my  $mul_weight = parameter(Name=>'MulWeight', Val=>5, Min=>0, Step=>1, Max=>100-$add_weight,
-//;	  		      Doc=>"Distribution weight for fowarding signal to be 1 (range is 0..100 `$add_weight`)");
+//;  my  $add_weight = parameter(Name=>'AddWeight', Val=>40, Min=>0, Step=>1, Max=>100,
+//;	  		      Doc=>"Distribution weight for add instruction to be 1 (range is 0..100)");
+//;  my  $mul_weight = parameter(Name=>'MulWeight', Val=>30, Min=>0, Step=>1, Max=>100-$add_weight,
+//;	  		      Doc=>"Distribution weight for mul instruction to be 1 (range is 0..100-`$add_weight`)");
+//;  my  $nop_weight = parameter(Name=>'NOPWeight', Val=>0, Min=>0, Step=>1,
+//;	  		      Doc=>"Distribution weight for nop instruction to be 1");
 
 class `mname`;
-   typedef enum {MUL, ADD, MULADD} InstructionType;
-   rand InstructionType inst;
-   logic adder_mode , multiplier_mode;
+
+   rand FPGenPkg::InstructionType opcode;
 
    int add_weight = `$add_weight`;
    int mul_weight = `$mul_weight`;
+   int nop_weight = `$nop_weight`;
 
    constraint pick_inst_type{
-      inst dist {MUL := mul_weight, ADD := add_weight, MULADD := 100-mul_weight-add_weight};
+      opcode dist {FPGenPkg::FMADD := 100-mul_weight-add_weight, FPGenPkg::FADD := add_weight, FPGenPkg::FMUL := mul_weight, FPGenPkg::NOP := nop_weight};
    }
-
-   function void post_randomize;
-      adder_mode = inst==ADD;
-      multiplier_mode = inst==MUL;
-   endfunction 
    
      // C'tor for a Random transaction
      // The constructor also reads user defined, per simulation, weights
@@ -49,6 +46,10 @@ class `mname`;
 	if ($test$plusargs("MulWeight")) begin
 	   $value$plusargs("MulWeight=%d",  mul_weight);
 	   $display("%t: `mname`: Runtime input +MulWeight=%d found", $time, mul_weight);
+	end
+	if ($test$plusargs("NOPWeight")) begin
+	   $value$plusargs("NOPWeight=%d",  nop_weight);
+	   $display("%t: `mname`: Runtime input +NOPWeight=%d found", $time, nop_weight);
 	end
      endfunction // new
 

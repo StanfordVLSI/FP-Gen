@@ -64,35 +64,32 @@ module `mname` (
          `$FPGen_ifc->mname`.FPU FPGen_bus	       
 ); // End Port Decleration 
 
+
+   wire [1:0] opcode;
+   assign opcode = FPGen_bus.opcode;  
    
    // Instantiate the Wrapped Unit Here
    `$FP_obj->instantiate()` (
            				                 .clk(clk), 
-           				                 .reset(reset), 
-//;                           ###### Inputs ######		
+           				                 .reset(reset), 	
 //;                           if ($verif_mode =~ /ON/){
-	   				                  .dumptolog(FPGen_bus.dumptolog),
+	   				                 .dumptolog(FPGen_bus.dumptolog),
 //;                           }		
-                                                          .a(FPGen_bus.a),
-                                                          .b(FPGen_bus.b),
-                                                          .c(FPGen_bus.c),
-			                                  .rnd(FPGen_bus.rnd),
+                                                         .a(FPGen_bus.a),
+                                                         .b(FPGen_bus.b),
+                                                         .c(FPGen_bus.c),
+			                                 .rnd(FPGen_bus.rnd),
 //;                           if ($enable_forwarding =~ /YES/){
            				                 .forward_a(FPGen_bus.forward_a), 
            				                 .forward_b(FPGen_bus.forward_b), 
            				                 .forward_c(FPGen_bus.forward_c),
-//;                           }
-//;                           ###### GLOBALS ######		
+//;                           }		
 //;                           if ($pipeline_depth>0){
                                                          .stall_in(FPGen_bus.stall_in),		
-           				                 .valid_in(FPGen_bus.valid_in),
-                                                         .adder_mode(FPGen_bus.adder_mode),
-                                                         .multiplier_mode(FPGen_bus.multiplier_mode),
-//;                           }    
-
-//;                           ###### OUTPUTS ######    	       		
-//;                           if ($pipeline_depth>0){
-           				                 .valid_out(FPGen_bus.valid_out), 
+           				                 .valid_in( ~&opcode ),
+                                                         .adder_mode(opcode[0]),
+                                                         .multiplier_mode(opcode[1]),
+                                                         .valid_out( FPGen_bus.valid_out ),
                                                          .stall_request(FPGen_bus.stall_request),  
 //;                           }    
 	                                                 .z(FPGen_bus.z),
