@@ -98,6 +98,7 @@ program automatic `mname` (input logic 				       clk, reset,
    //; if ($pipeline_depth>0){
    //;   $FPGenControl_obj = generate('FPGenControl','FPControl');
    `$FPGenControl_obj->instantiate`;
+   logic [1:0] 							       opcode_q[$];
    
    //; }
 
@@ -218,10 +219,8 @@ program automatic `mname` (input logic 				       clk, reset,
       // some simulation wire values initialization
       //FPGen_bus.dumptolog = 1'b0;
       //; if ($pipeline_depth>0){
-      FPGen_bus.valid_in = 1'b0;
       FPGen_bus.stall_in = 1'b0;
-      FPGen_bus.adder_mode = 1'b0;
-      FPGen_bus.multiplier_mode = 1'b0;
+      FPGen_bus.opcode = FPGenPkg::FMADD;
       `$FPGenControl_obj->iname()` = new();
       //; }
       FPGen_bus.a = 0;
@@ -250,14 +249,13 @@ program automatic `mname` (input logic 				       clk, reset,
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-	       FPGen_bus.valid_in = 1'b1;
                `$FPGenControl_obj->iname()`.randomize();
-               FPGen_bus.adder_mode = `$FPGenControl_obj->iname()`.adder_mode;
-               FPGen_bus.multiplier_mode = `$FPGenControl_obj->iname()`.multiplier_mode;
+               FPGen_bus.opcode = `$FPGenControl_obj->iname()`.opcode;
                //; }
 	       i++;
+	       
 	       // Assign values to the lines
-	       //FPGen_bus.dumptolog = 1'b0;
+	       // FPGen_bus.dumptolog = 1'b0;
 	       //; if ($enable_forwarding eq 'YES'){
 	       `$forward_A->iname()`.randomize();
 	       `$forward_B->iname()`.randomize();
@@ -280,11 +278,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	       // store the forward_a signal in the queue
 	       forward_a_q = {forward_a_q, FPGen_bus.forward_a};
 
-               if (FPGen_bus.adder_mode) begin
-                  FPGen_bus.forward_b = 1'b0;
-                  TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
-               end	       
-	       else if ( `$forward_B->iname()`.forward
+               if ( `$forward_B->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
 		    && i > `$forward_cycle_b` ) begin
 		  FPGen_bus.forward_b = 1'b1;
@@ -301,11 +295,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	       // store the forward_b signal in the queue
 	       forward_b_q = {forward_b_q, FPGen_bus.forward_b};
 
-               if (FPGen_bus.multiplier_mode) begin
-                  FPGen_bus.forward_c = 1'b0;
-                  TransGenC.ForceFPNum(0);	
-               end	       
-	       if ( (|`$forward_C->iname()`.forward)
+               if ( (|`$forward_C->iname()`.forward)
 		    // check the if there is result in pipeline for forwarding
 		    && i > `$forward_cycle_c` ) begin
 		  FPGen_bus.forward_c = `$forward_C->iname()`.forward;
@@ -320,33 +310,41 @@ program automatic `mname` (input logic 				       clk, reset,
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_c_q = {forward_c_q, FPGen_bus.forward_c};
+	       
 	       //; } else {
 	       TransGenA.randomize();
-	       FPGen_bus.a = TransGenA.GetFPNum();	       
-	          //; if ($pipeline_depth>0){
-               if (FPGen_bus.adder_mode)
-                    TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
-               else 
-		 TransGenB.randomize();	
-	       if (FPGen_bus.multiplier_mode)
-                    TransGenC.ForceFPNum(0);
-               else TransGenC.randomize();
-	          //; } else {
 	       TransGenB.randomize();	
 	       TransGenC.randomize();
-	          //; }
 	       //;}
+	       
+	       // drive data bus
                FPGen_bus.a = TransGenA.GetFPNum();
                FPGen_bus.b = TransGenB.GetFPNum();	
 	       FPGen_bus.c = TransGenC.GetFPNum();
-	       // calculate the expected result
-	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, FPGen_bus.rnd);
-	       expected = GoldRef.Expected.GetFPNum();
+
 	       // store all the numbers in queques
 	       a_q = {a_q, FPGen_bus.a};
 	       b_q = {b_q, FPGen_bus.b};
 	       c_q = {c_q, FPGen_bus.c};
+	       opcode_q = {opcode_q, FPGen_bus.opcode};
+
+
+	       // now calculate results
+	       
+	       // HACK overwrite b or c for adder and mul mode
+	       //; if ($pipeline_depth>0){
+               if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FADD)
+                 TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
+	       if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FMUL)
+                 TransGenC.ForceFPNum(0);
+	       //; }
+	       
+	       // calculate the expected result
+	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, FPGen_bus.rnd);
+	       expected = GoldRef.Expected.GetFPNum();
+	       // store results in queques
 	       expected_q = {expected_q, expected};
+	       
 	    end
 	    @(negedge clk);#1;		// wait a clock cycle
     	 end // for (int i=0; i<num_trans; i++)
@@ -359,9 +357,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	 while((loc < MEM_SIZE) && !(Temp == 1'bx) ) begin	    
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-	       FPGen_bus.valid_in = 1'b1;
-               FPGen_bus.adder_mode = 1'b0;
-               FPGen_bus.multiplier_mode = 1'b0;
+	       FPGen_bus.opcode = FPGenPkg::FMADD;
                //; }
 	       FPGen_bus.rnd = Temp[`$fp_width*4+20+1`:`$fp_width*4+20`];
 	       FPGen_bus.a = Temp[`$fp_width*4+20-1`:`$fp_width*3+20`];
@@ -398,7 +394,8 @@ program automatic `mname` (input logic 				       clk, reset,
 	    if(!stall_requested) begin
 	       i++;
 	       if (verb) begin
-		  $display("\n%t: Transaction #%0d: ", $time, i);
+		  $display("\n%t: Transaction #%0d: ", $time, i);	  
+		  $display("%t opcode: %2b", $time, opcode_q[0]);
 	       end
 	       
 	       // set the input numbers and dequeque
@@ -410,6 +407,8 @@ program automatic `mname` (input logic 				       clk, reset,
 	       b_q = b_q[1:$];
 	       c_q = c_q[1:$];
 	       expected_q = expected_q[1:$];
+	       opcode_q = opcode_q[1:$];
+	       
 	       // restore FP models
 	       TransRes.ForceFPNum(FPGen_bus.z);
 	       TransGenA.ForceFPNum(r_a);
