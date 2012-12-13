@@ -18,6 +18,8 @@ elaborate $DESIGN_TARGET
 link
 check_design
 
+set_driving_cell -lib_cell $driver_cell -library $library_name [remove_from_collection [all_inputs] {$CLK $RST}]
+
 if { [shell_is_in_topographical_mode] } {
     # Enable power prediction for this DC-T session using clock tree estimation.
     set_power_prediction true

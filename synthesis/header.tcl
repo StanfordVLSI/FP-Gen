@@ -95,8 +95,10 @@ if { $Voltage=="0v9"} {
 
 if { $VT=="svt" } {
   set library_name "tcbn45gsbwpwc${wc_voltage}"
+  set driver_cell "INVD2BWP"
 } else {
   set library_name "tcbn45gsbwp${VT}wc${wc_voltage}"
+  set driver_cell "INVD2BWP${VT}"
 }
 
 if {![info exists DESIGN_TARGET]} {
@@ -221,13 +223,13 @@ proc report_DESIGN_power {args} {
   remove_attribute -quiet [current_design] local_link_library
 
   set link_library $link_library_0v8
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.$config_name.${inst_name}_power.rpt
+  report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.$config_name.${inst_name}_power.rpt
 
   set link_library $link_library_0v9
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.$config_name.${inst_name}_power.rpt
+  report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.$config_name.${inst_name}_power.rpt
 
   set link_library $link_library_1v0
-  report_power -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.$config_name.${inst_name}_power.rpt
+  report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.$config_name.${inst_name}_power.rpt
 
 }
 
