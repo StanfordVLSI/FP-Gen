@@ -149,6 +149,7 @@ link
 
 change_names -rule verilog -hierarchy
 write -format verilog -hierarchy -output SAIF/$DC_NETLIST
+write -format svsim -output SAIF/$DESIGN_TARGET.sv
 write -format ddc -hierarchy -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc
 write_sdc -nosplit $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.sdc
 

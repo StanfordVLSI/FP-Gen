@@ -24,7 +24,10 @@
 //;                            Doc=>"Synthesis mode determines whether or not ".
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off.");
-//;  
+//; 
+
+\`define DUT(mod) \`ifndef GATES  mod  \`else  mod\`\`_svsim  \`endif 
+
 
 module `mname` ();   
    //; # Generate the DUT here and get the pipeline depth
@@ -63,7 +66,7 @@ module `mname` ();
 // #######################################################################
 // ### Instantiate Floating Point Multiply Add Unit as DEVICE UNDER TEST
 // #######################################################################  
-   `$FP_obj->instantiate()` ( .clk(clk), .reset(reset), .FPGen_bus(FPGen_ifc.FPU) );
+   \`DUT(`$FP_obj->mname()`) `$FP_obj->iname()` ( .clk(clk), .reset(reset), .FPGen_bus(FPGen_ifc.FPU) );
 
 
 

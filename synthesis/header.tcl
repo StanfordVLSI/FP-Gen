@@ -144,34 +144,42 @@ proc set_DESIGN_switching_activity {args} {
   }
 
   if { $saif_file=="" } {
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 mp_mode
 
-      set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
+    if { [get_ports clk] != [] } {
       set_switching_activity -toggle_rate 2 -base_clock clk -static_probability 0.5 clk
-      if { [get_ports SI] != []} {
-	  set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
-      }
-      if { [get_ports valid_in] != [] } {
-	  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
-      }
-    if { $inst_name=="add" } {
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-    } elseif { $inst_name=="mul" } {
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
-    } elseif { $inst_name=="muladd" } {
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
-    } elseif { $inst_name=="avg" } {
-      set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
-      set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
     }
-  } else {
-    read_saif -auto_map_names -instance top_$DESIGN_TARGET/$DESIGN_TARGET -input $saif_file -verbose
-  }
+    set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
 
-  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 mp_mode
+    if { [get_ports mp_mode] != [] } {
+      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 mp_mode
+    }
+    if { [get_ports {reset SI stall_in SCAN_ENABLE test_mode} ] != []} {
+      set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
+    }
+    if { [get_ports valid_in] != [] } {
+	  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
+    }
+    if { [get_ports {adder_mode multiplier_mode}] != [] } {
+      if { $inst_name=="add" } {
+        set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
+        set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+      } elseif { $inst_name=="mul" } {
+        set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+        set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 multiplier_mode
+      } elseif { $inst_name=="muladd" } {
+        set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 adder_mode
+        set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
+      } elseif { $inst_name=="avg" } {
+        set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
+        set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
+      }
+    }
+
+  } else {
+
+    read_saif -auto_map_names -instance top_$DESIGN_TARGET/$DESIGN_TARGET -input $saif_file -verbose
+
+  }
 }
 
 define_proc_attributes set_DESIGN_switching_activity -info "Sets the switching activity factors on the design." \

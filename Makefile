@@ -503,7 +503,7 @@ $(DC_SIMV): $(DC_LOG)
 	cd $(SYNTH_SAIF);								\
 	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
 	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
-	vcs $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST)   \
+	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv  \
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(DC_SIMV) $(COMP) 2>&1 | tee comp_dc_bb.log
 
 
@@ -579,7 +579,7 @@ $(ICC_SIMV): $(ICC_LOG)
 	cd $(SYNTH_SAIF);								\
 	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
 	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
-	vcs $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(ICC_NETLIST) 	\
+	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(ICC_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv	\
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(ICC_SIMV) $(COMP) 2>&1 | tee comp_icc_bb.log
 
 
@@ -647,7 +647,7 @@ $(ICC_OPT_SIMV): $(ICC_OPT_LOG)
 	cd $(SYNTH_SAIF);								\
 	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
 	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
-	vcs $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(ICC_OPT_NETLIST) 	\
+	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(ICC_OPT_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv	\
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(ICC_OPT_SIMV) $(COMP) 2>&1 | tee comp_icc_bb.log
 
 $(ICC_OPT_AVG_SAIF_FILE) $(ICC_OPT_ADD_SAIF_FILE) $(ICC_OPT_MUL_SAIF_FILE) $(ICC_OPT_MULADD_SAIF_FILE): $(ICC_OPT_SIMV)
