@@ -71,11 +71,14 @@ module `mname` (
    // now decode the opcode
    logic 	     adder_mode;
    logic 	     multiplier_mode;
+   logic [`$exp_width + $frac_width`:0]  b, c;
    logic 	     valid_in;
    assign adder_mode = opcode[0];
    assign multiplier_mode = opcode[1];
    assign valid_in =  ~&opcode;
    
+   assign b = adder_mode ? { 2'b0, {(`${exp_width}-1`){1'b1}}, {(`${frac_width}`) {1'b0}} }: FPGen_bus.b;
+   assign c = multiplier_mode ? 0 : FPGen_bus.c;
    //; my $fp_one = "{ 2\'b0, {(${exp_width}-1){1\'b1}}, ${frac_width}\'b0 }";
    //; my $fp_zero = "0";
    
@@ -90,8 +93,8 @@ module `mname` (
 			     // HACK: FP unit itself doesn't functionally 
 			     // support adder_mode and mul_mode. Need two
 			     // mux here. 
-                             .b(adder_mode ? `$fp_one`: FPGen_bus.b),
-                             .c(multiplier_mode ? `$fp_zero` : FPGen_bus.c),
+                             .b(b),
+                             .c(c),
 			     .rnd(FPGen_bus.rnd),
 			     //; if ($enable_forwarding =~ /YES/){
            		     .forward_a(FPGen_bus.forward_a), 
