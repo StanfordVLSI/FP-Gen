@@ -1,0 +1,292 @@
+---
+clean_rules: clean
+cleanup: 1
+cubby_root: /tmp/jbrunhaver/runMake/
+delay_make_variable: SYN_CLK_PERIOD
+design:
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: OS1
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '3'
+  top_FPGen.FPGen.FMA.PipelineDepth: '8'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: Wallace
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: Wallace
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: OS1
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: Wallace
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: OS1
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: Wallace
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '5'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: OS1
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: ZM
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+- top_FPGen.FPGen.Architecture: FMA
+  top_FPGen.FPGen.FMA.EnableDenormals: YES
+  top_FPGen.FPGen.FMA.EnableForwarding: YES
+  top_FPGen.FPGen.FMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.FMA.ExponentWidth: '8'
+  top_FPGen.FPGen.FMA.FractionWidth: '23'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.BoothType: '2'
+  top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE: OFF
+  top_FPGen.FPGen.FMA.MulShift.MUL0.TreeType: Array
+  top_FPGen.FPGen.FMA.MulpPipelineDepth: '2'
+  top_FPGen.FPGen.FMA.PipelineDepth: '4'
+  top_FPGen.FPGen.FMA.Retiming: '1'
+  top_FPGen.FPGen.FMA.SmartRetiming: '0'
+design_title: FPGEN_throughput_frontier_FMA_32bit_
+eval_rules: 'comp run run_dc '
+gen_rules: gen
+genesis_cfg_xml_variable: GENESIS_CFG_XML
+genesis_hierarchy_variable: GENESIS_HIERARCHY
+make_arguments: USE_SAIF=1 USE_GATE_SAIF=1 USE_ICC_GATE_SAIF=1  VERILOG_SIMULATION_FLAGS="+IgnoreErrors"
+make_params:
+- VT: lvt
+  Voltage: '1'
+- VT: lvt
+  Voltage: '1'
+- VT: lvt
+  Voltage: '1'
+- VT: lvt
+  Voltage: '0.9'
+- VT: lvt
+  Voltage: '0.9'
+- VT: lvt
+  Voltage: '1'
+- VT: lvt
+  Voltage: '0.9'
+- VT: lvt
+  Voltage: '0.9'
+- VT: lvt
+  Voltage: '0.9'
+- VT: lvt
+  Voltage: '0.8'
+- VT: lvt
+  Voltage: '0.9'
+- VT: lvt
+  Voltage: '0.8'
+- VT: lvt
+  Voltage: '0.8'
+- VT: lvt
+  Voltage: '0.8'
+- VT: lvt
+  Voltage: '0.8'
+- VT: svt
+  Voltage: '0.8'
+- VT: svt
+  Voltage: '0.8'
+makefile: Makefile
+param_make_variable: GENESIS_PARAMS
+rollup_rules: rollup1
+rollup_variable: ROLLUP_TARGET
+runs: 17
+setupfile: scripts/setup_kiwi.bash
+target_delay:
+- 0.443899999910821
+- 0.599800000168784
+- 0.699800000239052
+- 0.754800000017511
+- 0.885200000043198
+- 1.39939999997313
+- 1.12549999957625
+- 1.12880000036393
+- 1.25160000006959
+- 1.21409999939259
+- 1.75089999980653
+- 1.51350000000378
+- 1.52790000022842
+- 1.69029999895692
+- 2.35719999903826
+- 2.29590000014694
+- 2.87640000176841

@@ -1,0 +1,605 @@
+---
+clean_rules: clean
+cleanup: 1
+cubby_root: /tmp/jbrunhaver/runMake/
+delay_make_variable: SYN_CLK_PERIOD
+design:
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '3'
+  top_FPGen.FPGen.CMA.PipelineDepth: '6'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '3'
+  top_FPGen.FPGen.CMA.PipelineDepth: '6'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '3'
+  top_FPGen.FPGen.CMA.PipelineDepth: '6'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '2'
+  top_FPGen.FPGen.CMA.PipelineDepth: '5'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: NO
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '6'
+  top_FPGen.FPGen.CMA.PipelineDepth: '12'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: OS1
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '5'
+  top_FPGen.FPGen.CMA.PipelineDepth: '10'
+- top_FPGen.FPGen.Architecture: CMA
+  top_FPGen.FPGen.CMA.EnableDenormals: YES
+  top_FPGen.FPGen.CMA.EnableForwarding: YES
+  top_FPGen.FPGen.CMA.EnableMultiplePumping: YES
+  top_FPGen.FPGen.CMA.ExponentWidth: '8'
+  top_FPGen.FPGen.CMA.FractionWidth: '23'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.BoothType: '2'
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.Designware_MODE: OFF
+  top_FPGen.FPGen.CMA.MUL.Mult.MultP.TreeType: Wallace
+  top_FPGen.FPGen.CMA.MulPipelineDepth: '6'
+  top_FPGen.FPGen.CMA.PipelineDepth: '12'
+design_title: FPGEN_latency_frontier_CMA_32bit_
+eval_rules: 'comp run run_dc '
+gen_rules: gen
+genesis_cfg_xml_variable: GENESIS_CFG_XML
+genesis_hierarchy_variable: GENESIS_HIERARCHY
+make_arguments: USE_SAIF=1 USE_GATE_SAIF=1 USE_ICC_GATE_SAIF=1  VERILOG_SIMULATION_FLAGS="+IgnoreErrors"
+make_params:
+- 
+  VT: svt
+  Voltage: '0.8'
+- 
+  VT: svt
+  Voltage: '0.8'
+- 
+  VT: svt
+  Voltage: '0.8'
+- 
+  VT: svt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: svt
+  Voltage: '0.8'
+- 
+  VT: svt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: svt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '0.8'
+- 
+  VT: lvt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '0.9'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+- 
+  VT: lvt
+  Voltage: '1'
+makefile: Makefile
+param_make_variable: GENESIS_PARAMS
+rollup_rules: rollup1
+rollup_variable: ROLLUP_TARGET
+runs: 39
+setupfile: scripts/setup_kiwi.bash
+target_delay:
+- 2.84400000182016
+- 2.16189999965085
+- 2.15959999871547
+- 2.14809999824801
+- 1.70690000089817
+- 1.7045999998084
+- 1.69730000101363
+- 1.68900000121777
+- 1.43600000017232
+- 1.40560000092432
+- 1.26920000069857
+- 1.26840000020903
+- 1.26279999967066
+- 1.25090000065972
+- 1.05119999946179
+- 0.999900000001
+- 0.93839999979205
+- 0.863100000223802
+- 0.782099999722042
+- 0.749700000047981
+- 0.74199999993322
+- 0.694100000211423
+- 0.638099999974221
+- 0.62659999999411
+- 0.625
+- 0.625
+- 0.618499999884031
+- 0.60909999992502
+- 0.604699999909597
+- 0.604000000026576
+- 0.593900000005286
+- 0.550999999899167
+- 0.511799999893341
+- 0.5
+- 0.499900000003999
+- 0.499900000003999
+- 0.496799999917332
+- 0.492100000064219
+- 0.484200000072824

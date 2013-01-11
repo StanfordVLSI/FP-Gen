@@ -49,7 +49,9 @@ while (my $line = <$fh>) {
         if ( $headers[$j] =~ /top_FPGen.FPGen/ ) {
           $configuration->{'design'}[$i]{$headers[$j]}= $fields[$j] ;
         }elsif ( $headers[$j] =~ /TOP_(.*)/ ) {
-          $configuration->{'design'}[$i]{$1}= $fields[$j] ;
+	    unless( $headers[$j] =~ /TOP_RP/ ) {
+		$configuration->{'make_params'}[$i]{$1}= $fields[$j] ;
+	    }
         } elsif ( $headers[$j] =~ /target_delay/ ) {
           $configuration->{'target_delay'}[$i]= $fields[$j] ;
         }
@@ -66,4 +68,4 @@ $i += 1 ;
 $configuration->{'runs'} = $i ;
 
 print Dump $configuration;
-print "Design_name=$design_name\n";
+#print "Design_name=$design_name\n";
