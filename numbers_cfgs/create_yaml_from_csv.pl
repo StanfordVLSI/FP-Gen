@@ -5,9 +5,10 @@ use warnings;
 use Getopt::Std;
 use YAML::Any ;
 use Data::Dumper ;
+use File::Basename;
  
 my $file = $ARGV[0] or die "Need to get CSV file on the command line\n";
-$file =~ /([^\.]*)\..*/;
+basename($file) =~ /([^\.]*)\..*/;
 my $design_name = $1;
 
 my @headers =();
