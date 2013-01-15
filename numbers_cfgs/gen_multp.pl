@@ -31,7 +31,7 @@ my $configuration =
 #          'eval_rules' => 'run_dc_notopo run_icc_opt dc_clean run_dc run_icc',
 	  'eval_rules' => 'run_dc run_icc run_icc_opt',
           'cleanup' => 1,
-          'design_title' => 'MultP128svt_dc_icc_v6',
+          'design_title' => 'MultP16svt_dc_icc_v8',
           'param_make_variable' => 'GENESIS_PARAMS',
           'clean_rules' => 'clean',
           'genesis_hierarchy_variable' => 'GENESIS_HIERARCHY',
@@ -49,16 +49,16 @@ my @trees  = ( 'Wallace', 'Array', 'ZM', 'OS1' ) ;
 my @pipes  = ( 0) ;
 #my @vts    = ( 'lvt' , 'svt' , 'hvt' );
 my @vts    = ( 'svt' );
-#my @delays = ( 0.35, 0.4, 0.45 , 0.5 , 0.55 , 0.6 , 0.7 , 0.8);  #for half precision
+my @delays = ( 0.35, 0.4, 0.45 , 0.5 , 0.55 , 0.6 , 0.7 , 0.8);  #for half precision
 #my @delays = ( 0.6, 0.65, 0.7 ,0.75, 0.8 , 0.85, 0.9 , 0.95, 1.0, 1.2);  #for single precision
 #my @delays = (  0.9 , 0.95, 1.0, 1.05, 1.1, 1.2, 1.3, 1.4, 1.5, 1.7 );  #for double
-my @delays = ( 1.25, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6 );  #for quade
+#my @delays = ( 1.25, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6 );  #for quade
 my @booths  = ( [1, 0], [2, 0], [2, 1], [3, 1], [4, 1] ) ;
 #my @booths  = ([2, 1] ) ;
 
 
 # Width: 11 for half, 24 for single, 53 for double, 113 for quad
-my $width = 113 ; 
+my $width = 11 ; 
 
 
 
