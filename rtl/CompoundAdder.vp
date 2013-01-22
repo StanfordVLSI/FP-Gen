@@ -39,17 +39,17 @@
 
 module `mname` (
     //; if ($verif_mode =~ /ON/){
-    input dumptolog,
+    input logic 		dumptolog,
     //; }
-    input [`$width-1`:0] a, b,
+    input logic [`$width-1`:0] 	a, b,
     //; if ($enable_ci =~ /ON/) {
-    input 	      ci,
+    input logic 		ci,
     //; }
-    output 	      co0, co1,
+    output logic 		co0, co1,
     //; if ($zero_width > 0){
-    output zero0, zero1,
+    output logic 		zero0, zero1,
     //; }
-    output [`$width-1`:0] sum0,sum1
+    output logic [`$width-1`:0] sum0,sum1
 		);
    
 

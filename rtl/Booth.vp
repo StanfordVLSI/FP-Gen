@@ -112,15 +112,15 @@ module `mname`(
    //; if ($verif_mode =~ /ON/){
     input logic dumptolog,
    //; }
-    input [`$width-1`:0] x_in, x_bar_in, y_in, y_bar_in,
+    input logic [`$width-1`:0] x_in, x_bar_in, y_in, y_bar_in,
    //; if ($useInc){
-    input 		 xinc_in, yinc_in,
+    input logic 		 xinc_in, yinc_in,
    //; }
    //; if ($pipeline_depth>0) {
     input logic  clk , reset, valid_in, stall,
     output logic  valid_out,
    //; }
-    output [`$pp_width-1`:0] pp [0:`$pp_count+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
+    output logic [`$pp_width-1`:0] pp [0:`$pp_count+$useInc-1`] // `$pp_count`+ `$useInc` to account for xinc and yinc
 		);
 
     logic [`$width-1`:0] x, x_bar, y_bar, y;
