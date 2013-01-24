@@ -33,5 +33,6 @@ source $FPGEN/synthesis/synSetup/synopsys_startup/library_TSMC_45.csh
 alias $FPGEN/scripts/jsub jsub
 
 # For Ofer's debug env
-#setenv GENESIS_LIBS "$CHIPGEN/bin/PerlLibs"
-#set path=($GENESIS_LIBS/Genesis2 $path)
+#setenv GENESIS_HOME "$CHIPGEN/bin/Genesis2Tools"
+#set path=($GENESIS_HOME/bin $path)
+#setenv PERL5LIB "$GENESIS_HOME/PerlLibs/ExtrasForOldPerlDistributions"
