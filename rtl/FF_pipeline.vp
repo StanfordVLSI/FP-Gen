@@ -21,7 +21,7 @@
  * Date           Author    Description
  * March 23, 2012   Sameh   init version - ported Sameh's original code to 
  *                          genesis
- * Jan 22, 2013  jingpu     change it to active high async reset
+ * Jan 22, 2013  jingpu     change it to active low async reset
  * ****************************************************************************/
 
 /*******************************************************************************
@@ -71,8 +71,8 @@ module `mname` (
     reg [`$pipeline_depth-1`:0] forward_stages [0:`$pipeline_depth-1`];
 //;   }
 
-    always @(posedge clk or posedge reset)
-    if (reset)
+    always @(posedge clk or negedge reset)
+    if (!reset)
 //;   if ($enable_forwarding =~ /YES/){
       {valid_stages[0],stages[0], forward_stages[0]} <= 0;
 //;   } else {
@@ -94,8 +94,8 @@ module `mname` (
     end
 
 //;   for (my $i=0; $i<$pipeline_depth-1; $i++){
-    always @(posedge clk or posedge reset)
-    if (reset)
+    always @(posedge clk or negedge reset)
+    if (!reset)
 //;   if ($enable_forwarding =~ /YES/){
       {valid_stages[`$i+1`],stages[`$i+1`], forward_stages[`$i+1`]} <= 0;
 //;   } else {

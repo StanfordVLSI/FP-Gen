@@ -47,7 +47,7 @@ module `mname`
    
    initial begin
       clk = 1'b0;
-      reset <= 1'b1;
+      reset <= 1'b0;
       calibrate_clk;
       fork
 	 do_clk;

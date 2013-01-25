@@ -240,7 +240,7 @@ program automatic `mname` (input logic 				       clk, reset,
    //-------------------------------------------------------------------------//
    task drive_dut;
       int loc;
-      @(negedge reset);
+      @(posedge reset);
       @(negedge clk);
       #1;
       
@@ -378,7 +378,7 @@ program automatic `mname` (input logic 				       clk, reset,
    // Monitor: every clk*$pipeline_depth+clk*k, check results	
    //-------------------------------------------------------------------------//
    task monitor_dut;
-      @(negedge reset);
+      @(posedge reset);
       @(negedge clk);
       repeat(`$pipeline_depth`) begin
 	 @(negedge clk);
@@ -623,7 +623,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	 $set_gate_level_monitoring("on", "mda");
       	 $set_toggle_region(`$FP_obj->get_instance_path()`);
 	 // wait for sim to really start
-	 @(negedge reset);
+	 @(posedge reset);
 	 $toggle_start;
       end
    endtask // start_saif
