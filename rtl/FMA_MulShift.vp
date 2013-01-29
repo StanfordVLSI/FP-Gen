@@ -89,11 +89,15 @@ module `mname` (
   logic forward_c0, ainc, binc, cinc, ainc0, binc0, cinc0, denormA, denormB, denormC, denormA0, denormB0, denormC0, adder_mode0, adder_mode_final, ainc_final;
   logic valid0, valid_mul, valid_ManA, valid_exp, valid_r;
 
+   logic multiplier_mode0;
+   
+
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
   assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
-  assign {b,binc} = forward_b? {z_preInc,IncZ}:{b_in,1'b0};
-  assign {c,cinc} = forward_c? {z_preInc,IncZ}:{c_in,1'b0};
-  assign c1 = forward_c0? z_final : c0;
+  assign {b,binc} = ((~adder_mode) & forward_b)? {z_preInc,IncZ}:{b_in,1'b0};
+  assign {c,cinc} = multiplier_mode ? 0 : 
+		    forward_c? {z_preInc,IncZ}:{c_in,1'b0};
+  assign c1 = multiplier_mode0 ? 0 : forward_c0? z_final : c0;
 //; } else {
   logic forward_c;
   assign forward_c = 0;
@@ -102,10 +106,10 @@ module `mname` (
 //; }
 
 //; if($pipeline_depth > 0 ){
-//;   my $pipeC1 = generate(  'FF_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+11  , PipelineDepth => 1, , Retime=>'YES');
-  `$pipeC1 ->instantiate()` ( .in({a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c, adder_mode}) ,
+//;   my $pipeC1 = generate(  'FF_pipeline',  'pipein',  Width=> 3*$exp_width+3*$frac_width+12  , PipelineDepth => 1, , Retime=>'YES');
+  `$pipeC1 ->instantiate()` ( .in({a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c, adder_mode, multiplier_mode}) ,
                               .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
-                              .out({a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0,adder_mode0}),
+                              .out({a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0,adder_mode0, multiplier_mode0}),
                               .valid_out(valid0) );
   
 //; } else {

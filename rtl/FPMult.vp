@@ -115,9 +115,9 @@ module `mname`(
    assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, denormA_P0, IncA_P0} = forward_a?
                      {ExpZ,ManZ, SignZ, 1'b0, denormZ, IncZ}
                     :{ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0, denormAin_P0, 1'b0};
-   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroExpB_P0, denormB_P0, IncB_P0} = forward_b? 
-                     {ExpZ,ManZ, SignZ, 1'b0, denormZ, IncZ}
-                    :{ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0, denormBin_P0, 1'b0};
+   assign {ExpB_P0,ManB_P0, SignB_P0, ZeroExpB_P0, denormB_P0, IncB_P0} 
+     = ((~adder_mode) & forward_b)? {ExpZ,ManZ, SignZ, 1'b0, denormZ, IncZ}
+       :{ExpBin_P0,ManBin_P0, SignBin_P0, ZeroExpBin_P0, denormBin_P0, 1'b0};
 //; } else {
    assign {ExpA_P0,ManA_P0, SignA_P0, ZeroExpA_P0, denormA_P0, IncA_P0} = 
           {ExpAin_P0,ManAin_P0, SignAin_P0, ZeroExpAin_P0, denormAin_P0, 1'b0};
@@ -273,12 +273,15 @@ module `mname`(
     assign stall_request = stalled? 0: normalize_ManAB_PEnd ;
     assign stall = stall_request | stall_in;
     
-    always @(posedge clk)
-    if (reset)
-      stalled <= 0;
-    else
-      stalled <= stall;
-
+   logic dummy_valid_out;
+   
+//;    my $stall_reg = generate('FF_pipeline','stall_reg', Width=> 1, PipelineDepth=> 1, Retime=> 'NO');
+  `$stall_reg ->instantiate()` (
+       .in(stall) , 
+       .valid_in('b1), .clk(clk) , .stall('b0), .reset(reset), 
+       .out(stall),
+       .valid_out(dummy_valid_out) );
+   
    
 //; if ($pipeline_depth>0) {
 //;   my $normalization_pipe = generate('FF_pipeline','norm_stage', Width=> $product_width+$shift_width+1, PipelineDepth=> 1, Retime=>'YES');
