@@ -50,9 +50,20 @@
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>7, Min=> (($enable_forwarding =~ /YES/)?3:0) , Max=>20,
 //;                       Doc=>"Pipeline depth !FUNCTIONAL!", Opt=>'Yes');
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>0, Min=>0) ;
+//; 
+//; my $fp_width = $exp_width + $frac_width +1;
+//; my $input_width = $fp_width * 3 + 3 + ($enable_forwarding =~ /YES/) * (2 + $mul_pipeline_depth + 1) + 1 + 2;
+//; my $output_width = $fp_width + 2 + 8;
+//; parameter(Name=>'FPUInputWidth', Val=>$input_width, Force=>1) ;
+//; parameter(Name=>'FPUOutputWidth', Val=>$output_width, Force=>1) ;
 
 package FPGenPkg;
-    typedef enum { NOP, FMUL, FADD, FMADD} InstructionType;
+    typedef enum logic [1:0] {
+			      NOP = 2'b00,
+			      FMUL = 2'b01,
+			      FADD = 2'b10, 
+			      FMADD = 2'b11
+			      } InstructionType;
 endpackage : FPGenPkg
 
 interface `mname`();
