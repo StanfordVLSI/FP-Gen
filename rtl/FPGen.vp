@@ -74,9 +74,9 @@ module `mname` (
    logic 	     multiplier_mode;
    logic [`$exp_width + $frac_width`:0]  b, c;
    logic 	     valid_in;
-   assign adder_mode = opcode[0];
-   assign multiplier_mode = opcode[1];
-   assign valid_in =  ~&opcode;
+   assign adder_mode = ~opcode[0];
+   assign multiplier_mode = ~opcode[1];
+   assign valid_in =  opcode[0] | opcode[1];
    
    assign b = adder_mode ? { 2'b0, {(`${exp_width}-1`){1'b1}}, {(`${frac_width}`) {1'b0}} }: FPGen_bus.b;
    assign c = multiplier_mode ? 0 : FPGen_bus.c;

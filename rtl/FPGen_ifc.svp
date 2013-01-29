@@ -52,7 +52,7 @@
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>0, Min=>0) ;
 
 package FPGenPkg;
-    typedef enum { FMADD, FADD, FMUL, NOP} InstructionType;
+    typedef enum { NOP, FMUL, FADD, FMADD} InstructionType;
 endpackage : FPGenPkg
 
 interface `mname`();
