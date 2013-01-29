@@ -362,14 +362,20 @@ module `mname` (
   assign valid_add = valid_mul | valid_A_adder_mode;
 //; }
 
+   logic      valid_out_might_stall;
+   
+
 //;    my $inc_pipe = generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 12 ,
 //;                           PipelineDepth=> ($enable_forwarding =~ /YES/)?1:0, Retime=> 'YES');
   `$inc_pipe ->instantiate()` (
        .in({SignZ, ExpZ, ManZ, denormZ, IncZ, status_init}) , 
        .valid_in(valid_add), .clk(clk) , .stall(stall), .reset(reset), 
        .out({SignZm, ExpZm, ManZm, denormZm, IncZm, status}),
-       .valid_out(valid_out) );
+       .valid_out(valid_out_might_stall) );
 
+   assign valid_out = valid_out_might_stall & (~stall); // when CMA stalled, valid_out is low
+   
+   
 //;  my $fma_increment = generate('FPIncrementer','Incrementer', FractionWidth=> $frac_width , ExponentWidth=> $exp_width );
 
   `$fma_increment->instantiate()` (
