@@ -21,7 +21,7 @@
 //;	  		      Doc=>"Distribution weight for add instruction to be 1 (range is 0..100)");
 //;  my  $mul_weight = parameter(Name=>'MulWeight', Val=>30, Min=>0, Step=>1, Max=>100-$add_weight,
 //;	  		      Doc=>"Distribution weight for mul instruction to be 1 (range is 0..100-`$add_weight`)");
-//;  my  $nop_weight = parameter(Name=>'NOPWeight', Val=>20, Min=>0, Step=>1,
+//;  my  $nop_weight = parameter(Name=>'NOPWeight', Val=>10, Min=>0, Step=>1,
 //;	  		      Doc=>"Distribution weight for nop instruction to be 1");
 
 class `mname`;
@@ -33,7 +33,7 @@ class `mname`;
    int nop_weight = `$nop_weight`;
 
    constraint pick_inst_type{
-      opcode dist {FPGenPkg::FMADD := 80-mul_weight-add_weight, FPGenPkg::FADD := add_weight, FPGenPkg::FMUL := mul_weight, FPGenPkg::NOP := nop_weight};
+      opcode dist {FPGenPkg::FMADD := 90-mul_weight-add_weight, FPGenPkg::FADD := add_weight, FPGenPkg::FMUL := mul_weight, FPGenPkg::NOP := nop_weight};
    }
    
      // C'tor for a Random transaction

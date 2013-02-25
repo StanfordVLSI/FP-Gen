@@ -83,7 +83,7 @@ module `mname`(
     input logic SignZ, InfZ, NANZ, ZeroZ, IncZ,
    //; }
    //; if ($pipeline_depth>0) {
-    input logic  clk , reset, valid_in, stall_in,	       
+    input logic  clk , reset, valid_in, stall_in, adder_mode,	       
     output logic valid_out, stall_request,
    //; }
     output logic 			      SignAB_out, NANAB_out, InfAB_out, ZeroAB_out,
@@ -279,7 +279,7 @@ module `mname`(
   `$stall_reg ->instantiate()` (
        .in(stall) , 
        .valid_in('b1), .clk(clk) , .stall('b0), .reset(reset), 
-       .out(stall),
+       .out(stalled),
        .valid_out(dummy_valid_out) );
    
    

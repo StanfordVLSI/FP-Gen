@@ -232,7 +232,7 @@ module `mname` (
                                   .InfZ(InfZ), .NANZ(NANZ), .ZeroZ(ZeroZ), .IncZ(IncZ),
 //;      }
 //;      if ($mul_pipeline_depth>0){
-                                  .valid_in(valid_in & !adder_mode), .clk(clk) , .stall_in(stall_in), .reset(reset),
+                                  .valid_in(valid_in & !adder_mode), .adder_mode(adder_mode), .clk(clk) , .stall_in(stall_in), .reset(reset),
                                   .valid_out(valid_mul), .stall_request(stall_request),
 //;      }
                                   .SignAB_out(SignAB), .ExpAB_out(ExpAB) , .ManAB_out(ManAB),
