@@ -155,6 +155,10 @@ module `mname` (
   logic [7:0] status_init;
   logic [2:0] rnd_add;
    logic      valid_forward_a1;
+
+   logic [`$mul_pipeline_depth`:0] forward_c_eff;
+   assign forward_c_eff = multiplier_mode? 0 : forward_c; // disable forward_c if multiplier mode
+   
    
 
 //; if($enable_forwarding =~ /YES/ ){
@@ -260,7 +264,7 @@ module `mname` (
 
 
 //; if ($enable_forwarding =~ /YES/){
-  assign { ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec} = forward_c[0]?
+  assign { ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec} = forward_c_eff[0]?
                      {ExpZ_pp0_late , ExpZ_pp1_late , ExpZ_ci_late, ExpZDecrementWhenShifting_late} 
                    : {2'b0, ExpC, {(`$exp_width+2`){~denormC}} , 2'b0};
 //; } else  {
@@ -275,7 +279,7 @@ module `mname` (
   `$pipe_forward->instantiate()` ( .in({ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec}) ,
 //;     if ($enable_forwarding =~ /YES/) {
                                .forwarded_in({ExpZ_pp0, ExpZ_pp1, ExpZ_ci, ExpZDecrementWhenShifting}),
-                               .forward(forward_c[`$mul_pipeline_depth`:1]),
+                               .forward(forward_c_eff[`$mul_pipeline_depth`:1]),
                                .forward_out (forward_c_out),
 //;     }
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
@@ -301,7 +305,7 @@ module `mname` (
   `$pipe_forward2->instantiate()` ( .in({ExpC, ManC, SignC, InfC, NANC, ZeroC, 2'b0}) ,
 //;     if ($enable_forwarding =~ /YES/) {
                                .forwarded_in({ExpZ, ManZ, SignZ, InfZ, NANZ, ZeroZ,IncZ, ShiftZ}),
-                               .forward(forward_c[`$mul_pipeline_depth-1`:0]),
+                               .forward(forward_c_eff[`$mul_pipeline_depth-1`:0]),
                                .forward_out (forward_c_out_dummy),
 //;     }
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 

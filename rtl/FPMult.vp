@@ -278,7 +278,7 @@ module `mname`(
 //;    my $stall_reg = generate('FF_pipeline','stall_reg', Width=> 1, PipelineDepth=> 1, Retime=> 'NO');
   `$stall_reg ->instantiate()` (
        .in(stall) , 
-       .valid_in('b1), .clk(clk) , .stall('b0), .reset(reset), 
+       .valid_in(1'b1), .clk(clk) , .stall(1'b0), .reset(reset), 
        .out(stalled),
        .valid_out(dummy_valid_out) );
    

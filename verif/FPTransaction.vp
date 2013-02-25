@@ -110,13 +110,13 @@
 //;	$Zero_w = parameter(Name=>'Zero_DistWeight', Val=>10, Min=>0, Step=>1,
 //;			    Doc=>"Distribution weight for Zero pattern");
 //; 	if ($test_denormals =~ /YES/){
-//;	  $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>10, Min=>0, Step=>1,
+//;	  $Denorm100_w = parameter(Name=>'Denorm100_DistWeight', Val=>2, Min=>0, Step=>1,
 //;	  				Doc=>"Distribution weight for Denorm with 100..0 pattern");
-//;	  $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>10, Min=>0, Step=>1,
+//;	  $DenormFFF_w = parameter(Name=>'DenormFFF_DistWeight', Val=>2, Min=>0, Step=>1,
 //;	  				Doc=>"Distribution weight for Denorm with FFF..F pattern");
-//;	  $Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>10, Min=>0, Step=>1,
+//;	  $Denorm001_w = parameter(Name=>'Denorm001_DistWeight', Val=>2, Min=>0, Step=>1,
 //;	  				Doc=>"Distribution weight for Denorm with 000..01 pattern");
-//;	  $DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>10, Min=>0, Step=>1,
+//;	  $DenormRnd_w = parameter(Name=>'DenormRnd_DistWeight', Val=>4, Min=>0, Step=>1,
 //;	  				Doc=>"Distribution weight for Denorm random (non-zero) pattern");
 //;     }
 //;	$QuietNaN_w = parameter(Name=>'QuietNaN_DistWeight', Val=>10, Min=>0, Step=>1,
