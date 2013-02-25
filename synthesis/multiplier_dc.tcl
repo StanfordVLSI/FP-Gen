@@ -13,6 +13,7 @@ if { [file exists ${DESIGN_TARGET}.saif] } {
 }
 
 
+analyze -format sverilog [glob ${RUNDIR}/genesis_synth/*.sv]
 analyze -format sverilog [glob ${RUNDIR}/genesis_synth/*.v]
 elaborate $DESIGN_TARGET
 link
