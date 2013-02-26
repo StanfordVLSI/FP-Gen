@@ -18,6 +18,10 @@ $(warning FPGEN home set to $(DESIGN_HOME))
 RUNDIR := $(realpath ./)
 $(warning Work started at $(RUNDIR)) 
 
+# Set defaut technology library to TSMC45
+TECH := 45
+$(warning Technology set to $(TECH) nm ) 
+
 # this line enables a local Makefile to override values of the main makefile
 -include Makefile.local
 
@@ -144,20 +148,19 @@ VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/packages/gtech/src_ver/		\
 			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/
 
-ifndef TCBN45GS_VERILOG
-  $(error ERROR TCBN45GS_VERILOG not defined)
-endif
-ifndef TCBN45GSLVT_VERILOG
-  $(error ERROR TCBN45GSLVT_VERILOG not defined)
-endif
-ifndef TCBN45GSHVT_VERILOG
-  $(error ERROR TCBN45GSHVT_VERILOG not defined)
-endif
 
-VERILOG_GATE_LIBS :=	-v $(TCBN45GS_VERILOG)                          \
+ifeq ($(TECH), 45)
+  VERILOG_GATE_LIBS :=	-v $(TCBN45GS_VERILOG)                          \
 			-v $(TCBN45GSLVT_VERILOG)                       \
 			-v $(TCBN45GSHVT_VERILOG)
+endif
 
+ifeq ($(TECH), 28)
+  VERILOG_GATE_LIBS :=	-v	$(CORE28SOILR_V) \
+		        -v	$(CORE28SOILL_V) \
+		        -v	$(CLK28SOILR_V) \
+		        -v	$(CLK28SOILL_V) 
+endif
 
 # "-sverilog" enables system verilog
 # "+lint=PCWM" enables linting error messages
@@ -226,7 +229,7 @@ IBM_FPGEN_FLAGS := 	-o $(IBM_TRGT_DIR)		\
 
 ##### FLAGS FOR SYNOPSYS DC-SHELL #####
 #######################################
-VT 		?= svt
+VT 		?= lvt
 VOLTAGE 	?= 1v0
 IO2CORE 	?= 30
 SYN_CLK_PERIOD 	?= 1.5
@@ -269,7 +272,8 @@ SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
 			set USE_ICC_GATE_SAIF $(USE_ICC_GATE_SAIF); \
                         set DC_NETLIST $(DC_NETLIST);		\
                         set ICC_NETLIST $(ICC_NETLIST);		\
-                        set ICC_OPT_NETLIST $(ICC_OPT_NETLIST);
+                        set ICC_OPT_NETLIST $(ICC_OPT_NETLIST); \
+			set TECH $(TECH);
 
 
 DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
@@ -369,7 +373,7 @@ $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST): $(GENESIS_INPU
 	@echo Making $@ because of $?
 	@echo ==================================================
 	Genesis2.pl $(GENESIS_GEN_FLAGS) $(GEN) $(GENESIS_PARSE_FLAGS) -debug $(GENESIS_DBG_LEVEL) 
-	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(FPPRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
+#	locDesignMap.pl TCL=gen_params.tcl INPUT_XML=small_$(GENESIS_HIERARCHY) DESIGN_FILE=BB_$(FPPRODUCT).design LOC_DESIGN_MAP_FILE=/dev/null PARAM_LIST_FILE=/dev/null PARAM_ATTRIBUTE_FILE=/dev/null > /dev/null
 
 genesis_clean:
 	@echo ""
@@ -442,6 +446,9 @@ run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
 
 # DC & ICC Run rules:
 ############################
+.PHONY: run_rtl_saif
+run_rtl_saif: $(SAIF_FILE)
+
 $(SAIF_FILE): $(SIMV)
 	@echo ""
 	@echo Now Running simv for RTL level SAIF extraction: Making $@ because of $?
@@ -492,7 +499,7 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc.stats
 	perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
-$(DC_SIMV): $(DC_LOG)
+$(DC_SIMV): $(DC_NOTOPO_LOG)
 	@echo ""
 	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
 	@echo =============================================
@@ -505,7 +512,7 @@ $(DC_SIMV): $(DC_LOG)
 	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
 	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv  \
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(DC_SIMV) $(COMP) 2>&1 | tee comp_dc_bb.log
-
+run_debug:$(DC_AVG_SAIF_FILE) 
 
 $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FILE): $(DC_SIMV)
 	@echo ""
@@ -514,7 +521,7 @@ $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FIL
 	@sleep 1;
 	cd $(SYNTH_SAIF);					 			\
 	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
-	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log;				\
+	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;				\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.avg.saif;					\
 	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
 	     +AddWeight=100 $(RUN) -l $(DC_SIMV).add_saif.log;				\
@@ -543,7 +550,7 @@ dc_clean:
 	@echo ""
 	@echo Removing previous DC run log
 	@echo =============================================
-	\rm -f $(DC_LOG) $(DC_PWR_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
+	\rm -f $(DC_LOG) $(DC_NOTOPO_LOG) $(DC_PWR_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
 
 # IC Compiler rules:
 .PHONY: force_icc run_icc icc_clean

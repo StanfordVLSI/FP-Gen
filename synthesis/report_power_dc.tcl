@@ -21,9 +21,10 @@ if { $PipelineDepth > 0 } {
 }
 report_DESIGN_power "dc" "mapped" "avg" $USE_GATE_SAIF
 
-
+if { $TECH == 45 } {
 set target_library [set ${VT}_[string tolower $Voltage]_target_libs]
 set link_library [set link_library_[string tolower $Voltage] ]
+}
 
 write -format ddc -hierarchy -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc
 write_sdc -nosplit $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.sdc

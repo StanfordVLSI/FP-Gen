@@ -96,6 +96,9 @@ if { $PipelineDepth > 0 } {
     set_output_delay 0.04 -clock $CLK  [get_ports "*" -filter {@port_direction == out} ];
     set_optimize_registers true -design $MUL_DESIGN
     eval $COMPILE_COMMAND
+      if { $TECH == 28 } {
+	  compile_ultra -incremental
+      }
     remove_constraint -all
     current_design ${DESIGN_TARGET}
 
@@ -121,6 +124,9 @@ if { $PipelineDepth > 0 } {
     eval "$COMPILE_COMMAND -check_only"
   } 
   eval $COMPILE_COMMAND
+      if { $TECH == 28 } {
+	  compile_ultra -incremental
+      }
    #Reset Constraints for ICC
   set CLK_PERIOD [expr double($target_delay)/1000]
   create_clock $CLK -period $CLK_PERIOD
@@ -140,6 +146,9 @@ if { $PipelineDepth > 0 } {
   set_switching_activity -toggle_rate 0.5 -base_clock $CLK -static_probability 0.5 -type inputs 
   
   eval $COMPILE_COMMAND
+      if { $TECH == 28 } {
+	  compile_ultra -incremental
+      }
 
   set CLK_PERIOD [expr double($target_delay)/1000]
   create_clock -name $CLK -period $CLK_PERIOD
@@ -174,6 +183,8 @@ report_timing -loops > reports/${DESIGN_TARGET}.${VT}_${Voltage}.$target_delay.m
 
 remove_attribute [current_design] local_link_library
 
+
+if { $TECH == 45 } {
 set link_library $link_library_0v8
 report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_0v8.$target_delay.mapped.timing.rpt
 report_timing -loops
@@ -186,6 +197,11 @@ report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_0v9.$target_delay.mapped.qor.
 set link_library $link_library_1v0
 report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}_1v0.$target_delay.mapped.timing.rpt
 report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.mapped.qor.rpt
+} elseif { $TECH == 28} {
+report_timing -significant_digits 4 -transition_time -nets -attributes -nosplit > reports/${DESIGN_TARGET}.${VT}.$target_delay.mapped.timing.rpt
+report_qor  > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.mapped.qor.rpt
+}
+
 
 if {[shell_is_in_topographical_mode]} {
   # write_milkyway uses: mw_logic1_net, mw_logic0_net and mw_design_library variables from dc_setup.tcl

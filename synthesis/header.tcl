@@ -55,7 +55,7 @@ if { [file exists ../../gen_params.tcl] } {
 } 
 
 if {![info exists PipelineDepth]} {
-  set PipelineDepth 0
+  set PipelineDepth 7
 }
 
 if {![info exists Retiming]} {
@@ -67,7 +67,7 @@ if {![info exists SmartRetiming]} {
 }
 
 if {![info exists MulpPipelineDepth]} {
-  set MulpPipelineDepth 1
+  set MulpPipelineDepth 3
 }
 
 if {![info exists EnableMultiplePumping]} {
@@ -82,23 +82,34 @@ set $Voltage [string tolower $Voltage]
 
 set_host_options -max_cores 2
 
-set target_library [set ${VT}_${Voltage}_target_libs]
-set link_library [set link_library_${Voltage}]
-
-if { $Voltage=="0v9"} {
-  set wc_voltage ""
-} elseif { $Voltage  =="1v0"} {
-  set wc_voltage "0d9"
-} else {
-  set wc_voltage "0d72"
+if { $TECH == 28 } {
+    set_host_options -max_cores 8
 }
 
-if { $VT=="svt" } {
-  set library_name "tcbn45gsbwpwc${wc_voltage}"
-  set driver_cell "INVD2BWP"
-} else {
-  set library_name "tcbn45gsbwp${VT}wc${wc_voltage}"
-  set driver_cell "INVD2BWP${VT}"
+
+if { $TECH == 45 } {
+    set target_library [set ${VT}_${Voltage}_target_libs]
+    set link_library [set link_library_${Voltage}]
+
+    if { $Voltage=="0v9"} {
+	set wc_voltage ""
+    } elseif { $Voltage  =="1v0"} {
+	set wc_voltage "0d9"
+    } else {
+	set wc_voltage "0d72"
+    }
+
+    if { $VT=="svt" } {
+	set library_name "tcbn45gsbwpwc${wc_voltage}"
+	set driver_cell "INVD2BWP"
+    } else {
+	set library_name "tcbn45gsbwp${VT}wc${wc_voltage}"
+	set driver_cell "INVD2BWP${VT}"
+    }
+} elseif { $TECH == 28 } {
+	set library_name "C32_SC_12_CORE_LL_C28SOI"
+	set driver_cell "C12T32_LL_IVX8"
+
 }
 
 if {![info exists DESIGN_TARGET]} {
@@ -152,16 +163,10 @@ proc set_DESIGN_switching_activity {args} {
     }
     set_switching_activity -toggle_rate 0.5 -base_clock clk -static_probability 0.5 -type inputs
 
-    if { [get_ports mp_mode] != [] } {
-      set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 mp_mode
+    if { [get_ports {reset  FPGen_bus.stall_in } ] != []} {
+      set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset FPGen_bus.stall_in}
     }
-    if { [get_ports {reset SI stall_in SCAN_ENABLE test_mode} ] != []} {
-      set_switching_activity -toggle_rate 0.01 -base_clock clk -static_probability 0.01 {reset SI stall_in SCAN_ENABLE test_mode}
-    }
-    if { [get_ports valid_in] != [] } {
-	  set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 valid_in
-    }
-    if { [get_ports {adder_mode multiplier_mode}] != [] } {
+    if { [get_nets { adder_mode multiplier_mode }] != [] } {
       if { $inst_name=="add" } {
         set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 1 adder_mode
         set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
@@ -173,7 +178,7 @@ proc set_DESIGN_switching_activity {args} {
         set_switching_activity -toggle_rate 0 -base_clock clk -static_probability 0 multiplier_mode
       } elseif { $inst_name=="avg" } {
         set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.4 adder_mode
-        set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.25 multiplier_mode
+        set_switching_activity -toggle_rate 0.2 -base_clock clk -static_probability 0.3 multiplier_mode
       }
     }
 
@@ -222,6 +227,7 @@ proc report_DESIGN_power {args} {
 
   remove_attribute -quiet [current_design] local_link_library
 
+  if { $TECH == 45 } {
   set link_library $link_library_0v8
   report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.$config_name.${inst_name}_power.rpt
 
@@ -230,6 +236,9 @@ proc report_DESIGN_power {args} {
 
   set link_library $link_library_1v0
   report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.$config_name.${inst_name}_power.rpt
+  } elseif { $TECH == 28 } {
+      report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.$config_name.${inst_name}_power.rpt
+  }
 
 }
 
