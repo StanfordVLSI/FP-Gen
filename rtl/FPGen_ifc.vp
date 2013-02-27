@@ -57,14 +57,8 @@
 //; parameter(Name=>'FPUInputWidth', Val=>$input_width, Force=>1) ;
 //; parameter(Name=>'FPUOutputWidth', Val=>$output_width, Force=>1) ;
 
-package FPGenPkg;
-    typedef enum logic [1:0] {
-			      NOP = 2'b00,
-			      FMUL = 2'b01,
-			      FADD = 2'b10, 
-			      FMADD = 2'b11
-			      } InstructionType;
-endpackage : FPGenPkg
+//; generate_base('FPGenPkg', 'FPGenPkg');
+import FPGenPkg::InstructionType;
 
 interface `mname`();
 
