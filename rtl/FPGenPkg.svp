@@ -1,0 +1,9 @@
+
+package `mname`;
+    typedef enum logic [1:0] {
+			      NOP = 2'b00,
+			      FMUL = 2'b01,
+			      FADD = 2'b10, 
+			      FMADD = 2'b11
+			      } InstructionType;
+endpackage : `mname`
