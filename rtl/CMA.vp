@@ -166,7 +166,7 @@ module `mname` (
 //;   my $pipe_forward_a1 = generate(  'FF_pipeline',  'pipe_forward_a1',  
 //;                             Width=> 1,
 //;                             PipelineDepth => 1, Retime=>'YES');
-  `$pipe_forward_a1 ->instantiate()` ( .in(forward_a_P1) ,
+  `$pipe_forward_a1 ->instantiate()` ( .in(forward_a) ,
                                .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
                                .out(forward_a_P1),
                                .valid_out(valid_forward_a1) );
