@@ -376,8 +376,13 @@ class `mname`;
       return tmp;
    endfunction // GetFPNum
    
-
-
+   function bit IsDenorm();
+      return (TransType == Denorm100)||(TransType == DenormFFF)||(TransType == Denorm001)||(TransType == DenormRnd);
+   endfunction// bit IsDenorm
+   
+   function bit IsMin();
+      return (TransType == Min);
+   endfunction //bit IsMin
    
    // --------------------------------------------------------------------------
    // Constraints for random generation
