@@ -6,9 +6,6 @@ set wc_lib_dbs [ list \
 			 $env(CLK28SOILL_WC)\
 			 $env(PR28SOILR_WC)\
 			 $env(PR28SOILL_WC)\
-			 $env(IO28SOI_BASIC_WC)\
-			 $env(IO28SOI_CORESUPPLY_WC)\
-			 $env(IO28SOI_IO_WC)\
 
 ]
 
@@ -20,10 +17,6 @@ set bc_lib_dbs [ list \
 			 $env(CLK28SOILL_BC)\
 			 $env(PR28SOILR_BC)\
 			 $env(PR28SOILL_BC)\
-			 $env(IO28SOI_BASIC_BC)\
-			 $env(IO28SOI_CORESUPPLY_BC)\
-			 $env(IO28SOI_IO_BC)\
-
 ]
 		     
 
@@ -35,12 +28,6 @@ set mw_ref_lib_dbs [ list \
 			 $env(CLK28SOILL_MW) \
 			 $env(PR28SOILR_MW) \
 			 $env(PR28SOILL_MW) \
-			 $env(IO28SOI_BASIC_MW)\
-			 $env(IO28SOI_CORESUPPLY_MW)\
-			 $env(IO28SOI_IO_MW)\
-			 $env(IO28SOI_FRAMEKIT_MW)\
-			 $env(IO28SOI_SUPPLYKIT_MW)\
-			 $env(IO28SOI_BUMP_MW)\
 			 $env(UNITTILE_12T_MW)\
 ]
 
@@ -57,7 +44,6 @@ set lvt_target_libs  [list \
 			      $env(CORE28SOILL_WC) \
 			      $env(CLK28SOILL_WC) \
 			      $env(PR28SOILL_WC)\
-			      $env(IO28SOI_BASIC_WC)\
 ]
 
 
