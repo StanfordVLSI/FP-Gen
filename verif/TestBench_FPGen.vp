@@ -316,7 +316,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	       TransGenB.randomize();	
 	       TransGenC.randomize();
 	       //;}
-	       
+
 	       // drive data bus
                FPGen_bus.a = TransGenA.GetFPNum();
                FPGen_bus.b = TransGenB.GetFPNum();	
@@ -328,7 +328,6 @@ program automatic `mname` (input logic 				       clk, reset,
 	       c_q = {c_q, FPGen_bus.c};
 	       opcode_q = {opcode_q, FPGen_bus.opcode};
 
-
 	       // now calculate results
 	       
 	       // HACK overwrite b or c for adder and mul mode
@@ -338,6 +337,8 @@ program automatic `mname` (input logic 				       clk, reset,
 	       if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FMUL)
                  TransGenC.ForceFPNum(0);
 	       //; }
+
+
 	       
 	       // calculate the expected result
 	       GoldRef.CalcGold(TransGenA, TransGenB, TransGenC, FPGen_bus.rnd);
