@@ -329,10 +329,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	       
                //; if ($pipeline_depth>0){
 	       opcode_q = {opcode_q, FPGen_bus.opcode};
-<<<<<<< HEAD
-=======
 	       //; }
->>>>>>> 50591c8
 
 	       // now calculate results
 	       
