@@ -95,12 +95,12 @@ program automatic `mname` (input logic 				       clk, reset,
    
 
    //; my $FPGenControl_obj;
-   //; if ($pipeline_depth>0){
+   //;# if ($pipeline_depth>0){
    //;   $FPGenControl_obj = generate('FPGenControl','FPControl');
    `$FPGenControl_obj->instantiate`;
    logic [1:0] 							       opcode_q[$];
    
-   //; }
+   //;# }
 
    logic stall_requested;
    //; if ($pipeline_depth==0){
@@ -326,8 +326,10 @@ program automatic `mname` (input logic 				       clk, reset,
 	       a_q = {a_q, FPGen_bus.a};
 	       b_q = {b_q, FPGen_bus.b};
 	       c_q = {c_q, FPGen_bus.c};
+	       
+               //; if ($pipeline_depth>0){
 	       opcode_q = {opcode_q, FPGen_bus.opcode};
-
+	       //; }
 
 	       // now calculate results
 	       
