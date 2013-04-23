@@ -87,9 +87,6 @@
 //;
 
 module `mname` (
-   //; if ($verif_mode =~ /ON/){
-    input logic 				dumptolog,
-   //; }
    input logic [`$exp_width + $frac_width`:0] 	a, b, c,
    //; if ($enable_forwarding =~ /YES/){
     input logic 				forward_a, forward_b, 
