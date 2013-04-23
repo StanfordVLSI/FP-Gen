@@ -17,6 +17,7 @@ set bc_lib_dbs [ list \
 			 $env(CLK28SOILL_BC)\
 			 $env(PR28SOILR_BC)\
 			 $env(PR28SOILL_BC)\
+
 ]
 		     
 
@@ -46,18 +47,17 @@ set lvt_target_libs  [list \
 			      $env(PR28SOILL_WC)\
 ]
 
+set rvt_target_libs  [list \
+			      $env(CORE28SOILR_WC) \
+			      $env(CLK28SOILR_WC) \
+			      $env(PR28SOILR_WC)\
+]
 
-if {$ENABLE_HIGH_VOLTAGE} {
-  set LIB_VOLTAGE 1V0
-} else {
-  set LIB_VOLTAGE WC
-}
 
-
-set target_library  $lvt_target_libs
-if {$ENABLE_MVT} {
-#    lappend target_library $env(TCBN45GS_LVT_WC_${LIB_VOLTAGE})
-#	  lappend target_library $env(TCBN45GS_HVT_WC_${LIB_VOLTAGE})	
+if {$VT == "lvt" } {
+  set target_library  $lvt_target_libs
+} elseif {$VT == "rvt"} {
+  set target_library  $rvt_target_libs
 }
 
 set synthetic_library [list dw_foundation.sldb]
