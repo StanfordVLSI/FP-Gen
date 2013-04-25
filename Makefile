@@ -494,7 +494,9 @@ $(DC_SIMV): $(DC_LOG) $(GENESIS_VLOG_LIST)
 	@if test ! -d "$(SYNTH_SAIF)"; then 					\
 		mkdir -p $(SYNTH_SAIF);						\
 	fi
-	cd $(SYNTH_SAIF);								\
+	cd $(SYNTH_SAIF);                                                        \
+	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;    \
+	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;    \
 	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv  \
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(DC_SIMV) $(COMP) 2>&1 | tee comp_dc_bb.log
 
