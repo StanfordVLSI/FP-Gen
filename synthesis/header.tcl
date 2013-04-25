@@ -206,6 +206,7 @@ proc report_DESIGN_power {args} {
   global link_library_0v8;
   global link_library_0v9;
   global link_library_1v0;
+  global TECH;
 
   parse_proc_arguments -args $args results
   foreach argname [array names results] { 
@@ -225,7 +226,7 @@ proc report_DESIGN_power {args} {
     set_DESIGN_switching_activity $inst_name
   }
 
-  remove_attribute -quiet [current_design] local_link_library
+  #remove_attribute -quiet [current_design] local_link_library
 
   if { $TECH == 45 } {
   set link_library $link_library_0v8

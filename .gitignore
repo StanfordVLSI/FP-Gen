@@ -1,0 +1,6 @@
+*.ppm
+*.grids
+*#*#
+*~
+*.o
+mbrast
