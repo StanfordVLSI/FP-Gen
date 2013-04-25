@@ -258,6 +258,7 @@ ICC_OPT_NETLIST = $(DESIGN_TARGET).${VT}_${VOLTAGE}_optimized.$(TARGET_DELAY).ro
 DC_LOG	= $(SYNTH_LOGS)/dc.log
 DC_PWR_LOG = $(SYNTH_LOGS)/pwr_dc.log 
 DC_SIMV	= $(SYNTH_SAIF)/dc_simv
+DC_FM_LOG	= $(SYNTH_LOGS)/dc_fm.log
 
 
 SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
@@ -281,6 +282,7 @@ DC_RUN_FLAGS =
 
 DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
 DC_PWR_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/report_power_dc.tcl"
+DC_FM_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/FPGen_dc_fm.tcl"
 
 ## Additional Flags for ICC
 ICC_LOG 		:= $(SYNTH_LOGS)/icc.log
@@ -350,7 +352,7 @@ SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+One_DistWeight=10			\
 			+PointOneOneOne_DistWeight=1		\
 			+EzAndSml_DistWeight=1			\
-			+Random_DistWeight=200 +Silent	
+			+Random_DistWeight=200 +Seed=1	
 
 ######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
 
@@ -468,7 +470,7 @@ $(SAIF_FILE): $(SIMV)
 
 force_dc: dc_clean run_dc
 run_dc: $(DC_PWR_LOG)
-
+run_dc_fm: $(DC_FM_LOG)
 
 $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
 	@echo ""
@@ -498,8 +500,8 @@ $(DC_SIMV): $(DC_LOG) $(GENESIS_VLOG_LIST)
 
 run_debug:$(DC_SIMV)
 	cd $(SYNTH_SAIF);					 			\
-	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
-	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;			\
+	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=100 	\
+	     +AddWeight=0 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;			\
 
 $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FILE): $(DC_SIMV)
 	@echo ""
@@ -534,11 +536,28 @@ $(DC_PWR_LOG): $(DC_SAIF_DEPENDENCY) $(DC_LOG) $(SYNTH_HOME)/report_power_dc.tcl
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_PWR_LOG)
 
 
+clean_fm:
+	rm -f $(DC_FM_LOG)
+force_fm: clean_fm run_dc_fm
+$(DC_FM_LOG): $(SYNTH_HOME)/FPGen_dc_fm.tcl $(DC_LOG)
+	@echo ""
+	@echo Now Running FM SHELL: Making $@ because of $?
+	@echo =============================================
+	@sleep 1;
+	@if test ! -d "$(SYNTH_LOGS)"; then 					\
+		mkdir -p $(SYNTH_LOGS);						\
+	fi
+	@echo "Host: `hostname -A`" > $(SYNTH_RUNDIR)/run_dc_fm.stats
+	@echo "Start: `date`" >> $(SYNTH_RUNDIR)/run_dc_fm.stats
+	cd $(SYNTH_RUNDIR); fm_shell -64bit -x $(DC_FM_COMMAND_STRING) 2>&1 | tee -i $(DC_FM_LOG)
+	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc_fm.stats
+
+
 dc_clean:
 	@echo ""
 	@echo Removing previous DC run log
 	@echo =============================================
-	\rm -f $(DC_LOG)  $(DC_PWR_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
+	\rm -f $(DC_LOG)  $(DC_PWR_LOG) $(DC_FM_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
 
 # IC Compiler rules:
 .PHONY: force_icc run_icc icc_clean
