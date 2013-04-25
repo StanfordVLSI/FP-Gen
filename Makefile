@@ -256,6 +256,7 @@ ICC_OPT_NETLIST = $(DESIGN_TARGET).${VT}_${VOLTAGE}_optimized.$(TARGET_DELAY).ro
 DC_LOG	= $(SYNTH_LOGS)/dc.log
 DC_NOTOPO_LOG = $(SYNTH_LOGS)/dc_notopo.log
 DC_PWR_LOG = $(SYNTH_LOGS)/pwr_dc.log 
+DC_NOTOPO_PWR_LOG = $(SYNTH_LOGS)/pwr_dc_notopo.log 
 DC_SIMV	= $(SYNTH_SAIF)/dc_simv
 
 
@@ -466,7 +467,7 @@ $(SAIF_FILE): $(SIMV)
 force_dc: dc_clean run_dc
 run_dc: $(DC_PWR_LOG)
 
-run_dc_notopo: $(DC_NOTOPO_LOG)
+run_dc_notopo: $(DC_NOTOPO_PWR_LOG)
 
 
 $(DC_NOTOPO_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
@@ -499,7 +500,7 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc.stats
 	perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
-$(DC_SIMV): $(DC_NOTOPO_LOG)
+$(DC_SIMV): 
 	@echo ""
 	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
 	@echo =============================================
@@ -512,7 +513,9 @@ $(DC_SIMV): $(DC_NOTOPO_LOG)
 	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
 	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv  \
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(DC_SIMV) $(COMP) 2>&1 | tee comp_dc_bb.log
-run_debug:$(DC_AVG_SAIF_FILE) 
+run_debug:rm_dc_sim $(DC_AVG_SAIF_FILE) 
+rm_dc_sim:
+	rm -f $(DC_AVG_SAIF_FILE) $(DC_SIMV)
 
 $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FILE): $(DC_SIMV)
 	@echo ""
@@ -546,11 +549,22 @@ $(DC_PWR_LOG): $(DC_SAIF_DEPENDENCY) $(DC_LOG) $(SYNTH_HOME)/report_power_dc.tcl
 	dc_shell-xg-t -64bit -topo -x $(DC_PWR_COMMAND_STRING) 2>&1 | tee -i $(DC_PWR_LOG)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_PWR_LOG)
 
+$(DC_NOTOPO_PWR_LOG): $(DC_NOTOPO_LOG) $(DC_SAIF_DEPENDENCY)  $(SYNTH_HOME)/report_power_dc.tcl
+	@echo ""
+	@echo Now Running DC SHELL: Making $@ because of $?
+	@echo =============================================
+	@sleep 1;
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	cd $(SYNTH_RUNDIR);	 							\
+	dc_shell-xg-t -64bit -x $(DC_PWR_COMMAND_STRING) 2>&1 | tee -i $(DC_NOTOPO_PWR_LOG)
+
 dc_clean:
 	@echo ""
 	@echo Removing previous DC run log
 	@echo =============================================
-	\rm -f $(DC_LOG) $(DC_NOTOPO_LOG) $(DC_PWR_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
+	\rm -f $(DC_LOG) $(DC_NOTOPO_LOG) $(DC_PWR_LOG) $(DC_NOTOPO_PWR_LOG) $(SYNTH_RUNDIR)/${DESIGN_TARGET}.${VT}_${VOLTAGE}.${TARGET_DELAY}.mapped*
 
 # IC Compiler rules:
 .PHONY: force_icc run_icc icc_clean

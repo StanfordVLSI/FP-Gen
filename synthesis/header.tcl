@@ -206,6 +206,7 @@ proc report_DESIGN_power {args} {
   global link_library_0v8;
   global link_library_0v9;
   global link_library_1v0;
+  global TECH;
 
   parse_proc_arguments -args $args results
   foreach argname [array names results] { 
