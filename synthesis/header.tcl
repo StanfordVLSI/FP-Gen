@@ -82,11 +82,6 @@ set $Voltage [string tolower $Voltage]
 
 set_host_options -max_cores 2
 
-if { $TECH == 28 } {
-    set_host_options -max_cores 8
-}
-
-
 if { $TECH == 45 } {
     set target_library [set ${VT}_${Voltage}_target_libs]
     set link_library [set link_library_${Voltage}]
