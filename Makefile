@@ -185,6 +185,8 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-timescale=1ps/1ps				\
 				+noportcoerce         				\
 				+vcs+lic+wait					\
+				+notimingcheck					\
+				+delay_mode_zero				\
 				-licqueue					\
 				-ld $(VCS_CC) 					\
 				-top $(SIM_TOP)					\
@@ -333,7 +335,7 @@ endif
 # one another, not to any absolute number.
 SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+NumTrans=1000				\
-			+Silent					\
+			+notimingcheck				\
 			+SignIsPos_DistWeight=50		\
 			+Zero_DistWeight=10	 		\
 			+Denorm100_DistWeight=1			\
@@ -348,7 +350,7 @@ SAIF_RUNTIME_ARGS:= 	+SAIF +clk_period=$(SYN_CLK_PERIOD_PS)	\
 			+One_DistWeight=10			\
 			+PointOneOneOne_DistWeight=1		\
 			+EzAndSml_DistWeight=1			\
-			+Random_DistWeight=200
+			+Random_DistWeight=200 +Silent	
 
 ######## END OF FLAGS FOR SYNOPSYS DC-SHELL #####
 
@@ -482,7 +484,7 @@ $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc.stats
 	perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_LOG)
 
-$(DC_SIMV): $(DC_LOG)
+$(DC_SIMV): $(DC_LOG) $(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Now Compiling Gate Level SAIF testbench : Making $@ because of $?
 	@echo =============================================
@@ -491,11 +493,13 @@ $(DC_SIMV): $(DC_LOG)
 		mkdir -p $(SYNTH_SAIF);						\
 	fi
 	cd $(SYNTH_SAIF);								\
-	if test ! -d "genesis_verif"; then ln -sf $(RUNDIR)/genesis_verif; fi;		\
-	if test ! -d "genesis_synth"; then ln -sf $(RUNDIR)/genesis_synth; fi;		\
 	vcs +define+GATES $(VERILOG_COMPILE_FLAGS) $(VERILOG_GATE_LIBS) $(SYNTH_SAIF)/$(DC_NETLIST) $(SYNTH_SAIF)/$(DESIGN_TARGET).sv  \
 	    -f $(RUNDIR)/$(GENESIS_VERIF_LIST) -o $(DC_SIMV) $(COMP) 2>&1 | tee comp_dc_bb.log
-run_debug:$(DC_AVG_SAIF_FILE) 
+
+run_debug:$(DC_SIMV)
+	cd $(SYNTH_SAIF);					 			\
+	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
+	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;			\
 
 $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FILE): $(DC_SIMV)
 	@echo ""
@@ -504,7 +508,7 @@ $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FIL
 	@sleep 1;
 	cd $(SYNTH_SAIF);					 			\
 	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
-	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;				\
+	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;			\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.avg.saif;					\
 	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
 	     +AddWeight=100 $(RUN) -l $(DC_SIMV).add_saif.log;				\
