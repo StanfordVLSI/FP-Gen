@@ -57,6 +57,12 @@ class `mname`;
 	 if (transExpected.TransType == `$typeRes`::Inf)
 	   return 1'b1;
       end
+
+      
+      if (transRes.TransType == `$typeRes`::Zero) begin
+	 if (transExpected.TransType == `$typeRes`::Zero)
+	   return 1'b1;
+      end
       
       // Normal case
       if (transRes.Sign == transExpected.Sign &&
