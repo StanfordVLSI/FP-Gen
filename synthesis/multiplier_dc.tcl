@@ -7,6 +7,7 @@ source -echo -verbose $env(FPGEN)/synthesis/header.tcl
 file mkdir reports
 file mkdir SAIF
 
+set_svf $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.svf
 
 if { [file exists ${DESIGN_TARGET}.saif] } {
   saif_map -start
@@ -160,6 +161,8 @@ if { $PipelineDepth > 0 } {
 link
 
 change_names -rule verilog -hierarchy
+set_svf -off
+
 write -format verilog -hierarchy -output SAIF/$DC_NETLIST
 write -format svsim -output SAIF/$DESIGN_TARGET.sv
 write -format ddc -hierarchy -output $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.mapped.ddc
