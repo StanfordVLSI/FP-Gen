@@ -100,7 +100,7 @@ set_svf $DESIGN_TARGET.${VT}_${Voltage}.$target_delay.svf
 
 set_app_var verification_verify_unread_tech_cell_pins false
 
-foreach tech_lib $wc_lib_dbs {
+foreach tech_lib $link_library {
   read_db -technology_library $tech_lib
 }
 
