@@ -283,6 +283,7 @@ DC_RUN_FLAGS =
 DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
 DC_PWR_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/report_power_dc.tcl"
 DC_FM_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/FPGen_dc_fm.tcl"
+DC_LOAD_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/header.tcl"
 
 ## Additional Flags for ICC
 ICC_LOG 		:= $(SYNTH_LOGS)/icc.log
@@ -553,6 +554,16 @@ $(DC_FM_LOG): $(SYNTH_HOME)/FPGen_dc_fm.tcl $(DC_LOG)
 	@echo "Start: `date`" >> $(SYNTH_RUNDIR)/run_dc_fm.stats
 	cd $(SYNTH_RUNDIR); fm_shell -64bit -x $(DC_FM_COMMAND_STRING) 2>&1 | tee -i $(DC_FM_LOG)
 	@echo "Finish: `date`" >> $(SYNTH_RUNDIR)/run_dc_fm.stats
+
+dc_load: $(SYNTH_HOME)/header.tcl
+	@echo Now LOADING DC SHELL:
+	@echo =============================================
+	@sleep 1;
+	@if test ! -d "$(SYNTH_LOGS)"; then 					\
+		mkdir -p $(SYNTH_LOGS);						\
+	fi
+	cd $(SYNTH_RUNDIR); dc_shell-xg-t -64bit $(DC_RUN_FLAGS) -64bit -x $(DC_LOAD_COMMAND_STRING) 
+
 
 
 dc_clean:
