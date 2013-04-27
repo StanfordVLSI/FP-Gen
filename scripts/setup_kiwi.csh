@@ -12,6 +12,7 @@ module load pts
 module load starrc
 module load FPGen
 module load numbers
+module load fm
 
 ### Queue If Licenses Are Unavailable
 setenv SNPSLMD_QUEUE true
