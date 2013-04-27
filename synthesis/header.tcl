@@ -198,6 +198,7 @@ proc report_DESIGN_power {args} {
   global DESIGN_TARGET;
   global target_delay;
   global APPENDIX;
+  global Voltage;
   global link_library_0v8;
   global link_library_0v9;
   global link_library_1v0;
@@ -221,9 +222,9 @@ proc report_DESIGN_power {args} {
     set_DESIGN_switching_activity $inst_name
   }
 
-  #remove_attribute -quiet [current_design] local_link_library
-
   if { $TECH == 45 } {
+  remove_attribute -quiet [current_design] local_link_library
+
   set link_library $link_library_0v8
   report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_0v8.$target_delay.$config_name.${inst_name}_power.rpt
 
@@ -233,7 +234,7 @@ proc report_DESIGN_power {args} {
   set link_library $link_library_1v0
   report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_1v0.$target_delay.$config_name.${inst_name}_power.rpt
   } elseif { $TECH == 28 } {
-      report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}.$target_delay.$config_name.${inst_name}_power.rpt
+      report_power -include_input_nets -analysis_effort high -hierarchy -levels 3  > reports/${DESIGN_TARGET}.${APPENDIX}_${Voltage}.$target_delay.$config_name.${inst_name}_power.rpt
   }
 
 }
