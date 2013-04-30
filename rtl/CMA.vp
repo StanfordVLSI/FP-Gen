@@ -155,10 +155,11 @@ module `mname` (
   logic [7:0] status_init;
   logic [2:0] rnd_add;
    logic      valid_forward_a1;
-
+   
+  //; if ($enable_forwarding =~ /YES/){
    logic [`$mul_pipeline_depth`:0] forward_c_eff;
    assign forward_c_eff = multiplier_mode? 0 : forward_c; // disable forward_c if multiplier mode
-   
+    //; }  
    
 
 //; if($enable_forwarding =~ /YES/ ){
