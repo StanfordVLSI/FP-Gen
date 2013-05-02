@@ -513,7 +513,7 @@ $(DC_AVG_SAIF_FILE) $(DC_ADD_SAIF_FILE) $(DC_MUL_SAIF_FILE) $(DC_MULADD_SAIF_FIL
 	@sleep 1;
 	cd $(SYNTH_SAIF);					 			\
 	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=30 	\
-	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log +Wave;			\
+	     +AddWeight=40 $(RUN) -l $(DC_SIMV).avg_saif.log;			\
 	mv $(FPPRODUCT).saif $(FPPRODUCT).dc.avg.saif;					\
 	$(DC_SIMV) $(VERILOG_SIMULATION_FLAGS) $(SAIF_RUNTIME_ARGS) +MulWeight=0 	\
 	     +AddWeight=100 $(RUN) -l $(DC_SIMV).add_saif.log;				\

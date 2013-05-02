@@ -81,7 +81,7 @@ set_app_var synopsys_auto_setup true
 ########################################################################
 # Setup for instantiated or function-inferred DesignWare components
 ########################################################################
-set hdlin_dwroot /cad/synopsys/dc_shell/G-2012.06-SP2
+set hdlin_dwroot /cad/synopsys/dc_shell/G-2012.06-SP5-1/
 
 #################################################################################
 # Read in the SVF file(s)
