@@ -4,10 +4,14 @@
 /**************************************************************/
 
 //;# Import Libs
+//; use strict ;
 //; use POSIX ;
+//; use warnings FATAL=>qw(all) ;
+//; #use diagnostics ;
+//; use Data::Dumper ;
 //;
 //  PARAMETERS:
-//; my $BW  = parameter( name=>'BitWidth', val=>32 , 
+//; our $BW  = parameter( name=>'BitWidth', val=>32 , 
 //;                      doc=>'!functional! BitWidth of input and output values.  32 corresponds to a 32 bit signal A added to a 32 bit signal B  resulting in a 32 bit output S. Legal Values: Integers from 2 to 512' , 
 //;                      min=>2 , max=>512, step=>1 );
 //;
@@ -15,18 +19,20 @@
 //; #SYNTH PARAMETERS
 //;
 //;
-//; my $ORIENTATION = parameter( name=>'Orientation', val=>'L',
+//; our $ORIENTATION = parameter( name=>'Orientation', val=>'L',
 //;                              doc=>'!placement! Indicates the orientation of the adder placement.  Horizontal indicates that the placement should be long in the horizontal direction with inputs travelling north to south or south to north.  Vertical indacates that the placement should be tall in the vertical direction with inputs travelling east to west or west to east.  An L shaped design splits the design into a vertical and horizontal component to wrap around a multp structure. Legal Values: horizontal , vertical , L ',
 //;                              list=>[ 'horizontal' , 'vertical' , 'L' ] );  #, 
-//; my $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
+//; our $DATADIRECTION = parameter( name=>'Direction', val=>'NW_to_SE',
 //;                                doc=>'!placement! Affects the direction that data travels.  NW_to_SE indicates will travel from the northwest down to the southeast. Legal Values: NW_to_SE',
 //;                                list=>[ 'NW_to_SE' ] ); # 'SE_to_NW' 
-//; my $GROUPNAME = parameter( name=>'GroupName', 
+//; our $GROUPNAME = parameter( name=>'GroupName', 
 //;                            val=>("Adder" . "_" . $BW . "_" . $ORIENTATION . "_" . $DATADIRECTION ),
 //;                            doc=>'!placement! GroupName is used as the synopsys groupname.  The purpose of this argument is to uniquify the instances such that they can be uniquly placed.  This name can be used when creating relative placements in the parent.  Legal Values: a unique name without white space or special characters' );
 //;
 //;
-//; my $GROUPNAME2 ;
+//; our $GROUPNAME2 = parameter( name=>'GroupName2', 
+//;                            val=>("Adder" . "_" . $BW . "_" . $ORIENTATION . "_" . $DATADIRECTION . "_2" ),
+//;                            doc=>'!placement! GroupName2 is used as the synopsys groupname.  The purpose of this argument is to uniquify the instances such that they can be uniquly placed.  This name can be used when creating relative placements in the parent.  Legal Values: a unique name without white space or special characters' );
 //;
 //; $ORIENTATION eq 'L' and   $GROUPNAME2 = parameter( name=>'GroupName2' , 
 //;                                                    val=>( $GROUPNAME . "_2" ) ,
@@ -37,24 +43,24 @@
 
 //; #Synthesis SubRoutines
 //;
-//; my %placement ; # Arrays Holding Placement Info For ASCII figure
+//; our %placement ; # Arrays Holding Placement Info For ASCII figure
 //;
-//; my $id = '';# sprintf( "%03x" , int( rand(4095) ) ) ; #id for instance names to help with id's
+//; our $id = 0 ;# sprintf( "%03x" , int( rand(4095) ) ) ; #id for instance names to help with id's
 //;
-//; my $groupName = $GROUPNAME ; # 
-//; my $groupName2 = $GROUPNAME2 ; # 
+//; our $groupName = $GROUPNAME ; # 
+//; our $groupName2 = $GROUPNAME2 ; # 
 //;
-//; my $groupNameLong = "\${DESIGN_NAME}::" . $groupName ; #DO NOT PLACE THIS IN EVAL CONTEXT!!!
-//; my $groupName2Long = "\${DESIGN_NAME}::" . $groupName2 ; #DO NOT PLACE THIS IN EVAL CONTEXT!!!
+//; our $groupNameLong = "\${DESIGN_NAME}::" . $groupName ; #DO NOT PLACE THIS IN EVAL CONTEXT!!!
+//; our $groupName2Long = "\${DESIGN_NAME}::" . $groupName2 ; #DO NOT PLACE THIS IN EVAL CONTEXT!!!
 //;
 //; my $placementFileName = "place_$GROUPNAME.tcl" ;
 //;
-//; my $height = ceil( log( $BW ) / log( 2 ) ); #Height of GP Tree
+//; our $height = ceil( log( $BW ) / log( 2 ) ); #Height of GP Tree
 //;
-//; my $cols  ;
-//; my $rows  ;
-//; my $cols2 ;
-//; my $rows2 ;
+//; our $cols  ;
+//; our $rows  ;
+//; our $cols2 ;
+//; our $rows2 ;
 //;
 //; $ORIENTATION eq 'horizontal' and $cols = $BW + 1 ;
 //; $ORIENTATION eq 'horizontal' and $rows = $height + 2 ;
@@ -78,8 +84,8 @@
 //;
 //; $placement{$groupName}{'col'} = $cols ;
 //; $placement{$groupName}{'row'} = $rows ;
-//; $placement{$groupName2}{'col'} = $cols2 ;
-//; $placement{$groupName2}{'row'} = $rows2 ;
+//; $ORIENTATION eq 'L' and $placement{$groupName2}{'col'} = $cols2 ;
+//; $ORIENTATION eq 'L' and $placement{$groupName2}{'row'} = $rows2 ;
 //;  
 //;
 //; open( PLACE , ">$placementFileName" ); 
@@ -100,7 +106,8 @@
 //;    my $inst = shift      ;
 //;    my $x_in = shift         ;
 //;    my $y_in = shift         ;
-//;    my $cellType = shift or $self->error("Malformed Input to PlaceCell SubRoutine") ;
+//;    my $cellType = shift ; 
+//;    my $self = shift  ;
 //;
 //;    #Perform Coordinate Manipulation here...
 //;    # if horizontal leave it alone
@@ -179,7 +186,10 @@
 //;
 //;   #Print Out Placement INFO
 //;   foreach my $g ( sort keys %placement ){
-//;     open( MYP , ">$g.info" );   
+//;     open( MYP , ">$g.info" );
+//;     #print STDOUT "\n\n $g \n\n" . Dumper( \%placement ) . "\n\n" ;
+//;     #print "// Row " .  ($placement{$g}{'row'}+1) . " \n" ; 
+//;     #print "// Col " . $placement{$g}{'col'} . "\n" ; 
 //;     print MYP  "Placing Sklansky GP Adder for group $g " .  ($placement{$g}{'row'}+1) . " " . $placement{$g}{'col'} . "\n" ;
 //;     for( my $j = $placement{$g}{'row'}+1 ; $j>=0 ; $j-- ){
 //;        for( my $i = 0 ; $i < $placement{$g}{'col'} ; $i++ ){
@@ -239,21 +249,24 @@ module `mname()`
    
    
 // Build Sklansky Tree: Figure 10.34b of Weste Harris 3rd Ed. pg 662
-//; my $height = ceil( log( $BW ) / log( 2 ) ); 
+//; $height = ceil( log( $BW ) / log( 2 ) ); #TODO-> is this the same $height..;.
 //; for( my $j=0 ; $j < $height ; $j++ ){
 //;     my $runs = 2 ** ( $j ) ; #Number of grey cells in a row 1,2,4,8 ...
 //;
-//;     my $i = $runs ;    
+//;     my $li = $runs ;    
 //;     #Place Greyish Black Cells at right hand side of row   
-//;     for( ; ($i < (2*$runs)) && ($i <= $BW) ; $i++ ){
-//;           my $instName = sprintf( "B_%03d_loc_%03d_%03d_loc", $id , $BW-$i , $height - $j );
-//;           #$placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
-//;           my $I = $i ;                
+//;     for( ; ($li < (2*$runs)) && ($li <= $BW) ; $li++ ){
+//;           print "// id: $id \n" ;
+//;           print "// BW-i: " . ( $BW-$li ) . "\n" ;
+//;           print "// h-j: " . ( $height - $j ) . " \n" ;
+//;           my $instName = sprintf( "B_%03d_loc_%03d_%03d_loc", $id , $BW-$li , $height - $j );
+//;           #$placement[ $BW-$li ][ $height - $j ] = sprintf( "B%03d",$li);
+//;           my $I = $li ;                
 //;           my $K = $runs;               
 //;           my $L = $K-1;                
 //;           my $J = 0;        
 //;           my $adderCell = generate( 'adderBlackCell', $instName ) ;
-//;           placeCell( $instName , $BW-$i , $height - $j ,  sprintf( "B%03d",$i) );
+//;           placeCell( $instName , $BW-$li , $height - $j ,  sprintf( "B%03d",$li) ,$self  );
               logic  G_`$I`_to_`$J`_H ; 
               logic  P_`$I`_to_`$J`_H ; 
              `$adderCell->instantiate()` (
@@ -267,32 +280,32 @@ module `mname()`
 //;
 //;
 //;     #Place Black Cells Along Rest of Row
-//;     while( $i <= $BW ){
-//;          $i+=$runs ;
-//;          my $bottum = $i - 1 ; #Index for last empty slot before black cell
-//;          for( my $it = 0 ; $it < $runs && $i <= $BW ; $it++ , $i++ ){
-//;             my $instName = sprintf( "B_%03d_loc_%03d_%03d_loc", $id , $BW-$i , $height - $j );
-//;             #$placement[ $BW-$i ][ $height - $j ] = sprintf( "B%03d",$i);
-//;             my $I = $i ;                
-//;             my $K = $bottum+1;               
-//;             my $L = $K-1 ;              
-//;             my $J = $bottum-$runs+1;        
-//;             my $adderCell = generate( 'adderBlackCell' ,  $instName );
-//;             placeCell( $instName , $BW-$i , $height - $j ,  sprintf( "B%03d",$i) );
-                logic 	      P_`$I`_to_`$J`_H;
-                logic 	      G_`$I`_to_`$J`_H;
-                `$adderCell->instantiate()` ( 
-					      .P_UP( P_`$I`_to_`$K`_H),
-					      .G_UP( G_`$I`_to_`$K`_H),
-					      .P_DN( P_`$L`_to_`$J`_H),
-					      .G_DN( G_`$L`_to_`$J`_H),
-					      .P_ALL(P_`$I`_to_`$J`_H),
-					      .G_ALL(G_`$I`_to_`$J`_H)  );           
+//;     while( $li <= $BW ){
+//;          $li+=$runs ;
+//;          my $bottum = $li - 1 ; #Index for last empty slot before black cell
+//;          for( my $it = 0 ; $it < $runs && $li <= $BW ; $it++ , $li++ ){
+//;             my $instName2 = sprintf( "B_%03d_loc_%03d_%03d_loc", $id , $BW-$li , $height - $j );
+//;             #$placement[ $BW-$li ][ $height - $j ] = sprintf( "B%03d",$li);
+//;             my $I2 = $li ;
+//;             my $K2 = $bottum+1;
+//;             my $L2 = $K2-1 ;
+//;             my $J2 = $bottum-$runs+1;
+//;             my $adderCell2 = generate( 'adderBlackCell' ,  $instName2 );
+//;             placeCell( $instName2 , $BW-$li , $height - $j ,  sprintf( "B%03d",$li) , $self );
+                logic 	      P_`$I2`_to_`$J2`_H;
+                logic 	      G_`$I2`_to_`$J2`_H;
+                `$adderCell2->instantiate()` ( 
+					      .P_UP( P_`$I2`_to_`$K2`_H),
+					      .G_UP( G_`$I2`_to_`$K2`_H),
+					      .P_DN( P_`$L2`_to_`$J2`_H),
+					      .G_DN( G_`$L2`_to_`$J2`_H),
+					      .P_ALL(P_`$I2`_to_`$J2`_H),
+					      .G_ALL(G_`$I2`_to_`$J2`_H)  );           
   
 //;          }
 //;     }    
 //; }
- 
+   
 //; for( my $i=0 ; $i < $BW ; $i++ ){
    assign  P[`$i`] = P_`$i`_to_0_H ;
    assign  G[`$i`] = G_`$i`_to_0_H ;
