@@ -41,9 +41,9 @@
 
 
 module `mname` (
-    input [`$width-1`:0] a, b, sum,
-    input ci,
-    output 		 equal
+		input logic [`$width-1`:0] a, b, sum,
+		input logic 		   ci,
+		output logic 		   equal
 		);
 
   /* synopsys dc_tcl_script_begin

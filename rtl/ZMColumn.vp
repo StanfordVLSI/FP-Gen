@@ -291,6 +291,7 @@ module `mname()` (
    //;           }
    //;
       logic pp_merge_`$array-1`_s;
+      logic pp_merge1_`$array-1`_s;
    //;           if($put_csa){
    //       	     "csa_merge_`${array}`_`${row}`_`${Y}`"
    //;       	     my $CSA_obj = generate('CSA', "csa".($csa_cnt+1)."_${row}_${Y}");

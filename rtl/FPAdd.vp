@@ -81,7 +81,7 @@ module `mname` (
     output logic [`$exp_width-1`:0] ExpZ,
     output logic [`$frac_width`:0] ManZ,
     output logic SignZ, InfZ, NANZ, ZeroZ, IncZ,
-    output [7:0] status,
+    output logic [7:0] status,
     output logic ExpZDecrementWhenShifting, ExpZDecrementWhenShifting_late, ShiftZ
                );
 
