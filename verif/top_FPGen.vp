@@ -11,6 +11,13 @@
  * Feb 04, 2012  jingpu    init version - change original top module to FMA verif
  * ****************************************************************************/
 
+//; use strict ;
+//; use warnings FATAL=>qw(all) ;
+//; use diagnostics -verbose ;
+//;
+//; use synthesis ;
+
+
 /*******************************************************************************
  * PARAMETERIZATION
  * ****************************************************************************/
@@ -79,3 +86,20 @@ module `mname` ();
    //; my $TestBench_obj = generate('TestBench_FPGen', 'TestBench', DUT=>$FP_obj);
    `$TestBench_obj->instantiate` ( .clk(clk), .reset(reset), .FPGen_bus(FPGen_ifc.Controller) );
 endmodule : `mname`
+
+//;
+//; ######################################################################
+//; # This code must come at the end
+//;
+//; { # local scope
+//;   # Open a file for writing
+//;   if (-e "genesis_constraint.tcl") {system ("genesis_constraint.tcl")};
+//;   open (TCLFILE, '>>genesis_constraint.tcl') or error("Cannot open retiming.tcl script file");
+//;
+//;   # Generate constraint file from design (ungroup, flatten, retime) 
+//;   print TCLFILE generateConstraints( $FP_obj , $self ) ;
+//;
+//;   close (TCLFILE);
+//; } # close local scope
+//;
+
