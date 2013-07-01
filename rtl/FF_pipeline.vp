@@ -73,11 +73,7 @@ module `mname` (
 
     always @(posedge clk or negedge reset)
     if (!reset)
-//;   if ($enable_forwarding =~ /YES/){
-      {valid_stages[0],stages[0], forward_stages[0]} <= 0;
-//;   } else {
-      {valid_stages[0],stages[0]} <= 0;
-//;   }
+      valid_stages[0] <= 0;
     else
     begin
       if (!stall) valid_stages[0] <= valid_in;
@@ -96,11 +92,7 @@ module `mname` (
 //;   for (my $i=0; $i<$pipeline_depth-1; $i++){
     always @(posedge clk or negedge reset)
     if (!reset)
-//;   if ($enable_forwarding =~ /YES/){
-      {valid_stages[`$i+1`],stages[`$i+1`], forward_stages[`$i+1`]} <= 0;
-//;   } else {
-      {valid_stages[`$i+1`],stages[`$i+1`]} <= 0;
-//;   }
+      valid_stages[`$i+1`] <= 0;
       
     else
     begin
