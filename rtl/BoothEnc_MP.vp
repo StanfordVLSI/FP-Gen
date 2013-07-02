@@ -91,10 +91,12 @@ module `mname` (
    logic [`$width+$booth-1`:0] 	    pp_int;
 
    
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-  */
+//; #  /* synopsys dc_tcl_script_begin
+//; #    set_ungroup [current_design] true
+//; #    set_flatten true -effort high -phase true -design [current_design]
+//; #  */
+//; parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
    
    //logic [`$width-1`:0] 	    x_mp;
    //assign x_mp = {x[`$width-1`:`$width-$width_sub`],{`$width-2*$width_sub`{1'b0}},x[`$width_sub-1`:0]};

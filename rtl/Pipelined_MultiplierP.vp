@@ -138,11 +138,14 @@ module `mname`(
 
 //; } else {
 
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-  */
+//; #  /* synopsys dc_tcl_script_begin
+//; #  set_ungroup [current_design] true
+//; #  set_flatten true -effort high -phase true -design [current_design]
+//; #  */
+//; parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 
+   
     reg [`-$pipeline_depth-1`:0] enable;
     logic [`-$pipeline_depth-1`:0] next_enable;
 

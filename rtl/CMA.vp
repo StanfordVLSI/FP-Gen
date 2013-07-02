@@ -122,10 +122,12 @@ module `mname` (
    
    //; }
 
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-  */
+//; #  /* synopsys dc_tcl_script_begin
+//; #    set_ungroup [current_design] true
+//; #    set_flatten true -effort high -phase true -design [current_design]
+//; #  */
+//; parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 
   logic SignA, SignAB, SignAB_final,SignA_P1, SignA_PEnd, SignC, SignC2, SignC_final, SignZ, SignZm;
   logic NANA, NANAB, NANAB_final, NANA_P1, NANA_PEnd, NANC, NANC2, NANC_final, NANZ;

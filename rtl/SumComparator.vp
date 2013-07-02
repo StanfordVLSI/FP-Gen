@@ -46,11 +46,13 @@ module `mname` (
 		output logic 		   equal
 		);
 
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-  */
-   
+//; #  /* synopsys dc_tcl_script_begin
+//; #    set_ungroup [current_design] true
+//; #    set_flatten true -effort high -phase true -design [current_design]
+//; #  */
+//; parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
+ 
   
    wire [`$width-1`:0] 	 v,w;
    wire 		 dummy_co;

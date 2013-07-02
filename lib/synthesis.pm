@@ -77,7 +77,8 @@ sub generateConstraints{
     foreach my $child ( sort bfsHier @children ){
 	# Foreach instance (BFS)
 	
-	my $iName = correctSynthName( $top->get_instance_path() , $top->iname() , $child->get_instance_path() );
+	#my $iName = correctSynthName( $top->get_instance_path() , $top->iname() , $child->get_instance_path() );
+	my $iName = $child->mname() ;
 
 	#  If ungroup
 	#   call ungroup
@@ -85,10 +86,10 @@ sub generateConstraints{
 	    my $ungroup = $child->get_param("Ungroup");
 	    if( $ungroup eq "YES" ){
 		print STDOUT "INFO: Explicit ungroup for " . $child->get_instance_path() ;
-		$tclCommands .= "set_ungroup [".$iName."] true ;\n" ;
+		$tclCommands .= "set_ungroup [get_designs -exact ".$iName."] true ;\n" ;
  	    } elsif( $ungroup eq "NO" ){
 		print STDOUT "INFO: Explicit no-ungroup for " . $child->get_instance_path() ;
-		$tclCommands .= "set_ungroup [".$iName."] false ;\n" ;
+		$tclCommands .= "set_ungroup [get_designs -exact ".$iName."] false ;\n" ;
 	    } else {
 		print STDOUT "Error: expected ungroup to be YES or NO" ;
 		$self->error( "Error: expected ungroup to be YES or NO" );
@@ -101,10 +102,10 @@ sub generateConstraints{
 	    my $ungroup = $child->get_param("Flatten");
 	    if( $ungroup eq "YES" ){
 		print STDOUT "INFO: Explicit flatten for " . $child->get_instance_path() ;
-		$tclCommands .= "set_flatten [".$iName."] true ;\n" ;
+		$tclCommands .= "set_flatten -effort high -phase true -design [get_designs -exact ".$iName."] true ;\n" ;
 	    } elsif( $ungroup eq "NO" ){
 		print STDOUT "INFO: Explicit no-flatten for " . $child->get_instance_path() ;
-		$tclCommands .= "set_flatten [".$iName."] false ;\n" ;
+		$tclCommands .= "set_flatten -design [get_designs -exact ".$iName."] false ;\n" ;
 	    } else {
 		print STDOUT "Error: expected flatten to be YES or NO" ;
 		$self->error( "Error: expected flatten to be YES or NO" );
@@ -117,10 +118,12 @@ sub generateConstraints{
 	    my $ungroup = $child->get_param("Retime");
 	    if( $ungroup eq "YES" ){
 		print STDOUT "INFO: Explicit retime for " . $child->get_instance_path() ;
-		$tclCommands .= "set_optimize_registers true -design [".$iName."] ;\n" ;
+		$tclCommands .= "set_optimize_registers -design [get_designs -exact ".$iName."] true ;\n" ;
+		$tclCommands .= 'set_dont_retime [get_designs -exact '.$iName.'] false ;'."\n" ;
 	    } elsif( $ungroup eq "NO" ){
 		print STDOUT "INFO: Explicit no-retime for " . $child->get_instance_path() ;
-		$tclCommands .= "set_optimize_registers false -design [".$iName."] ;\n" ;
+		$tclCommands .= "set_optimize_registers -design [get_designs -exact ".$iName."] false ;\n" ;
+		$tclCommands .= 'set_dont_retime [get_designs -exact '.$iName.'] true ;'."\n" ;
 	    } else {
 		print STDOUT "Error: expected retime to be YES or NO" ;
 		$self->error( "Error: expected retime to be YES or NO" );

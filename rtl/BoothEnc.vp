@@ -78,10 +78,12 @@ module `mname` (
     output logic [`$pp_count*$sel_width-1`:0] sel_x, sel_x_bar
 		);
 
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-  */
+//; #  /* synopsys dc_tcl_script_begin
+//; #    set_ungroup [current_design] true
+//; #    set_flatten true -effort high -phase true -design [current_design]
+//; #  */
+//; parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 
    //; if ($booth-$modified>=2) {
    //;   my $HM3_obj = generate('HardMultiple3', 'HM3', Width=>$width);

@@ -219,10 +219,12 @@ module `mname()`
     output logic [ `$BW-1` : 0] G 
    );
 
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-  */
+//; #  /* synopsys dc_tcl_script_begin
+//; #    set_ungroup [current_design] true
+//; #    set_flatten true -effort high -phase true -design [current_design]
+//; #  */
+//; parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 
 //; 
 //; createGroup();
@@ -237,10 +239,6 @@ module `mname()`
    assign  G_`$i`_to_`$i`_H = g[`$i`];
 //;}
 
-  // synopsys dc_tcl_script_begin
-  // set_ungroup [current_design] true
-  // set_flatten true -effort high -phase true -design [current_design]
-  // synopsys dc_tcl_script_end 
    
    logic  P_`$BW`_to_`$BW`_H;
    logic  G_`$BW`_to_`$BW`_H;

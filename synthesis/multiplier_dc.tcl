@@ -20,6 +20,8 @@ elaborate $DESIGN_TARGET
 link
 check_design
 
+source -echo -verbose ${GENESIS_CONSTRAINTS}
+
 set_driving_cell -lib_cell $driver_cell -library $library_name [remove_from_collection [all_inputs] {$CLK $RST}]
 
 if { [shell_is_in_topographical_mode] } {

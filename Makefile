@@ -110,6 +110,7 @@ GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC) -input $(GENESIS_IN
 
 GENESIS_LIB_DIR := $(DESIGN_HOME)/lib 
 GENESIS_LIB_FIL := $(wildcard $(DESIGN_HOME)/lib/*.pm) 
+GENESIS_CONSTRAINT_FILE := $(RUNDIR)/genesis_constraint.tcl 
 
 GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
 			-synthtop $(GENESIS_SYNTH_TOP_PATH)			\
@@ -285,7 +286,7 @@ SET_SYNTH_PARAMS = 	set DESIGN_HOME $(DESIGN_HOME); 	\
 # to run  DC in topographical mode use option '-topo'
 DC_RUN_FLAGS = 
 
-DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
+DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) set GENESIS_CONSTRAINTS $(GENESIS_CONSTRAINT_FILE); source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
 DC_PWR_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/report_power_dc.tcl"
 DC_FM_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/FPGen_dc_fm.tcl"
 DC_LOAD_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/header.tcl"
@@ -379,7 +380,7 @@ gen: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
 # This is the rule to activate Genesis2 generator to generate verilog 
 # files (_unqN.v) from the genesis (.vp) program.
 # Use "make gen GEN=<genesis2_gen_flags>" to add elaboration time flags
-$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST): $(GENESIS_INPUTS) $(GENESIS_LIB_FIL) $(GENESIS_CFG_XML) $(GENESIS_CFG_SCRIPT)
+$(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST) $(GENESIS_CONSTRAINT_FILE): $(GENESIS_INPUTS) $(GENESIS_LIB_FIL) $(GENESIS_CFG_XML) $(GENESIS_CFG_SCRIPT)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
@@ -478,7 +479,7 @@ force_dc: dc_clean run_dc
 run_dc: $(DC_PWR_LOG)
 run_dc_fm: $(DC_FM_LOG)
 
-$(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl
+$(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl $(GENESIS_CONSTRAINT_FILE)
 	@echo ""
 	@echo Now Running DC SHELL: Making $@ because of $?
 	@echo =============================================

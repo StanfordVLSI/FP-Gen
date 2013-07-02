@@ -19,7 +19,7 @@
  * Change bar:
  * -----------
  * Date           Author    Description
- * March 23, 2012   Sameh   init version - ported Sameh's original code to 
+ * March 23, 2012   Sameh   init version - ported Sameh's original code to '
  *                          genesis
  * Jan 22, 2013  jingpu     change it to active low async reset
  * ****************************************************************************/
@@ -33,6 +33,8 @@
 //; my $pipeline_depth = parameter(Name=>'PipelineDepth', Val=>4, Min=>-1, Step=>1,
 //;                       Doc=>"Pipeline depth");
 //; my $retime_Status = parameter( Name=>'Retime' , Val=>'NO' , List=>[ 'YES' , 'NO' ] , Doc=>"Pipeline Is Retimeable" ) ;
+//;                     parameter( name=>"Ungroup" , val=>"YES" , list=>["YES","NO"] );
+//;                     parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Enable forwarding input to any stage in the pipeline");
 
@@ -48,21 +50,22 @@ module `mname` (
   output logic [`$width-1`:0] out,
   output logic valid_out
                );
-
-  /* synopsys dc_tcl_script_begin
-   set_ungroup [current_design] true
-   set_flatten true -effort high -phase true -design [current_design]
-//; #   https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/set_dont_retime.html
-//; if( $retime_Status eq 'YES' ){
-   set_dont_retime [get_cells -filter {@is_sequential==true}] false 
-   set_optimize_registers true -design [current_design]
-//; } elsif (  $retime_Status eq 'NO' ){
-   set_dont_retime [get_cells -filter {@is_sequential==true}] true
-   set_optimize_registers false -design [current_design]
-//; } else {
-//;    self->error( "Unexpected branch condition in retiming elaboration...\n" ) ;   
-//; }
-  */
+//; #
+//; #  /* synopsys dc_tcl_script_begin
+//; #   set_ungroup [current_design] true
+//; #   set_flatten true -effort high -phase true -design [current_design]
+//; #//; #   https://solvnet.synopsys.com/dow_retrieve/G-2012.03/manpages/syn2/set_dont_retime.html
+//; #//; if( $retime_Status eq 'YES' ){
+//; #   set_dont_retime [get_cells -filter {@is_sequential==true}] false 
+//; #   set_optimize_registers true -design [current_design]
+//; #//; } elsif (  $retime_Status eq 'NO' ){
+//; #   set_dont_retime [get_cells -filter {@is_sequential==true}] true
+//; #   set_optimize_registers false -design [current_design]
+//; #//; } else {
+//; #//;    self->error( "Unexpected branch condition in retiming elaboration...\n" ) ;   
+//; #//; }
+//; #  */
+//; #
 
 //; if ($pipeline_depth>0) {
     reg [`$width-1`:0] stages [0:`$pipeline_depth-1`];
