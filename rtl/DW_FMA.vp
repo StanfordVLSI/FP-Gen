@@ -129,7 +129,7 @@ module `mname` (
 //;#    my $fma_pipe = ($enable_forwarding =~ /YES/)?
 //;#         generate('FF_pipeline','fma_pipe', Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth, Retime=> 'YES')
 //;#        :generate('Pinned_pipeline','fma_pipe', Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth);
-//;    my $fma_pipe = generate('FF_pipeline','fma_pipe', Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth, Retime=> 'YES')
+//;    my $fma_pipe = generate('FF_pipeline','fma_pipe', Width=> (3*$exp_width + 3*$frac_width + 6) , PipelineDepth=> $pipeline_depth, Retime=> 'YES');
 
   `$fma_pipe ->instantiate()` ( .in({ain,bin,cin, rnd}) , .valid_in(valid_in), .clk(clk) , .stall(stall_in), .reset(reset), 
                                 .out({a2,b2,c2, rnd2}), .valid_out(valid_out) );
