@@ -263,6 +263,7 @@ ICC_NETLIST	= $(DESIGN_TARGET).${VT}_${VOLTAGE}.$(TARGET_DELAY).routed.v
 ICC_OPT_NETLIST = $(DESIGN_TARGET).${VT}_${VOLTAGE}_optimized.$(TARGET_DELAY).routed.v
 DC_LOG	= $(SYNTH_LOGS)/dc.log
 DC_PWR_LOG = $(SYNTH_LOGS)/pwr_dc.log 
+DC_GUI_LOG = $(SYNTH_LOGS)/gui_dc.log 
 DC_SIMV	= $(SYNTH_SAIF)/dc_simv
 DC_FM_LOG	= $(SYNTH_LOGS)/dc_fm.log
 
@@ -288,6 +289,7 @@ DC_RUN_FLAGS =
 
 DC_COMMAND_STRING = "$(SET_SYNTH_PARAMS) set GENESIS_CONSTRAINTS $(GENESIS_CONSTRAINT_FILE); source -echo -verbose $(SYNTH_HOME)/multiplier_dc.tcl"
 DC_PWR_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/report_power_dc.tcl"
+DC_GUI_COMMAND_STRING= "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/dc_gui.tcl ; start_gui"
 DC_FM_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/FPGen_dc_fm.tcl"
 DC_LOAD_COMMAND_STRING = "$(SET_SYNTH_PARAMS) source -echo -verbose $(SYNTH_HOME)/header.tcl"
 
@@ -477,6 +479,7 @@ $(SAIF_FILE): $(SIMV)
 
 force_dc: dc_clean run_dc
 run_dc: $(DC_PWR_LOG)
+run_dc_gui: $(DC_GUI_LOG)
 run_dc_fm: $(DC_FM_LOG)
 
 $(DC_LOG): $(SAIF_DEPENDENCY) $(GENESIS_SYNTH_LIST) $(SYNTH_HOME)/multiplier_dc.tcl $(GENESIS_CONSTRAINT_FILE)
@@ -543,6 +546,21 @@ $(DC_PWR_LOG): $(DC_SAIF_DEPENDENCY) $(DC_LOG) $(SYNTH_HOME)/report_power_dc.tcl
 	cd $(SYNTH_RUNDIR);	 							\
 	dc_shell-xg-t -64bit $(DC_RUN_FLAGS) -x $(DC_PWR_COMMAND_STRING) 2>&1 | tee -i $(DC_PWR_LOG)
 	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_PWR_LOG)
+
+$(DC_GUI_LOG): $(SYNTH_HOME)/dc_gui.tcl
+	@echo ""
+	@echo Now Running DC SHELL: Making $@ because of $?
+	@echo =============================================
+	@sleep 1;
+	@if test ! -d "$(SYNTH_LOGS)"; then 	\
+		mkdir -p $(SYNTH_LOGS);		\
+	fi
+	cd $(SYNTH_RUNDIR);	 							\
+	dc_shell-xg-t -64bit $(DC_RUN_FLAGS) -x $(DC_GUI_COMMAND_STRING) 2>&1 | tee -i $(DC_PWR_LOG)
+	@perl $(DESIGN_HOME)/scripts/checkRun.pl $(DC_PWR_LOG)
+
+
+
 
 
 clean_fm:
