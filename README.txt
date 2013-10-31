@@ -5,12 +5,15 @@ To run it, use:
 Example:
   make clean gen GENESIS_CFG_XML=SysCfgs/my_config.xml
   make clean run GENESIS_CFG_XML=SysCfgs/your_config.xml
-
+  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # recommanded
 
 * gen|run -- choose to either just generate the design also run the testbench
 * Replace SIM_ENGINE=mentor with SIM_ENGINE=synopsys for using synopsys simulation tools.
 * GENESIS_HIERARCHY=new.xml redirect the OUTPUT xml file to file 'new.xml' (important for the gui)
 * GENESIS_CFG_XML=SysCfgs/changefile.xml tells genesis to use the design configuration specified in 'changefile.xml'
+* GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg an alternative way to load a script for setting configuration
+
+
 
 To use perl script to run jobs and to plot graphs, do following step:
 
