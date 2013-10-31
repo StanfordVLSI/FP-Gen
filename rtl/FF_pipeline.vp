@@ -37,6 +37,8 @@
 //;                     parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 //; my $enable_forwarding = parameter(Name=>'EnableForwarding', Val=>'NO', List=>['YES', 'NO'],
 //; 	 		   Doc=>"Enable forwarding input to any stage in the pipeline");
+//; my $reset_data = parameter(Name=>'ResetData', Val=>'NO', List=>['YES', 'NO'],
+//; 	 		   Doc=>"Yes if reset signal resets data output. By default, reset only controls valid port.");
 
 module `mname` (
   input logic [`$width-1`:0] in,
@@ -80,16 +82,41 @@ module `mname` (
       else if (!stall) 
         valid_stages[0] <= valid_in;
 
+
+//;   if ($reset_data =~ /NO/){
     always @(posedge clk)
       if (!stall & valid_in)   
-//;   if ($enable_forwarding =~ /YES/){
+//;      if ($enable_forwarding =~ /YES/){
       begin
         stages[0] <= forward[0]? forwarded_in : in ;
         forward_stages[0] <= forward;
       end
-//;   } else {
+//;      } else {
         stages[0] <= in ;
-//;   }
+//;      }
+    //; } else { # $reset_data = 'YES'
+    always @(posedge clk or negedge reset)
+    if (!reset)
+//;      if ($enable_forwarding =~ /YES/){
+      {stages[0], forward_stages[0]} <= 0;
+//;      } else {
+      {stages[0]} <= 0;
+//;      }
+    else
+    begin
+      if (!stall & valid_in)   
+//;      if ($enable_forwarding =~ /YES/){
+      begin
+        stages[0] <= forward[0]? forwarded_in : in ;
+        forward_stages[0] <= forward;
+      end
+//;      } else {
+        stages[0] <= in ;
+//;      }
+    end
+
+   //; }
+
 
 //;   for (my $i=0; $i<$pipeline_depth-1; $i++){
     always @(posedge clk or negedge reset)
@@ -98,6 +125,9 @@ module `mname` (
     else if (!stall)
       valid_stages[`$i+1`] <= valid_stages[`$i`];
 
+
+   
+//;   if ($reset_data =~ /NO/){
     always @(posedge clk)
       if (!stall & valid_stages[`$i`])
 //;     if ($enable_forwarding =~ /YES/){
@@ -108,8 +138,33 @@ module `mname` (
 //;     } else {
         stages[`$i+1`] <= stages [`$i`];
 //;     }
+    //; } else { # $reset_data = 'YES'
+    always @(posedge clk or negedge reset)
+    if (!reset)
+//;   if ($enable_forwarding =~ /YES/){
+      {stages[`$i+1`], forward_stages[`$i+1`]} <= 0;
+//;   } else {
+      {stages[`$i+1`]} <= 0;
+//;   }
+      
+    else
+    begin
+      if (!stall & valid_stages[`$i`])
+//;     if ($enable_forwarding =~ /YES/){
+      begin
+        stages[`$i+1`] <= forward_stages[`$i`][`$i+1`]? forwarded_in : stages [`$i`];
+        forward_stages[`$i+1`] <= forward_stages[`$i`];
+      end
+//;     } else {
+        stages[`$i+1`] <= stages [`$i`];
+//;     }
+    end
+
+
+//; }
 
 //;   }
+
 
     assign out = stages [`$pipeline_depth-1`];
     assign valid_out = valid_stages[`$pipeline_depth-1`];

@@ -199,9 +199,10 @@ module `mname`(
 
    
 //; if ($pipeline_depth>0) {
+// Note: for this pipe registers, we need to reset the data port too, otherwise, the stall signal will be unknown for the all other pipe registers
 //;   my $pipe_AB = generate(  'FF_pipeline',  'pipe_AB',  
 //;                             Width=> 9,
-//;                             PipelineDepth => $pipeline_depth, Retime=>'YES');
+//;                             PipelineDepth => $pipeline_depth, Retime=>'YES', ResetData=>'YES');
   `$pipe_AB ->instantiate()` ( .in({ZeroA_P0, denormA_P0, ZeroB_P0, denormB_P0, ZeroAB_P0, SignAB_P0, NANAB_P0, InfAB_P0, shiftleft_P0}) ,
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ZeroA_PEnd, denormA_PEnd, ZeroB_PEnd, denormB_PEnd, ZeroAB_PEnd, SignAB_PEnd, NANAB_PEnd, InfAB_PEnd, shiftleft_PEnd }),
@@ -273,14 +274,15 @@ module `mname`(
     assign stall_request = stalled? 0: normalize_ManAB_PEnd ;
     assign stall = stall_request | stall_in;
     
-   logic dummy_valid_out;
+   logic dummy_out;
    
 //;    my $stall_reg = generate('FF_pipeline','stall_reg', Width=> 1, PipelineDepth=> 1, Retime=> 'NO');
   `$stall_reg ->instantiate()` (
-       .in(stall) , 
-       .valid_in(1'b1), .clk(clk) , .stall(1'b0), .reset(reset), 
-       .out(stalled),
-       .valid_out(dummy_valid_out) );
+       .in('b1) , 
+       .valid_in(stall), .clk(clk) , .stall(1'b0), .reset(reset), 
+       .out(dummy_out),
+       .valid_out(stalled) );
+  
    
    
 //; if ($pipeline_depth>0) {
