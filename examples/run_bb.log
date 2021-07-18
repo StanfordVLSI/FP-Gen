@@ -1,0 +1,106 @@
+Command: /nobackup/steveri/github/FP-Gen/simv -l simv.log +vcs+lic+wait +vpdbufsize+100 +vpdfileswitchsize+100 -l run_bb.log
+Chronologic VCS simulator copyright 1991-2020
+Contains Synopsys proprietary information.
+Compiler version Q-2020.03-SP2_Full64; Runtime version Q-2020.03-SP2_Full64;  Jul 17 11:44 2021
+Message: From $vcdpluson at time 0 in file genesis_verif/TestBench_FPGen_unq1.v line 555: [VCD+-SFSL]: 
+Setting file switch size limit to (100) megabytes.
+Message: From $vcdpluson at time 0 in file genesis_verif/TestBench_FPGen_unq1.v line 555: [VCD+-SVBS]: 
+Setting buffer size to (100) megabytes.
+Using Clk Period=        1000 pS
+                   0: TESTBENCH IS ALIVE -- STARTING INITIALIZATION...
+                   0: TESTBENCH IS ALIVE (SEED=      12345) -- NOW RUNNING          10 TESTS...
+
+               26000: Transaction #1: 
+               26000 opcode: 11
+               26000: SENT:   TypeA=Random SignA=0 ExpA=0x28a FracA=0x7dd9fa9a065c5
+               26000:         TypeB=Inf SignB=0 ExpB=0x7ff FracB=0x0000000000000
+               26000:         TypeC=PointOneOneOne SignC=1 ExpC=0x3fe FracC=0xfffffffffffff
+               26000: EXPECTED: Type=Inf Sign=0 Exp=0x7ff Frac=0x0000000000000
+               26000: FOUND:   Type=Inf Sign=0 Exp=0x7ff Frac=0x0000000000000
+               26000: 28a7dd9fa9a065c5x7ff0000000000000+bfefffffffffffff = 7ff0000000000000 (7ff0000000000000) Checked
+
+               26500: Transaction #2: 
+               26500 opcode: 01
+               26500: SENT:   TypeA=PointOneOneOne SignA=0 ExpA=0x3fe FracA=0xfffffffffffff
+               26500:         TypeB=PointOneOneOne SignB=0 ExpB=0x3fe FracB=0xfffffffffffff
+               26500:         TypeC=Max SignC=0 ExpC=0x7fe FracC=0xfffffffffffff
+               26500: EXPECTED: Type=Random Sign=0 Exp=0x3fe Frac=0xffffffffffffe
+               26500: FOUND:   Type=Random Sign=0 Exp=0x3fe Frac=0xffffffffffffe
+               26500: 3fefffffffffffffx3fefffffffffffff+7fefffffffffffff = 3feffffffffffffe (3feffffffffffffe) Checked
+
+               27500: Transaction #3: 
+               27500 opcode: 01
+               27500: SENT:   TypeA=Max SignA=1 ExpA=0x7fe FracA=0xfffffffffffff
+               27500:         TypeB=SignalingNaN SignB=1 ExpB=0x7ff FracB=0x5dcbae069cb16
+               27500:         TypeC=Random SignC=0 ExpC=0x46e FracC=0xfbebcc228f655
+               27500: EXPECTED: Type=QuietNaN Sign=0 Exp=0x7ff Frac=0xa33aec2b70d9f
+               27500: FOUND:   Type=QuietNaN Sign=0 Exp=0x7ff Frac=0x8000000000000
+               27500: ffefffffffffffffxfff5dcbae069cb16+46efbebcc228f655 = 7ff8000000000000 (7ffa33aec2b70d9f) Checked
+
+               28500: Transaction #4: 
+               28500 opcode: 11
+               28500: SENT:   TypeA=Random SignA=0 ExpA=0x444 FracA=0xf38180097df58
+               28500:         TypeB=Max SignB=1 ExpB=0x7fe FracB=0xfffffffffffff
+               28500:         TypeC=QuietNaN SignC=0 ExpC=0x7ff FracC=0x83af75267c12d
+               28500: EXPECTED: Type=QuietNaN Sign=0 Exp=0x7ff Frac=0x86fa359a734c3
+               28500: FOUND:   Type=QuietNaN Sign=0 Exp=0x7ff Frac=0x8000000000000
+               28500: 444f38180097df58xffefffffffffffff+7ff83af75267c12d = 7ff8000000000000 (7ff86fa359a734c3) Checked
+
+               29500: Transaction #5: 
+               29500 opcode: 01
+               29500: SENT:   TypeA=Random SignA=0 ExpA=0x527 FracA=0xed05c400d7d39
+               29500:         TypeB=Min SignB=1 ExpB=0x001 FracB=0x0000000000000
+               29500:         TypeC=QuietNaN SignC=1 ExpC=0x7ff FracC=0xb280cfffbb47e
+               29500: EXPECTED: Type=Random Sign=1 Exp=0x129 Frac=0xed05c400d7d39
+               29500: FOUND:   Type=Random Sign=1 Exp=0x129 Frac=0xed05c400d7d39
+               29500: 527ed05c400d7d39x8010000000000000+fffb280cfffbb47e = 929ed05c400d7d39 (929ed05c400d7d39) Checked
+
+               30500: Transaction #6: 
+               30500 opcode: 11
+               30500: SENT:   TypeA=Denorm100 SignA=0 ExpA=0x000 FracA=0x8000000000000
+               30500:         TypeB=QuietNaN SignB=0 ExpB=0x7ff FracB=0xb2de373992128
+               30500:         TypeC=Max SignC=0 ExpC=0x7fe FracC=0xfffffffffffff
+               30500: EXPECTED: Type=QuietNaN Sign=0 Exp=0x7ff Frac=0xbcfab977d5db5
+               30500: FOUND:   Type=QuietNaN Sign=0 Exp=0x7ff Frac=0x8000000000000
+               30500: 0008000000000000x7ffb2de373992128+7fefffffffffffff = 7ff8000000000000 (7ffbcfab977d5db5) Checked
+
+               31500: Transaction #7: 
+               31500 opcode: 10
+               31500: SENT:   TypeA=Max SignA=0 ExpA=0x7fe FracA=0xfffffffffffff
+               31500:         TypeB=Zero SignB=1 ExpB=0x000 FracB=0x0000000000000
+               31500:         TypeC=Random SignC=0 ExpC=0x0fe FracC=0x44f363567ff64
+               31500: EXPECTED: Type=Max Sign=0 Exp=0x7fe Frac=0xfffffffffffff
+               31500: FOUND:   Type=Max Sign=0 Exp=0x7fe Frac=0xfffffffffffff
+               31500: 7fefffffffffffffx8000000000000000+0fe44f363567ff64 = 7fefffffffffffff (7fefffffffffffff) Checked
+
+               32500: Transaction #8: 
+               32500 opcode: 10
+               32500 B is forwarded from Transaction #3
+               32500: SENT:   TypeA=Random SignA=1 ExpA=0x2da FracA=0xb5bf128546504
+               32500:         TypeB=QuietNaN SignB=0 ExpB=0x7ff FracB=0xa33aec2b70d9f
+               32500:         TypeC=Random SignC=0 ExpC=0x1d3 FracC=0x95b79f02036f2
+               32500: EXPECTED: Type=Random Sign=1 Exp=0x2da Frac=0xb5bf128546504
+               32500: FOUND:   Type=Random Sign=1 Exp=0x2da Frac=0xb5bf128546504
+               32500: adab5bf128546504x7ffa33aec2b70d9f+1d395b79f02036f2 = adab5bf128546504 (adab5bf128546504) Checked
+
+               33500: Transaction #9: 
+               33500 opcode: 10
+               33500 A is forwarded from Transaction #4
+               33500: SENT:   TypeA=QuietNaN SignA=0 ExpA=0x7ff FracA=0x86fa359a734c3
+               33500:         TypeB=QuietNaN SignB=1 ExpB=0x7ff FracB=0x9e626bfb2dadb
+               33500:         TypeC=One SignC=1 ExpC=0x3ff FracC=0x0000000000000
+               33500: EXPECTED: Type=QuietNaN Sign=0 Exp=0x7ff Frac=0xcd079c7ec6b2c
+               33500: FOUND:   Type=QuietNaN Sign=0 Exp=0x7ff Frac=0x8000000000000
+               33500: 7ff86fa359a734c3xfff9e626bfb2dadb+bff0000000000000 = 7ff8000000000000 (7ffcd079c7ec6b2c) Checked
+
+               34500: Transaction #10: 
+               34500 opcode: 10
+               34500: SENT:   TypeA=Random SignA=1 ExpA=0x531 FracA=0x32b4cbd8b8973
+               34500:         TypeB=Random SignB=1 ExpB=0x2ce FracB=0xa42a5422d2fa7
+               34500:         TypeC=One SignC=1 ExpC=0x3ff FracC=0x0000000000000
+               34500: EXPECTED: Type=Random Sign=1 Exp=0x531 Frac=0x32b4cbd8b8973
+               34500: FOUND:   Type=Random Sign=1 Exp=0x531 Frac=0x32b4cbd8b8973
+               34500: d3132b4cbd8b8973xacea42a5422d2fa7+bff0000000000000 = d3132b4cbd8b8973 (d3132b4cbd8b8973) Checked
+               45000: TESTBENCH IS DONE -- [0;32mTEST PASS[0m
+           V C S   S i m u l a t i o n   R e p o r t 
+Time: 45000 ps

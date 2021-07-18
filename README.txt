@@ -1,19 +1,78 @@
-This is a Floating Point Adder/Multiplier/Multiply-Accumulate generator and testbench
+This is a Floating Point Adder/Multiplier/Multiply-Accumulate
+generator and testbench
 
-To run it, use:
+To run it:
   make clean [gen|run] [SIM_ENGINE=mentor] [GENESIS_HIERARCHY=new.xml] [GENESIS_CFG_XML=SysCfgs/changefile.xml]
+
 Example:
   make clean gen GENESIS_CFG_XML=SysCfgs/my_config.xml
   make clean run GENESIS_CFG_XML=SysCfgs/your_config.xml
-  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # recommanded
+  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # recommended
 
-* gen|run -- choose to either just generate the design also run the testbench
+Explanation:
+* gen|run -- choose to either just generate the design or also run the testbench
 * Replace SIM_ENGINE=mentor with SIM_ENGINE=synopsys for using synopsys simulation tools.
 * GENESIS_HIERARCHY=new.xml redirect the OUTPUT xml file to file 'new.xml' (important for the gui)
 * GENESIS_CFG_XML=SysCfgs/changefile.xml tells genesis to use the design configuration specified in 'changefile.xml'
 * GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg an alternative way to load a script for setting configuration
 
+Environment:
+You can use the command
 
+    source scripts/setup.sh
+
+to help prepare your environment. The script will check to see if you
+have the necessary generator "Genesis2.pl" and, if not, will attempt
+to install it locally for you. It will also check your environment for
+the conditions described below.
+
+For everything to work as intended, you'll need at least two CAD tools
+in your path: `Genesis2.pl`, the generator tool, and `vcs`, the
+Synopsys Verilog simulator. That is, if you do "command -v" for each
+you should get a valid result, e.g.
+
+    % command -v Genesis2.pl
+      /usr/local/bin/Genesis2Tools//bin/Genesis2.pl
+
+    % command -v vcs
+      /cad/synopsys/vcs/Q-2020.03-SP2/bin/vcs
+
+Also: you'll need to locate the libraries that vcs uses for testing.
+The default locations are
+
+  $SYNOPSYS/dw/sim_ver
+  $SYNOPSYS/packages/gtech/src_ver
+
+where SYNOPSYS=/hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
+
+If this is not where they exist on your system, you will need to
+locate them and then set the SYNOPSYS makefile variable appropriately
+when running the make command.
+
+E.g. on your system suppose you find the designware libraries here:
+  /mycaddir/synopsys/dc_shell/J-2014.09-SP3/dw/sim_ver
+
+Then, instead of
+
+   % make clean run \
+       GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg
+
+you would do
+
+   % make clean run \
+       GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg \
+       SYNOPSYS=/mycaddir/synopsys/dc_shell/J-2014.09-SP3
+
+
+Compare: For comparison, the directory "examples" contains the results
+of a successful "make clean run" for the dp-fma config (which I guess
+is some kind of double-precision multiply-add unit). Verilog for the
+generated FMA is in the examples/genesis_verif directory and
+standard-output from running the make command is in examples/make.log.
+
+
+------------------------------------------------------------------------
+EXTRAS
 
 To use perl script to run jobs and to plot graphs, do following step:
 
