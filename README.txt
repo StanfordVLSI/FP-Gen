@@ -37,7 +37,10 @@ you should get a valid result, e.g.
     % command -v vcs
       /cad/synopsys/vcs/Q-2020.03-SP2/bin/vcs
 
-Also: you'll need to locate the libraries that vcs uses for testing.
+(Without vcs you can still generate Verilog, but you'll be on your own
+for running the simulation test afterwards.)
+
+Also (for vcs): you'll need to locate the libraries that vcs uses for testing.
 The default locations are
 
   $SYNOPSYS/dw/sim_ver
