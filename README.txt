@@ -1,5 +1,4 @@
-This is a Floating Point Adder/Multiplier/Multiply-Accumulate
-generator and testbench
+This is a Floating Point Adder/Multiplier/Multiply-Accumulate generator and testbench
 
 To run it:
   make clean [gen|run] [SIM_ENGINE=mentor] [GENESIS_HIERARCHY=new.xml] [GENESIS_CFG_XML=SysCfgs/changefile.xml]
