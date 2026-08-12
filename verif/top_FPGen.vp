@@ -26,11 +26,17 @@
 //;                            Doc=>"Verification mode determines whether or not ".
 //;                                 "monitors and drivers are on. Possible values ".
 //;                                 "are ON or Off." ); 
+//; 
 //; my $synth_mode = parameter(Name=>'SYNTH_MODE',
 //;                            Val=>'ON', List=>['ON','OFF'],
 //;                            Doc=>"Synthesis mode determines whether or not ".
 //;                                 "special synthesis constructs are used. ".
 //;                                 "Possible values are ON or Off.");
+//; 
+//; my $which_dw = parameter(Name=>'WHICH_DW',
+//;                          Val=>'DW', List=>['DW','DWSUB'],
+//;                          Doc=>"Use Synopsys (DW) or local FOSS (DWSUB) libraries to build the multiplier?".
+//;                               " (Still uses DW for testbench gold model, though).");
 //; 
 
 \`define DUT(mod) \`ifndef GATES  mod  \`else  mod\`\`_svsim  \`endif 
