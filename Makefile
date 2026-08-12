@@ -152,7 +152,11 @@ VERILOG_DESIGN :=
 
 VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
 
+ifdef SYNOPSYS
+SYNOPSYS := $(SYNOPSYS)
+else
 SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
+endif
 
 VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/dw/sim_ver/			\

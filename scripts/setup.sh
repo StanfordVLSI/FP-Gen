@@ -40,26 +40,30 @@ if [ `command -v dc_shell` ]; then
     function NEED_VCS { false; }
 fi
 if test -z "$SYNOPSYS"; then 
-    echo "Cannot find SYNOPSYS env var; that usually means dc_shell was not installed correctly"
+    printf "\n    WARNING Cannot find SYNOPSYS env var; that usually means dc_shell was not installed correctly\n"
     function NEED_VCS { true; }
 fi
 if NEED_VCS; then
-    echo "WARNING vcs and/or dc_shell not found in your path."
-    echo "You can generate an FPU but you cannot simulate or test using the default make cmd"
-    # At Stanford we do this to load vcs and/or dc_shell:
-    #   . /cad/modules/tcl/init/bash
-    #   module load base
-    #   module load vcs
-    #   module load dc_shell
+    cat <<EOF
+    WARNING vcs and/or dc_shell not found in your path.
+      - You can generate an FPU but you maybe cannot simulate or test.
+
+    In some Stanford environments you can do this to load vcs and/or dc_shell:
+
+source /cad/modules/tcl/init/bash
+module load base
+module load vcs
+module load dc_shell
+EOF
 fi
 
 # See if comparison/designware libraries exist
 if [ "$SYNOPSYS" ]; then
-echo ""
-# export SYNOPSYS=/cad/synopsys/dc_shell/J-2014.09-SP3
-# export SYNOPSYS=/hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
-for libdir in dw/sim_ver packages/gtech/src_ver; do
-if ! test -e $SYNOPSYS/$libdir; then cat <<EOF
+  echo ""
+  # export SYNOPSYS=/cad/synopsys/dc_shell/J-2014.09-SP3
+  # export SYNOPSYS=/hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
+  for libdir in dw/sim_ver packages/gtech/src_ver; do
+    if ! test -e $SYNOPSYS/$libdir; then cat <<EOF
 -----------------------------------------------------------------------------
 WARNING Cannot find dc libraries '$SYNOPSYS/$libdir/'
 
@@ -74,5 +78,6 @@ WARNING Cannot find dc libraries '$SYNOPSYS/$libdir/'
     such that '/cad/synopsys/dc_shell/J-2014.09-SP3/$libdir' exists
 
 EOF
+    fi
+  done
 fi
-done
