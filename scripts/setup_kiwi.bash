@@ -1,3 +1,12 @@
+########################################################################
+########################################################################
+########################################################################
+# NOTE this setup file is VERY OLD and OUTDATED
+# Maybe just use `setup.sh` instead.
+########################################################################
+########################################################################
+########################################################################
+
 #load some modules to get some work done, this is probably what you need 
 . /cad/modules/tcl/init/bash
 module load base
@@ -5,7 +14,7 @@ module load genesis2/r11012
 module load dc_shell
 module load matlab
 module load ncx
-module load vcs-mx
+module load vcs
 module load icc
 module load ic 
 module load pts
@@ -32,3 +41,12 @@ alias jsub=$FPGEN/scripts/jsub
 # For Ofer's debug env
 #setenv GENESIS_LIBS "$CHIPGEN/bin/PerlLibs"
 #set path=($GENESIS_LIBS/Genesis2 $path)
+
+########################################################################
+########################################################################
+########################################################################
+# NOTE this setup file is VERY OLD and OUTDATED
+# Maybe just use `setup.sh` instead.
+########################################################################
+########################################################################
+########################################################################
