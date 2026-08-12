@@ -35,6 +35,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52,  Min=>4, Step=>1, 
 //;                           Doc=>"Width of the Fraction for the multiplier (default is IEEE Double, 52 bit)");
@@ -216,10 +222,10 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
      ExpBase = ExpResultIsC? ExpC : ExpA + ExpB - BIAS + SHIFT_CONST;
   */     
   assign pre_shift = `$SHIFT_CONST` -`$BIAS`; 
-  DW01_csa #(`$exp_width+2`) CSA0 (.a({2'b0,ExpA0}),.b({2'b0,ExpB0}),.c(pre_shift),.ci(denormA0), 
+ `$DW01_csa` #(`$exp_width+2`) CSA0 (.a({2'b0,ExpA0}),.b({2'b0,ExpB0}),.c(pre_shift),.ci(denormA0), 
                                    .carry(ExpCarry), .sum(ExpSum), .co(DummyCo1) );
 
-  DW01_add #(`$exp_width+2`) Add_ExpAB (.A(ExpSum), .B(ExpCarry), .CI(denormB0), .SUM(ExpAB), .CO(DummyCo2) );
+ `$DW01_add` #(`$exp_width+2`) Add_ExpAB (.A(ExpSum), .B(ExpCarry), .CI(denormB0), .SUM(ExpAB), .CO(DummyCo2) );
   assign ExpBase0 = ExpResultIsC? {2'b0,ExpC1} : ExpAB;
 
 //; if($pipeline_depth > 1 ){
@@ -247,10 +253,10 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
     and has a maximum of 225 and minimum of 0, therefore we need to sign extend it by 2 bits to correctly determine the shift amount
   */
 
-  DW01_csa #(`$exp_width+2`) CSA1(.a({2'b11,~ExpC0}), .b(ExpCarry), .c(ExpSum), .ci( ~(IncExpC0|denormC0) ),
+ `$DW01_csa` #(`$exp_width+2`) CSA1(.a({2'b11,~ExpC0}), .b(ExpCarry), .c(ExpSum), .ci( ~(IncExpC0|denormC0) ),
                                   .carry(RshiftCarry),.sum(RshiftSum),.co(DummyCo3));
 
-  DW01_add #(`$exp_width+2`) Add_RShift (.A(RshiftSum), .B(RshiftCarry), .CI(denormB0), .SUM(RshiftInitial), .CO(DummyCo4) );
+ `$DW01_add` #(`$exp_width+2`) Add_RShift (.A(RshiftSum), .B(RshiftCarry), .CI(denormB0), .SUM(RshiftInitial), .CO(DummyCo4) );
 
   assign ExpResultIsC = RshiftInitial[`$exp_width+1`] | ZeroAB0; //no right shift and C is not zero
 //; if( $exp_width >= $shift_width ){
