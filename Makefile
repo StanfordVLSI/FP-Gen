@@ -102,11 +102,15 @@ GENESIS_PARSE_FLAGS := 	-parse $(GENESIS_SRC) $(GENESIS_INC) -input $(GENESIS_IN
 #        [-depend filename]          ---   Should Genesis2 generate a dependency file list? (list of input files)
 #        [-product filename]         ---   Should Genesis2 generate a product file list? (list of output files)
 #        [-hierarchy filename]       ---   Should Genesis2 generate a hierarchy representation tree?
-#        [-cfgpath|configs dir]		# Where to find config files (xml/scripts)
+#        [-cfgpath|configs dir]      ---   Where to find config files (xml/scripts)
 #        [-xml filename]             ---   Input XML representation of definitions
-#        [-cfg filename]                 # Config file to specify parameter values as a Perl script (overrides xml definitions)
-#	 [-parameter path.to.prm1=value1 path.to.another.prm2=value2] --- List of parameter override definitions
-#					  				  from command line (overrides xml and cfg definitions)
+#        [-cfg filename]             ---   Config file to specify parameter values as a Perl script (overrides xml definitions)
+#	 [-parameter path.to.prm1=value1 path.to.another.prm2=value2]
+#				     --- List of parameter override definitions from command line (overrides xml and cfg definitions)
+# 
+#         [-unqstyle style]         # Preferred module uniquification style [numeric param]
+#         [-pathfile filename]      # Generate a path file (list of directories processed)
+#         [-no_module_cache]        # Disable the generated module cache: do not skip any generates
 
 GENESIS_LIB_DIR := $(DESIGN_HOME)/lib 
 GENESIS_LIB_FIL := $(wildcard $(DESIGN_HOME)/lib/*.pm) 
@@ -118,6 +122,8 @@ GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
 			-product $(GENESIS_VLOG_LIST)				\
 			-hierarchy $(GENESIS_HIERARCHY)				\
 			-perl_libs ${GENESIS_LIB_DIR}                           \
+			-no_module_cache                                        \
+			-unqstyle numeric                                       \
 			$(GENESIS_CFG)
 
 ifneq ($(strip $(GENESIS_CFG_SCRIPT)),)
@@ -154,6 +160,7 @@ VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/packages/gtech/src_ver/		\
 			+incdir+$(SYNOPSYS)/packages/gtech/src_ver/
 
+DWSUBS :=		$(wildcard $(DESIGN_HOME)/rtl/dwsub/*.v)
 
 ifeq ($(TECH), 45)
   VERILOG_GATE_LIBS :=	-v $(TCBN45GS_VERILOG)                          \
@@ -196,7 +203,7 @@ VERILOG_COMPILE_FLAGS := 	-sverilog 					\
 				-licqueue					\
 				-ld $(VCS_CC) 					\
 				-top $(SIM_TOP)					\
-				$(VERILOG_FILES) $(VERILOG_LIBS)
+				$(VERILOG_FILES) $(VERILOG_LIBS) $(DWSUBS)
 
 # "+vpdbufsize+100" limit the internal buffer to 100MB (forces flushing to disk)
 # "+vpdports" Record information about ports (signal/in/out)
