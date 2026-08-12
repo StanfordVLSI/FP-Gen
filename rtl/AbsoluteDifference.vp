@@ -37,6 +37,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # Interface parameter
 //; my $LZA_enable = parameter(Name=>'LZA_enable', Val=>'NO', List=>['YES', 'NO'],
 //; 			   Doc=>"Leading zero count is outputted with absolute difference");
@@ -125,7 +131,7 @@ module `mname`(
 			            (~p[`$width-1`:2] & g[`$width-2`:1] & ~g[`$width-3`:0]) | 
 			            ( p[`$width-1`:2] & g[`$width-2`:1] & ~k[`$width-3`:0]) |
 			            ( p[`$width-1`:2] & k[`$width-2`:1] & ~g[`$width-3`:0]);
-  DW_lzd #(`$width+1`) LZD ( .a({LZA_mask,~p[0]} | {LZA_override_mask,1'b0}), .enc(LZA_count), .dec (LZA_dec)); // extended by one bit for the case of difference of 1
+ `$DW_lzd` #(`$width+1`) LZD ( .a({LZA_mask,~p[0]} | {LZA_override_mask,1'b0}), .enc(LZA_count), .dec (LZA_dec)); // extended by one bit for the case of difference of 1
 //; }
 
 //; if ($verif_mode =~ /ON/){

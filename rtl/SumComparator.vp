@@ -31,6 +31,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 //; my $width = parameter(Name=>'Width', Val=>109, Min=>1, Step=>1,
 //;                       Doc=>"Width of signals !FUNCTIONAL!");
@@ -57,7 +63,7 @@ module `mname` (
    wire [`$width-1`:0] 	 v,w;
    wire 		 dummy_co;
 
-   DW01_csa #(`$width`) CSA ( .a(a),.b(b), .c(~sum), .ci(ci), .carry(v), .sum(w), .co(dummy_co));
+  `$DW01_csa` #(`$width`) CSA ( .a(a),.b(b), .c(~sum), .ci(ci), .carry(v), .sum(w), .co(dummy_co));
 
    assign equal = & (v[`$eq_ub`:`$eq_lb`]^w[`$eq_ub`:`$eq_lb`]);
 

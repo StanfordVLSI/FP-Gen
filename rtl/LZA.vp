@@ -60,6 +60,9 @@
 //; my $enc_width = CeilOfLog2($width) + 1;
 //;
 
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW_lzd       = ${which_dw}."_lzd";
+
 module `mname` (input logic [`$width+1`:0] A,B,
         input logic [`$width-1`:0] override_mask,
         output logic result_is_zero,
@@ -78,7 +81,7 @@ module `mname` (input logic [`$width+1`:0] A,B,
                      ( P[`$width+1`:2] & G[`$width`:1] & ~K[`$width-1`:0]) |
                      ( P[`$width+1`:2] & K[`$width`:1] & ~G[`$width-1`:0]) ;
 
-  DW_lzd #(`$width`) LZD0 ( .a(edge_mask | override_mask), .dec(lzd_hotone_mask), .enc(enc) );
+  `$DW_lzd` #(`$width`) LZD0 ( .a(edge_mask | override_mask), .dec(lzd_hotone_mask), .enc(enc) );
 
   assign result_is_zero = ~|edge_mask;
 	

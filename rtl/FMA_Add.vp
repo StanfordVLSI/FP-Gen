@@ -35,6 +35,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
@@ -106,7 +112,7 @@ module `mname` (
      1           1     1        ~Sum
 
   */
-  DW01_csa #(`$product_width+4`) CSA0 (.a({AB_pp0,2'b0}),.b({AB_pp1,2'b0}),.c(C_middle),.ci(1'b0), .carry(ps0), .sum(ps1), .co(co_middle) );
+ `$DW01_csa` #(`$product_width+4`) CSA0 (.a({AB_pp0,2'b0}),.b({AB_pp1,2'b0}),.c(C_middle),.ci(1'b0), .carry(ps0), .sum(ps1), .co(co_middle) );
 
 //; my $CAdd_obj = generate('CompoundAdder', 'CADD', Width=>($product_width+4), EnableCarryIn=>'OFF', ZeroWidth=>0);   
   `$CAdd_obj->instantiate()` 
@@ -136,11 +142,11 @@ module `mname` (
   wire [(1<<`$shift_width`)-1 : 0] max_shift_dec;
 
 //; if( $exp_width >= $shift_width ){
-  DW_decode_en #(`$shift_width`) U1 ( .en(~|ExpBase[`$exp_width`:`$shift_width`])    // Disable if the exponent is big enough
+ `$DW_decode_en` #(`$shift_width`) U1 ( .en(~|ExpBase[`$exp_width`:`$shift_width`])    // Disable if the exponent is big enough
                                  , .a(ExpBase[`$shift_width-1`:0])
                                  , .b(max_shift_dec) );
 //; } else {
-  DW_decode_en #(`$shift_width`) U1 ( .en(1'b1)    // Disable if the exponent is big enough
+ `$DW_decode_en` #(`$shift_width`) U1 ( .en(1'b1)    // Disable if the exponent is big enough
                                  , .a(ExpBase[`$shift_width-1`:0])
                                  , .b(max_shift_dec) );
 //; }

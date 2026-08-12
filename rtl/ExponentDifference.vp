@@ -33,6 +33,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 //; my $exp_width = parameter(Name=>'ExponentWidth', Val=>11, 
 //;                           Min=>4, Step=>1, 
@@ -57,7 +63,7 @@ module `mname`(
 
   // ExpA_pp0 + ExpA_pp1 + ExpA_ci = ExpA - 1
 
-  DW01_csa #(`$ExtendedExp_width`) CSA ( .a( ExpA_pp0), .b( ExpA_pp1), .c(~ExpB), .ci(ExpA_ci), .sum(ExpA_ExpB_2_pp0), .carry(ExpA_ExpB_2_pp1), .co(co_dummy0 ));
+ `$DW01_csa` #(`$ExtendedExp_width`) CSA ( .a( ExpA_pp0), .b( ExpA_pp1), .c(~ExpB), .ci(ExpA_ci), .sum(ExpA_ExpB_2_pp0), .carry(ExpA_ExpB_2_pp1), .co(co_dummy0 ));
 
 
  // ExpA_ExpB_2_pp0 + ExpA_ExpB_2_pp1 = (ExpA-1)  + ~ExpB = ExpA - ExpB - 2 

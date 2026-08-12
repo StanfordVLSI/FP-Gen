@@ -1,6 +1,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $min_area = parameter(Name=>'MinArea', Val=>0, Min=>0, Max=>1, Step=>1,
 //;                       Doc=>"flag to set_max_area to 0");
+//;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
 
 module `mname()` (input logic a,b,ci,
             output logic s, co);
@@ -11,7 +17,7 @@ module `mname()` (input logic a,b,ci,
   */
 //; }
 
-  DW01_add #(1)  add ( .A(a), .B(b), .CI(ci), .SUM(s), .CO(co) );
+  `$DW01_add` #(1)  add ( .A(a), .B(b), .CI(ci), .SUM(s), .CO(co) );
 //  DW01_ADD_ABC add(.A(a),.B(b),.C(ci),.S(s),.COUT(co));
 
 //  FA1D0BWPLVT add(.A(a),.B(b),.CI(ci),.S(s),.CO(co));

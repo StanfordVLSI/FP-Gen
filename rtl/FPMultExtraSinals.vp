@@ -28,6 +28,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
@@ -109,8 +115,8 @@ module `mname`(
 
     //logic [`$shift_width - 1`:0] LZD_A, LZD_B;
    
-    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A), .dec() );
-    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B), .dec() );
+   `$DW_lzd` #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A), .dec() );
+   `$DW_lzd` #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B), .dec() );
 
 
   assign ZeroAB = zeroAplusInc | zeroBplusInc;

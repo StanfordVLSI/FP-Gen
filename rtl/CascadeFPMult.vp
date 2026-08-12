@@ -36,6 +36,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52, 
 //;                           Min=>4, Step=>1, 
@@ -115,7 +121,7 @@ module `mname`(
    // and the minimum negative result is: 
    //         - 2^($exp_width-1) + 1 = - 2^(`$exp_width-1`) + 1
 
-  DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
+ `$DW01_csa` #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA}),.b({2'b00, ExpB}),.c(bias_offset),
 					.ci(1'b0), .carry(Eab_ps0), .sum(Eab_ps1), .co(co_dummy0) );
 
    //; if ($enable_denormals=~ /YES/i){
@@ -127,18 +133,18 @@ module `mname`(
     logic [`$shift_width + 1`:0] shiftAmount;
     logic co_dummy5, co_dummy6, co_dummy7;
 
-    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
-    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
+   `$DW_lzd` #(`$frac_width`+1) LZDA ( .a({ManA[`$frac_width`:1],ManA[0]|IncA}), .enc(LZD_A) );
+   `$DW_lzd` #(`$frac_width`+1) LZDB ( .a({ManB[`$frac_width`:1],ManB[0]|IncB}), .enc(LZD_B) );
 
-    DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0),.b(Eab_ps1),
+   `$DW01_csa` #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0),.b(Eab_ps1),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A}),
 					  .ci(1'b1), .carry(Eab_ps2), .sum(Eab_ps3), 
 					  .co(co_dummy1) );
-    DW01_csa #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2),.b(Eab_ps3),
+   `$DW01_csa` #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2),.b(Eab_ps3),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
 					  .ci(1'b1), .carry(Eab_ps4), .sum(Eab_ps5), 
 					  .co(co_dummy2) );
-    DW01_csa #(`$exp_width`+2) EAB_1_CSA (.a(Eab_ps2),.b(Eab_ps3),
+   `$DW01_csa` #(`$exp_width`+2) EAB_1_CSA (.a(Eab_ps2),.b(Eab_ps3),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B}),
 					  .ci(1'b0), .carry(Eab_1_ps0), .sum(Eab_1_ps1), 
 					  .co(co_dummy7) );
@@ -156,12 +162,12 @@ module `mname`(
 
     //Normal Shift Amount = `$frac_width` + 1 - LZD_A - LZD_B = `$frac_width` + 3 + ~LZD_A + ~LZD_B
     assign normalShiftConst = `$frac_width` + 3;
-    DW01_csa #(`$shift_width`) SHN_CSA (.a(~LZD_A),.b(~LZD_B),.c(normalShiftConst),.ci(1'b0), .carry(SHN_ps0), .sum(SHN_ps1), .co(co_dummy5) );
+   `$DW01_csa` #(`$shift_width`) SHN_CSA (.a(~LZD_A),.b(~LZD_B),.c(normalShiftConst),.ci(1'b0), .carry(SHN_ps0), .sum(SHN_ps1), .co(co_dummy5) );
     assign SHN = SHN_ps0 + SHN_ps1;
 
     //Denormal Shift Amount = `$frac_width` + 1 + 1 - Eab_ps0 - Eab_ps1 = `$frac_width` + 4 + ~Eab_ps0 + ~Eab_ps1
     assign denormalShiftConst = `$frac_width` + 4;
-    DW01_csa #(`$exp_width`+2) SHD_CSA (.a(~Eab_ps0),.b(~Eab_ps1),.c(denormalShiftConst),.ci(1'b0), .carry(SHD_ps0), .sum(SHD_ps1), .co(co_dummy6) );
+   `$DW01_csa` #(`$exp_width`+2) SHD_CSA (.a(~Eab_ps0),.b(~Eab_ps1),.c(denormalShiftConst),.ci(1'b0), .carry(SHD_ps0), .sum(SHD_ps1), .co(co_dummy6) );
     assign SHD_wide = SHD_ps0 + SHD_ps1;
 
     assign denormalAB = ExpAB_1[`$exp_width`+1];
@@ -203,9 +209,9 @@ module `mname`(
 
 
 /*
-  DW02_mult #(`$frac_width`+1, `$frac_width`+1 ) U1 ( .A(ManA),   .B(ManB),
-                                                  .TC(1'b0), //Two's complement: 0 = unsigned, 1 = signed
-                                                  .PRODUCT(ManAB_unnormalized));
+// DW02_mult #(`$frac_width`+1, `$frac_width`+1 ) U1 ( .A(ManA),   .B(ManB),
+//                                                  .TC(1'b0), //Two's complement: 0 = unsigned, 1 = signed
+//                                                  .PRODUCT(ManAB_unnormalized));
 */
 
 

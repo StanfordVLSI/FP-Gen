@@ -38,6 +38,12 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
+//;
 //; # module parameters
 
 //; my $frac_width = parameter(Name=>'FractionWidth', Val=>52,  Min=>4, Step=>1, 
@@ -229,8 +235,8 @@ module `mname`(
 
     assign bias_offset = - {(`$exp_width-1`){1'b1}} + 2; // sign extend the bias to be exp_width+2=`$exp_width`+2 wide
 
-    DW_lzd #(`$frac_width`+1) LZDA ( .a({ManA_P0[`$frac_width`:1],ManA_P0[0]|IncA_P0}), .enc(LZD_A_P0) , .dec(dec_a_P0));
-    DW_lzd #(`$frac_width`+1) LZDB ( .a({ManB_P0[`$frac_width`:1],ManB_P0[0]|IncB_P0}), .enc(LZD_B_P0) , .dec(dec_b_P0));
+   `$DW_lzd` #(`$frac_width`+1) LZDA ( .a({ManA_P0[`$frac_width`:1],ManA_P0[0]|IncA_P0}), .enc(LZD_A_P0) , .dec(dec_a_P0));
+   `$DW_lzd` #(`$frac_width`+1) LZDB ( .a({ManB_P0[`$frac_width`:1],ManB_P0[0]|IncB_P0}), .enc(LZD_B_P0) , .dec(dec_b_P0));
     assign shiftAmount_P0 = LZD_A_P0 + LZD_B_P0;
 
 
@@ -247,11 +253,11 @@ module `mname`(
    assign shiftAmount_PEnd = shiftAmount_P0;
    //; }
 
-    DW01_csa #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0_P0),.b(Eab_ps1_P0),
+   `$DW01_csa` #(`$exp_width`+2) EAB_CSA1  (.a(Eab_ps0_P0),.b(Eab_ps1_P0),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_A_P0}),
 					  .ci(ZeroExpA_P0), .carry(Eab_ps2_P0), .sum(Eab_ps3_P0), 
 					  .co(co_dummy1_P0) );
-    DW01_csa #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2_P0),.b(Eab_ps3_P0),
+   `$DW01_csa` #(`$exp_width`+2) EAB_CSA2  (.a(Eab_ps2_P0),.b(Eab_ps3_P0),
 					  .c({{(`$exp_width+2-$shift_width`){1'b1}},~LZD_B_P0}),
 					  .ci(ZeroExpB_P0), .carry(Eab_ps4_P0), .sum(Eab_ps5_P0), 
 					  .co(co_dummy2_P0) );
@@ -322,7 +328,7 @@ module `mname`(
     assign stall_request = 0;
 //; }
 
-  DW01_csa #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA_P0}),.b({2'b00, ExpB_P0}),.c(bias_offset),
+ `$DW01_csa` #(`$exp_width+2`) EAB_CSA0  (.a({2'b00, ExpA_P0}),.b({2'b00, ExpB_P0}),.c(bias_offset),
 					.ci(shiftleft_P0), .carry(Eab_ps0_P0), .sum(Eab_ps1_P0), .co(co_dummy0_P0) );
 
 //;  if ($floating_digits==1) {
