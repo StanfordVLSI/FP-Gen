@@ -57,9 +57,13 @@ module `mname()` (
 //; if ($verif_mode =~ /ON/){
     input logic 			dumptolog,
 //; }
-    input logic [`$pp_width-1`:0] 	pp [0:`$pp_count-1`],
+    input logic [(`$pp_width`*`$pp_count`)-1:0] ppvec,
     output logic [`$width-1`:0] 	out0,out1
    );
+   logic [`$pp_width-1`:0] pp [0:`$pp_count-1`];
+//; for (my $i=0; $i<$pp_count; $i++) {
+   assign pp[`$i`] = ppvec[`$i+1`*`$pp_width`-1:`$i`*`$pp_width`];
+//; }
 
 //;# uncomment to debug #   assign out1 = `$width`'b0;
 //;# uncomment to debug #   assign out0 = 
@@ -67,8 +71,7 @@ module `mname()` (
 //;# uncomment to debug #		 ({100'b0, pp[`$i`]} << `$booth*$i`)+
 //;# uncomment to debug #   //; }
 //;# uncomment to debug #		 `$width`'b0;
-   
-		 
+
 
    // Columns 0 through booth-1=`$booth-1` -- only one pp
    assign out0[`$booth-1`:0] =   pp[0][`$booth-1`:0];
