@@ -1,16 +1,40 @@
 This is a Floating Point Adder/Multiplier/Multiply-Accumulate generator and testbench
 
-To run it:
-  make clean [gen|run] [SIM_ENGINE=mentor] [GENESIS_HIERARCHY=new.xml] [GENESIS_CFG_XML=SysCfgs/changefile.xml]
+### QUICK DEMO
+
+For a quick demo, run the command below. In about 3 minutes, you should
+have a set of verilog files "genesis_{synth,verif}/*.v" that implement
+the default configuration: a double-precision 7-cycle FMA (fused mul-add)
+unit with 3-cycle pipelined Wallace-tree Booth-2 multiplier.
+```
+    % make clean gen
+```
+
+### QUICK DEMO 2: QUICK TAPEOUT
+
+If you have docker installed in your system, the script `test/tapeout-fma00bf.sh` 
+will build a single-cycle bfloat mul-add unit, install librelane FOSS tools in a
+docker container, and use them to produce a GDS-II tape for the librelane default
+process (skywater 130 maybe).
+```
+    % ./test/tapeout-fma00bf.sh
+```
+For details, see `test/README.txt`.
+
+
+### DETAILED INFO
+
+To run the generator:
+  make clean [gen|run] [SIM_ENGINE=synopsys] [GENESIS_HIERARCHY=new.xml] [GENESIS_CFG_XML=SysCfgs/changefile.xml]
 
 Example:
-  make clean gen GENESIS_CFG_XML=SysCfgs/my_config.xml
-  make clean run GENESIS_CFG_XML=SysCfgs/your_config.xml
-  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # recommended
+  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # Recommended: build and verify a 64-bit FMA
+  make clean gen GENESIS_CFG_XML=SysCfgs/my_config.xml   # Build default mul-add unit, no verification
+  make clean run GENESIS_CFG_XML=SysCfgs/my_config.xml   # Build and verify the default mul-add unit
 
 Explanation:
 * gen|run -- choose to either just generate the design or also run the testbench
-* Replace SIM_ENGINE=mentor with SIM_ENGINE=synopsys for using synopsys simulation tools.
+* Replace SIM_ENGINE=synopsys with SIM_ENGINE=mentor to use mentor simulation tools.
 * GENESIS_HIERARCHY=new.xml redirect the OUTPUT xml file to file 'new.xml' (important for the gui)
 * GENESIS_CFG_XML=SysCfgs/changefile.xml tells genesis to use the design configuration specified in 'changefile.xml'
 * GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg an alternative way to load a script for setting configuration
@@ -20,15 +44,13 @@ You can use the command
 
     source scripts/setup.sh
 
-to help prepare your environment. The script will check to see if you
-have the necessary generator "Genesis2.pl" and, if not, will attempt
-to install it locally for you. It will also check your environment for
-the conditions described below.
+to help prepare your environment. The script will check to see if you have the necessary generator
+"Genesis2.pl" and, if not, will attempt to install it locally for you. It will also check your
+environment for the conditions described below.
 
-For everything to work as intended, you'll need at least two CAD tools
-in your path: `Genesis2.pl`, the generator tool, and `vcs`, the
-Synopsys Verilog simulator. That is, if you do "command -v" for each
-you should get a valid result, e.g.
+For everything to work as intended, you'll need at least two CAD tools in your path: `Genesis2.pl`,
+the generator tool, and `vcs`, the Synopsys Verilog simulator. That is, if you do "command -v" for
+each, you should get a valid result, e.g.
 
     % command -v Genesis2.pl
       /usr/local/bin/Genesis2Tools//bin/Genesis2.pl
@@ -39,38 +61,36 @@ you should get a valid result, e.g.
 (Without vcs you can still generate Verilog, but you'll be on your own
 for running the simulation test afterwards.)
 
-Also (for vcs): you'll need to locate the libraries that vcs uses for testing.
-The default locations are
-
+Also (for vcs): you'll need to locate the libraries that vcs uses for testing. Default locations are
+```
   $SYNOPSYS/dw/sim_ver
   $SYNOPSYS/packages/gtech/src_ver
-
+```
 where SYNOPSYS=/hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
 
-If this is not where they exist on your system, you will need to
-locate them and then set the SYNOPSYS makefile variable appropriately
-when running the make command.
+If this is not where they exist on your system, you will need to locate them and then set the
+SYNOPSYS makefile variable appropriately when running the make command.
 
 E.g. on your system suppose you find the designware libraries here:
+```
   /mycaddir/synopsys/dc_shell/J-2014.09-SP3/dw/sim_ver
-
+```
 Then, instead of
-
-   % make clean run \
-       GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg
-
+```
+   % make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg
+```
 you would do
-
-   % make clean run \
-       GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg \
+```
+   % make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg \
        SYNOPSYS=/mycaddir/synopsys/dc_shell/J-2014.09-SP3
+```
 
+Compare:
 
-Compare: For comparison, the directory "examples" contains the results
-of a successful "make clean run" for the dp-fma config (which I guess
-is some kind of double-precision multiply-add unit). Verilog for the
-generated FMA is in the examples/genesis_verif directory and
-standard-output from running the make command is in examples/make.log.
+For comparison, the directory `examples` contains the results of a successful `make clean run`
+for the dp-fma config (which I guess is some kind of double-precision multiply-add unit).
+Verilog for the generated FMA is in the examples/genesis_verif directory and standard-output
+from running the make command is in `examples/make.log`.
 
 
 ------------------------------------------------------------------------
@@ -136,3 +156,20 @@ To use perl script to run jobs and to plot graphs, do following step:
 	-n, --nodisplay: do not launch MATLAB GUI
 	--Vdd: the Vdd we use to plot the graph. The default is 1.0.
 	--Vth: the Vth we use to plot the graph. The default is lvt.
+
+#### Designware
+
+The main build is supposed to be free of proprietary software e.g. Designware, but apparently some of it snuck in.
+
+Rather than rewrite the existing rtl, I made some clean lookalike modules and put them in the local directory "rtl/dwsub".
+```
+% (cd rtl/dwsub/; ls -1 *.v | sed 's/^/    /')
+    DWSUB01_add.v
+    DWSUB01_csa.v
+    DWSUB_decode_en.v
+    DWSUB_lzd.v
+```
+To use the clean version, specify parameter top_FPGen.WHICH_DW=DWSUB in your cfg file. And/or you can specify it on the command line like so:
+```
+  make clean run SYNOPSYS=$SYNOPSYS GEN="-parameter top_FPGen.WHICH_DW=DWSUB"
+```
