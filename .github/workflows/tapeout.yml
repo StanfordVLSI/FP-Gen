@@ -1,0 +1,24 @@
+name: Librelane Tapeout
+
+on:
+  # Every push
+  push:
+
+  # When requested manually
+  workflow_dispatch:
+
+  # Note: Schedule works using main branch only
+  schedule:
+    # Once a month at 6am ( 6am PDT ~ 2300 UTC)
+    #        min hr day [JAN-DEC] [MON-SUN]
+    - cron: ' 0  23  1      *         *    '
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+
+    steps:
+    - uses: actions/checkout@v6
+    - name: Librelane tapeout test
+      run:  test/tapeout-fma00bf.sh
