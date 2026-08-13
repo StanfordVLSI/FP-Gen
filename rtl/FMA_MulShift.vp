@@ -87,16 +87,19 @@ module `mname` (
     output logic [`$exp_width+1`:0] ExpBase
     );	
 
-
-  
   logic [`$exp_width + $frac_width`:0] 	a, b, c, a0, b0, c0, c1;
   logic [`$product_width+1`:0] mulp_out_pp0, mulp_out_pp1;
   logic [`$frac_width`:0] ManA_final;
-  logic forward_c0, ainc, binc, cinc, ainc0, binc0, cinc0, denormA, denormB, denormC, denormA0, denormB0, denormC0, adder_mode0, adder_mode_final, ainc_final;
-  logic valid0, valid_mul, valid_ManA, valid_exp, valid_r;
+  logic forward_c0, ainc, binc, cinc, ainc0, binc0, cinc0, denormA, denormB, denormC, denormA0, denormB0, denormC0, adder_mode_final, ainc_final;
+  logic valid_mul, valid_exp, valid_r;
 
-   logic multiplier_mode0;
-   
+//; if ($pipeline_depth>0){
+  // Only used for pipeline_depth > 0
+  logic adder_mode0;
+  logic valid0, valid_ManA;
+//; }
+  logic multiplier_mode0;
+
 
 //; if($enable_forwarding =~ /YES/ && $pipeline_depth > 0 ){
   assign {a,ainc} = forward_a? {z_preInc,IncZ}:{a_in,1'b0};
@@ -119,7 +122,8 @@ module `mname` (
                               .valid_out(valid0) );
   
 //; } else {
-  assign {a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0} = {a,b,c,ainc,binc,cinc, denormA, denormB, denormC, forward_c};
+  assign {a0, b0, c0, ainc0, binc0, cinc0, denormA0, denormB0, denormC0, forward_c0}
+       = {a,  b,  c,  ainc,  binc,  cinc,  denormA,  denormB,  denormC,  forward_c};
 //; }
 
   assign denormA = ~| a[`$exp_width + $frac_width -1`:`$frac_width`];
@@ -240,10 +244,13 @@ assign  {AB_pp0, AB_pp1} = adder_mode_final?
                              .valid_in(valid0 & adder_mode0), .clk(clk) , .stall(stall), .reset(reset), 
                              .valid_out(valid_ManA) );
 //; } else {
-  assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final} = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0, adder_mode0};
-  assign valid_out = valid0;
+  assign {ExpBase, SignAB, NANAB, InfAB, ZeroAB,SignC, NANC, InfC, ZeroC, adder_mode_final}
+       = {ExpBase0, SignAB0, NANAB0, InfAB0, ZeroAB0,SignC0, NANC0, InfC0, ZeroC0};
   assign {ManA_final, ainc_final} = { ~denormA0 , a0[`$frac_width -1`:0], ainc0};
-  assign valid_ManA = valid0 & adder_mode0;
+
+  // NOT USED WHEN (PIPEDEPTH == 0) !!
+  // assign valid_out = valid0;
+  // assign valid_ManA = valid0 & adder_mode0;
 //; }
 
   /* Aligner*/

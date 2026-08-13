@@ -143,9 +143,9 @@ module `mname` (
 //; parameter( name=>"Flatten" , val=>"YES" , list=>["YES","NO"] );
 
 
-
+//; if ($pipeline_depth>0){
    assign stall_request = 1'b0 ;
-   
+//; }
     logic [`$exp_width + $frac_width`:0] z_preInc,z_preIncm;
     logic [`$product_width+1`:0] AB_pp0, AB_pp1, AB_pp0m, AB_pp1m;
     logic SignAB, NANAB, InfAB, ZeroAB, SignABm, NANABm, InfABm, ZeroABm;
