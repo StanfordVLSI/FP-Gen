@@ -53,7 +53,7 @@ if ! type sed > /dev/null; then
 fi
 
 # Helper functions
-function result0 { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
+function did_it_pass { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
 function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
 function getclk0 { awk '/^clk/{print $2;exit}' $(latest $1 dpnr)/clock.rpt; }
@@ -62,6 +62,14 @@ function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exi
 function lastword { cat $1 | xargs -n 1 | tail -1; }
 function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
 function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
+
+# Sometimes get TWO conflicting slew reports in the log e.g.
+#       WARNING  Max Slew violations found in the following
+#       VERBOSE  No max slew violations found
+# 
+# Want to make sure we get the good notice as well as the bad
+# So e.g. "goodslew <logfile>" should yield "No max slew violations found"
+function goodslew { grep -o "No max slew violations found" $1 | head -1; }
 
 sedwarn='
   /flow.py/d;               # comment1
@@ -80,8 +88,10 @@ for log in $*; do
     # echo "FOUND RUN" $run
     echo $log $run; cd $(dirname $log)
     blog=$(basename $log)
-    res=$(result0 $blog)
-    [ "$res" ] || printf "    FAILED\n\n"; [ "$res" ] || continue
+
+    # First see if we passed; if not, move on to the next test
+    if ! [ "$(did_it_pass $blog)" ]; then printf "    FAILED\n\n"; continue; fi
+
     # run=runs/$(getrun $log)
     if test -d $run; then
       getclk0 $run   | awk '{printf("            Clock %5.1fns (%dMHz)\n", $1, 1000/$1)}'
@@ -91,6 +101,9 @@ for log in $*; do
         echo "          WARNING  Cannot find run directory $run"
     fi
     getwarn $blog | sed 's/^/      /'
+
+    # If goodslew message exists, print the goodslew message
+    awk '/./{printf("             Slew  %s\n", $0)}' <<< "$(goodslew $blog)"
     echo "           PASSED  $res"
     if viol $run;
         then printf "            ERROR  Setup violation %5.2fns\n" $(setup0 $run)
