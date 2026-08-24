@@ -53,11 +53,21 @@ if ! type sed > /dev/null; then
 fi
 
 # Helper functions
+
+# Find most-recent $1 subdir containing $2 pattern
+# E.g. `latest runs/RUN_2026-08-19_15-50-26 dpnr` => "43-openroad-stamidpnr-3"
+function latest { \ls -d $1/* | grep "$2" | tail -1; }
+
 function did_it_pass { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
 function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
-function latest { \ls -d $1/* | grep "$2" | tail -1; }
+
 function getclk0 { awk '/^clk/{print $2;exit}' $(latest $1 dpnr)/clock.rpt; }
 function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
+
+# E.g. `get_tech  runs/RUN_2026-08-19_15-50-26` => "sky130_fd_sc_hd__tt_025C_1v80.lib"
+function get_tech {
+  cat $1/*/yosys-synthesis.log | awk -F/ '/^1. Executing Liberty/{print $NF}'
+}
 
 function lastword { cat $1 | xargs -n 1 | tail -1; }
 function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
@@ -95,6 +105,7 @@ for log in $*; do
     # run=runs/$(getrun $log)
     if test -d $run; then
       getclk0 $run   | awk '{printf("            Clock %5.1fns (%dMHz)\n", $1, 1000/$1)}'
+      get_tech $run  | awk '{printf("       Technology  %s\n",      $1)}'
       critpath0 $run | awk '{printf("    Critical path  %5.2fns\n", $1)}'
       printf "       Setup/Hold  %5.2fns %5.2fns\n" $(setup0 $run) $(hold0 $run)
     else
