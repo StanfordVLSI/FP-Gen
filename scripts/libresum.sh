@@ -71,13 +71,14 @@ function get_tech {
 
 # How many wires were used after initial synthesis? E.g.
 # E.g. `nwires runs/RUN_2026-08-19_15-50-26` => 3420
-function nwires { egrep '[-] wires$' $run/*/yosys-synthesis.log | tail -1; }
+# function nwires { egrep '[-] wires$' $1/*/yosys-synthesis.log | tail -1; }
+function nwires { tac $1/*/yosys-synthesis.log | awk '/[-] wires$/{print $1;exit}'; }
 
 # How many std cells / seq elements as % of total area etc.
 # E.g. `area runs/RUN_2026-08-19_15-50-26` => "13429 33.00%"
 # extracted from matched line e.g. "of which used for sequential elements: 13429 (33.00%)"
-function area { tac $run/*/yosys-synthesis.log | sed -n '/of which/{s/[.][0-9]*//;p;q}'; }
-
+function area { tac $1/*/yosys-synthesis.log | sed -n '/of which/{s/[.][0-9]*//;s/.*: //;s/[()]//g;p;q}'; }
+                
 function lastword { cat $1 | xargs -n 1 | tail -1; }
 function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
 function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
@@ -115,8 +116,8 @@ for log in $*; do
     if test -d $run; then
       getclk0 $run   | awk '{printf("            Clock %5.1fns (%dMHz)\n", $1, 1000/$1)}'
       get_tech $run  | awk '{printf("       Technology  %s\n",      $1)}'
-      nwires=$(nwires $run)
-      echo $nwires    | awk '{printf("       Complexity  %s wires\n",      $1)}'
+      comp="$(nwires $run) $(area $run)"
+      echo $comp     | awk '{printf("       Complexity  %s wires, cell_area %su (%s of total)\n", $1, $2, $3)}'
       critpath0 $run | awk '{printf("    Critical path  %5.2fns\n", $1)}'
       printf "       Setup/Hold  %5.2fns %5.2fns\n" $(setup0 $run) $(hold0 $run)
     else
