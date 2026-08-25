@@ -91,6 +91,9 @@ function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
 # So e.g. "goodslew <logfile>" should yield "No max slew violations found"
 function goodslew { grep -o "No max slew violations found" $1 | head -1; }
 
+
+# Report warnings, errors, and violations found in the log
+
 sedwarn='
   /flow.py/d;               # comment1
   s/    .*//;               # get rid of long strings of blankspace
@@ -102,6 +105,23 @@ sederr='/^\[/{tag=$2}/violation/ && tag~/ERROR/{$1=$1; print $0}'
 function getwarn { egrep 'WARNING.*violations' $1 | sed "$sedwarn"; }
 function geterr { awk "$sederr" $1 | sed 's/ in the following.*//'; }
 function viol { echo $(setup0 $1) | awk '$1 >= 0 { exit 13 }'; }
+
+
+# Report which corners have what setup/hold warnings e.g.
+# `get_tns runs/RUN_2026-08-25_15-11-02` => "WARNING setup violation:  max_ss_100C_1v60  -45.15 ns"
+function get_tns {
+    cat $1/*postpnr/*.json | awk -F'[:, "]*' '
+      /timing__hold/ {which="hold"}
+      /timing__setup/{which="setup"}
+      /tns__corner/{
+        corn=$3; ns=$4; if (ns>=0) next;
+        # print
+        # printf("%5s violation - %s %7.2f ns\n", which, corn, ns)
+        printf("%s %5s %7.2f ns\n", corn, which, ns)
+      }' | sort -k4,4n
+}
+# get_tns /my_designs/fpgen/runs/RUN_2026-08-25_15-11-02
+
 
 for log in $*; do
     run=$(getrun $log)
@@ -123,14 +143,28 @@ for log in $*; do
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
-    getwarn $blog | sed 's/^/      /'
+
+    # Setup/hold warnings
+    getwarn $blog | egrep 'Setup|hold' | sed 's/^/      /'
+
+    # Setup/hold violations, if any
+    sh=$(get_tns $run)
+    if [ "$sh" ]; then
+        echo "$sh" | sed 's/^/                   .../'
+        # hline="        -------------------------------------------------------"; echo "$hline"
+    fi
+
+    # Other warnings
+    getwarn $blog | egrep -v 'Setup|hold' | sed 's/^/      /'
+
 
     # If goodslew message exists, print the goodslew message
-    awk '/./{printf("             Slew  %s\n", $0)}' <<< "$(goodslew $blog)"
+    awk '/./{printf("         BUT ALSO \"%s\"\n", $0)}' <<< "$(goodslew $blog)"
     echo "           PASSED  $res"
     if viol $run;
         then printf "            ERROR  Setup violation %5.2fns\n" $(setup0 $run)
         else geterr $blog | sed 's/^/            ERROR  /'
     fi
+
     echo ""
 done
