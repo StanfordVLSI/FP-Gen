@@ -1,27 +1,41 @@
 #!/bin/bash
 
 HELP='
-Given FPGen-generated verilog in top-level directories `genesis_synth` and `genesis_verif`,
-build and run a docker container that turns the verilog into a GDS-II tape.
+    Given FPGen-generated verilog in dirs `./genesis_synth` and `./genesis_verif`,
+    build and run a docker container that turns the verilog into a GDS-II tape.
 
-USAGE:
-    '$0' < --clock_period [ time ] >
+    USAGE:
+        '$0' < --clock_period [ time ] >
 
-EXAMPLE:
-    make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma.cfg |& tee /tmp/bf-fma-gen.log
-    '$0' 20ns | tee /tmp/bf-fma-tape.log
+    EXAMPLE:
+        make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma.cfg |& tee /tmp/bf-fma-gen.log
+        '$0' 20ns | tee /tmp/bf-fma-tape.log
 '
 [ "$1" == "--help" ] && echo "$HELP" && exit
 
-CLOCK_PERIOD=50  # default value
-egrep -qi "^--(clo|clk|cy)" <<< "$1" && CLOCK_PERIOD=$2
+# Default values
+CONTAINER=
+CLOCK_PERIOD=50
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        -h|--help) echo "$HELP";    exit  ;;
+        --clo*)    CLOCK_PERIOD=$2; shift ;;
+        --clk*)    CLOCK_PERIOD=$2; shift ;;
+        --cy*)     CLOCK_PERIOD=$2; shift ;;
+        --con*)    CONTAINER=$2;    shift ;;
+        *) echo "ERROR: did not recognize option '$1'"; echo "$HELP"; exit 13 ;;
+    esac
+    shift
+done
+
+# Clock period
+# egrep -qi "^--(clo|clk|cy)" <<< "$1" && CLOCK_PERIOD=$2
 units=$(tr -d '[0-9]' <<< "$CLOCK_PERIOD")          # E.g. "ns" or "ps"
 CLOCK_PERIOD=$(tr -cd '[0-9]' <<< "$CLOCK_PERIOD")   # Just the digits e.g. "50" but not "50ns"
 grep -qi ps <<< "$units" && echo "ERROR Picoseconds not supported (yet)"
 grep -qi us <<< "$units" && echo "ERROR Microseconds not supported (yet)"
 grep -qi ms <<< "$units" && echo "ERROR Milliseconds not supported (yet)"
 echo "Will use clock period = $CLOCK_PERIOD ns"
-
 
 # Make sure you're in the right place maybe, using the dumbest possible test maybe
 # TODO: could have a command-line arg specifying where to find verilog files...
@@ -47,14 +61,44 @@ function INFO {
     echo "=============================================================================="
 }
 
+
+# Default temp name for workspace, container, e.g. "tapeout_3435"
+# testname=$(mktemp -u tapeout_XXXXX)
+testname=$(printf "%04d" $[RANDOM%10000])
+
+
+##############################################################################
+INFO "Prepare a docker container"
+
+# If user specified a container name, use that; else generate a random name
+[ "$CONTAINER" ] && container="$CONTAINER" || container="tapeout_$testname"
+
+# Make a list of existing librelane containers
+containers=$(docker ps | awk '$2~/librelane/{print $NF}')
+# if [ "$containers" ]; then echo "Found existing librelane container(s)"; echo "$containers" | sed 's/^/    - /'; fi
+
+# If container exists already, then use that
+if grep -q " $container " " $containers "; then
+    echo "Will use existing container '$container' as requested"
+
+# Else build a new container
+else
+    docker run -id --name $container --network host ghcr.io/librelane/librelane:3.0.4 sh
+    echo "Built new docker container '$container'"
+fi    
+
+
+##############################################################################
 INFO 'Prepare a workspace e.g. "./tmpdir/tapeout_ZRnNq/"'
 
-testname=$(mktemp -u tapeout_XXXXX)
 testdir=tmpdir/$testname
 mkdir -p $testdir/rtl
 echo Workspace will be ./$testdir
 
+##############################################################################
 INFO 'FIND the verilog and add it to the workspace'
+
+
 
 # Copy the verilog to the workspace
 set -x
@@ -64,12 +108,7 @@ rm $testdir/rtl/FPGen*  # Things break if we include the testbench-related files
 set +x
 
 
-container=tmp_$testname
 INFO 'Install librelane in docker container "$container"'
-
-# Build the container
-docker run -id --name $container --network host ghcr.io/librelane/librelane:3.0.4 sh
-echo "Built new docker container '$container'"
 
 # Install the librelane
 docker exec $container git clone https://github.com/librelane/librelane/ ./librelane
