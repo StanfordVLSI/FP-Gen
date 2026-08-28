@@ -59,7 +59,6 @@ fi
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
 
 function did_it_pass { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
-function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
 
 function getclk0 { awk '/^clk/{print $2;exit}' $(latest $1 dpnr)/clock.rpt; }
 function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
@@ -108,22 +107,25 @@ function viol { echo $(setup0 $1) | awk '$1 >= 0 { exit 13 }'; }
 
 
 # Report which corners have what setup/hold warnings e.g.
-# `get_tns runs/RUN_2026-08-25_15-11-02` => "WARNING setup violation:  max_ss_100C_1v60  -45.15 ns"
-function get_tns {
-    cat $1/*postpnr/*.json | awk -F'[:, "]*' '
-      /timing__hold/ {which="hold"}
-      /timing__setup/{which="setup"}
-      /tns__corner/{
+# `get_wns runs/RUN_2026-08-25_15-11-02` => "WARNING setup violation:  max_ss_100C_1v60  -45.15 ns"
+# "tac" lists results in reverse order so we only report the LAST result in the dir
+function get_wns {
+   d=$1; last_state=$(\ls -1td $d/*/state_out.json | head -1)
+   cat $last_state | awk -F'[:, "]*' '
+      /hold__wns__corner/  {which="hold"}
+      /setup__wns__corner/ {which="setup"}
+      /wns__corner/ {
         corn=$3; ns=$4; if (ns>=0) next;
-        # print
         # printf("%5s violation - %s %7.2f ns\n", which, corn, ns)
-        printf("%s %5s %7.2f ns\n", corn, which, ns)
-      }' | sort -k4,4n
+        printf("%s %5s %9.2f ns\n", corn, which, ns)
+   }' | sort -k3,3rn
 }
-# get_tns /my_designs/fpgen/runs/RUN_2026-08-25_15-11-02
+# get_wns /my_designs/fpgen/runs/RUN_2026-08-25_15-11-02
 
-
+function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
+topdir=$(pwd)
 for log in $*; do
+    cd $topdir
     run=$(getrun $log)
     # echo "FOUND RUN" $run
     echo $log $run; cd $(dirname $log)
@@ -148,7 +150,7 @@ for log in $*; do
     getwarn $blog | egrep 'Setup|hold' | sed 's/^/      /'
 
     # Setup/hold violations, if any
-    sh=$(get_tns $run)
+    sh=$(get_wns $run)
     if [ "$sh" ]; then
         echo "$sh" | sed 's/^/                   .../'
         # hline="        -------------------------------------------------------"; echo "$hline"
