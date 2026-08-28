@@ -58,7 +58,8 @@ fi
 # E.g. `latest runs/RUN_2026-08-19_15-50-26 dpnr` => "43-openroad-stamidpnr-3"
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
 
-function did_it_pass { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
+# If all three final checks pass, this will yield something like "Antenna DRC LVS" etc
+function result0 { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
 
 function getclk0 { awk '/^clk/{print $2;exit}' $(latest $1 dpnr)/clock.rpt; }
 function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
@@ -106,12 +107,15 @@ function geterr { awk "$sederr" $1 | sed 's/ in the following.*//'; }
 function viol { echo $(setup0 $1) | awk '$1 >= 0 { exit 13 }'; }
 
 
-# Report which corners have what setup/hold warnings e.g.
+# Given a run dir "$1", find the `state_out.json` file with the most recent timestamp
+# e.g. `final_state RUN_2026...10` => "RUN_2026...10/76-misc-repo.../state_out.json"
+function final_state { \ls -t $1/*/state_out.json | head -1; }
+
+# Given a json file "$1", report corners that have negative setup/hold slack e.g.
 # `get_wns runs/RUN_2026-08-25_15-11-02` => "WARNING setup violation:  max_ss_100C_1v60  -45.15 ns"
 # "tac" lists results in reverse order so we only report the LAST result in the dir
 function get_wns {
-   d=$1; last_state=$(\ls -1td $d/*/state_out.json | head -1)
-   cat $last_state | awk -F'[:, "]*' '
+   d=$1; cat $(final_state $d) | awk -F'[:, "]*' '
       /hold__wns__corner/  {which="hold"}
       /setup__wns__corner/ {which="setup"}
       /wns__corner/ {
@@ -131,9 +135,6 @@ for log in $*; do
     echo $log $run; cd $(dirname $log)
     blog=$(basename $log)
 
-    # First see if we passed; if not, move on to the next test
-    if ! [ "$(did_it_pass $blog)" ]; then printf "    FAILED\n\n"; continue; fi
-
     # run=runs/$(getrun $log)
     if test -d $run; then
       getclk0 $run   | awk '{printf("            Clock %5.1fns (%dMHz)\n", $1, 1000/$1)}'
@@ -141,7 +142,7 @@ for log in $*; do
       comp="$(nwires $run) $(area $run)"
       echo $comp     | awk '{printf("       Complexity  %s wires, cell_area %su (%s of total)\n", $1, $2, $3)}'
       critpath0 $run | awk '{printf("    Critical path  %5.2fns\n", $1)}'
-      printf "       Setup/Hold  %5.2fns %5.2fns\n" $(setup0 $run) $(hold0 $run)
+      printf "       Setup/Hold  %.2fns / %.2fns (slack)\n" $(setup0 $run) $(hold0 $run)
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
@@ -159,10 +160,13 @@ for log in $*; do
     # Other warnings
     getwarn $blog | egrep -v 'Setup|hold' | sed 's/^/      /'
 
-
     # If goodslew message exists, print the goodslew message
     awk '/./{printf("         BUT ALSO \"%s\"\n", $0)}' <<< "$(goodslew $blog)"
-    echo "           PASSED  $res"
+
+    # 
+    res=$(result0 $blog)
+    [ "$res" ] || printf "    FAILED final checks :(\n"  # [ "$res" ] || continue
+    [ "$res" ] && printf "           PASSED  $res\n"
     if viol $run;
         then printf "            ERROR  Setup violation %5.2fns\n" $(setup0 $run)
         else geterr $blog | sed 's/^/            ERROR  /'
