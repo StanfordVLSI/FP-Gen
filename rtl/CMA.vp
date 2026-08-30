@@ -192,7 +192,7 @@ module `mname` (
    assign {denormA_P1, denormC} = {ZeroExpA_P1, ZeroExpC};
    
 //; } else {
-  assign {denormA_P1, demormC} = 0;
+   assign {denormA_P1, denormC} = 0;
 //; }
 
 //; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
