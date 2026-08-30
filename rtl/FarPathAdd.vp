@@ -215,7 +215,7 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
                                .valid_in(valid_P2), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ExtendedExpSum_P3, ManB_overnormal_P3, sumUpper_P3, sumMiddleSticky_P3, RSticky_P3, SignSum_out, ZeroSum_out }),
                                .valid_out(valid_P3) );
-   assign valid_out = valid__P3;
+   assign valid_out = valid_P3;
    //; } else {
    assign {ExtendedExpSum_P3, ManB_overnormal_P3, sumUpper_P3, sumMiddleSticky_P3, RSticky_P3, SignSum_out, ZeroSum_out } = {ExtendedExpSum_P2, ManB_overnormal_P2, sumUpper_P2, sumMiddleSticky_P2, RSticky_P2, SignSum_P2, ZeroSum_P2  };
    //; }
