@@ -67,23 +67,23 @@ function std_cell_library { getconf STD_CELL_LIBRARY; }
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
 function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
 
-# How many wires were used after initial synthesis? E.g.
-# E.g. `nwires runs/RUN_2026-08-19_15-50-26` => 3420
-# function nwires { egrep '[-] wires$' $1/*/yosys-synthesis.log | tail -1; }
-function nwires { tac $1/*/yosys-synthesis.log | awk '/[-] wires$/{print $1;exit}'; }
+# Complexity in terms of nwires, area
+function complexity {
 
-# How many std cells / seq elements as % of total area etc.
-# E.g. `area runs/RUN_2026-08-19_15-50-26` => "13429 33.00%"
-# extracted from matched line e.g. "of which used for sequential elements: 13429 (33.00%)"
-function area { tac $1/*/yosys-synthesis.log | sed -n '/of which/{s/[.][0-9]*//;s/.*: //;s/[()]//g;p;q}'; }
-                
-# bookmark
-# FIXME This is not good; should instead look at final value(s) in final state*.json see?
-function lastword { cat $1 | xargs -n 1 | tail -1; }
-function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
+    # How many wires were used after initial synthesis? E.g.
+    # E.g. `nwires runs/RUN_2026-08-19_15-50-26` => 3420
+    # (FIXME Treating $run as a global, FIXME should be capitalized I spose)
+    function nwires { tac $run/*/yosys-synthesis.log | awk '/[-] wires$/{printf $1;exit}'; }
 
-# function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
+    # How many std cells / seq elements as % of total area etc.
+    # E.g. `area runs/RUN_2026-08-19_15-50-26` => "13429 33.00%"
+    # extracted from matched line e.g. "of which used for sequential elements: 13429 (33.00%)"
+    function area { tac $run/*/yosys-synthesis.log | sed -n '/of which/{s/[.][0-9]*//;s/.*: //;s/[()]//g;p;q}'; }
 
+    printf "%s wires, cell_area %su (%s of total)" $(nwires) $(area)
+}
+
+# nom_tt_ws: Find worst-case max/min (setup/hold) slack in nom_tt corner (pos or neg)
 # E.g. `nom_tt_ws max` => "43-openroad-stamidpnr-3/ws.max.rpt:nom_tt_025C_1v80: -0.012046364247087247"
 # Use "$run/" b/c "$run" does not work with "find" if "$run" is symlink
 function nom_tt_ws { (cd $run; egrep ^nom_tt $(find * -name ws.$1.rpt) | awk 'END{print $2}'); }
@@ -96,9 +96,7 @@ function nom_tt_ws { (cd $run; egrep ^nom_tt $(find * -name ws.$1.rpt) | awk 'EN
 # So e.g. "goodslew <logfile>" should yield "No max slew violations found"
 function goodslew { grep -o "No max slew violations found" $1 | head -1; }
 
-# bookmark
-
-# Report warnings, errors, and violations found in the log
+# Find warnings, errors, and violations found in the log, e.g. slew violations are pretty common
 function getwarn {
     sedwarn='
       /flow.py/d;               # comment1
@@ -110,49 +108,45 @@ function getwarn {
     egrep 'WARNING.*violations' $1 | sed "$sedwarn";
 }
 
-# Given a run dir "$1", find the `state_out.json` file with the most recent timestamp
-# e.g. `final_state RUN_2026...10` => "RUN_2026...10/76-misc-repo.../state_out.json"
-function final_state { \ls -t $1/*/state_out.json | head -1; }
-
 # Given a json file "$1", report corners that have negative setup/hold slack e.g.
-# `get_wns RUN_2026-08-25_15 setup`
-#     => "min_ss_100C_1v60 -6.48 ns\nnom_ss_100C_1v60 -6.79 ns"
+# `get_wns RUN_2026-08-25_15 setup` => "min_ss_80C_1v -6.48 ns\nnom_ss_80C_1v -6.79 ns"
 function get_wns {
-   d=$1; sh=$2; cat $(final_state $d) | awk -F'[:, "]*' '
-      /'$sh'__wns__corner/ { corn=$3; ns=$4; if (ns>=0) next   }
-      /'$sh'__wns__corner/ { printf("%s %7.2f ns\n", corn, ns) }
-      ' | sort -k2,2rn
+    # Given a run dir "$1", find the `state_out.json` file with the most recent timestamp
+    # e.g. `final_state RUN_2026...10` => "RUN_2026...10/76-misc-repo.../state_out.json"
+    rundir=$1; final_state=$(\ls -t $rundir/*/state_out.json | head -1)
+    sh=$2; cat $final_state | awk -F'[:, "]*' '
+        /'$sh'__wns__corner/ { corn=$3; ns=$4; if (ns>=0) next   }
+        /'$sh'__wns__corner/ { printf("%s %7.2f ns\n", corn, ns) }
+    ' | sort -k2,2rn
 }
-# get_wns /my_designs/fpgen/runs/RUN_2026-08-25_15-11-02
 
 # Print errors but/and also save them to print at the end
 function printerr { echo "$1"; deferred_errors="$deferred_errors$1\n"; }
 function finalerr { echo "$deferred_errors"; }
 
+# bookmark
+
 function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
 topdir=$(pwd)
 for log in $*; do
-    deferred_errors=""
-    cd $topdir
-    run=$(getrun $log)
-    # echo "FOUND RUN" $run
+    cd $topdir          # Back to safety
+    run=$(getrun $log)  # Find the rundir associated with this log file
+    deferred_errors=""  # Errors for this log will be recorded in "deferred_errors"
+
     echo $log $run; cd $(dirname $log)
     blog=$(basename $log)
 
-    # run=runs/$(getrun $log)
     if test -d $run; then
       design_name      | awk '{printf("%17s  %s\n", $1, $2)}'                    # "FMA_unq1"
       clock_period     | awk '{printf("%17s  %.1fns (%dMHz)\n",$1,$2,1000/$2)}'  # "30"
       std_cell_library | awk '{printf("%17s  %s\n", $1, $2)}'                    # "sky130_fd_sc_hd"
-      
-      comp="$(nwires $run) $(area $run)"
-      echo $comp     | awk '{printf("       Complexity  %s wires, cell_area %su (%s of total)\n", $1, $2, $3)}'
+      complexity       | awk '{printf("%17s  %s\n","Complexity", $0)}'
+#bookmark
       critpath0 $run | awk '{printf("    Critical path  %5.2fns\n", $1)}'
       printf "       Setup/Hold  %.2fns / %.2fns (slack, nom_tt)\n" $(nom_tt_ws max) $(nom_tt_ws min)
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
-
 
     # "WARNING Setup violations found" => *Warning* if setup violations in non-tt corner
     setup_warn=$(printf "%17s  %s"  "WARNING" "Setup violations found")
@@ -169,7 +163,7 @@ for log in $*; do
     grep -A 6 ERROR $blog | grep -q 'Hold violations found' && printerr "$hold_err"
     get_wns $run hold | awk '{printf("%17s  ...%s\n", "", $0)}'
 
-    # Other (not setup or hold) warnings
+    # Other (not setup or hold) warnings, e.g. slew violations are pretty common
     getwarn $blog | egrep -v 'Setup|hold' | sed 's/^/      /'
 
     # If goodslew message exists, print the goodslew message
@@ -187,3 +181,10 @@ done
 
 
 # TRASH
+# FIXED maybe ready to delete maybe
+# # FIXME This is not good; should instead look at final value(s) in final state*.json see?
+# function lastword { cat $1 | xargs -n 1 | tail -1; }
+# function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
+
+# function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
+
