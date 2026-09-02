@@ -135,8 +135,14 @@ set +x
 INFO 'Launch the librelane design flow!'
 set -x
 # log=fpgen.log
-log=fpgen_$timestamp.log  # E.g. "fpgen_0826_1130.log"
-docker exec $container bash -c '(cd ./my_designs/fpgen && librelane fpgen.json |& tee '$log')'
+# log=fpgen_$timestamp.log  # E.g. "fpgen_0826_1130.log"
+test -f $testdir/rtl/FMA_unq1.v && design=FMA || design=CMA
+log=${timestamp}-${design}-${CLOCK_PERIOD}.log   # E.g. 0828-1843-FMA-11.log
+
+# For consistent timestamps, need e.g.
+# echo export TZ=/nix/store/xaa7...025b/share/zoneinfo/America/Los_Angeles >> ~/.bashrc
+# and then use --login on the bash command
+docker exec $container bash --login -c '(cd ./my_designs/fpgen && librelane fpgen.json |& tee '$log')'
 docker cp $container:./my_designs/fpgen/$log $testdir/$log
 set +x
 
