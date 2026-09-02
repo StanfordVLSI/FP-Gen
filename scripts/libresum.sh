@@ -58,9 +58,14 @@ fi
 #   getconf <rundir> DESIGN_NAME  => "DESIGN_NAME    FMA_unq1"
 #   getconf <rundir> CLOCK_PERIOD => "CLOCK_PERIOD 30"
 function getconf { cat $run/*/config.json | tr ',":' ' ' | awk '$1=="'$1'"{print;exit}'; }
-function design_name      { getconf DESIGN_NAME;      }
-function clock_period     { getconf CLOCK_PERIOD;     }
-function std_cell_library { getconf STD_CELL_LIBRARY; }
+
+# E.g. "FMA_unq1 (sky130_fd_sc_hd)"
+function name_proc { printf "%s (%s)" $(design_name) $(std_cell_library); }
+function design_name      { getconf DESIGN_NAME      | awk '{print $NF}'; }
+function std_cell_library { getconf STD_CELL_LIBRARY | awk '{print $NF}'; }
+
+# E.g. "15.0ns (66MHz)"
+function clock_period { getconf CLOCK_PERIOD | awk '{printf("%.1fns (%dMHz)\n",$2,1000/$2)}'; }
 
 # Find most-recent $1 subdir containing $2 pattern
 # E.g. `latest runs/RUN_2026-08-19_15-50-26 dpnr` => "43-openroad-stamidpnr-3"
@@ -138,13 +143,11 @@ for log in $*; do
     blog=$(basename $log)
 
     if test -d $run; then
-      design_name      | awk '{printf("%17s  %s\n", $1, $2)}'                    # "FMA_unq1"
-      clock_period     | awk '{printf("%17s  %.1fns (%dMHz)\n",$1,$2,1000/$2)}'  # "30"
-      std_cell_library | awk '{printf("%17s  %s\n", $1, $2)}'                    # "sky130_fd_sc_hd"
-
-      complexity       | awk '{printf("%17s  %s\n",      "Complexity",    $0)}'
-      critpath0        | awk '{printf("%17s  %5.2fns\n", "Critical path", $1)}'
-      tt_set_hold      | awk '{printf("%17s  %s\n",      "Setup/Hold",    $0)}'
+        name_proc    | awk '{printf("%17s  %s\n",      "DESIGN",        $0)}'
+        clock_period | awk '{printf("%17s  %s\n",      "CLOCK_PERIOD",  $0)}'
+        critpath0    | awk '{printf("%17s  %5.2fns\n", "Critical path", $1)}'
+        tt_set_hold  | awk '{printf("%17s  %s\n",      "Setup/Hold",    $0)}'
+        complexity   | awk '{printf("%17s  %s\n",      "Complexity",    $0)}'
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
