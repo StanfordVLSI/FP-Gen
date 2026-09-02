@@ -65,7 +65,7 @@ function std_cell_library { getconf STD_CELL_LIBRARY; }
 # Find most-recent $1 subdir containing $2 pattern
 # E.g. `latest runs/RUN_2026-08-19_15-50-26 dpnr` => "43-openroad-stamidpnr-3"
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
-function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
+function critpath0 { cat $(latest $run dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
 
 # Complexity in terms of nwires, area
 function complexity {
@@ -86,7 +86,8 @@ function complexity {
 # nom_tt_ws: Find worst-case max/min (setup/hold) slack in nom_tt corner (pos or neg)
 # E.g. `nom_tt_ws max` => "43-openroad-stamidpnr-3/ws.max.rpt:nom_tt_025C_1v80: -0.012046364247087247"
 # Use "$run/" b/c "$run" does not work with "find" if "$run" is symlink
-function nom_tt_ws { (cd $run; egrep ^nom_tt $(find * -name ws.$1.rpt) | awk 'END{print $2}'); }
+function nom_tt_ws   { (cd $run; egrep ^nom_tt $(find * -name ws.$1.rpt) | awk 'END{print $2}'); }
+function tt_set_hold { printf "%.2fns / %.2fns (slack, nom_tt)" $(nom_tt_ws max) $(nom_tt_ws min); }
 
 # Sometimes get TWO conflicting slew reports in the log e.g.
 #       WARNING  Max Slew violations found in the following
@@ -124,9 +125,9 @@ function get_wns {
 function printerr { echo "$1"; deferred_errors="$deferred_errors$1\n"; }
 function finalerr { echo "$deferred_errors"; }
 
-# bookmark
-
+# Get the run dir associated with log file $1 e.g. `getrun fpgen.log` => "runs/RUN_2026-08-27_23-57-26"
 function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
+
 topdir=$(pwd)
 for log in $*; do
     cd $topdir          # Back to safety
@@ -140,10 +141,10 @@ for log in $*; do
       design_name      | awk '{printf("%17s  %s\n", $1, $2)}'                    # "FMA_unq1"
       clock_period     | awk '{printf("%17s  %.1fns (%dMHz)\n",$1,$2,1000/$2)}'  # "30"
       std_cell_library | awk '{printf("%17s  %s\n", $1, $2)}'                    # "sky130_fd_sc_hd"
-      complexity       | awk '{printf("%17s  %s\n","Complexity", $0)}'
-#bookmark
-      critpath0 $run | awk '{printf("    Critical path  %5.2fns\n", $1)}'
-      printf "       Setup/Hold  %.2fns / %.2fns (slack, nom_tt)\n" $(nom_tt_ws max) $(nom_tt_ws min)
+
+      complexity       | awk '{printf("%17s  %s\n",      "Complexity",    $0)}'
+      critpath0        | awk '{printf("%17s  %5.2fns\n", "Critical path", $1)}'
+      tt_set_hold      | awk '{printf("%17s  %s\n",      "Setup/Hold",    $0)}'
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
@@ -172,19 +173,10 @@ for log in $*; do
     # If all three final checks pass, this will yield something like "Antenna DRC LVS" etc
     res=$(awk '/Passed/{printf " "p}{p=$NF}' $blog | cut -b 2-)
 
-    [ "$res" ] || printf "    FAILED final checks :(\n"  # [ "$res" ] || continue
-    [ "$res" ] && printf "           PASSED  $res\n"
+    # "PASSED  Antenna LVS DRC" or no
+   [ "$res" ] && printf "           PASSED  $res\n"
+   [ "$res" ] || printf "    FAILED final checks :(\n"  # Different indent for emphasis
 
     # Recap errors at end of summary
     echo -e "$deferred_errors"  # "-e" prints "\n" as newline see?
 done
-
-
-# TRASH
-# FIXED maybe ready to delete maybe
-# # FIXME This is not good; should instead look at final value(s) in final state*.json see?
-# function lastword { cat $1 | xargs -n 1 | tail -1; }
-# function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
-
-# function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
-
