@@ -109,19 +109,6 @@ function getwarn {
     '
     egrep 'WARNING.*violations' $1 | sed "$sedwarn";
 }
-function geterr {
-    sederr='/^\[/{tag=$2}/violation/ && tag~/ERROR/{$1=$1; print $0}'
-    awk "$sederr" $1 | sed 's/ in the following.*//'
-}
-function viol { echo $(setup0 $1) | awk '$1 >= 0 { exit 13 }'; }
-
-
-
-
-
-# function getwarn { egrep 'WARNING.*violations' $1 | sed "$sedwarn"; }
-
-
 
 # Given a run dir "$1", find the `state_out.json` file with the most recent timestamp
 # e.g. `final_state RUN_2026...10` => "RUN_2026...10/76-misc-repo.../state_out.json"
@@ -138,11 +125,14 @@ function get_wns {
 }
 # get_wns /my_designs/fpgen/runs/RUN_2026-08-25_15-11-02
 
-# function setup_error {
+# Print errors but/and also save them to print at the end
+function printerr { echo "$1"; deferred_errors="$deferred_errors$1\n"; }
+function finalerr { echo "$deferred_errors"; }
 
 function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
 topdir=$(pwd)
 for log in $*; do
+    deferred_errors=""
     cd $topdir
     run=$(getrun $log)
     # echo "FOUND RUN" $run
@@ -163,31 +153,21 @@ for log in $*; do
         echo "          WARNING  Cannot find run directory $run"
     fi
 
-    deferred_errors=""
 
     # "WARNING Setup violations found" => *Warning* if setup violations in non-tt corner
-    setup_error=$(printf "%17s  %s\n"  "WARNING" "Setup violations found")
-    egrep -q "WARNING.*Setup viol" $blog && echo "$setup_error" && deferred_errors="$deferred_errors$setup_error\n"
+    setup_warn=$(printf "%17s  %s"  "WARNING" "Setup violations found")
+    egrep -q "WARNING.*Setup viol" $blog && echo "$setup_warn"
     get_wns $run setup | grep -v tt | awk '{printf("%17s  ...%s\n", "", $0)}'
 
     # "ERROR Setup violations in tt corner"
-    grep -A 6 ERROR $blog | grep -q 'Setup violations found' && \
-        printf "%17s  %s\n"  "ERROR" "Setup violations found in tt corner"
+    setup_err=$(printf "%17s  %s"  "ERROR" "Setup violations found in tt corner")
+    grep -A 6 ERROR $blog | grep -q 'Setup violations found' && printerr "$setup_err"
     get_wns $run setup | grep tt | awk '{printf("%17s  ...%s\n", "", $0)}'
 
     # "ERROR Hold violations found" => *Error* if hold violations found in any corner :(
-    grep -A 6 ERROR $blog | grep -q 'Hold violations found' && \
-        printf "%17s  %s\n"  "ERROR" "Hold violations found"
+    hold_err=$(printf "%17s  %s\n"  "ERROR" "Hold violations found")
+    grep -A 6 ERROR $blog | grep -q 'Hold violations found' && printerr "$hold_err"
     get_wns $run hold | awk '{printf("%17s  ...%s\n", "", $0)}'
-
-
-
-#     printf "%17s  %s\n" <<< $(get_wns $run | grep -i setup)
-#     exit
-#     get_wns $run | grep -i hold
-
-# TODO "ERROR Hold violations found
-
 
     # Other (not setup or hold) warnings
     getwarn $blog | egrep -v 'Setup|hold' | sed 's/^/      /'
@@ -200,106 +180,10 @@ for log in $*; do
 
     [ "$res" ] || printf "    FAILED final checks :(\n"  # [ "$res" ] || continue
     [ "$res" ] && printf "           PASSED  $res\n"
-    if viol $run;
-        then printf "            ERROR  Setup violation %5.2fns\n" $(setup0 $run)
-        else geterr $blog | sed 's/^/            ERROR  /'
-    fi
 
-    echo ""
+    # Recap errors at end of summary
+    echo -e "$deferred_errors"  # "-e" prints "\n" as newline see?
 done
 
 
 # TRASH
-# function result0 { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
-
-
-# Get clock period from pnr report
-# function getclk0 { awk '/^clk/{print $2;exit}' $(latest $1 dpnr)/clock.rpt; }
-
-# BETTER
-#         awk '{printf("%17s  %s\n", "Name", $2)}'                       <<< $(getconf DESIGN_NAME)   # "FMA_unq1"
-#         awk '{printf("%17s  %.1fns (%dMHz)\n", "Clock", $2, 1000/$2)}' <<< $(getconf CLOCK_PERIOD)  # "30"
-#         awk '{printf("%17s  %s\n", "Name", $2)}'              <<< $(getconf $run DESIGN_NAME)   # "FMA_unq1"
-#         awk '{printf("%17s  %.1fns (%dMHz)\n", $2, 1000/$2)}' <<< $(getconf $run CLOCK_PERIOD)  # "30"
-#         awk '{printf("%17s  %s\n", "Name", $2)}'                       <<< $(design_name)   # "FMA_unq1"
-#         awk '{printf("%17s  %.1fns (%dMHz)\n", "Clock", $2, 1000/$2)}' <<< $(clock_period)  # "30"
-
-#         design_name  | awk '{printf("%17s  %s\n", "Name", $2)}'                        # "FMA_unq1"
-#         clock_period | awk '{printf("%17s  %.1fns (%dMHz)\n", "Clock", $2, 1000/$2)}'  # "30"
-
-# function getclk0 { getconf $1 CLOCK_PERIOD; }  # E.g. "30" (30ns)
-# function getname { getconf $1 DESIGN_NAME | sed 's/_unq.*//'; }  # E.g. "FMA"
-
-# function getconf { cat $1/*/config.json | awk -F'"' '$1=="'$2'"{print $3}'; }
-# function getconf { cat $1/*/config.json | awk -F'"' '$2=="'$2'"{print $2,$4; exit}'; }
-# function getconf { cat $1/*/config.json | awk -F'"' '/DESIGN_NAME/{print $2,$4; exit}' | head
-#                    
-#                    cat $1/*/config.json | awk -F'"' '/DESIGN_NAME/{print $2,$4; exit}' | head
-# getconf $run DESIGN_NAME
-# cat $run/*/config.json | tr ',":' ' ' | awk '$1=="'$key'"{print}' | head
-
-
-
-# function getconf { cat $1/*/config.json | tr ',":' ' ' | awk '$1=="'$2'"{print;exit}'; }
-      # getclk0 $run   | awk '{printf("            Clock  %.1fns (%dMHz)\n", $2, 1000/$2)}'
-      # get_tech $run  | awk '{printf("       Technology  %s\n",      $1)}'
-
-# # E.g. `get_tech runs/RUN_2026-08-19_15-50-26` => "sky130_fd_sc_hd__tt_025C_1v80.lib"
-# function get_tech {
-#   cat $1/*/yosys-synthesis.log | awk -F/ '/^1. Executing Liberty/{print $NF}'
-
-# function nom_tt_ws_max { cat $(find $run -name ws.max.rpt) | egrep ^nom_tt | tail -1; }
-# function nom_tt_ws_min { cat $(find $run -name ws.min.rpt) | egrep ^nom_tt | tail -1; }
-
-# function nom_tt_ws_max { tac $(find $run/ -name ws.max.rpt) | awk '/^nom_tt/{print $2; exit}'; }
-# function nom_tt_ws_min { tac $(find $run/ -name ws.min.rpt) | awk '/^nom_tt/{print $2; exit}'; }
-
-# E.g. `nom_tt_ws max` => "43-openroad-stamidpnr-3/ws.max.rpt:nom_tt_025C_1v80: -0.012046364247087247"
-# Use "$run/" b/c "$run" does not work with "find" if "$run" is symlink
-# function nom_tt_ws { egrep ^nom_tt $(find $run/ -name ws.$1.rpt); }
-
-# function nom_tt_ws { egrep ^nom_tt $(find $run/ -name ws.$1.rpt) | awk 'END{print $2}'; }
-# function nom_tt_ws { egrep ^nom_tt $(find $run/ -name ws.$1.rpt) | tail -1; }
-
-# nom_tt_ws max
-# nom_tt_ws min
-
-# FIXED!!!
-# okay but look we still got this problem:
-# ./my_designs/fpgen/0828-1843-FMA-11.log runs/RUN_2026-08-28_18-43-59
-#        Setup/Hold  -2.91ns / 0.21ns (slack, nom_tt)
-#           WARNING  Setup violations found
-#                    ...nom_tt_025C_1v80 setup     -0.32 ns
-
-# nom_tt_ws_max
-# nom_tt_ws_min
-
-      # printf "       Setup/Hold  %.2fns / %.2fns (slack, nom_tt)\n" $(setup0 $run) $(hold0 $run)
-      # printf "       Setup/Hold  %.2fns / %.2fns (slack, nom_tt)\n" $(nom_tt_ws_max $run) $(hold0 $run)
-      # printf "       Setup/Hold  %.2fns / %.2fns (slack, nom_tt)\n" $(nom_tt_ws_max) $(nom_tt_ws_min)
-
-#     # Setup/hold violations, if any
-#     sh=$(get_wns $run)
-#     if [ "$sh" ]; then
-#         echo "$sh" | sed 's/^/                   .../'
-#         # hline="        -------------------------------------------------------"; echo "$hline"
-#     fi
-
-# Linearize weird librelane log e.g.
-# INPUT
-# [10:33:23] ERROR    The following error was encountered while    __main__.py:189
-#                     running the flow:                                           
-#                     One or more deferred errors were                            
-#                     encountered:                                                
-#                     Hold violations found in the following                      
-#                     corners:                                                    
-#                     * max_ss_100C_1v60                                          
-# OUTPUT
-# [10:33:23] ERROR    The following error was encountered while    __main__.py:189
-#                     running the flow:                                           
-#                     One or more deferred errors were                            
-#                     encountered:                                                
-#                     Hold violations found in the following                      
-#                     corners:                                                    
-
-#     get_wns $run | grep -i setup
