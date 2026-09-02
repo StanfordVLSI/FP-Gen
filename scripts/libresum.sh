@@ -145,7 +145,7 @@ for log in $*; do
     if test -d $run; then
         name_proc    | awk '{printf("%17s  %s\n",      "DESIGN",        $0)}'
         clock_period | awk '{printf("%17s  %s\n",      "CLOCK_PERIOD",  $0)}'
-        critpath0    | awk '{printf("%17s  %5.2fns\n", "Critical path", $1)}'
+        critpath0    | awk '{printf("%17s  %.2fns\n", "Critical path", $1)}'
         tt_set_hold  | awk '{printf("%17s  %s\n",      "Setup/Hold",    $0)}'
         complexity   | awk '{printf("%17s  %s\n",      "Complexity",    $0)}'
     else
@@ -155,17 +155,17 @@ for log in $*; do
     # "WARNING Setup violations found" => *Warning* if setup violations in non-tt corner
     setup_warn=$(printf "%17s  %s"  "WARNING" "Setup violations found")
     egrep -q "WARNING.*Setup viol" $blog && echo "$setup_warn"
-    get_wns $run setup | grep -v tt | awk '{printf("%17s  ...%s\n", "", $0)}'
+    get_wns $run setup | grep -v tt | awk '{printf("%17s   * %s\n", "", $0)}'
 
     # "ERROR Setup violations in tt corner"
     setup_err=$(printf "%17s  %s"  "ERROR" "Setup violations found in tt corner")
     grep -A 6 ERROR $blog | grep -q 'Setup violations found' && printerr "$setup_err"
-    get_wns $run setup | grep tt | awk '{printf("%17s  ...%s\n", "", $0)}'
+    get_wns $run setup | grep tt | awk '{printf("%17s   * %s\n", "", $0)}'
 
     # "ERROR Hold violations found" => *Error* if hold violations found in any corner :(
     hold_err=$(printf "%17s  %s\n"  "ERROR" "Hold violations found")
     grep -A 6 ERROR $blog | grep -q 'Hold violations found' && printerr "$hold_err"
-    get_wns $run hold | awk '{printf("%17s  ...%s\n", "", $0)}'
+    get_wns $run hold | awk '{printf("%17s   * %s\n", "", $0)}'
 
     # Other (not setup or hold) warnings, e.g. slew violations are pretty common
     getwarn $blog | egrep -v 'Setup|hold' | sed 's/^/      /'
