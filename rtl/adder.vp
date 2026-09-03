@@ -10,6 +10,9 @@
 //; my $AdderType = parameter( name=>'AdderType', val=>'DesignWare' ,
 //;                            doc=>'!implementation! AdderType: Topology for the Propogate Generate tree.  Ripple type indicates that a ripple chain should be used rather than a tree. Can also request a sklansky topology, or can simply use a Designware default adder. Legal Values: Ripple Sklansky Designware !IMPLEMENTATION!' ,
 //;                            list=>[ 'Ripple' , 'Sklansky' , 'DesignWare' ] ) ;
+//; # Oops
+//; $AdderType eq 'Ripple' and $self->error( "ERROR adder.vp: AdderType 'Ripple' is currently broken, sorry! Maybe try 'Sklansky' instead." ) ;
+//;
 //; my $BW  = parameter( name=>'BitWidth', val=>16 , 
 //;                      doc=>'!functional! BitWidth of input and output values.  32 corresponds to a 32 bit signal A added to a 32 bit signal B  resulting in a 32 bit output S. Legal Values: Integers from 2 to 512  !FUNCTIONAL!' , 
 //;                      min=>2 , max=>512, step=>1 );
