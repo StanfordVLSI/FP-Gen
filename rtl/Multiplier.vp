@@ -41,8 +41,9 @@
 //;                                 "Possible values are ON or Off. !IGNORE! ");
 //;
 //; # get some values from the top
-//; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
-//; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
+//; # FIXME does this not just immediately rewrite the parameters above? Is that why they are marked IGNORE? What??
+//; $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
+//; $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
 //; my $DW_mode = parameter(Name=>'Designware_MODE',
 //;                            Val=>'OFF', List=>['ON','OFF'],
