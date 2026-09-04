@@ -20,7 +20,7 @@ default.txt - lists default system parameters, it was found by doing this:
     % make clean gen  # Builds default config, produces parm file "FPGen.xml"
     % scripts/summarize_gen_params.py FPGen.xml
 
-Can turn default.txt into config-style parameters using the txt2cfg function farther down in this README.
+Can turn default.txt into config-style parameters using the txt2cfg function described below, farther along in this README.
 
 empty.xml - old-style "empty" config for building default config
 
