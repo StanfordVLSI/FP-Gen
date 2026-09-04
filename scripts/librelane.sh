@@ -1,21 +1,30 @@
 #!/bin/bash
 
+CLOCK_PERIOD=50  # Default clock period for help message etc.
+
 HELP='
+USAGE:
+    '$0' 
+    '$0' --clock_period <time>         # Default <time> = '$CLOCK_PERIOD'ns
+    '$0' --container <container-name>
+        
+DESCRIPTION
     Given FPGen-generated verilog in dirs `./genesis_synth` and `./genesis_verif`,
     build and run a docker container that turns the verilog into a GDS-II tape.
 
-    USAGE:
-        '$0' < --clock_period [ time ] >
+    By default, each invocation will build a new docker container. However,
+    we recommended that you use the `--container` option to reuse a single
+    container across multiple runs.
 
-    EXAMPLE:
-        make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma.cfg |& tee /tmp/bf-fma-gen.log
-        '$0' 20ns | tee /tmp/bf-fma-tape.log
+EXAMPLE:
+    # 1. Build the rtl
+    make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma.cfg
+
+    # 2. Build the GDS-II tape
+    '$0' --clock 20ns --container mybuild
 '
 [ "$1" == "--help" ] && echo "$HELP" && exit
 
-# Default values
-CONTAINER=
-CLOCK_PERIOD=50
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help) echo "$HELP";    exit  ;;
