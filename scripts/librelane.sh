@@ -1,10 +1,50 @@
 #!/bin/bash
 
+CLOCK_PERIOD=50  # Default clock period for help message etc.
+
 HELP='
-Given FPGen-generated verilog in top-level directories `genesis_synth`
-and `genesis_verif`, build and run a docker container that turns the
-verilog into a GDS-II tape.
+USAGE:
+    '$0' 
+    '$0' --clock_period <time>         # Default <time> = '$CLOCK_PERIOD'ns
+    '$0' --container <container-name>
+        
+DESCRIPTION
+    Given FPGen-generated verilog in dirs `./genesis_synth` and `./genesis_verif`,
+    build and run a docker container that turns the verilog into a GDS-II tape.
+
+    By default, each invocation will build a new docker container. However,
+    we recommended that you use the `--container` option to reuse a single
+    container across multiple runs.
+
+EXAMPLE:
+    # 1. Build the rtl
+    make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma.cfg
+
+    # 2. Build the GDS-II tape
+    '$0' --clock 20ns --container mybuild
 '
+[ "$1" == "--help" ] && echo "$HELP" && exit
+
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        -h|--help) echo "$HELP";    exit  ;;
+        --clo*)    CLOCK_PERIOD=$2; shift ;;
+        --clk*)    CLOCK_PERIOD=$2; shift ;;
+        --cy*)     CLOCK_PERIOD=$2; shift ;;
+        --con*)    CONTAINER=$2;    shift ;;
+        *) echo "ERROR: did not recognize option '$1'"; echo "$HELP"; exit 13 ;;
+    esac
+    shift
+done
+
+# Clock period
+# egrep -qi "^--(clo|clk|cy)" <<< "$1" && CLOCK_PERIOD=$2
+units=$(tr -d '[0-9]' <<< "$CLOCK_PERIOD")          # E.g. "ns" or "ps"
+CLOCK_PERIOD=$(tr -cd '[0-9]' <<< "$CLOCK_PERIOD")   # Just the digits e.g. "50" but not "50ns"
+grep -qi ps <<< "$units" && echo "ERROR Picoseconds not supported (yet)"
+grep -qi us <<< "$units" && echo "ERROR Microseconds not supported (yet)"
+grep -qi ms <<< "$units" && echo "ERROR Milliseconds not supported (yet)"
+echo "Will use clock period = $CLOCK_PERIOD ns"
 
 # Make sure you're in the right place maybe, using the dumbest possible test maybe
 # TODO: could have a command-line arg specifying where to find verilog files...
@@ -26,17 +66,42 @@ fi
 function INFO {
     echo "                                                                             ."
     echo "=============================================================================="
-    echo "TAPEOUT: $*"
+    echo "INFO-FPGEN: $*"
     echo "=============================================================================="
 }
+# A secret tool that will help us later!
+timestamp=$(date +%m%d-%H%M)       # E.g. "0826_1130"
 
+##############################################################################
+INFO "Prepare a docker container"
+
+# If user specified a container name, use that; else use e.g. "tapeout_0826_1130"
+[ "$CONTAINER" ] && container="$CONTAINER" || container="tapeout_$timestamp"
+
+# Make a list of existing librelane containers
+containers=$(docker ps | awk '$2~/librelane/{print $NF}')
+# if [ "$containers" ]; then echo "Found existing librelane container(s)"; echo "$containers" | sed 's/^/    - /'; fi
+
+# If container exists already, then use that
+if grep -q " $container " <<< " $containers "; then
+    echo "Will use existing container '$container' as requested"
+    function new_container { false; }
+
+# Else build a new container
+else
+    docker run -id --name $container --network host ghcr.io/librelane/librelane:3.0.4 sh
+    echo "Built new docker container '$container'"
+    function new_container { true; }
+fi    
+
+##############################################################################
 INFO 'Prepare a workspace e.g. "./tmpdir/tapeout_ZRnNq/"'
 
-testname=$(mktemp -u tapeout_XXXXX)
-testdir=tmpdir/$testname
+testdir=tmpdir/tapeout_$timestamp  # E.g. "tapeout_0826-1130"
 mkdir -p $testdir/rtl
 echo Workspace will be ./$testdir
 
+##############################################################################
 INFO 'FIND the verilog and add it to the workspace'
 
 # Copy the verilog to the workspace
@@ -46,30 +111,16 @@ cp rtl/dwsub/DWSUB*.v $testdir/rtl/
 rm $testdir/rtl/FPGen*  # Things break if we include the testbench-related files I will file an issue maybe
 set +x
 
-INFO 'Install librelane in a docker container e.g. "tmp_tapeout_ZRnNq"'
-
-# Build the container
-container=tmp_$testname
-docker run -id --name $container --network host ghcr.io/librelane/librelane:3.0.4 sh
-echo "Built new docker container '$container'"
-
+##############################################################################
 # Install the librelane
-docker exec $container git clone https://github.com/librelane/librelane/ ./librelane
-docker exec $container nix-shell ./librelane/shell.nix
-docker exec $container mkdir -p ./my_designs/fpgen
+if new_container; then
+    INFO 'Install librelane in docker container "$container"'
+    docker exec $container git clone https://github.com/librelane/librelane/ ./librelane
+    docker exec $container nix-shell ./librelane/shell.nix
+    docker exec $container mkdir -p ./my_designs/fpgen
+fi
 
-# INFO 'Install gawk, sed, summarization script in the container'
-
-# docker cp test/summarize_tapeout_log $container:./my_designs/fpgen
-# 
-# # docker exec $container nix-env --install --attr nixpkgs.gawk --dry-run
-# docker exec $container nix-env --install --attr nixpkgs.gawk
-# docker exec $container which awk
-# 
-# # docker exec $container nix-env --install --attr nixpkgs.gnused --dry-run
-# docker exec $container nix-env --install --attr nixpkgs.gnused
-# docker exec $container which sed
-
+##############################################################################
 INFO 'Copy the verilog to the container and build a json config file'
 
 set -x
@@ -80,7 +131,7 @@ docker cp $testdir/rtl $container:./my_designs/fpgen  # Successfully copied 288k
 echo '{
   "DESIGN_NAME": "'$TOP'",
   "VERILOG_FILES": ["dir::rtl/*.v"],
-  "CLOCK_PERIOD": 100,
+  "CLOCK_PERIOD": '$CLOCK_PERIOD',
   "CLOCK_PORT": "clk"
 }
 ' > $testdir/fpgen.json
@@ -89,15 +140,25 @@ echo '{
 docker cp $testdir/fpgen.json $container:./my_designs/fpgen  # Successfully copied 2.05kB
 set +x
 
+##############################################################################
 INFO 'Launch the librelane design flow!'
+set -x
+# log=fpgen.log
+# log=fpgen_$timestamp.log  # E.g. "fpgen_0826_1130.log"
+test -f $testdir/rtl/FMA_unq1.v && design=FMA || design=CMA
+log=${timestamp}-${design}-${CLOCK_PERIOD}.log   # E.g. 0828-1843-FMA-11.log
 
-docker exec $container bash -c '(cd ./my_designs/fpgen && librelane fpgen.json |& tee fpgen.log)'
-docker cp $container:./my_designs/fpgen/fpgen.log $testdir/fpgen.log
+# For consistent timestamps, need e.g.
+# echo export TZ=/nix/store/xaa7...025b/share/zoneinfo/America/Los_Angeles >> ~/.bashrc
+# and then use --login on the bash command
+docker exec $container bash --login -c '(cd ./my_designs/fpgen && librelane fpgen.json |& tee '$log')'
+docker cp $container:./my_designs/fpgen/$log $testdir/$log
+set +x
 
-
+##############################################################################
 INFO 'Check the result'
 
-if ! egrep -q '^[*] (Antenna|LVS|DRC)' $testdir/fpgen.log; then
+if ! egrep -q '^[*] (Antenna|LVS|DRC)' $testdir/$log; then
     hline="==========================================================="
     echo "ERROR final check(s) not found - looks like we did not make it through the entire test"
     printf "$hline\n\n\n"
@@ -106,7 +167,7 @@ fi
 
 function test_failed { false; }
 for check in Antenna LVS DRC; do
-    result=$(egrep -A 1 "^[*] $check" $testdir/fpgen.log | tr "\n" " ")
+    result=$(egrep -A 1 "^[*] $check" $testdir/$log | tr "\n" " ")
     echo "$result"
     if ! echo "$result" | grep -q Passed; then
         printf "ERROR looks like $check check FAILED\n\n"
@@ -124,21 +185,22 @@ fi
 
 # exec /tmp/libresum.sh: no such file or directory
 
-scripts/libresum.sh $container:./my_designs/fpgen/fpgen.log
+scripts/libresum.sh $container:./my_designs/fpgen/$log
     #             Clock 100.0ns (10MHz)
     #     Critical path  36.89ns
     #        Setup/Hold  42.86ns 40.73ns
     #           WARNING  Max Slew violations found
     #            PASSED  Antenna LVS DRC
 
-
+##############################################################################
 INFO 'GDS-II tape is here maybe:'
 
-gds=$(sed -n '/Writing out GDS/,/INFO..Done/p' $testdir/fpgen.log \
+gds=$(sed -n '/Writing out GDS/,/INFO..Done/p' $testdir/$log \
   | tr -d '\n' | sed "s/^[^']*[']//" | sed "s/['].*//")
 echo docker exec $container ls -lh $gds
 docker exec $container ls -lh $gds
 
+##############################################################################
 INFO 'Cleanup
     To clean up:
         docker kill $container
