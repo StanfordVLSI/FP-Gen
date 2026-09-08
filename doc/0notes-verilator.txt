@@ -1,0 +1,12 @@
+This works I think, i.e. "works" as in compiles without errors. Have not yet tried running the resulting binary though.
+```
+/bin/rm -rf obj_dir
+
+TOP=top_FPGen
+
+PARMS1='--timing --timescale 1ps/1ps --cc -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/'
+
+PARMS2='/nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f /nobackup/steveri/github/FP-Gen/genesis_vlog.vf'
+
+verilator -Wno-fatal --top-module $TOP $PARMS1 $PARMS2 |& tee tmp.log
+```
