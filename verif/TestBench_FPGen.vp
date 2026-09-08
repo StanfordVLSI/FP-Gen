@@ -58,7 +58,7 @@
 //;                         MulPipelineDepth=>$mul_pipeline_depth);
 
 
-program automatic `mname` (input logic 				       clk, reset,
+module `mname` (input logic 				       clk, reset,
 			   `$FPGen_ifc->mname`.Controller FPGen_bus
 			   );
 
@@ -444,6 +444,8 @@ program automatic `mname` (input logic 				       clk, reset,
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
 	       
+               @(negedge clk);
+
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
 		  //FPGen_bus.dumptolog = 1'b1;
@@ -569,7 +571,7 @@ program automatic `mname` (input logic 				       clk, reset,
    //-------------------------------------------------------------------------//
    // general runtime argument parsing procedure
    //-------------------------------------------------------------------------//
-   task get_command_line_args;
+   task automatic get_command_line_args;
       int 	wave=0;
       int 	wave_delay=0;
       // if this is a "+wave" run, it must record all signals      
@@ -615,12 +617,22 @@ program automatic `mname` (input logic 				       clk, reset,
       if(wave_delay)	
 	repeat(wave_delay) @(posedge clk);
       $display("\t%t:\tStarting signal and memory wave capture",$time);
-      $vcdpluson(   0  , `($self->get_top())->mname`);
+      \`ifdef verilator
+          // In verilator, use cli --trace options to enable tracing maybe
+      \`else
+          $vcdpluson(   0  , `($self->get_top())->mname`);
+      \`endif
    endtask // start_wave
 
+// Note verilator does not support this level of SAIF generation;
+// instead, must make do with CLI option --trace-saif
    
    // Activity factor tasks
    task start_saif;
+   \`ifdef verilator
+        $display("\t%t:\tSAIF begins here if --trace-saif was enabled",$time);
+   \`else
+
       if ( $test$plusargs("SAIF") ) begin
          $display("\t%t:\tStarting SAIF (Switching Activity Interchange Format)",$time);
 	 // setup SAIF: https://solvnet.synopsys.com/retrieve/029417.html
@@ -630,14 +642,19 @@ program automatic `mname` (input logic 				       clk, reset,
 	 @(posedge reset);
 	 $toggle_start;
       end
+   \`endif
    endtask // start_saif
 
    task finish_saif;
+   \`ifdef verilator
+      $display("\t%t:\tSAIF ends here if --trace-saif was enabled",$time);
+   \`else
       if ( $test$plusargs("SAIF") ) begin
          $display("\t%t:\tFinalizing SAIF (Switching Activity Interchange Format)",$time);
 	 $toggle_stop();
 	 $toggle_report ("`$FP_obj->iname()`.saif",1.0e-12,`$FP_obj->get_instance_path()`);
       end
+   \`endif
    endtask // finish_saif
    
-endprogram : `mname`
+endmodule
