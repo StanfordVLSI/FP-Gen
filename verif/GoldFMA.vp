@@ -45,7 +45,26 @@ class `mname`;
    //; my $expectedResult_obj = clone($FPTransRes_Ptr, 'Expected');
    `$expectedResult_obj->instantiate` = new();
    
+   // Verilator does not understand multiple constraints inline with randomize call :(
+   function void agnostic_randomize
+     (
+      FPTransaction_unq2  expected, 
+      FPTransaction_unq2::FPTransType transtype,
+      bit sign,
+      bit inc
+      );
+      \`ifdef verilator
+          Expected.randomize();
+          Expected.TransType = transtype;
+          Expected.Sign = sign;
+          Expected.Inc = inc;
+      \`else
+          Expected.randomize() with { (TransType ==transtype) && (Sign == sign) && (Inc == inc); };
+      \`endif
 
+   endfunction // agnostic_randomize
+
+   
    function bit CheckMultResult(`$typeRes` transRes, `$typeRes` transExpected);
 
       // First check flags:
@@ -113,7 +132,8 @@ class `mname`;
 	  transC.TransType == `$typeC`::QuietNaN || transC.TransType == `$typeC`::SignalingNaN) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+         //Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+         agnostic_randomize(Expected,                `$typeRes`::QuietNaN,             1'b0,            1'b0);
       end 
       
       // 2. 0*Inf                                     Result is NaN
@@ -122,7 +142,8 @@ class `mname`;
 		(transB.TransType == `$typeB`::Zero && transA.TransType == `$typeA`::Inf) ) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+	 //Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+	 agnostic_randomize(Expected,                `$typeRes`::QuietNaN,             1'b0,            1'b0);
       end
 
 	  // 3. AB is +-Inf and C is -+Inf                 Result is NaN
@@ -130,7 +151,8 @@ class `mname`;
       else if ( (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf) && transC.TransType == `$typeC`::Inf && (SignProduct != transC.Sign)) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+	 //Expected.randomize() with { (TransType == `$typeRes`::QuietNaN) && (Sign == 1'b0) && (Inc == 1'b0); };
+         agnostic_randomize(Expected,                `$typeRes`::QuietNaN,             1'b0,            1'b0);
       end
       
 	  
@@ -138,7 +160,8 @@ class `mname`;
 	 
       // 4. Either input is Inf                        Result is signed Inf
       else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf || transC.TransType == `$typeC`::Inf) begin
-	 Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignInfinity) && (Inc == 1'b0); };
+	 //Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignInfinity) && (Inc == 1'b0); };
+         agnostic_randomize(Expected,                `$typeRes`::Inf,             SignInfinity,            1'b0);
       end
 
       // 5. 0*num or 0*0 or num*o                      Result is C
@@ -357,12 +380,14 @@ end
 	 overflow = (ExpSum > Exp_max+Exp_offset) ? 1'b1 : 1'b0;
 	 underflow = (ExpSum < Exp_offset+1) ? 1'b1 : 1'b0;
 	 if (overflow)
-	   Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected) && (Inc == 1'b0);};
+	   //Expected.randomize() with { (TransType == `$typeRes`::Inf) && (Sign == SignExpected) && (Inc == 1'b0);};
+           agnostic_randomize(Expected,                `$typeRes`::Inf,             SignExpected,            1'b0);
 	 else if (underflow) begin
 		guard = ManSum[`$sum_width-$fracRes_width-2`];
 		LSB = ManSum[`$sum_width-$fracRes_width-1`];
 		IncExpected = guard & (sticky | LSB);
-	    Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected) && (Inc == IncExpected); };
+	    //Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected) && (Inc == IncExpected); };
+            agnostic_randomize(Expected,                `$typeRes`::Zero,             SignExpected,            IncExpected);
 	 end 
 	 else begin
 	    ExpExpected = ExpSum - Exp_offset;
@@ -373,7 +398,8 @@ end
 	//	$display("DEBUG: guard=%b LSB=%b sticky=%b IncExpected=%b",guard, LSB, sticky, IncExpected);
 	    if (ExpExpected==1 && ManSum[`$sum_width-1`]==1'b0) // Denorm case ==> zero the exp
 	      //; if ($test_denormals =~ /NO/){
-	      Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected) && (Inc == 1'b0); };
+	      //Expected.randomize() with { (TransType == `$typeRes`::Zero) && (Sign == SignExpected) && (Inc == 1'b0); };
+              agnostic_randomize(Expected,                `$typeRes`::Zero,             SignExpected,            1'b0);
               //; } else {
 	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected, IncExpected);
 	      //; }
