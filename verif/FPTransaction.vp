@@ -271,7 +271,7 @@ class `mname`;
 	 $display("%t \t\t The output exponent is negative(%0d). Denormalization is done before check.", $time, -Exp);
 
          /* verilator lint_off WIDTHEXPAND */
-         // Verilator: Operator ADD expects 7 bits on the RHS, but RHS's CONST '2'h2' generates 2 bits.
+         // [VERILATOR] Operator ADD expects 7 bits on the RHS, but RHS's CONST '2'h2' generates 2 bits.
 	 expOffset = (~Exp + 2'b10);
          /* verilator lint_on WIDTHEXPAND */
 

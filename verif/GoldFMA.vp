@@ -45,7 +45,7 @@ class `mname`;
    //; my $expectedResult_obj = clone($FPTransRes_Ptr, 'Expected');
    `$expectedResult_obj->instantiate` = new();
    
-   // Verilator does not understand multiple constraints inline with randomize call :(
+   // Ver.i.lator does not understand multiple constraints inline with randomize call :(
    function void agnostic_randomize
      (
       FPTransaction_unq2  expected, 
