@@ -31,6 +31,64 @@ class `mname`;
    rand int hotbit;
    logic [`$width-1`:0] forward;
 
+   // Support for verilator, currently only works for bf-cma
+   // This vrand() function provides predetermined values such that verilator
+   // gives exact same results as vcs using randomize() with seed 12345 maybe
+
+   int unsigned idxA = 0;
+   int unsigned idxB = 0;
+   int unsigned idxC = 0;
+
+   localparam int unsigned NUM_SETS = 10;
+   function void vrand(string ABC);
+\`ifdef verilator
+      if (ABC == "A") begin
+         case (idxA)
+           0: begin forward=0; hotbit=0; forwardType=Zero; end
+           1: begin forward=0; hotbit=0; forwardType=Zero; end
+           2: begin forward=1; hotbit=0; forwardType=OneHot; end
+           3: begin forward=0; hotbit=0; forwardType=Zero; end
+           4: begin forward=1; hotbit=0; forwardType=OneHot; end
+           5: begin forward=0; hotbit=0; forwardType=Zero; end
+           6: begin forward=0; hotbit=0; forwardType=Zero; end
+           7: begin forward=0; hotbit=0; forwardType=Zero; end
+           8: begin forward=1; hotbit=0; forwardType=OneHot; end
+           9: begin forward=0; hotbit=0; forwardType=Zero; end
+         endcase
+         idxA = (idxA + 1) % NUM_SETS;
+      end else if (ABC == "B") begin
+         case (idxB)
+           0: begin forward=0; hotbit=0; forwardType=Zero; end
+           1: begin forward=1; hotbit=0; forwardType=OneHot; end
+           2: begin forward=1; hotbit=0; forwardType=OneHot; end
+           3: begin forward=0; hotbit=0; forwardType=Zero; end
+           4: begin forward=1; hotbit=0; forwardType=OneHot; end
+           5: begin forward=0; hotbit=0; forwardType=Zero; end
+           6: begin forward=0; hotbit=0; forwardType=Zero; end
+           7: begin forward=1; hotbit=0; forwardType=OneHot; end
+           8: begin forward=0; hotbit=0; forwardType=Zero; end
+           9: begin forward=0; hotbit=0; forwardType=Zero; end
+         endcase
+         idxB = (idxB + 1) % NUM_SETS;
+      end else if (ABC == "C") begin
+         case (idxC)
+           0: begin forward=0; hotbit=2; forwardType=Zero; end
+           1: begin forward=0; hotbit=3; forwardType=Zero; end
+           2: begin forward=0; hotbit=2; forwardType=Zero; end
+           3: begin forward=0; hotbit=0; forwardType=Zero; end
+           4: begin forward=0; hotbit=4; forwardType=Zero; end
+           5: begin forward=0; hotbit=4; forwardType=Zero; end
+           6: begin forward=0; hotbit=4; forwardType=Zero; end
+           7: begin forward=0; hotbit=4; forwardType=Zero; end
+           8: begin forward=0; hotbit=4; forwardType=Zero; end
+           9: begin forward=0; hotbit=2; forwardType=Zero; end
+         endcase
+         idxC = (idxC + 1) % NUM_SETS;
+      end
+\`endif
+      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
+               ABC, $time, forward,  hotbit, forwardType.name());
+   endfunction; // vrand
 
    constraint pick_forward{
       forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
