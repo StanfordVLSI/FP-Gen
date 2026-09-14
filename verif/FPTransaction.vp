@@ -146,8 +146,8 @@ class `mname`;
     * Variables without modifiers are not randomized. */
    typedef enum {Zero, Denorm100, DenormFFF, Denorm001, DenormRnd, QuietNaN, 
 		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, EzAndSml, Random} FPTransType;
+
    rand FPTransType TransType;
-   
    rand bit [`$frac_width - 1`:0] 	Fraction;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
