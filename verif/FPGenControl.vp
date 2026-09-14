@@ -32,6 +32,32 @@ class `mname`;
    int mul_weight = `$mul_weight`;
    int nop_weight = `$nop_weight`;
 
+   // Support for verilator, currently only works for bf-cma
+   // This vrand() function provides predetermined values such that verilator
+   // gives exact same results as vcs using randomize() with seed 12345 maybe
+
+   int unsigned iv = 0;
+   localparam int unsigned NUM_SETS = 10;
+   function void vrand();
+\`ifdef verilator
+      case (iv)
+        0: opcode=FMADD;
+        1: opcode=FMUL;
+        2: opcode=FMUL;
+        3: opcode=FMADD;
+        4: opcode=FMUL;
+        5: opcode=FMADD;
+        6: opcode=FADD;
+        7: opcode=FADD;
+        8: opcode=FADD;
+        9: opcode=FADD;
+      endcase
+      iv = (iv + 1) % NUM_SETS;
+\`endif
+      $display("%t: FPGenControl opcode=%s", $time, opcode.name());
+   endfunction
+
+
    constraint pick_inst_type{
       opcode dist {
 		   FPGenPkg::FMADD := 100-mul_weight-add_weight-nop_weight, 
