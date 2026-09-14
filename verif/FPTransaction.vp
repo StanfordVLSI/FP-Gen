@@ -152,7 +152,90 @@ class `mname`;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
    rand bit 				Inc; // only used to test cascaded architecrures
-   
+
+   // Support for verilator, currently only works for bf-cma
+   // This vrand() function provides predetermined values such that verilator
+   // gives exact same results as vcs using randomize() with seed 12345 maybe
+
+   // vrand() called from Gold FMA as "Expected.vrand()"
+   int unsigned iv = 0;
+   localparam int unsigned NUM_SETS = 4;
+   function void vrand();
+\`ifdef verilator
+      case (iv)
+        0: begin Fraction=10'h000; Exponent=5'h1f; Sign=0; Inc=0; TransType=Inf;      end
+        1: begin Fraction=10'h31f; Exponent=5'h1f; Sign=0; Inc=0; TransType=QuietNaN; end
+        2: begin Fraction=10'h247; Exponent=5'h1f; Sign=0; Inc=0; TransType=QuietNaN; end
+        3: begin Fraction=10'h336; Exponent=5'h1f; Sign=0; Inc=0; TransType=QuietNaN; end
+      endcase
+\`endif
+      $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
+               $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
+      iv = (iv + 1) % NUM_SETS;
+   endfunction // vrand
+
+   // vrand[ABC] for generating random test values
+   int unsigned idxA = 0;
+   int unsigned idxB = 0;
+   int unsigned idxC = 0;
+
+   function void vrandA();
+      // {Type, Sign, Exp, Frac}
+      // -------- OPERAND A --------
+      assert (idxA<=8);
+      case (idxA)
+        0: begin TransType=Random         ; Sign=0; Exponent=5'h09; Fraction=10'h116; Inc=1; end
+        1: begin TransType=PointOneOneOne ; Sign=0; Exponent=5'h0e; Fraction=10'h3ff; Inc=0; end
+        2: begin TransType=Max            ; Sign=1; Exponent=5'h1e; Fraction=10'h3ff; Inc=0; end
+        3: begin TransType=Random         ; Sign=0; Exponent=5'h11; Fraction=10'h3dd; Inc=1; end
+        4: begin TransType=Random         ; Sign=0; Exponent=5'h15; Fraction=10'h3b2; Inc=1; end
+        5: begin TransType=Denorm100      ; Sign=0; Exponent=5'h00; Fraction=10'h200; Inc=1; end
+        6: begin TransType=Max            ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
+        7: begin TransType=Random         ; Sign=1; Exponent=5'h09; Fraction=10'h285; Inc=0; end
+        8: begin TransType=Random         ; Sign=1; Exponent=5'h16; Fraction=10'h0f2; Inc=0; end
+      endcase
+      idxA = idxA + 1;
+   endfunction // vrandA
+
+   function void vrandB();
+      // -------- OPERAND B --------
+      //$display("%t vrandb idxb=%0d", $time, idxB);
+      assert (idxB<=8);
+      case (idxB)
+        0: begin TransType=Inf            ; Sign=0; Exponent=5'h1f; Fraction=10'h000; Inc=0; end
+        1: begin TransType=PointOneOneOne ; Sign=0; Exponent=5'h0e; Fraction=10'h3ff; Inc=1; end
+        2: begin TransType=SignalingNaN   ; Sign=1; Exponent=5'h1f; Fraction=10'h1f4; Inc=1; end
+        3: begin TransType=Max            ; Sign=1; Exponent=5'h1e; Fraction=10'h3ff; Inc=0; end
+        4: begin TransType=Min            ; Sign=1; Exponent=5'h01; Fraction=10'h000; Inc=0; end
+        5: begin TransType=QuietNaN       ; Sign=0; Exponent=5'h1f; Fraction=10'h298; Inc=0; end
+        6: begin TransType=Zero           ; Sign=1; Exponent=5'h00; Fraction=10'h000; Inc=0; end
+        //8: begin TransType=Inf            ; Sign=0; Exponent=5'h1f; Fraction=10'h000; Inc=0; end
+        7: begin TransType=QuietNaN       ; Sign=1; Exponent=5'h1f; Fraction=10'h273; Inc=1; end
+        8: begin TransType=Random         ; Sign=1; Exponent=5'h08; Fraction=10'h2ed; Inc=0; end
+      endcase
+      idxB = idxB + 1;
+   endfunction // vrandB
+
+   function void vrandC();
+      // -------- OPERAND C --------
+      assert (idxC<=9);
+      case (idxC)
+         0: begin TransType=PointOneOneOne; Sign=1; Exponent=5'h0e; Fraction=10'h3ff; Inc=1; end
+         1: begin TransType=Max           ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
+         2: begin TransType=Random        ; Sign=0; Exponent=5'h11; Fraction=10'h3ed; Inc=0; end
+         3: begin TransType=QuietNaN      ; Sign=0; Exponent=5'h1f; Fraction=10'h20f; Inc=1; end
+         4: begin TransType=QuietNaN      ; Sign=1; Exponent=5'h1f; Fraction=10'h2de; Inc=1; end
+         5: begin TransType=Max           ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
+         6: begin TransType=Random        ; Sign=0; Exponent=5'h07; Fraction=10'h1dd; Inc=0; end
+         7: begin TransType=Random        ; Sign=0; Exponent=5'h04; Fraction=10'h244; Inc=1; end
+         8: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=0; end
+         9: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=1; end
+      endcase // case (idxC)
+      $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
+      idxC = idxC + 1;
+   endfunction // vrandC
+
+
    // --------------------------------------------------------------------------
    // Some setters:
    // --------------------------------------------------------------------------
@@ -378,6 +461,7 @@ class `mname`;
       tmp[`$frac_width + $exp_width`] = this.Sign;
       tmp[`$frac_width + $exp_width - 1`:`$frac_width`] = this.Exponent;
       tmp[`$frac_width - 1`:0] = this.Fraction;
+      // $display( "%t: GetFPNum() S=%h E=%h F=%h => tmp=%h", $time, this.Sign, this.Exponent, this.Fraction, tmp);
       return tmp;
    endfunction // GetFPNum
    
@@ -586,4 +670,3 @@ class `mname`;
      endfunction // new
 //; } # End of "if ($rand_mode =~ /YES/)..."
 endclass : `mname`
-
