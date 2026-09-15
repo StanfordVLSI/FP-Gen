@@ -85,6 +85,8 @@ class `mname`;
          endcase
          idxC = (idxC + 1) % NUM_SETS;
       end
+\`else
+      randomize();
 \`endif
       $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
                ABC, $time, forward,  hotbit, forwardType.name());
