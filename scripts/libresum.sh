@@ -19,8 +19,8 @@ HELP='
       bash '$cmd' *.log*          # Process ALL logs
 
   EXAMPLES - from outside the container
-      '$cmd' bad_wolf:/root/my_design/build.log  # Process log in container "bad_wolf"
-      '$cmd' bad_wolf:/root/my_design/\*.log     # Process all indicated logs (note escaped "*")
+      '$cmd' mycontainer:/my_design/build.log  # Process log in container "mycontainer"
+      '$cmd' mycontainer:/my_design/\*.log     # Process all indicated logs (note escaped "*")
 '
 if [ "$1" == "--help" ]; then echo "$HELP"; exit; fi
 if [ "$1" == ""       ]; then echo "$HELP"; exit; fi
@@ -53,48 +53,133 @@ if ! type sed > /dev/null; then
 fi
 
 # Helper functions
-function result0 { awk '/Passed/{printf " "p}{p=$NF}' $1 | cut -b 2-; }
-function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
+
+# getconf: Search rundir=$1 config.json files for key $2, return first key-value found e.g.
+#   getconf <rundir> DESIGN_NAME  => "DESIGN_NAME    FMA_unq1"
+#   getconf <rundir> CLOCK_PERIOD => "CLOCK_PERIOD 30"
+function getconf { cat $run/*/config.json | tr ',":' ' ' | awk '$1=="'$1'"{print;exit}'; }
+
+# E.g. "FMA_unq1 (sky130_fd_sc_hd)"
+function name_proc { printf "%s (%s)" $(design_name) $(std_cell_library); }
+function design_name      { getconf DESIGN_NAME      | awk '{print $NF}'; }
+function std_cell_library { getconf STD_CELL_LIBRARY | awk '{print $NF}'; }
+
+# E.g. "15.0ns (66MHz)"
+function clock_period { getconf CLOCK_PERIOD | awk '{printf("%.1fns (%dMHz)\n",$2,1000/$2)}'; }
+
+# Find most-recent $1 subdir containing $2 pattern
+# E.g. `latest runs/RUN_2026-08-19_15-50-26 dpnr` => "43-openroad-stamidpnr-3"
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
-function getclk0 { awk '/^clk/{print $2;exit}' $(latest $1 dpnr)/clock.rpt; }
-function critpath0 { cat $(latest $1 dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
+function critpath0 { cat $(latest $run dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
 
-function lastword { cat $1 | xargs -n 1 | tail -1; }
-function setup0 { lastword $(latest $1 dpnr)/ws.max.rpt; }
-function hold0  { lastword $(latest $1 dpnr)/ws.min.rpt; }
+# Complexity in terms of nwires, area
+function complexity {
 
-sedwarn='
-  /flow.py/d;               # comment1
-  s/    .*//;               # get rid of long strings of blankspace
-  s/^\[..:..:..\] //;       # get rid of timestamp at beginning of line
-  s/^/    /;                # Indent every output line by 4 spaces
-  s/ in the following.*//;  # Clean up da noise
-'
-sederr='/^\[/{tag=$2}/violation/ && tag~/ERROR/{$1=$1; print $0}'
-function getwarn { egrep 'WARNING.*violations' $1 | sed "$sedwarn"; }
-function geterr { awk "$sederr" $1 | sed 's/ in the following.*//'; }
-function viol { echo $(setup0 $1) | awk '$1 >= 0 { exit 13 }'; }
+    # How many wires were used after initial synthesis? E.g.
+    # E.g. `nwires runs/RUN_2026-08-19_15-50-26` => 3420
+    # (FIXME Treating $run as a global, FIXME should be capitalized I spose)
+    function nwires { tac $run/*/yosys-synthesis.log | awk '/[-] wires$/{printf $1;exit}'; }
 
+    # How many std cells / seq elements as % of total area etc.
+    # E.g. `area runs/RUN_2026-08-19_15-50-26` => "13429 33.00%"
+    # extracted from matched line e.g. "of which used for sequential elements: 13429 (33.00%)"
+    function area { tac $run/*/yosys-synthesis.log | sed -n '/of which/{s/[.][0-9]*//;s/.*: //;s/[()]//g;p;q}'; }
+
+    printf "%s wires, cell_area %su (%s of total)" $(nwires) $(area)
+}
+
+# nom_tt_ws: Find worst-case max/min (setup/hold) slack in nom_tt corner (pos or neg)
+# E.g. `nom_tt_ws max` => "43-openroad-stamidpnr-3/ws.max.rpt:nom_tt_025C_1v80: -0.012046364247087247"
+# Use "$run/" b/c "$run" does not work with "find" if "$run" is symlink
+function nom_tt_ws   { (cd $run; egrep ^nom_tt $(find * -name ws.$1.rpt) | awk 'END{print $2}'); }
+function tt_set_hold { printf "%.2fns / %.2fns (slack, nom_tt)" $(nom_tt_ws max) $(nom_tt_ws min); }
+
+# Sometimes get TWO conflicting slew reports in the log e.g.
+#       WARNING  Max Slew violations found in the following
+#       VERBOSE  No max slew violations found
+# 
+# Want to make sure we get the good notice as well as the bad
+# So e.g. "goodslew <logfile>" should yield "No max slew violations found"
+function goodslew { grep -o "No max slew violations found" $1 | head -1; }
+
+# Find warnings, errors, and violations found in the log, e.g. slew violations are pretty common
+function getwarn {
+    sedwarn='
+      /flow.py/d;               # comment1
+      s/    .*//;               # get rid of long strings of blankspace
+      s/^\[..:..:..\] //;       # get rid of timestamp at beginning of line
+      s/^/    /;                # Indent every output line by 4 spaces
+      s/ in the following.*//;  # Clean up da noise
+    '
+    egrep 'WARNING.*violations' $1 | sed "$sedwarn";
+}
+
+# Given a json file "$1", report corners that have negative setup/hold slack e.g.
+# `get_wns RUN_2026-08-25_15 setup` => "min_ss_80C_1v -6.48 ns\nnom_ss_80C_1v -6.79 ns"
+function get_wns {
+    # Given a run dir "$1", find the `state_out.json` file with the most recent timestamp
+    # e.g. `final_state RUN_2026...10` => "RUN_2026...10/76-misc-repo.../state_out.json"
+    rundir=$1; final_state=$(\ls -t $rundir/*/state_out.json | head -1)
+    sh=$2; cat $final_state | awk -F'[:, "]*' '
+        /'$sh'__wns__corner/ { corn=$3; ns=$4; if (ns>=0) next   }
+        /'$sh'__wns__corner/ { printf("%s %7.2f ns\n", corn, ns) }
+    ' | sort -k2,2rn
+}
+
+# Print errors but/and also save them to print at the end
+function printerr { echo "$1"; deferred_errors="$deferred_errors$1\n"; }
+function finalerr { echo "$deferred_errors"; }
+
+# Get the run dir associated with log file $1 e.g. `getrun fpgen.log` => "runs/RUN_2026-08-27_23-57-26"
+function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
+
+topdir=$(pwd)
 for log in $*; do
-    run=$(getrun $log)
-    # echo "FOUND RUN" $run
+    cd $topdir          # Back to safety
+    run=$(getrun $log)  # Find the rundir associated with this log file
+    deferred_errors=""  # Errors for this log will be recorded in "deferred_errors"
+
     echo $log $run; cd $(dirname $log)
     blog=$(basename $log)
-    res=$(result0 $blog)
-    [ "$res" ] || printf "    FAILED\n\n"; [ "$res" ] || continue
-    # run=runs/$(getrun $log)
+
     if test -d $run; then
-      getclk0 $run   | awk '{printf("            Clock %5.1fns (%dMHz)\n", $1, 1000/$1)}'
-      critpath0 $run | awk '{printf("    Critical path  %5.2fns\n", $1)}'
-      printf "       Setup/Hold  %5.2fns %5.2fns\n" $(setup0 $run) $(hold0 $run)
+        name_proc    | awk '{printf("%17s  %s\n",      "DESIGN",        $0)}'
+        clock_period | awk '{printf("%17s  %s\n",      "CLOCK_PERIOD",  $0)}'
+        critpath0    | awk '{printf("%17s  %.2fns\n", "Critical path", $1)}'
+        tt_set_hold  | awk '{printf("%17s  %s\n",      "Setup/Hold",    $0)}'
+        complexity   | awk '{printf("%17s  %s\n",      "Complexity",    $0)}'
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
-    getwarn $blog | sed 's/^/      /'
-    echo "           PASSED  $res"
-    if viol $run;
-        then printf "            ERROR  Setup violation %5.2fns\n" $(setup0 $run)
-        else geterr $blog | sed 's/^/            ERROR  /'
-    fi
-    echo ""
+
+    # "WARNING Setup violations found" => *Warning* if setup violations in non-tt corner
+    setup_warn=$(printf "%17s  %s"  "WARNING" "Setup violations found")
+    egrep -q "WARNING.*Setup viol" $blog && echo "$setup_warn"
+    get_wns $run setup | grep -v tt | awk '{printf("%17s   * %s\n", "", $0)}'
+
+    # "ERROR Setup violations in tt corner"
+    setup_err=$(printf "%17s  %s"  "ERROR" "Setup violations found in tt corner")
+    grep -A 6 ERROR $blog | grep -q 'Setup violations found' && printerr "$setup_err"
+    get_wns $run setup | grep tt | awk '{printf("%17s   * %s\n", "", $0)}'
+
+    # "ERROR Hold violations found" => *Error* if hold violations found in any corner :(
+    hold_err=$(printf "%17s  %s\n"  "ERROR" "Hold violations found")
+    grep -A 6 ERROR $blog | grep -q 'Hold violations found' && printerr "$hold_err"
+    get_wns $run hold | awk '{printf("%17s   * %s\n", "", $0)}'
+
+    # Other (not setup or hold) warnings, e.g. slew violations are pretty common
+    getwarn $blog | egrep -v 'Setup|hold' | sed 's/^/      /'
+
+    # If goodslew message exists, print the goodslew message
+    awk '/./{printf("         BUT ALSO \"%s\"\n", $0)}' <<< "$(goodslew $blog)"
+
+    # If all three final checks pass, this will yield something like "Antenna DRC LVS" etc
+    res=$(awk '/Passed/{printf " "p}{p=$NF}' $blog | cut -b 2-)
+
+    # "PASSED  Antenna LVS DRC" or no
+   [ "$res" ] && printf "           PASSED  $res\n"
+   [ "$res" ] || printf "    FAILED final checks :(\n"  # Different indent for emphasis
+
+    # Recap errors at end of summary
+    echo -e "$deferred_errors"  # "-e" prints "\n" as newline see?
 done

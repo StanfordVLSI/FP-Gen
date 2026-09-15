@@ -20,6 +20,8 @@ default.txt - lists default system parameters, it was found by doing this:
     % make clean gen  # Builds default config, produces parm file "FPGen.xml"
     % scripts/summarize_gen_params.py FPGen.xml
 
+Can turn default.txt into config-style parameters using the txt2cfg function described below, farther along in this README.
+
 empty.xml - old-style "empty" config for building default config
 
 booth3.cfg - sets CMA booth type to "3"
@@ -75,3 +77,22 @@ NOTES
 
 1.2M    default/genesis_synth
 910K    sp-cma/genesis_synth
+
+NOTES - txt2cfg function turns text-style parms into cfg-style parms
+
+INPUT='
+PARM top_FPGen.VERIF_MODE = OFF
+PARM top_FPGen.SYNTH_MODE = ON
+PARM top_FPGen.FPGen.Architecture = FMA
+'
+grep = <<< "$INPUT" | awk '{
+  parm = $2
+  if ($4 ~ /^[0-9][0-9]*/)  val = $4; else val = "SSSQQQ" $4 "SSSQQQ"
+  printf("configure( SSSQQQ%sSSSQQQ , %s );\n", parm, val)
+}'  | sed "s/SSSQQQ/'/g"
+
+OUTPUT: "
+    configure( 'top_FPGen.VERIF_MODE' , 'OFF' );
+    configure( 'top_FPGen.SYNTH_MODE' , 'ON' );
+    configure( 'top_FPGen.FPGen.Architecture' , 'FMA' );
+"
