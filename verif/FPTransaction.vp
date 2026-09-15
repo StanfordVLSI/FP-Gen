@@ -180,6 +180,7 @@ class `mname`;
    int unsigned idxC = 0;
 
    function void vrandA();
+   \`ifdef verilator
       // {Type, Sign, Exp, Frac}
       // -------- OPERAND A --------
       assert (idxA<=8);
@@ -195,9 +196,13 @@ class `mname`;
         8: begin TransType=Random         ; Sign=1; Exponent=5'h16; Fraction=10'h0f2; Inc=0; end
       endcase
       idxA = idxA + 1;
+   \`else
+      randomize();
+   \`endif
    endfunction // vrandA
 
    function void vrandB();
+   \`ifdef verilator
       // -------- OPERAND B --------
       //$display("%t vrandb idxb=%0d", $time, idxB);
       assert (idxB<=8);
@@ -214,9 +219,13 @@ class `mname`;
         8: begin TransType=Random         ; Sign=1; Exponent=5'h08; Fraction=10'h2ed; Inc=0; end
       endcase
       idxB = idxB + 1;
+   \`else
+      randomize();
+   \`endif
    endfunction // vrandB
 
    function void vrandC();
+   \`ifdef verilator
       // -------- OPERAND C --------
       assert (idxC<=9);
       case (idxC)
@@ -231,6 +240,9 @@ class `mname`;
          8: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=0; end
          9: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=1; end
       endcase // case (idxC)
+   \`else
+      randomize();
+   \`endif
       $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
       idxC = idxC + 1;
    endfunction // vrandC
