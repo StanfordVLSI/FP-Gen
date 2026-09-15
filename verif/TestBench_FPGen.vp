@@ -59,7 +59,7 @@
 
 module `mname`
   (
-   input logic               clk, reset,
+   input logic clk, reset,
    `$FPGen_ifc->mname`.Controller FPGen_bus
    );
 
@@ -72,6 +72,9 @@ module `mname`
    int 								       result_tag;
    int 								       ignore_errors=0;
    
+   
+   
+
    // Useful for debugging maybe
    \`define showtrans(n, X) $display( \
         "%0t FOO-%1s %0d %s; Sign=%b; Exponent=0x%h; Fraction=10'h%h; Inc=%b; end", \
@@ -99,14 +102,14 @@ module `mname`
    // queues for storing numbers inside the pipeline
    logic [`$exp_width + $frac_width`:0] 			       a_q[$], b_q[$], c_q[$];
    logic [`$exp_width + $frac_width`:0] 			       expected_q[$];
-
+   
 
    //; my $FPGenControl_obj;
    //;# if ($pipeline_depth>0){
    //;   $FPGenControl_obj = generate('FPGenControl','FPControl');
    `$FPGenControl_obj->instantiate`;
    logic [1:0] 							       opcode_q[$];
-
+   
    //;# }
 
    logic stall_requested;
@@ -115,7 +118,7 @@ module `mname`
    //; } else {
    assign stall_requested = FPGen_bus.stall_request;
    //; }
-
+   
    // FP transaction handles
    //; my $TransGenA_obj = generate('FPTransaction','TransGenA',
    //;				    Random=>'YES',
@@ -172,7 +175,7 @@ module `mname`
    `$forward_B->instantiate()`; 
    //; $forward_C = generate('forward', 'ForwardC', Width=>$mul_pipeline_depth+1);
    `$forward_C->instantiate()`;
-
+   
    logic							       forward_a_q[$], forward_b_q[$];
    logic [`$mul_pipeline_depth`:0] 				       forward_c_q[$];
    
@@ -192,7 +195,7 @@ module `mname`
 	 drive_dut();
 	 monitor_dut();
       join
-
+      
       // if we reached this point safely, the test passed!
       repeat (10) @(negedge clk); // give the lines some time to settle
       $display("%t: TESTBENCH IS DONE -- \033[0;32mTEST PASS\033[0m", $time);
@@ -202,8 +205,9 @@ module `mname`
       finish_saif();
       $finish(0);
    end
+   
 
-
+   
    //-------------------------------------------------------------------------//
    // start_up_testbench: Task to reset all DUT signals and testbench objects
    //-------------------------------------------------------------------------//
@@ -394,8 +398,9 @@ module `mname`
 	 end // while (loc <MEM_SIZE && MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
    endtask // drive_dut
-
-
+   
+   
+   
    //-------------------------------------------------------------------------//
    // Monitor: every clk*$pipeline_depth+clk*k, check results	
    //-------------------------------------------------------------------------//
@@ -439,7 +444,7 @@ module `mname`
 	       TransExpected.ForceFPNum(expectedZ);
 	     
                // $display("%t: FOO q0 = (%h,%h,%h)", $time, a_q[0], b_q[0], c_q[0]);
-               // $display("FOO result %h = f(%h,%h,%h)", FPGen_bus.z, r_a, r_b, r_c);
+	       // $display("FOO result %h = f(%h,%h,%h)", FPGen_bus.z, r_a, r_b, r_c);
 
 	       //; if ($enable_forwarding eq 'YES'){
 	       // Print the forwarding information
@@ -464,9 +469,8 @@ module `mname`
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
-	       
                @(negedge clk);
-
+	       
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
 		  //FPGen_bus.dumptolog = 1'b1;
@@ -585,8 +589,10 @@ module `mname`
 	 end // while ( MemTemp !== 1b'x )
       end // else: !if(vector_file == "")
    endtask // monitor_dut
+   
 
 
+   
    //-------------------------------------------------------------------------//
    // general runtime argument parsing procedure
    //-------------------------------------------------------------------------//
@@ -629,6 +635,7 @@ module `mname`
 	 $display("\t%t:\tRuntime input +File=%s found",$time, vector_file);
       end
    endtask // get_command_line_args
+
 
    // task to control wave capture
    task start_wave(input int wave_delay=0);
