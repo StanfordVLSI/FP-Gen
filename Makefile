@@ -463,13 +463,16 @@ run: $(SIMV)
 	test -f TEST_PASS && rm TEST_PASS
 	test -f TEST_FAIL && rm TEST_FAIL
 	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) -l run_bb.log
-	test -f TEST_FAIL && exit 13
+	test -f TEST_PASS || exit 13
 
 run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
 	@echo ""Architecture
 	@echo Now Running simv using IBM\'s fpgen generated vectors
 	@echo ==================================================
+	test -f TEST_PASS && rm TEST_PASS
+	test -f TEST_FAIL && rm TEST_FAIL
 	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) -l run_bb.log
+	test -f TEST_PASS || exit 13
 
 
 # DC & ICC Run rules:
