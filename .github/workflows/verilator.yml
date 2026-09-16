@@ -1,0 +1,41 @@
+name: Verilator Test
+
+#------------------------------------------------------------------------
+on:
+  # Every push
+  push:
+
+  # When requested manually
+  workflow_dispatch:
+
+  # Note: Schedule works using main branch only
+  schedule:
+    # Once a month at 6am ( 6am PDT ~ 2300 UTC)
+    #        min hr day [JAN-DEC] [MON-SUN]
+    - cron: ' 0  23  1      *         *    '
+
+#------------------------------------------------------------------------
+jobs:
+
+  # This workflow contains a single job called "Verilator"
+  Verilator:
+
+    # The type of runner that the job will run on; can skip by using commit msg ".*skip ci.*"
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+
+    steps:
+
+      # Action, branch, and repo information.
+      - run: echo Action = ${{ github.event_name }}, branch = ${{ github.ref }}
+
+      - name: Install '${{ github.repository }}', branch '${{ github.ref }}'
+        uses: actions/checkout@v2
+
+      - name: Install verilator 5.028
+        uses: veryl-lang/setup-verilator@v1
+        with:
+          version: 5.028
+
+      - name: Verilator correctness test
+        run:  test/verilator-bf-cma.sh
