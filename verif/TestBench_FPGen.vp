@@ -488,10 +488,12 @@ module `mname`
 			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
 		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+
+                  // We signal failure by creating a file "TEST_FAIL" :(
 		  result_tag = $fopen("TEST_FAIL","w");
 		  $fclose(result_tag);
-                  @(negedge clk); #1;		// wait a clock cycle
-		  $finish(2);
+		  @(negedge clk); #1;		// wait a clock cycle
+		  $finish(2);                   // note the "2" is not an exit code, see SV syntax docs
 	       end
 	       else begin
 		  // Print some transaction information

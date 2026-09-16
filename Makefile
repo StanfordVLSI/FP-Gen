@@ -460,7 +460,10 @@ run: $(SIMV)
 	@echo ""
 	@echo Now Running simv
 	@echo ==================================================
+	test -f TEST_PASS && rm TEST_PASS
+	test -f TEST_FAIL && rm TEST_FAIL
 	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) -l run_bb.log
+	test -f TEST_FAIL && exit 13
 
 run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
 	@echo ""Architecture
