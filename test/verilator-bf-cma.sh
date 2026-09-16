@@ -13,8 +13,7 @@ INFO 'Install genesis if it is not there already'
 source scripts/setup.sh --genesis-only
 
 INFO 'Generate the verilog'
-cfg=bf-cma
-make clean gen GENESIS_CFG_SCRIPT=SysCfgs/$cfg.cfg |& tee $testdir/make-gen.log
+make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
 if ! grep "Genesis Finished Generating Your Design" genesis.log; then
     echo "ERROR looks like verilog generation failed"
     exit 13
