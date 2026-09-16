@@ -7,7 +7,7 @@ if ! test -f scripts/librelane.sh; then
 fi
 
 # Helper function
-function INFO { printf '\n[BFTEST] %s\n' $*; }
+function INFO { printf '\n[VBC] %s\n' "$*"; }
 
 INFO 'Install genesis if it is not there already'
 source scripts/setup.sh --genesis-only
