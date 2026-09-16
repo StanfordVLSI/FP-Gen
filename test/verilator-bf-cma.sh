@@ -22,8 +22,6 @@ if ! grep "Genesis Finished Generating Your Design" genesis.log; then
     exit 13
 fi
 
-
-# FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp
 INFO 'Run the test'
 
 # Clean up from possible previous runs
@@ -36,5 +34,6 @@ PARMS='--timing --timescale 1ps/1ps --cc -y rtl/dwsub -f genesis_vlog.vf'
 verilator --binary -j 0 -Wno-fatal --top-module top_FPGen $PARMS && obj_dir/Vtop_FPGen
 
 # Check the result
+# FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp
 test -e TEST_PASS || exit 13  # FAIL
 exit                          # PASS
