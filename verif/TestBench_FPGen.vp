@@ -441,7 +441,8 @@ module `mname`
 	       TransGenA.ForceFPNum(r_a);
 	       TransGenB.ForceFPNum(r_b);
 	       TransGenC.ForceFPNum(r_c);
-	       TransExpected.ForceFPNum(expectedZ);
+	       //TransExpected.ForceFPNum(expectedZ);
+	       TransExpected.ForceFPNum(0);  // USE THIS TO FORCE AN ERROR MAYBE
 	     
                // $display("%t: FOO q0 = (%h,%h,%h)", $time, a_q[0], b_q[0], c_q[0]);
 	       // $display("FOO result %h = f(%h,%h,%h)", FPGen_bus.z, r_a, r_b, r_c);
