@@ -25,23 +25,16 @@ fi
 
 # FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp
 INFO 'Run the test'
-set -x
+
+# Clean up from possible previous runs
+/bin/rm -rf obj_dir
 test -f TEST_PASS && rm TEST_PASS
 test -f TEST_FAIL && rm TEST_FAIL
 
-#     -y      /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ \
-#     +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ \
-#     -y      /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ \
-#     +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ \
+# New run
+PARMS='--timing --timescale 1ps/1ps --cc -y rtl/dwsub -f genesis_vlog.vf'
+verilator --binary -j 0 -Wno-fatal --top-module top_FPGen $PARMS && obj_dir/Vtop_FPGen
 
-
-# PARMS1='--timing --timescale 1ps/1ps --cc -y . +incdir+.'
-PARMS1='--timing --timescale 1ps/1ps --cc'
-
-PARMS2='./rtl/dwsub/DWSUB01_add.v ./rtl/dwsub/DWSUB01_csa.v ./rtl/dwsub/DWSUB_decode_en.v ./rtl/dwsub/DWSUB_lzd.v -f ./genesis_vlog.vf'
-
-
-/bin/rm -rf obj_dir
-verilator --binary -j 0 -Wno-fatal --top-module top_FPGen $PARMS1 $PARMS2 && obj_dir/Vtop_FPGen
+# Check the result
 test -e TEST_PASS || exit 13  # FAIL
 exit                          # PASS
