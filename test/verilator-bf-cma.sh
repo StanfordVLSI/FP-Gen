@@ -35,10 +35,8 @@ test -f TEST_FAIL && rm TEST_FAIL
 #     +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ \
 
 
-PARMS1='--timing --timescale 1ps/1ps --cc \
-    -y      . \
-    +incdir+. \
-'
+# PARMS1='--timing --timescale 1ps/1ps --cc -y . +incdir+.'
+PARMS1='--timing --timescale 1ps/1ps --cc'
 
 PARMS2='./rtl/dwsub/DWSUB01_add.v ./rtl/dwsub/DWSUB01_csa.v ./rtl/dwsub/DWSUB_decode_en.v ./rtl/dwsub/DWSUB_lzd.v -f ./genesis_vlog.vf'
 
