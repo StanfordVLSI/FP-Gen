@@ -47,7 +47,7 @@ module `mname`
    
    initial begin
       clk = 1'b0;
-      reset <= 1'b0;
+      reset = 1'b0;
       calibrate_clk;
       fork
 	 do_clk;
@@ -76,7 +76,7 @@ module `mname`
    // task to reverse reset (works for both pos and neg reset logic)
    task do_reset;
       repeat(`$reset_period`) @(posedge clk);
-      reset <= ~reset;
+      reset = ~reset;
    endtask // do_reset
    
 

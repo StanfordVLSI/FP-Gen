@@ -1,0 +1,62 @@
+This works I think, i.e. "works" as in compiles without errors. Have not yet tried running the resulting binary though.
+```
+/bin/rm -rf obj_dir
+
+TOP=top_FPGen
+
+PARMS1='--timing --timescale 1ps/1ps --cc -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/'
+
+PARMS2='/nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f /nobackup/steveri/github/FP-Gen/genesis_vlog.vf'
+
+verilator -Wno-fatal --top-module $TOP $PARMS1 $PARMS2 |& tee tmp.log
+```
+
+########################################################################
+FULL TESTING
+
+#######################
+# Build the verilog
+i=1; cfg=bf-cma; (make clean run GENESIS_CFG_SCRIPT=SysCfgs/$cfg.cfg) |& tee steveri/tmp-$cfg.log$i | tail -20
+gdiff -b $v steveri/snapshot4-work/$v
+
+#######################
+# Capture a vcs run
+i=4; dovcs $i | tail -20
+diff steveri/vcs.log[34]
+
+#######################
+# Capture a verilator run
+i=4; dover $i | tail -20
+diff steveri/ver.log[34]
+
+#######################
+# Compare the two
+diff steveri/{vcs,ver}.log4
+
+
+##############################################################################
+% which dover
+dover is a function
+dover () 
+{ 
+    ( i=$1;
+    log=steveri/ver.log$i;
+    /bin/rm -rf obj_dir;
+    verilator --binary -j 0 -Wno-fatal --top-module $TOP $PARMS1 $PARMS2 && obj_dir/Vtop_FPGen 2>&1 | tee $log;
+    echo $log ) 2>&1 | less
+}
+TOP=top_FPGen
+PARMS1='--timing --timescale 1ps/1ps --cc -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/'
+PARMS2='/nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f /nobackup/steveri/github/FP-Gen/genesis_vlog.vf'
+
+##############################################################################
+% which dovcs
+dovcs is a function
+dovcs () 
+{ 
+    ( i=$1;
+    log=steveri/vcs.log$i;
+    delete csrc simv simv.daidr;
+    vcs -sverilog +cli +memcbk +lint=PCWM +libext+.v -notice -full64 +v2k -debug_pp -timescale=1ps/1ps +noportcoerce +vcs+lic+wait +notimingcheck +delay_mode_zero -licqueue -ld gcc -top top_FPGen -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f $VF 2>&1 | tee steveri/comp_bb.log$i && ./simv -l simv.log +vcs+lic+wait +vpdbufsize+100 +vpdfileswitchsize+100 -l steveri/run_bb.log$i 2>&1 | tee $log;
+    echo $log ) 2>&1 | less
+}
