@@ -457,22 +457,22 @@ $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE): $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
 .PHONY: run run_ibm
 run: $(SIMV)
-	/bin/rm -f TEST_PASS TEST_FAIL
+	@/bin/rm -f TEST_PASS TEST_FAIL
 	@echo ""
 	@echo Now Running simv
 	@echo ==================================================
 	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) -l run_bb.log
-	test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
-	test -f TEST_PASS || exit 13
+	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
+	@test -f TEST_PASS || exit 13
 
 run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
-	/bin/rm -f TEST_PASS TEST_FAIL
+	@/bin/rm -f TEST_PASS TEST_FAIL
 	@echo ""Architecture
 	@echo Now Running simv using IBM\'s fpgen generated vectors
 	@echo ==================================================
 	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) -l run_bb.log
-	test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
-	test -f TEST_PASS || exit 13
+	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
+	@test -f TEST_PASS || exit 13
 
 
 # DC & ICC Run rules:
