@@ -470,12 +470,11 @@ module `mname`
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
-               @(negedge clk);
 	       
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
 		  //FPGen_bus.dumptolog = 1'b1;
-		  #1;	      
+		  #1;	      // WHYYY?
 		  // Print some transaction information
 		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
 			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
@@ -513,7 +512,8 @@ module `mname`
 		  end // if (verb)
 	       end 
 	    end
-            @(posedge clk);		// wait a clock cycle
+            @(negedge clk);         // full cycle maybe?          27000=>28000 => GOOOOOD!
+
     	 end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
       else begin // use the input test file
