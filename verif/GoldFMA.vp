@@ -57,7 +57,13 @@ class `mname`;
 //       Expected.randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
 // \`endif
 //      Expected.vrand();
+
+\`ifdef verilator
       Expected.vrand("D", transtype, sign, inc);
+\`else
+      Expected.vrandvcs("D", transtype, sign, inc);
+\`endif
+
 
    endfunction // agnostic_randomize
 

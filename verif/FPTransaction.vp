@@ -153,13 +153,33 @@ class `mname`;
    rand bit 				Sign;
    rand bit 				Inc; // only used to test cascaded architecrures
 
+
+
+
+   int unsigned iv = 0;
+   localparam int unsigned NUM_SETS = 4;
+   function void vrandvcs(
+                       string ABCD,
+                       FPTransType transtype,
+                       bit sign,
+                       bit inc
+                       );
+      if (ABCD == "D") begin
+        randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
+      end else begin
+        randomize();
+      end
+      $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
+               $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
+      iv = (iv + 1) % NUM_SETS;
+   endfunction // vrandvcs
+   
+
    // Support for verilator, currently only works for bf-cma
    // This vrand() function provides predetermined values such that verilator
    // gives exact same results as vcs using randomize() with seed 12345 maybe
 
    // vrand() called from Gold FMA as "Expected.vrand()"
-   int unsigned iv = 0;
-   localparam int unsigned NUM_SETS = 4;
    function void vrand(
                        string ABCD,
                        FPTransType transtype,
@@ -174,8 +194,8 @@ class `mname`;
         2: Fraction=10'h247;
         3: Fraction=10'h336;
       endcase
-\`else
-      randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
+//\`else
+//      randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
 \`endif
       $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
                $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
