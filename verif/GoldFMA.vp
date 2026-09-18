@@ -53,10 +53,12 @@ class `mname`;
       bit sign,
       bit inc
       );
-\`ifndef verilator
-      Expected.randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
-\`endif
-      Expected.vrand();
+// \`ifndef verilator
+//       Expected.randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
+// \`endif
+//      Expected.vrand();
+      Expected.vrand("D", transtype, sign, inc);
+
    endfunction // agnostic_randomize
 
    function bit CheckMultResult(`$typeRes` transRes, `$typeRes` transExpected);
