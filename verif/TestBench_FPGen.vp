@@ -260,11 +260,7 @@ module `mname`
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-\`ifndef verilator
-               `$FPGenControl_obj->iname()`.randomize();
-\`endif
                `$FPGenControl_obj->iname()`.vrand();
-
                FPGen_bus.opcode = `$FPGenControl_obj->iname()`.opcode;
                //; }
 	       i++;

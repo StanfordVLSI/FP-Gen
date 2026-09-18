@@ -24,6 +24,23 @@
 //;  my  $mul_weight = parameter(Name=>'MulWeight', Val=>30, Min=>0, Step=>1, Max=>100-$add_weight-$nop_weight,
 //;	  		      Doc=>"Distribution weight for mul instruction to be 1 (range is 0..100-`$add_weight`-`$nop_weight`)");
 
+//////////////////////////////////////////////////////////////////////////////
+// randomize() with constraints is a mess wrt verilator, so we do this VRAND macro thing
+// if VRAND already set, use that i.e. vcs +define+VRAND=vrandk
+// else verilator defaults to "vrandver" and vcs defaults to "vrandvcs"
+
+// Set up a couple of defaults
+// \`ifdef verilator \`define VRAND_DEFAULT vrandver
+\`ifdef verilator \`define VRAND_DEFAULT vrandk
+\`else            \`define VRAND_DEFAULT vrandvcs
+\`endif
+
+// Use default value if VRAND undefined
+\`ifndef VRAND \`define VRAND \`VRAND_DEFAULT
+\`endif
+
+
+
 class `mname`;
 
    rand FPGenPkg::InstructionType opcode;
@@ -36,10 +53,15 @@ class `mname`;
    // This vrand() function provides predetermined values such that verilator
    // gives exact same results as vcs using randomize() with seed 12345 maybe
 
+   function void vrand();  // Redirects to whatever randomization method is most approprate...
+      \`VRAND();
+      $display("%t: FPGenControl opcode=%s", $time, opcode.name());
+   endfunction
+
+   // Instead of actual random, supply predetermined values that match VCS randomize()
    int unsigned iv = 0;
    localparam int unsigned NUM_SETS = 10;
-   function void vrand();
-\`ifdef verilator
+   function void vrandk();
       case (iv)
         0: opcode=FMADD;
         1: opcode=FMUL;
@@ -53,11 +75,10 @@ class `mname`;
         9: opcode=FADD;
       endcase
       iv = (iv + 1) % NUM_SETS;
-\`endif
-      $display("%t: FPGenControl opcode=%s", $time, opcode.name());
    endfunction
 
-
+   // VCS can just use randomize+constraints right out of the box
+   function void vrandvcs(); randomize(); endfunction
    constraint pick_inst_type{
       opcode dist {
 		   FPGenPkg::FMADD := 100-mul_weight-add_weight-nop_weight, 
