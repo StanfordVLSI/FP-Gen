@@ -164,11 +164,14 @@ class `mname`;
                        bit sign,
                        bit inc
                        );
+\`ifndef verilator
       if (ABCD == "D") begin
+        // Note verilator bombs with syntax errors if it sees this line...
         randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
       end else begin
         randomize();
       end
+\`endif
       $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
                $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
       iv = (iv + 1) % NUM_SETS;
@@ -207,8 +210,10 @@ class `mname`;
    int unsigned idxB = 0;
    int unsigned idxC = 0;
 
-   function void vrandA();
+   function void vrandver(string ABC);
    \`ifdef verilator
+    if (ABC == "A") begin
+
       // {Type, Sign, Exp, Frac}
       // -------- OPERAND A --------
       assert (idxA<=8);
@@ -224,13 +229,7 @@ class `mname`;
         8: begin TransType=Random         ; Sign=1; Exponent=5'h16; Fraction=10'h0f2; Inc=0; end
       endcase
       idxA = idxA + 1;
-   \`else
-      randomize();
-   \`endif
-   endfunction // vrandA
-
-   function void vrandB();
-   \`ifdef verilator
+    end else if (ABC == "B") begin
       // -------- OPERAND B --------
       //$display("%t vrandb idxb=%0d", $time, idxB);
       assert (idxB<=8);
@@ -247,13 +246,7 @@ class `mname`;
         8: begin TransType=Random         ; Sign=1; Exponent=5'h08; Fraction=10'h2ed; Inc=0; end
       endcase
       idxB = idxB + 1;
-   \`else
-      randomize();
-   \`endif
-   endfunction // vrandB
-
-   function void vrandC();
-   \`ifdef verilator
+    end else if (ABC == "C") begin
       // -------- OPERAND C --------
       assert (idxC<=9);
       case (idxC)
@@ -268,13 +261,36 @@ class `mname`;
          8: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=0; end
          9: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=1; end
       endcase // case (idxC)
+      $display("%0t FPTransaction vrand("C") idxC=%0d setting Inc=%0d", $time, idxC, Inc);
+      idxC = idxC + 1;
+    end // if (ABC == "C")
+   \`else
+      randomize();
+   \`endif
+   endfunction // vrandver
+
+/*
+   \`else
+      randomize();
+   \`endif
+   endfunction // vrandA
+
+   function void vrandB();
+   \`ifdef verilator
+   \`else
+      randomize();
+   \`endif
+   endfunction // vrandB
+
+   function void vrandC();
+   \`ifdef verilator
    \`else
       randomize();
    \`endif
       $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
       idxC = idxC + 1;
    endfunction // vrandC
-
+*/
 
    // --------------------------------------------------------------------------
    // Some setters:
