@@ -285,7 +285,7 @@ module `mname`
 	       else  begin
 		  FPGen_bus.forward_a = 1'b0;
 		  //TransGenA.vrandA();
-		  TransGenA.vrandver("A");
+		  TransGenA.vrandver("A",0,0,0);
                   // \`showtrans(262,A);
 
 	       end // else: !if( `$forward_A->iname()`.forward...
@@ -306,7 +306,7 @@ module `mname`
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
 		  //TransGenB.vrandB();
-		  TransGenB.vrandver("B");
+		  TransGenB.vrandver("B",0,0,0);
                   // \`showtrans(284,B);
 
 	       end // else: !if( `$forward_B->iname()`.forward...
@@ -325,7 +325,7 @@ module `mname`
 	       else  begin
 		  FPGen_bus.forward_c = 0;
 		  //TransGenC.vrandC();
-	          TransGenC.vrandver("C");
+	          TransGenC.vrandver("C",0,0,0);
 
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
@@ -333,11 +333,11 @@ module `mname`
 
 	       //; } else {
 	       //TransGenA.vrandA();
-	       TransGenA.vrandver("A");
+	       TransGenA.vrandver("A",0,0,0);
 	       //TransGenB.vrandB();	
-	       TransGenB.vrandver("B");
+	       TransGenB.vrandver("B",0,0,0);
 	       //TransGenC.vrandC();
-	       TransGenC.vrandver("C");
+	       TransGenC.vrandver("C",0,0,0);
 	       //;}
 
 	       // drive data bus
