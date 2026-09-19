@@ -284,8 +284,8 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_a = 1'b0;
-		  //TransGenA.vrandA();
-		  TransGenA.vrandver("A",0,0,0);
+		  //TransGenA.vrandver("A",0,0,0);
+		  TransGenA.vrand("A",0,0,0);
                   // \`showtrans(262,A);
 
 	       end // else: !if( `$forward_A->iname()`.forward...

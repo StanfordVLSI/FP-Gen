@@ -156,12 +156,13 @@ class `mname`;
    // Steering
    function void vrand(
                        string ABCD,
-                       FPTransType transtype,
+                       //FPTransType transtype,
+                       int transtype_int,
                        bit sign,
                        bit inc
                        );
-      \`ifdef verilator vrandver(ABCD, transtype, sign, inc);
-      \`else            vrandvcs(ABCD, transtype, sign, inc);
+      \`ifdef verilator vrandver(ABCD, transtype_int, sign, inc);
+      \`else            vrandvcs(ABCD, transtype_int, sign, inc);
       \`endif
    endfunction // vrand
 
@@ -186,10 +187,12 @@ class `mname`;
       end else begin
         randomize();
       end
-      // included for historical reasons, should probably delete tho
-      $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-               $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
-      idxD = (idxD + 1); // % NUM_SETS;
+      if (ABCD == "D") begin
+         // included for historical reasons, should probably delete tho
+         $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
+                  $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
+         idxD = (idxD + 1); // % NUM_SETS;
+      end
    endfunction // vrandvcs
 \`endif
    
@@ -200,84 +203,78 @@ class `mname`;
 //BOOKMARK
 
    function void vrandver(
-                       string ABC,
-                       int transtype_int,
-                       bit sign,
-                       bit inc
-                       );
+                           string ABC,
+                           int transtype_int,
+                           bit sign,
+                           bit inc
+                          );
       FPTransType transtype = FPTransType'(transtype_int);
 
-//   \`ifdef verilator
-    if (ABC == "A") begin
+      if (ABC == "A") begin
+         // {Type, Sign, Exp, Frac}
+         // -------- OPERAND A --------
+         assert (idxA<=8);
+         case (idxA)
+           0: begin TransType=Random         ; Sign=0; Exponent=5'h09; Fraction=10'h116; Inc=1; end
+           1: begin TransType=PointOneOneOne ; Sign=0; Exponent=5'h0e; Fraction=10'h3ff; Inc=0; end
+           2: begin TransType=Max            ; Sign=1; Exponent=5'h1e; Fraction=10'h3ff; Inc=0; end
+           3: begin TransType=Random         ; Sign=0; Exponent=5'h11; Fraction=10'h3dd; Inc=1; end
+           4: begin TransType=Random         ; Sign=0; Exponent=5'h15; Fraction=10'h3b2; Inc=1; end
+           5: begin TransType=Denorm100      ; Sign=0; Exponent=5'h00; Fraction=10'h200; Inc=1; end
+           6: begin TransType=Max            ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
+           7: begin TransType=Random         ; Sign=1; Exponent=5'h09; Fraction=10'h285; Inc=0; end
+           8: begin TransType=Random         ; Sign=1; Exponent=5'h16; Fraction=10'h0f2; Inc=0; end
+         endcase
+         idxA = idxA + 1;
 
-      // {Type, Sign, Exp, Frac}
-      // -------- OPERAND A --------
-      assert (idxA<=8);
-      case (idxA)
-        0: begin TransType=Random         ; Sign=0; Exponent=5'h09; Fraction=10'h116; Inc=1; end
-        1: begin TransType=PointOneOneOne ; Sign=0; Exponent=5'h0e; Fraction=10'h3ff; Inc=0; end
-        2: begin TransType=Max            ; Sign=1; Exponent=5'h1e; Fraction=10'h3ff; Inc=0; end
-        3: begin TransType=Random         ; Sign=0; Exponent=5'h11; Fraction=10'h3dd; Inc=1; end
-        4: begin TransType=Random         ; Sign=0; Exponent=5'h15; Fraction=10'h3b2; Inc=1; end
-        5: begin TransType=Denorm100      ; Sign=0; Exponent=5'h00; Fraction=10'h200; Inc=1; end
-        6: begin TransType=Max            ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
-        7: begin TransType=Random         ; Sign=1; Exponent=5'h09; Fraction=10'h285; Inc=0; end
-        8: begin TransType=Random         ; Sign=1; Exponent=5'h16; Fraction=10'h0f2; Inc=0; end
-      endcase
-      idxA = idxA + 1;
-    end else if (ABC == "B") begin
-      // -------- OPERAND B --------
-      //$display("%t vrandb idxb=%0d", $time, idxB);
-      assert (idxB<=8);
-      case (idxB)
-        0: begin TransType=Inf            ; Sign=0; Exponent=5'h1f; Fraction=10'h000; Inc=0; end
-        1: begin TransType=PointOneOneOne ; Sign=0; Exponent=5'h0e; Fraction=10'h3ff; Inc=1; end
-        2: begin TransType=SignalingNaN   ; Sign=1; Exponent=5'h1f; Fraction=10'h1f4; Inc=1; end
-        3: begin TransType=Max            ; Sign=1; Exponent=5'h1e; Fraction=10'h3ff; Inc=0; end
-        4: begin TransType=Min            ; Sign=1; Exponent=5'h01; Fraction=10'h000; Inc=0; end
-        5: begin TransType=QuietNaN       ; Sign=0; Exponent=5'h1f; Fraction=10'h298; Inc=0; end
-        6: begin TransType=Zero           ; Sign=1; Exponent=5'h00; Fraction=10'h000; Inc=0; end
-        //8: begin TransType=Inf            ; Sign=0; Exponent=5'h1f; Fraction=10'h000; Inc=0; end
-        7: begin TransType=QuietNaN       ; Sign=1; Exponent=5'h1f; Fraction=10'h273; Inc=1; end
-        8: begin TransType=Random         ; Sign=1; Exponent=5'h08; Fraction=10'h2ed; Inc=0; end
-      endcase
-      idxB = idxB + 1;
-    end else if (ABC == "C") begin
-      // -------- OPERAND C --------
-      assert (idxC<=9);
-      case (idxC)
-         0: begin TransType=PointOneOneOne; Sign=1; Exponent=5'h0e; Fraction=10'h3ff; Inc=1; end
-         1: begin TransType=Max           ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
-         2: begin TransType=Random        ; Sign=0; Exponent=5'h11; Fraction=10'h3ed; Inc=0; end
-         3: begin TransType=QuietNaN      ; Sign=0; Exponent=5'h1f; Fraction=10'h20f; Inc=1; end
-         4: begin TransType=QuietNaN      ; Sign=1; Exponent=5'h1f; Fraction=10'h2de; Inc=1; end
-         5: begin TransType=Max           ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
-         6: begin TransType=Random        ; Sign=0; Exponent=5'h07; Fraction=10'h1dd; Inc=0; end
-         7: begin TransType=Random        ; Sign=0; Exponent=5'h04; Fraction=10'h244; Inc=1; end
-         8: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=0; end
-         9: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=1; end
-      endcase // case (idxC)
-      $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
-      idxC = idxC + 1;
-    end else if (ABC == "D") begin
-      Exponent=5'h1f; Sign=sign; Inc=inc; TransType=transtype;  // Why? dunno
-      case (idxD)
-        0: Fraction=10'h000;
-        1: Fraction=10'h31f;
-        2: Fraction=10'h247;
-        3: Fraction=10'h336;
-      endcase
-      $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-               $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
-      idxD = (idxD + 1); // % NUM_SETS;
-    end // if (ABC == "C")
-//   \`else
-//      randomize();
-//      if (ABC == "C") begin
-//         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
-//         idxC = idxC + 1;
-//      end
-//   \`endif
+      end else if (ABC == "B") begin
+         // -------- OPERAND B --------
+         //$display("%t vrandb idxb=%0d", $time, idxB);
+         assert (idxB<=8);
+         case (idxB)
+           0: begin TransType=Inf            ; Sign=0; Exponent=5'h1f; Fraction=10'h000; Inc=0; end
+           1: begin TransType=PointOneOneOne ; Sign=0; Exponent=5'h0e; Fraction=10'h3ff; Inc=1; end
+           2: begin TransType=SignalingNaN   ; Sign=1; Exponent=5'h1f; Fraction=10'h1f4; Inc=1; end
+           3: begin TransType=Max            ; Sign=1; Exponent=5'h1e; Fraction=10'h3ff; Inc=0; end
+           4: begin TransType=Min            ; Sign=1; Exponent=5'h01; Fraction=10'h000; Inc=0; end
+           5: begin TransType=QuietNaN       ; Sign=0; Exponent=5'h1f; Fraction=10'h298; Inc=0; end
+           6: begin TransType=Zero           ; Sign=1; Exponent=5'h00; Fraction=10'h000; Inc=0; end
+           7: begin TransType=QuietNaN       ; Sign=1; Exponent=5'h1f; Fraction=10'h273; Inc=1; end
+           8: begin TransType=Random         ; Sign=1; Exponent=5'h08; Fraction=10'h2ed; Inc=0; end
+         endcase
+         idxB = idxB + 1;
+
+      end else if (ABC == "C") begin
+         // -------- OPERAND C --------
+         assert (idxC<=9);
+         case (idxC)
+           0: begin TransType=PointOneOneOne; Sign=1; Exponent=5'h0e; Fraction=10'h3ff; Inc=1; end
+           1: begin TransType=Max           ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
+           2: begin TransType=Random        ; Sign=0; Exponent=5'h11; Fraction=10'h3ed; Inc=0; end
+           3: begin TransType=QuietNaN      ; Sign=0; Exponent=5'h1f; Fraction=10'h20f; Inc=1; end
+           4: begin TransType=QuietNaN      ; Sign=1; Exponent=5'h1f; Fraction=10'h2de; Inc=1; end
+           5: begin TransType=Max           ; Sign=0; Exponent=5'h1e; Fraction=10'h3ff; Inc=1; end
+           6: begin TransType=Random        ; Sign=0; Exponent=5'h07; Fraction=10'h1dd; Inc=0; end
+           7: begin TransType=Random        ; Sign=0; Exponent=5'h04; Fraction=10'h244; Inc=1; end
+           8: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=0; end
+           9: begin TransType=One           ; Sign=1; Exponent=5'h0f; Fraction=10'h000; Inc=1; end
+         endcase // case (idxC)
+         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
+         idxC = idxC + 1;
+
+      end else if (ABC == "D") begin
+         Exponent=5'h1f; Sign=sign; Inc=inc; TransType=transtype;  // Why? dunno
+         case (idxD)
+           0: Fraction=10'h000;
+           1: Fraction=10'h31f;
+           2: Fraction=10'h247;
+           3: Fraction=10'h336;
+         endcase
+         $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
+                  $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
+         idxD = (idxD + 1); // % NUM_SETS;
+
+      end // if (ABC == "D")
    endfunction // vrandver
 
    // --------------------------------------------------------------------------
