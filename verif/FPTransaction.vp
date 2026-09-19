@@ -152,7 +152,7 @@ class `mname`;
    rand bit [`$exp_width - 1`:0] 	Exponent;
    rand bit 				Sign;
    rand bit 				Inc; // only used to test cascaded architecrures
-
+/*
    // Steering
    function void vrand(
                        string ABCD,
@@ -165,6 +165,21 @@ class `mname`;
       \`else            vrandvcs(ABCD, transtype_int, sign, inc);
       \`endif
    endfunction // vrand
+*/
+
+   \`include "verif/vrand_macros.vh"
+   // Steering: vrand() redirects to whatever randomization method is most approprate...
+   function void vrand(
+                       string ABCD,
+                       //FPTransType transtype,
+                       int transtype_int,
+                       bit sign,
+                       bit inc
+                       );
+      \`VRAND(ABCD, transtype_int, sign, inc);
+      // $display("%t: FPGenControl opcode=%s", $time, opcode.name());
+   endfunction
+
 
    // Transaction counters
    int unsigned idxA = 0;
@@ -208,7 +223,7 @@ class `mname`;
    // gives exact same results as vcs using randomize() with seed 12345 maybe
    // Currently only works for bf-cma maybe
 
-   function void vrandver(
+   function void vrandk(
                            string ABC,
                            int transtype_int,
                            bit sign,
@@ -281,7 +296,7 @@ class `mname`;
          idxD = (idxD + 1); // % NUM_SETS;
 
       end // if (ABC == "D")
-   endfunction // vrandver
+   endfunction // vrandk
 
    // --------------------------------------------------------------------------
    // Some setters:
