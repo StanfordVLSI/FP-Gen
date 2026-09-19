@@ -48,35 +48,12 @@ class `mname`;
    // Ver.i.lator does not understand multiple constraints inline with randomize call :(
    function void agnostic_randomize
      (
-
-      //FPTransaction_unq2  expected, 
-      //FPTransaction_unq2::FPTransType transtype,
-
-
       `$typeRes`  expected, 
       `$typeRes`::FPTransType transtype,
-
       bit sign,
       bit inc
       );
-// \`ifndef verilator
-//       Expected.randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
-// \`endif
-//      Expected.vrand();
-
-
-      // INSTEAD of transtype, pass transtype.num()
-      // THEN FPT unpacks it like transtype = 
-      Expected.vrand("D", transtype, sign, inc);
-
-/*
-\`ifdef verilator
-      //Expected.vrand("D", transtype, sign, inc);
-      Expected.vrandver("D", transtype, sign, inc);
-\`else
-      Expected.vrandvcs("D", transtype, sign, inc);
-\`endif
-*/
+      Expected.vrand("D", int'(transtype), sign, inc);
 
    endfunction // agnostic_randomize
 

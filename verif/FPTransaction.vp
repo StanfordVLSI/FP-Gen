@@ -207,7 +207,6 @@ class `mname`;
    // This vrand() function provides predetermined values such that verilator
    // gives exact same results as vcs using randomize() with seed 12345 maybe
    // Currently only works for bf-cma maybe
-//BOOKMARK
 
    function void vrandver(
                            string ABC,

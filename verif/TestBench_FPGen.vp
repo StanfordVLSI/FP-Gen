@@ -284,7 +284,6 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_a = 1'b0;
-		  //TransGenA.vrandver("A",0,0,0);
 		  TransGenA.vrand("A",0,0,0);
                   // \`showtrans(262,A);
 
@@ -305,7 +304,6 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
-		  //TransGenB.vrandB();
 		  TransGenB.vrand("B",0,0,0);
                   // \`showtrans(284,B);
 
@@ -324,7 +322,6 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_c = 0;
-		  //TransGenC.vrandC();
 	          TransGenC.vrand("C",0,0,0);
 
 	       end // else: !if( `$forward_C->iname()`.forward...
@@ -332,11 +329,8 @@ module `mname`
 	       forward_c_q = {forward_c_q, FPGen_bus.forward_c};
 
 	       //; } else {
-	       //TransGenA.vrandA();
 	       TransGenA.vrand("A",0,0,0);
-	       //TransGenB.vrandB();	
 	       TransGenB.vrand("B",0,0,0);
-	       //TransGenC.vrandC();
 	       TransGenC.vrand("C",0,0,0);
 	       //;}
 
