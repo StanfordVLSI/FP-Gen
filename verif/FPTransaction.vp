@@ -153,8 +153,6 @@ class `mname`;
    rand bit 				Sign;
    rand bit 				Inc; // only used to test cascaded architecrures
 
-
-
    // Steering
    function void vrand(
                        string ABCD,
@@ -162,57 +160,54 @@ class `mname`;
                        bit sign,
                        bit inc
                        );
-\`ifdef verilator
-  vrandver(ABCD, transtype, sign, inc);
-\`else
-  vrandvcs(ABCD, transtype, sign, inc);
-\`endif
+      \`ifdef verilator vrandver(ABCD, transtype, sign, inc);
+      \`else            vrandvcs(ABCD, transtype, sign, inc);
+      \`endif
    endfunction // vrand
 
+   // Transaction counters
+   int unsigned idxA = 0;
+   int unsigned idxB = 0;
+   int unsigned idxC = 0;
+   int unsigned idxD = 0;
 
-   int unsigned iv = 0;
-   localparam int unsigned NUM_SETS = 4;
+\`ifndef verilator
+   // Verilator dies if it sees this function, thus the "ifndef", also see comment below
+   //localparam int unsigned NUM_SETS = 4;
    function void vrandvcs(
                        string ABCD,
                        FPTransType transtype,
                        bit sign,
                        bit inc
                        );
-\`ifndef verilator
       if (ABCD == "D") begin
         // Note verilator bombs with syntax errors if it sees this line...
         randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
       end else begin
         randomize();
       end
-\`endif
+      // included for historical reasons, should probably delete tho
       $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-               $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
-      iv = (iv + 1) % NUM_SETS;
+               $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
+      idxD = (idxD + 1); // % NUM_SETS;
    endfunction // vrandvcs
+\`endif
    
-
-   // Support for verilator, currently only works for bf-cma
+   // Support for verilator, which has problems with constrained randomize().
    // This vrand() function provides predetermined values such that verilator
    // gives exact same results as vcs using randomize() with seed 12345 maybe
-
-   // vrand[ABC] for generating random test values
-   int unsigned idxA = 0;
-   int unsigned idxB = 0;
-   int unsigned idxC = 0;
+   // Currently only works for bf-cma maybe
+//BOOKMARK
 
    function void vrandver(
                        string ABC,
-                       //FPTransType transtype,
                        int transtype_int,
                        bit sign,
                        bit inc
                        );
-
       FPTransType transtype = FPTransType'(transtype_int);
-      
 
-   \`ifdef verilator
+//   \`ifdef verilator
     if (ABC == "A") begin
 
       // {Type, Sign, Exp, Frac}
@@ -266,74 +261,24 @@ class `mname`;
       idxC = idxC + 1;
     end else if (ABC == "D") begin
       Exponent=5'h1f; Sign=sign; Inc=inc; TransType=transtype;  // Why? dunno
-      case (iv)
+      case (idxD)
         0: Fraction=10'h000;
         1: Fraction=10'h31f;
         2: Fraction=10'h247;
         3: Fraction=10'h336;
       endcase
       $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-               $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
-      iv = (iv + 1) % NUM_SETS;
+               $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
+      idxD = (idxD + 1); // % NUM_SETS;
     end // if (ABC == "C")
-   \`else
-      randomize();
-      if (ABC == "C") begin
-         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
-         idxC = idxC + 1;
-      end
-   \`endif
+//   \`else
+//      randomize();
+//      if (ABC == "C") begin
+//         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
+//         idxC = idxC + 1;
+//      end
+//   \`endif
    endfunction // vrandver
-
-/*
-   // vrand() called from Gold FMA as "Expected.vrand()"
-   function void vrand(
-                       string ABCD,
-                       FPTransType transtype,
-                       bit sign,
-                       bit inc
-                       );
-\`ifdef verilator
-      Exponent=5'h1f; Sign=sign; Inc=inc; TransType=transtype;  // Why? dunno
-      case (iv)
-        0: Fraction=10'h000;
-        1: Fraction=10'h31f;
-        2: Fraction=10'h247;
-        3: Fraction=10'h336;
-      endcase
-//\`else
-//      randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
-\`endif
-      $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-               $time, iv, Fraction, Exponent, Sign, Inc, TransType.name());
-      iv = (iv + 1) % NUM_SETS;
-   endfunction // vrand
-*/
-
-
-
-/*
-   \`else
-      randomize();
-   \`endif
-   endfunction // vrandA
-
-   function void vrandB();
-   \`ifdef verilator
-   \`else
-      randomize();
-   \`endif
-   endfunction // vrandB
-
-   function void vrandC();
-   \`ifdef verilator
-   \`else
-      randomize();
-   \`endif
-      $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
-      idxC = idxC + 1;
-   endfunction // vrandC
-*/
 
    // --------------------------------------------------------------------------
    // Some setters:
