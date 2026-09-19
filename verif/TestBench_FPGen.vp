@@ -333,11 +333,11 @@ module `mname`
 
 	       //; } else {
 	       //TransGenA.vrandA();
-	       TransGenA.vrandver("A",0,0,0);
+	       TransGenA.vrand("A",0,0,0);
 	       //TransGenB.vrandB();	
-	       TransGenB.vrandver("B",0,0,0);
+	       TransGenB.vrand("B",0,0,0);
 	       //TransGenC.vrandC();
-	       TransGenC.vrandver("C",0,0,0);
+	       TransGenC.vrand("C",0,0,0);
 	       //;}
 
 	       // drive data bus
