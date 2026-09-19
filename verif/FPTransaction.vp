@@ -187,12 +187,19 @@ class `mname`;
       end else begin
         randomize();
       end
+
+      // included for historical reasons, should probably delete tho
       if (ABCD == "D") begin
-         // included for historical reasons, should probably delete tho
          $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
                   $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
          idxD = (idxD + 1); // % NUM_SETS;
+
+      // included for historical reasons, should probably delete tho
+      end else if (ABCD == "C") begin
+         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
+         idxC = idxC + 1;
       end
+
    endfunction // vrandvcs
 \`endif
    
