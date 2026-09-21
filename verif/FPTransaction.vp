@@ -280,6 +280,7 @@ class `mname`;
       // Don't need "E" b/c that is TestMult, not TestFPGen
 
       end // if (ABC == "D")
+      post_randomize();
    endfunction // vrandk
 
    // --------------------------------------------------------------------------
