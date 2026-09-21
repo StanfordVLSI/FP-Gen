@@ -564,20 +564,20 @@ class `mname`;
    function void post_randomize;
       if (TransType == Random) begin
 	 
-	 // if it is actually Max
 	 if((Fraction == {(`$frac_width`){1'b1}}) && (Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0}))  begin
+	    // Should not be Random, should instead be Max
 	    TransType = Max;
 	 end
-	  // if it is actually Min
 	 if((Fraction == `$frac_width`'b0) && (Exponent == `$exp_width`'b1))  begin
+	    // Should not be Random, should instead be Min
 	    TransType = Min;
 	 end
-	 // if it is actually One
 	 if((Fraction == `$frac_width`'b0) && (Exponent ==  {  1'b0, {(`$exp_width-1`){1'b1}}  }))  begin
+	    // Should not be Random, should instead be One
 	    TransType = One;
 	 end
-	 // if it is actually PointOneOneOne
 	 if((Fraction ==  {(`$frac_width`){1'b1}} ) && (Exponent ==  {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0}))  begin
+	    // Should not be Random, should instead be PointOneOneOne
 	    TransType = PointOneOneOne;
 	 end
       end    

@@ -42,7 +42,6 @@ class `mname`;
    // Instead of actual random, supply predetermined values that match VCS randomize()
    // Designed to work with config bf-cma ONLY
    int unsigned iv = 0;
-   localparam int unsigned NUM_SETS = 10;
    function void vrandk();
       case (iv)
         0: opcode=FMADD;
@@ -56,7 +55,7 @@ class `mname`;
         8: opcode=FADD;
         9: opcode=FADD;
       endcase
-      iv = (iv + 1) % NUM_SETS;
+      iv = iv + 1;
    endfunction
 
    // VCS can just use randomize+constraints right out of the box
