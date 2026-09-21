@@ -331,6 +331,3 @@ program automatic `mname` (
    endtask // start_wave
 
 endprogram : `mname`
-
-
-  
