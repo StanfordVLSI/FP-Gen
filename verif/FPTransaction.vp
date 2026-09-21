@@ -199,6 +199,9 @@ class `mname`;
       if (ABCD == "D") begin
         // Note verilator bombs with syntax errors if it sees this line...
         randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
+     end else if (ABCD == "E") begin
+        // Note verilator bombs with syntax errors if it sees this line...
+        randomize() with { (TransType == transtype) && (Sign == sign); };
       end else begin
         randomize();
       end

@@ -212,14 +212,14 @@ program automatic `mname` (
 	    // we are not verifying forwarding logic of this fake FPMult
 	    //`$forward_A->iname()`.randomize();
 	    //`$forward_B->iname()`.randomize();
-	    TransGenA.randomize();
-	    TransGenB.randomize();
+	    TransGenA.vrand("A",0,0,0);
+	    TransGenB.vrand("B",0,0,0);
 	    a = TransGenA.GetFPNum();
 	    b = TransGenB.GetFPNum();
 	    
 	    //; } else {  # No forwarding
-	    TransGenA.randomize();
-	    TransGenB.randomize();
+	    TransGenA.vrand("A",0,0,0);
+	    TransGenB.vrand("B",0,0,0);
 	    a = TransGenA.GetFPNum();
 	    b = TransGenB.GetFPNum();
 	    //;}
