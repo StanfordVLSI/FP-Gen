@@ -630,7 +630,8 @@ class `mname`;
                   Fraction == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
         end
 
-        QuietNaN: begin               // 1xx...x
+        // QuietNaN:        Fraction=Fraction;  
+        QuietNaN: begin                                 // 1xx...x
            Fraction = frand();
            Fraction[FWIDTH-1] = 1'b1;
         end
