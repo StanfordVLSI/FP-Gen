@@ -23,25 +23,27 @@
 //;                           Min=>1, Step=>1, 
 //;                           Doc=>"Width of the forwarding signal");
 
-
-
 class `mname`;
    typedef enum {Zero, OneHot} SignalType;
    rand SignalType forwardType;
    rand int hotbit;
    logic [`$width-1`:0] forward;
 
-   // Support for verilator, currently only works for bf-cma
-   // This vrand() function provides predetermined values such that verilator
-   // gives exact same results as vcs using randomize() with seed 12345 maybe
+   \`include "verif/vrand_macros.vh"
+   // vrand() redirects to whatever randomization method is most approprate...
+   function void vrand(string ABC);
+      \`VRAND(ABC);
+      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
+               ABC, $time, forward,  hotbit, forwardType.name());
+   endfunction
+
+   // Instead of actual random, vrandk() supplies predetermined values that match VCS randomize()
+   // Designed to work with config bf-cma ONLY
 
    int unsigned idxA = 0;
    int unsigned idxB = 0;
    int unsigned idxC = 0;
-
-   localparam int unsigned NUM_SETS = 10;
-   function void vrand(string ABC);
-\`ifdef verilator
+   function void vrandk(string ABC);
       if (ABC == "A") begin
          case (idxA)
            0: begin forward=0; hotbit=0; forwardType=Zero; end
@@ -55,7 +57,7 @@ class `mname`;
            8: begin forward=1; hotbit=0; forwardType=OneHot; end
            9: begin forward=0; hotbit=0; forwardType=Zero; end
          endcase
-         idxA = (idxA + 1) % NUM_SETS;
+         idxA = idxA + 1;
       end else if (ABC == "B") begin
          case (idxB)
            0: begin forward=0; hotbit=0; forwardType=Zero; end
@@ -69,7 +71,7 @@ class `mname`;
            8: begin forward=0; hotbit=0; forwardType=Zero; end
            9: begin forward=0; hotbit=0; forwardType=Zero; end
          endcase
-         idxB = (idxB + 1) % NUM_SETS;
+         idxB = idxB + 1;
       end else if (ABC == "C") begin
          case (idxC)
            0: begin forward=0; hotbit=2; forwardType=Zero; end
@@ -83,23 +85,18 @@ class `mname`;
            8: begin forward=0; hotbit=4; forwardType=Zero; end
            9: begin forward=0; hotbit=2; forwardType=Zero; end
          endcase
-         idxC = (idxC + 1) % NUM_SETS;
+         idxC = idxC + 1;
       end
-\`else
-      randomize();
-\`endif
-      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
-               ABC, $time, forward,  hotbit, forwardType.name());
    endfunction; // vrand
 
+   // VCS can just use randomize+constraints right out of the box
+   function void vrandvcs(string ABC); randomize(); endfunction
    constraint pick_forward{
       forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
    }
-
    constraint pick_hotbit {
       hotbit>=0 && hotbit<`$width`;
    }
-
    function void post_randomize;
       forward = `$width`'b0;
       if(forwardType == OneHot) begin
@@ -107,6 +104,4 @@ class `mname`;
       end
    endfunction 
    
-
 endclass : `mname`
-   

@@ -260,11 +260,7 @@ module `mname`
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-\`ifndef verilator
-               `$FPGenControl_obj->iname()`.randomize();
-\`endif
                `$FPGenControl_obj->iname()`.vrand();
-
                FPGen_bus.opcode = `$FPGenControl_obj->iname()`.opcode;
                //; }
 	       i++;
@@ -288,7 +284,7 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_a = 1'b0;
-		  TransGenA.vrandA();
+		  TransGenA.vrand("A",0,0,0);
                   // \`showtrans(262,A);
 
 	       end // else: !if( `$forward_A->iname()`.forward...
@@ -308,7 +304,7 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
-		  TransGenB.vrandB();
+		  TransGenB.vrand("B",0,0,0);
                   // \`showtrans(284,B);
 
 	       end // else: !if( `$forward_B->iname()`.forward...
@@ -326,15 +322,16 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_c = 0;
-		  TransGenC.vrandC();
+	          TransGenC.vrand("C",0,0,0);
+
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_c_q = {forward_c_q, FPGen_bus.forward_c};
 
 	       //; } else {
-	       TransGenA.vrandA();
-	       TransGenB.vrandB();	
-	       TransGenC.vrandC();
+	       TransGenA.vrand("A",0,0,0);
+	       TransGenB.vrand("B",0,0,0);
+	       TransGenC.vrand("C",0,0,0);
 	       //;}
 
 	       // drive data bus

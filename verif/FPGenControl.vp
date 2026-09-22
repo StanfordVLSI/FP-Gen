@@ -32,14 +32,18 @@ class `mname`;
    int mul_weight = `$mul_weight`;
    int nop_weight = `$nop_weight`;
 
-   // Support for verilator, currently only works for bf-cma
-   // This vrand() function provides predetermined values such that verilator
-   // gives exact same results as vcs using randomize() with seed 12345 maybe
+   \`include "verif/vrand_macros.vh"
+   // vrand() redirects to whatever randomization method is most approprate...
+   function void vrand();
+      \`VRAND();
+      $display("%t: FPGenControl opcode=%s", $time, opcode.name());
+   endfunction
 
+   // Instead of actual random, supply predetermined values that match VCS randomize()
+   // Designed to work with config bf-cma ONLY
    int unsigned iv = 0;
    localparam int unsigned NUM_SETS = 10;
-   function void vrand();
-\`ifdef verilator
+   function void vrandk();
       case (iv)
         0: opcode=FMADD;
         1: opcode=FMUL;
@@ -53,11 +57,10 @@ class `mname`;
         9: opcode=FADD;
       endcase
       iv = (iv + 1) % NUM_SETS;
-\`endif
-      $display("%t: FPGenControl opcode=%s", $time, opcode.name());
    endfunction
 
-
+   // VCS can just use randomize+constraints right out of the box
+   function void vrandvcs(); randomize(); endfunction
    constraint pick_inst_type{
       opcode dist {
 		   FPGenPkg::FMADD := 100-mul_weight-add_weight-nop_weight, 
