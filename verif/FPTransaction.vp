@@ -607,8 +607,9 @@ class `mname`;
         Zero, Min, Inf, One:            Fraction = '0; // all zeroes
         DenormFFF, Max, PointOneOneOne: Fraction = '1; // all ones ('1 means *all* ones, sez chatty bot)
 
-        Denorm100:       Fraction=Fraction;  
-        Denorm001:       Fraction=Fraction;  
+        Denorm100:                      Fraction = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
+        Denorm001:                      Fraction = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
+
         QuietNaN:        Fraction=Fraction;  
         DenormRnd:       Fraction=Fraction;  
         SignalingNaN:    Fraction=Fraction;  
