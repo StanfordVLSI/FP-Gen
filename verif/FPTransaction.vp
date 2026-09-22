@@ -138,7 +138,7 @@
 //;	$Random_w = parameter(Name=>'Random_DistWeight', Val=>50, Min=>0, Step=>1,
 //;					Doc=>"Distribution weight for Random (excluding Zero, Inf, Denorm and NaN) pattern");
 //; }
-
+//bookmark
 class `mname`;
    /* TO ME: Within class definitions, the rand and randc modifiers signal variables 
     * that are to undergo randomization. randc specifies permutation-based randomization, 
@@ -147,11 +147,14 @@ class `mname`;
    typedef enum {Zero, Denorm100, DenormFFF, Denorm001, DenormRnd, QuietNaN, 
 		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, EzAndSml, Random} FPTransType;
 
-   rand FPTransType TransType;
-   rand bit [`$frac_width - 1`:0] 	Fraction;
-   rand bit [`$exp_width - 1`:0] 	Exponent;
-   rand bit 				Sign;
-   rand bit 				Inc; // only used to test cascaded architecrures
+   parameter    FWIDTH = `$frac_width`;
+   parameter    EWIDTH = `$exp_width`;
+
+   rand FPTransType        TransType;
+   rand bit [FWIDTH - 1:0] Fraction;
+   rand bit [EWIDTH - 1:0] Exponent;
+   rand bit                Sign;
+   rand bit                Inc; // only used to test cascaded architecrures
 
    // For debugging maybe
    function showtrans(int lno);
@@ -601,21 +604,75 @@ class `mname`;
    function automatic void set_frac_all_zeroes(); Fraction = '0; endfunction
    function automatic void set_frac_all_ones();   Fraction = '1; endfunction
 */
+   // Generate a random fractional part
+   function automatic logic [FWIDTH-1:0] frand();
+      logic [FWIDTH-1:0] r;
+      for (int i = 0; i < (FWIDTH+31)/32; i++)
+        r = (r << 32) | $urandom();
+      return r;
+   endfunction
+
    function automatic void constrain_frac();
+      logic [FWIDTH-1:0] F0 = Fraction;
       unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
         // ---- Fixed-value cases -------------------------------------------
         Zero, Min, Inf, One:            Fraction = '0; // all zeroes
         DenormFFF, Max, PointOneOneOne: Fraction = '1; // all ones ('1 means *all* ones, sez chatty bot)
 
-        Denorm100:                      Fraction = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
-        Denorm001:                      Fraction = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
+        Denorm100: Fraction = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
+        Denorm001: Fraction = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
 
-        QuietNaN:        Fraction=Fraction;  
-        DenormRnd:       Fraction=Fraction;  
+        // ---- Random-with-constraints cases -------------------------------
+        DenormRnd: begin  // Denorm with no special frac pattern
+           do Fraction = frand();
+           while (Fraction == '0 || Fraction == '1  ||       // All zeroes or all ones => try again
+                  Fraction == {1'b1, {(FWIDTH-1){1'b0}}} ||  // 100* => try again
+                  Fraction == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
+        end
+
+        QuietNaN: begin               // 1xx...x
+           Fraction = frand();
+           Fraction[FWIDTH-1] = 1'b1;
+        end
+
+
+
+
+//bookmark
         SignalingNaN:    Fraction=Fraction;  
         EzAndSml:        Fraction=Fraction;  
         Random:          Fraction=Fraction;  
       endcase // unique case (trans_type)
+
+/*
+    SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
+      do frac = rand_frac();
+      while (frac[FWIDTH-2:0] == '0);
+      frac[FWIDTH-1] = 1'b0;
+    end
+
+    DenormRnd: begin                                // random, but none of the special patterns
+      do Fraction = frand();
+      while (Fraction == '0                                        ||
+             Fraction == '1                                        ||
+             Fraction == {1'b1, {(FWIDTH-1){1'b0}}}            ||
+             Fraction == {{(FWIDTH-1){1'b0}}, 1'b1});
+    end
+
+    EzAndSml:                                        // 1..10 inclusive
+      Fraction = FWIDTH'($urandom_range(1, 10));
+
+    Random:                                          // no constraint
+      Fraction = frand();
+
+    default:
+      Fraction = frand();
+
+*/
+
+
+
+      if (Fraction != F0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), F0, Fraction);
       
 /*
       if (TransType == Inf) set_frac_all_ones();   // WRONG changes inf to qn: "btype=QuietNaN"
