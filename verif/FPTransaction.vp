@@ -266,7 +266,6 @@ class `mname`;
            8: begin Sign= 1; Exponent= 5'h16; Fraction= 10'h0f2; Inc= 0; TransType= Random         ; end
          endcase
          //TransType = Random;
-         
          idxA = idxA + 1;
 
       end else if (ABC == "B") begin

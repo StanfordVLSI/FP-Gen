@@ -138,7 +138,6 @@ class `mname`;
       // 4. Either input is Inf                        Result is signed Inf
       // FOO FIXME FIXME FIXME this ain't happenin
       else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf || transC.TransType == `$typeC`::Inf) begin
-         $display("FOO forcing infinity");
 	 Expected.vrand("D", `$typeRes`::Inf, SignInfinity, 1'b0);
       end
 

@@ -308,6 +308,7 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
+
                   $display("%0t FOO 311 btype=%s", $time, TransGenB.TransType.name());
 		  TransGenB.vrand("B",0,0,0);
                   $display("%0t FOO 313 btype=%s", $time, TransGenB.TransType.name());
