@@ -623,44 +623,32 @@ class `mname`;
         Denorm001: Fraction = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
 
         // ---- Random-with-constraints cases -------------------------------
-        DenormRnd: begin  // Denorm with no special frac pattern
+        DenormRnd: begin                                     // Denorm with no special frac pattern
            do Fraction = frand();
            while (Fraction == '0 || Fraction == '1  ||       // All zeroes or all ones => try again
                   Fraction == {1'b1, {(FWIDTH-1){1'b0}}} ||  // 100* => try again
                   Fraction == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
         end
-
-        // QuietNaN:        Fraction=Fraction;  
         QuietNaN: begin                                 // 1xx...x
            Fraction = frand();
            Fraction[FWIDTH-1] = 1'b1;
+        end
+        SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
+           do Fraction = frand();
+           while (Fraction[FWIDTH-2:0] == '0);
+           Fraction[FWIDTH-1] = 1'b0;
         end
 
 
 
 
 //bookmark
-        SignalingNaN:    Fraction=Fraction;  
         EzAndSml:        Fraction=Fraction;  
         Random:          Fraction=Fraction;  
       endcase // unique case (trans_type)
 
 /*
-    SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
-      do frac = rand_frac();
-      while (frac[FWIDTH-2:0] == '0);
-      frac[FWIDTH-1] = 1'b0;
-    end
-
-    DenormRnd: begin                                // random, but none of the special patterns
-      do Fraction = frand();
-      while (Fraction == '0                                        ||
-             Fraction == '1                                        ||
-             Fraction == {1'b1, {(FWIDTH-1){1'b0}}}            ||
-             Fraction == {{(FWIDTH-1){1'b0}}, 1'b1});
-    end
-
-    EzAndSml:                                        // 1..10 inclusive
+   EzAndSml:                                        // 1..10 inclusive
       Fraction = FWIDTH'($urandom_range(1, 10));
 
     Random:                                          // no constraint
