@@ -412,6 +412,22 @@ module `mname`
       end // else: !if(vector_file == "")
    endtask // drive_dut
    
+   task print_some_transaction_information;
+
+		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
+			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
+		  $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
+			    TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
+		  $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
+			    TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
+		  $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
+			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
+		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
+			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
+
+
+   endtask // print_some_transaction_information
+
    
    
    //-------------------------------------------------------------------------//
@@ -494,6 +510,8 @@ module `mname`
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
 		  //FPGen_bus.dumptolog = 1'b1;
 		  //#1;	      // WHYYY?
+                  print_some_transaction_information();
+                  /*
 		  // Print some transaction information
 		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
 			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
@@ -505,6 +523,7 @@ module `mname`
 			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
 		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
 			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
+                   */
 		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
 
@@ -517,6 +536,8 @@ module `mname`
 	       else begin
 		  // Print some transaction information
 		  if (verb) begin
+                     print_some_transaction_information();
+/*
 		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
 			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
 		  $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
@@ -527,6 +548,7 @@ module `mname`
 			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
 		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
 			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
+*/
 		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  end // if (verb)
 	       end 

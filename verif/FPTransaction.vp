@@ -173,6 +173,7 @@ class `mname`;
       FPTransType transtype = FPTransType'(transtype_int);
 
       \`VRAND(ABCD, transtype_int, sign, inc);
+      constrain_exp();
       constrain_frac();
       
 \`ifdef verilator
@@ -648,12 +649,11 @@ class `mname`;
         Max: Exponent = { {(EWIDTH-1){1'b1}}, 1'b0};
         Inf: Exponent = {(`$exp_width`){1'b1}};
         One: Exponent = {  1'b0, {(`$exp_width-1`){1'b1}}  };
-        PointOneOneOne:
+
+        PointOneOneOne: begin
              Exponent = {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0};
-//
-//      (TransType == EzAndSml) ->	{
-//                                         Exponent[`$exp_width-1`] == 1'b1 &&
-//                                         Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+        end
+
         EzAndSml: begin
            Exponent = erand();
            Exponent[`$exp_width-1`] = 1'b1;
@@ -675,47 +675,11 @@ class `mname`;
 
         default: Exponent = erand();
 
-/*
-      (TransType == Random) -> 		
-                  {
-                   Exponent != `$exp_width`'b0 && 
-                   Exponent != {(`$exp_width`){1'b1}} };
-
-*/
-
-/*
-        DenormFFF, Max, PointOneOneOne: Exponent = '1; // all ones ('1 means *all* ones, sez chatty bot)
-
-        Denorm100: Exponent = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
-        Denorm001: Exponent = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
-
-        // ---- Random-with-constraints cases -------------------------------
-        DenormRnd: begin                                     // Denorm with no special frac pattern
-           do Exponent = frand();
-           while (Exponent == '0 || Exponent == '1  ||       // All zeroes or all ones => try again
-                  Exponent == {1'b1, {(FWIDTH-1){1'b0}}} ||  // 100* => try again
-                  Exponent == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
-        end
-        QuietNaN: begin                                 // 1xx...x
-           Exponent = frand();
-           Exponent[FWIDTH-1] = 1'b1;
-        end
-        SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
-           do Exponent = frand();
-           while (Exponent[FWIDTH-2:0] == '0);
-           Exponent[FWIDTH-1] = 1'b0;
-        end
-        EzAndSml: Exponent = FWIDTH'($urandom_range(1, 10));  // Easy and small
-        Random:   Exponent = frand();                         // no constraint. to be precise, one has no frets
-        default:  Exponent = frand();                         // no constraint
-*/
-
       endcase // unique case (trans_type)
 
       if (Exponent != E0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), E0, Exponent);
    endfunction; // constrain_exp
    
-
 
    // Generate a random fractional part
    function automatic logic [FWIDTH-1:0] frand();
@@ -897,3 +861,46 @@ endclass : `mname`
    function automatic void set_frac_all_zeroes(); Fraction = '0; endfunction
    function automatic void set_frac_all_ones();   Fraction = '1; endfunction
 */
+
+
+//
+//      (TransType == EzAndSml) ->	{
+//                                         Exponent[`$exp_width-1`] == 1'b1 &&
+//                                         Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+
+/*
+      (TransType == Random) -> 		
+                  {
+                   Exponent != `$exp_width`'b0 && 
+                   Exponent != {(`$exp_width`){1'b1}} };
+
+*/
+
+/*
+        DenormFFF, Max, PointOneOneOne: Exponent = '1; // all ones ('1 means *all* ones, sez chatty bot)
+
+        Denorm100: Exponent = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
+        Denorm001: Exponent = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
+
+        // ---- Random-with-constraints cases -------------------------------
+        DenormRnd: begin                                     // Denorm with no special frac pattern
+           do Exponent = frand();
+           while (Exponent == '0 || Exponent == '1  ||       // All zeroes or all ones => try again
+                  Exponent == {1'b1, {(FWIDTH-1){1'b0}}} ||  // 100* => try again
+                  Exponent == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
+        end
+        QuietNaN: begin                                 // 1xx...x
+           Exponent = frand();
+           Exponent[FWIDTH-1] = 1'b1;
+        end
+        SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
+           do Exponent = frand();
+           while (Exponent[FWIDTH-2:0] == '0);
+           Exponent[FWIDTH-1] = 1'b0;
+        end
+        EzAndSml: Exponent = FWIDTH'($urandom_range(1, 10));  // Easy and small
+        Random:   Exponent = frand();                         // no constraint. to be precise, one has no frets
+        default:  Exponent = frand();                         // no constraint
+*/
+
+
