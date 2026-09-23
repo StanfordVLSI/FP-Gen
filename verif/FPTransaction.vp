@@ -162,35 +162,22 @@ class `mname`;
                $time,  lno, Sign,    Exponent,      Fraction,        Inc, TransType.name());
         endfunction // showtrans
 
-   // vrand() redirects to whatever randomization method is most approprate...
    \`include "verif/vrand_macros.vh"
-   function void vrand(
-                       string ABCD,
+   function void vrand(    // vrand() redirects to vrandver/vrandvcs/? according to VRAND value
+                       string ABCDE,
                        int    transtype_int,
                        bit    sign,
                        bit    inc
                        );
+
+      // Set transtype according to parm (used when ABCD is "D" or "E")
       FPTransType transtype = FPTransType'(transtype_int);
 
-      \`VRAND(ABCD, transtype_int, sign, inc);
-      constrain_exp();
-      constrain_frac();
-/*      
-      \`ifdef verilator
-      //      randomize();
-
-      Sign = {$random()} % 2; // good
-      case (ABCD)
-        "A": TransType = Random;  // GOOD
-        "B": TransType = Random;  // BAD
-        "C": TransType = Random;  // GOOD
-
-        // "D": TransType = FPTransType'(transtype_int);
-        // "E": TransType = FPTransType'(transtype_int);  GoldFMA only maybe
-      endcase
-      showtrans(192); post_randomize(); showtrans(194);
-      \`endif
-*/
+      \`VRAND(ABCDE, transtype_int, sign, inc);
+      // pick_trans_type();  // for random mode etc. ... we're not doing this (yet)
+      pick_fraction();
+      pick_exponent();
+      // showtrans(192)
       // $display("%t: FPGenControl opcode=%s", $time, opcode.name());
    endfunction
 
@@ -204,12 +191,12 @@ class `mname`;
    // Verilator dies if it sees this function, thus the "ifndef", also see comment below
    //localparam int unsigned NUM_SETS = 4;
    function void vrandvcs(
-                       string ABCD,
+                       string ABCDE,
                        FPTransType transtype,
                        bit sign,
                        bit inc
                        );
-      case (ABCD)
+      case (ABCDE)
         "A": randomize();
         "B": randomize();
         "C": randomize();
@@ -218,12 +205,12 @@ class `mname`;
       endcase
       /*
       // included for historical reasons, should probably delete tho
-      if (ABCD == "D") begin
+      if (ABCDE == "D") begin
          $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
                   $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
          idxD = idxD + 1;
       // included for historical reasons, should probably delete tho
-      end else if (ABCD == "C") begin
+      end else if (ABCDE == "C") begin
          $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
          idxC = idxC + 1;
       end
@@ -555,7 +542,8 @@ class `mname`;
    // --------------------------------------------------------------------------
    // To make auto generation of special cases easier:
 
-   function automatic void constrain_frac();
+   // This replaces "constraint pick_fraction_val" b/c verilator is not good with constraints
+   function automatic void pick_fraction();
       logic [FWIDTH-1:0] F0 = Fraction;
 
       unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
@@ -588,9 +576,10 @@ class `mname`;
       endcase // unique case (trans_type)
 
       // if (Fraction != F0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), F0, Fraction);
-   endfunction; // unmatched end(function|task|module|connectmodule|primitive|interface|package|class|clocking)
+   endfunction // pick_fraction
+   
 
-   function automatic void constrain_exp();
+   function automatic void pick_exponent();
       logic [FWIDTH-1:0] E0 = Exponent;
 
       unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
@@ -633,7 +622,7 @@ class `mname`;
       endcase // unique case (trans_type)
 
       // if (Exponent != E0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), E0, Exponent);
-   endfunction; // constrain_exp
+   endfunction // pick_exponent
    
 
    // Generate a random fractional part
@@ -688,6 +677,7 @@ class `mname`;
    }
 
    
+//;# TODO Random Mode not vetted for verilator yet; would need to rewrite the constraints etc. also see "pick_trans_type2" below
 //;# In Random Mode ONLY:
 //; if ($rand_mode =~ /YES/){
    /* The following class members hold the DEFAULT weights 
@@ -711,6 +701,7 @@ class `mname`;
    static int 	EzAndSml_w =`$EzAndSml_w`;
    static int 	Random_w = `$Random_w`;
    
+//;# In Random Mode ONLY:
    // The following are constraints blocks for controling and generating
    // meaningful transactions.
    constraint pick_sign{ 
@@ -732,6 +723,48 @@ class `mname`;
 		      EzAndSml := EzAndSml_w,
 		      Random := Random_w };
    }
+
+//;# In Random Mode ONLY:
+   // claude-opus-4-8 wrote the first draft of this one
+   // BUT not used except in random-mode
+   typedef struct { FPTransType val; int unsigned wt; } trans_weights;
+   function automatic FPTransType pick_trans_type2();
+      trans_weights w[] = '{
+                            '{Zero,           Zero_w},
+                            '{Denorm100,      Denorm100_w},
+                            '{DenormFFF,      DenormFFF_w},
+                            '{Denorm001,      Denorm001_w},
+                            '{DenormRnd,      DenormRnd_w},
+                            '{QuietNaN,       QuietNaN_w},
+                            '{SignalingNaN,   SignalingNaN_w},
+                            '{Min,            Min_w},
+                            '{Max,            Max_w},
+                            '{Inf,            Inf_w},
+                            '{One,            One_w},
+                            '{PointOneOneOne, PointOneOneOne_w},
+                            '{EzAndSml,       EzAndSml_w},
+                            '{Random,         Random_w}
+                            };
+      int unsigned total=0, r, acc=0;
+
+      // Calculate total of all weights T = summa(*_w)
+      foreach (w[i]) total += w[i].wt;
+      if (total == 0) begin $error("all weights zero"); return Zero; end
+
+      // Choose a number between 0 and T-1 inclusive
+      r = $urandom_range(0, total - 1);
+
+      // Walk through the array and return first type that satisfies weight requirement      
+      foreach (w[i]) begin
+         acc += w[i].wt;
+         if (r < acc) return w[i].val;
+      end
+      $display("WARNING pick_trans_type() FAILED see FPTransaction.vp");
+      return Random; // unreachable
+   endfunction // pick_trans_type
+
+
+//;# In Random Mode ONLY:
      // C'tor for a Random transaction
      // The constructor also reads user defined, per simulation, weights
      function new();
@@ -807,6 +840,7 @@ class `mname`;
 	end // if (! AllWeightsInitialized)
      endfunction // new
 //; } # End of "if ($rand_mode =~ /YES/)..."
+
 endclass : `mname`
 
 
@@ -899,4 +933,21 @@ endclass : `mname`
       //not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
       (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
    }
+*/
+
+/*      
+      \`ifdef verilator
+      //      randomize();
+
+      Sign = {$random()} % 2; // good
+      case (ABCDE)
+        "A": TransType = Random;  // GOOD
+        "B": TransType = Random;  // BAD
+        "C": TransType = Random;  // GOOD
+
+        // "D": TransType = FPTransType'(transtype_int);
+        // "E": TransType = FPTransType'(transtype_int);  GoldFMA only maybe
+      endcase
+      showtrans(192); post_randomize(); showtrans(194);
+      \`endif
 */
