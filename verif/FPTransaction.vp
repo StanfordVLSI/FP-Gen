@@ -580,39 +580,9 @@ class `mname`;
       (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
       (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
    }
-     
-   constraint pick_exponent_val{
-      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
-      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
-      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
-      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
-      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
-      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };//not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
-   }
-
-/*
-   // '1 means *all* ones, according to chatty bot
-   function automatic void set_frac_all_zeroes(); Fraction = '0; endfunction
-   function automatic void set_frac_all_ones();   Fraction = '1; endfunction
-*/
-   // Generate a random fractional part
-   function automatic logic [FWIDTH-1:0] frand();
-      logic [FWIDTH-1:0] r;
-      for (int i = 0; i < (FWIDTH+31)/32; i++)
-        r = (r << 32) | $urandom();
-      return r;
-   endfunction
-
    function automatic void constrain_frac();
       logic [FWIDTH-1:0] F0 = Fraction;
+
       unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
         // ---- Fixed-value cases -------------------------------------------
         Zero, Min, Inf, One:            Fraction = '0; // all zeroes
@@ -640,12 +610,129 @@ class `mname`;
         EzAndSml: Fraction = FWIDTH'($urandom_range(1, 10));  // Easy and small
         Random:   Fraction = frand();                         // no constraint. to be precise, one has no frets
         default:  Fraction = frand();                         // no constraint
-
       endcase // unique case (trans_type)
-//bookmark
+
       if (Fraction != F0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), F0, Fraction);
    endfunction; // unmatched end(function|task|module|connectmodule|primitive|interface|package|class|clocking)
+
+   constraint pick_exponent_val{
+      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
+      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
+      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
+      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
+      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
+      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+
+      //not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
+      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
+   }
+
+   function automatic void constrain_exp();
+      logic [FWIDTH-1:0] E0 = Exponent;
+
+      unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
+        // ---- Fixed-value cases -------------------------------------------
+
+        Zero, Denorm100, DenormFFF:  Exponent = '0; // all zeroes
+        Denorm001, DenormRnd:        Exponent = '0; // all zeroes
+        QuietNaN, SignalingNaN:      Exponent = '1; // all ones
+
+        Min: Exponent = EWIDTH'(1);
+        Max: Exponent = { {(EWIDTH-1){1'b1}}, 1'b0};
+        Inf: Exponent = {(`$exp_width`){1'b1}};
+        One: Exponent = {  1'b0, {(`$exp_width-1`){1'b1}}  };
+        PointOneOneOne:
+             Exponent = {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0};
+//
+//      (TransType == EzAndSml) ->	{
+//                                         Exponent[`$exp_width-1`] == 1'b1 &&
+//                                         Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+        EzAndSml: begin
+           Exponent = erand();
+           Exponent[`$exp_width-1`] = 1'b1;
+           Exponent[`$exp_width-2`:2] = `$exp_width-3`'b0;
+        end
+        
+        //not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
+        Random: begin // Denorm with no special frac pattern
+           // do Exponent = erand(); while (Exponent == '0 || Exponent == '1);
+
+           // Mr. Paranoia thinks erand() could break and put us into an infinite loop haha
+           Exponent = erand();
+           if (Exponent == '0 || Exponent == '1) Exponent = erand();
+           if (Exponent == '0 || Exponent == '1) Exponent = erand();
+           if (Exponent == '0 || Exponent == '1) Exponent = erand();
+           if (Exponent == '0 || Exponent == '1)
+             $fatal(2, "ERROR FPTransaction*.v got multiple unlikely values in a row");
+        end
+
+        default: Exponent = erand();
+
+/*
+      (TransType == Random) -> 		
+                  {
+                   Exponent != `$exp_width`'b0 && 
+                   Exponent != {(`$exp_width`){1'b1}} };
+
+*/
+
+/*
+        DenormFFF, Max, PointOneOneOne: Exponent = '1; // all ones ('1 means *all* ones, sez chatty bot)
+
+        Denorm100: Exponent = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
+        Denorm001: Exponent = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
+
+        // ---- Random-with-constraints cases -------------------------------
+        DenormRnd: begin                                     // Denorm with no special frac pattern
+           do Exponent = frand();
+           while (Exponent == '0 || Exponent == '1  ||       // All zeroes or all ones => try again
+                  Exponent == {1'b1, {(FWIDTH-1){1'b0}}} ||  // 100* => try again
+                  Exponent == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
+        end
+        QuietNaN: begin                                 // 1xx...x
+           Exponent = frand();
+           Exponent[FWIDTH-1] = 1'b1;
+        end
+        SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
+           do Exponent = frand();
+           while (Exponent[FWIDTH-2:0] == '0);
+           Exponent[FWIDTH-1] = 1'b0;
+        end
+        EzAndSml: Exponent = FWIDTH'($urandom_range(1, 10));  // Easy and small
+        Random:   Exponent = frand();                         // no constraint. to be precise, one has no frets
+        default:  Exponent = frand();                         // no constraint
+*/
+
+      endcase // unique case (trans_type)
+
+      if (Exponent != E0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), E0, Exponent);
+   endfunction; // constrain_exp
    
+
+
+   // Generate a random fractional part
+   function automatic logic [FWIDTH-1:0] frand();
+      logic [FWIDTH-1:0] r;
+      for (int i = 0; i < (FWIDTH+31)/32; i++)
+        r = (r << 32) | $urandom();
+      return r;
+   endfunction // frand
+
+   // Generate a random exponent part
+   function automatic logic [EWIDTH-1:0] erand();
+      logic [EWIDTH-1:0] r;
+      for (int i = 0; i < (EWIDTH+31)/32; i++)
+        r = (r << 32) | $urandom();
+      return r;
+   endfunction // erand
+
 
    // A one-bit function is a boolean
    function bit fraction_all_ones(); return ( Fraction == {(`$frac_width`){1'b1}} ); endfunction // fraction_all_ones
@@ -710,9 +797,6 @@ class `mname`;
    constraint pick_sign{ 
       Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
    }
-       
- 
-     
    constraint pick_trans_type{
       TransType dist {Zero := Zero_w, 
 		      Denorm100 := Denorm100_w, 
@@ -729,9 +813,6 @@ class `mname`;
 		      EzAndSml := EzAndSml_w,
 		      Random := Random_w };
    }
-
-     
-
      // C'tor for a Random transaction
      // The constructor also reads user defined, per simulation, weights
      function new();
@@ -808,3 +889,11 @@ class `mname`;
      endfunction // new
 //; } # End of "if ($rand_mode =~ /YES/)..."
 endclass : `mname`
+
+
+
+/*
+   // '1 means *all* ones, according to chatty bot
+   function automatic void set_frac_all_zeroes(); Fraction = '0; endfunction
+   function automatic void set_frac_all_ones();   Fraction = '1; endfunction
+*/
