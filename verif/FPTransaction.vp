@@ -161,7 +161,7 @@ class `mname`;
       $display("%0t FOOFPT-%0d Sign %b; Exponent 0x%h; Fraction 10'h%h; Inc %b; %s",
                $time,  lno, Sign,    Exponent,      Fraction,        Inc, TransType.name());
         endfunction // showtrans
-//bookmark
+
    // vrand() redirects to whatever randomization method is most approprate...
    \`include "verif/vrand_macros.vh"
    function void vrand(
@@ -175,15 +175,11 @@ class `mname`;
       \`VRAND(ABCD, transtype_int, sign, inc);
       constrain_exp();
       constrain_frac();
-      
-\`ifdef verilator
-//      randomize();
+/*      
+      \`ifdef verilator
+      //      randomize();
 
-/*
       Sign = {$random()} % 2; // good
-      //TransType = Random;     // BAD
-
-
       case (ABCD)
         "A": TransType = Random;  // GOOD
         "B": TransType = Random;  // BAD
@@ -191,14 +187,10 @@ class `mname`;
 
         // "D": TransType = FPTransType'(transtype_int);
         // "E": TransType = FPTransType'(transtype_int);  GoldFMA only maybe
-
       endcase
-      showtrans(192);
-      post_randomize();
-      showtrans(194);
+      showtrans(192); post_randomize(); showtrans(194);
+      \`endif
 */
-\`endif
-
       // $display("%t: FPGenControl opcode=%s", $time, opcode.name());
    endfunction
 
@@ -562,25 +554,7 @@ class `mname`;
    // Constraints for random generation
    // --------------------------------------------------------------------------
    // To make auto generation of special cases easier:
-   constraint pick_fraction_val{
-      (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
-      (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
-      (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
-      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 
-					  && Fraction != {1'b1, `$frac_width-1`'b0} 
-					  && Fraction != {(`$frac_width`){1'b1}} 
-					  && Fraction != {`$frac_width-1`'b0, 1'b1} };
-      (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
-      (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
-      (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == Max) -> 		{ Fraction == {(`$frac_width`){1'b1}} };
-      (TransType == Inf) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == One) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == PointOneOneOne) -> 	{ Fraction == {(`$frac_width`){1'b1}}  };
-      (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
-      (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
-   }
+
    function automatic void constrain_frac();
       logic [FWIDTH-1:0] F0 = Fraction;
 
@@ -613,27 +587,8 @@ class `mname`;
         default:  Fraction = frand();                         // no constraint
       endcase // unique case (trans_type)
 
-      if (Fraction != F0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), F0, Fraction);
+      // if (Fraction != F0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), F0, Fraction);
    endfunction; // unmatched end(function|task|module|connectmodule|primitive|interface|package|class|clocking)
-
-   constraint pick_exponent_val{
-      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
-      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
-      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
-      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
-      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
-
-      //not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
-      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
-   }
 
    function automatic void constrain_exp();
       logic [FWIDTH-1:0] E0 = Exponent;
@@ -677,7 +632,7 @@ class `mname`;
 
       endcase // unique case (trans_type)
 
-      if (Exponent != E0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), E0, Exponent);
+      // if (Exponent != E0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), E0, Exponent);
    endfunction; // constrain_exp
    
 
@@ -904,3 +859,44 @@ endclass : `mname`
 */
 
 
+/*
+   constraint pick_fraction_val{
+      (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
+      (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
+      (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
+      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 
+					  && Fraction != {1'b1, `$frac_width-1`'b0} 
+					  && Fraction != {(`$frac_width`){1'b1}} 
+					  && Fraction != {`$frac_width-1`'b0, 1'b1} };
+      (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
+      (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
+      (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == Max) -> 		{ Fraction == {(`$frac_width`){1'b1}} };
+      (TransType == Inf) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == One) -> 		{ Fraction == `$frac_width`'b0 };
+      (TransType == PointOneOneOne) -> 	{ Fraction == {(`$frac_width`){1'b1}}  };
+      (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
+      (TransType == Random) -> 		{ 1'b1 }; // No constraint
+   }
+*/
+/*
+   constraint pick_exponent_val{
+      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
+      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
+      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
+      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
+      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
+      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
+      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
+      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
+
+      //not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
+      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };
+   }
+*/
