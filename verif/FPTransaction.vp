@@ -156,84 +156,38 @@ class `mname`;
    rand bit              Sign;
    rand bit              Inc; // only used to test cascaded architecrures
 
+   // --------------------------------------------------------------------------
+   // functions for setting the "rand" objects TransType, Fraction, Exponent, Sign, Inc
    // if $rand_mode is NO, all values are random
    // if $rand_mode is YES, transtype and sign are constrained by weights (see $rand_mode below)
+   // --------------------------------------------------------------------------
 
-   function void vrand(
-                       string ABCDE,
-                       int    transtype_int,
-                       bit    sign,
-                       bit    inc
-                       );
+   // Used by TestBench_FPGen
+   function void SetRandomTrans();
+      TransType = pick_transtype();
+      pick_sign_and_inc();  // Choose random sign and inc
+      post_randomize();     // Choose random frac and exp depending on transtype, then cleanup
+   endfunction // SetRandomTrans
 
-/*
-      // Choose TransType, Sign, Inc: default is random
-      TransType = FPTransType'( $urandom_range(0, TransType.num()-1) );
-      {Sign,Inc} = $urandom_range(0,3);  // Default is random values for both
-//; if ($rand_mode =~ /YES/){
-      // If rand_mode, then use constrained random for default TransType and Sign
-      TransType = pick_trans_type();
-      Sign = pick_sign();
-//; }
-*/
-      // Note, transtype must be picked BEFORE doing pick_fraction() and pick_exponent()...
-      TransType = pick_transtype(); 
-      pick_sign_and_inc();  // Default before possible override below
-
-      // Potentially overrides transtype, sign and/or inc
-      case (ABCDE)
-        "A","B","C": begin  // Default is randomize() all three TransType, Sign, Inc
-           $display("%0t: FOO %s fake-o randomize() gave us %s\n", $time, ABCDE, TransType.name());
-        end
-        "D": begin  // randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
-           // Override default TransType, Sign, Inc
-           TransType = FPTransType'(transtype_int);
-           {Sign,Inc} = {sign,inc};
-        end
-        "E": begin  // randomize() with { (TransType == transtype) && (Sign == sign); };
-           // Override default TransType and Sign ONLY
-           TransType = FPTransType'(transtype_int);
-           Sign = sign;
-        end
-      endcase // case (ABCDE)
-          
-      // Choose random fraction and exponent, and then clean up possible errors
-      post_randomize();
-   endfunction
-
-// TODO maybe three separate functions random_trans, choose_trans_and_sign_and_inc, choose_trans_and_sign
-/*
-   function void random();
-      TransType = pick_transtype(); 
-      pick_sign_and_inc();  // Default before possible override below
-//      pick_fraction(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-//      pick_exponent(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-      post_randomize();
-   endfunction // random
-
-   function void random_exc_trans_and_sign(FPTransType transtype, bit sign);
+   // Used by GoldMultiplier
+   function void SetTransSign(FPTransType transtype, bit sign);
       TransType = transtype;
-      pick_sign_and_inc();
-      Sign = sign;
-//      pick_fraction(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-//      pick_exponent(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-      post_randomize();
-   endfunction // random_exc_trans_and_sign
+      pick_sign_and_inc();  // Choose random sign and inc
+      Sign = sign;          // Override random sign with directive
+      post_randomize();     // Choose random frac and exp depending on transtype, then cleanup
+   endfunction // SetTransSign
    
-   //function void random_exc_trans_and_sign_and_inc(FPTransType transtype, bit sign, bit inc);
-   function void random_exc_trans_and_sign_and_inc(FPTransType transtype, bit sign, inc);
+   // Used by GoldFMA
+   function void SetTransSignInc(FPTransType transtype, bit sign, inc);
       TransType = transtype;
       Sign = sign;
       Inc = inc;
-//      pick_fraction(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-//      pick_exponent(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-      post_randomize();
-endfunction // random_exc_trans_and_sign_and_inc
-*/   
+      post_randomize();     // Choose random frac and exp depending on transtype, then cleanup
+endfunction // SetTransSignInc
 
 
    // --------------------------------------------------------------------------
-   // Some setters:
+   // Some more setters:
    // --------------------------------------------------------------------------
    function void ForceFPNum(logic [`$frac_width+$exp_width` : 0] num);
       this.ForceSignExpFrac(num[`$frac_width + $exp_width`], 

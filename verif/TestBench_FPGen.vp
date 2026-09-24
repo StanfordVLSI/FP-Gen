@@ -186,6 +186,7 @@ module `mname`
    // MAIN: Main flow of test
    //-------------------------------------------------------------------------//
    initial begin
+      void'($urandom(13));  // Because I didn't like current default-seed results :(
       get_command_line_args();
       start_up_testbench();
 
@@ -285,7 +286,7 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_a = 1'b0;
-		  TransGenA.vrand("A",0,0,0);
+		  TransGenA.SetRandomTrans();
                   // \`showtransX(262,A);
 
 	       end // else: !if( `$forward_A->iname()`.forward...
@@ -307,7 +308,7 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
-		  TransGenB.vrand("B",0,0,0);
+		  TransGenB.SetRandomTrans();
                   // \`showtransX(284,B);
 
 	       end // else: !if( `$forward_B->iname()`.forward...
@@ -325,16 +326,16 @@ module `mname`
 	       end 
 	       else  begin
 		  FPGen_bus.forward_c = 0;
-	          TransGenC.vrand("C",0,0,0);
+	          TransGenC.SetRandomTrans();
 
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_c_q = {forward_c_q, FPGen_bus.forward_c};
 
 	       //; } else {
-	       TransGenA.vrand("A",0,0,0);
-	       TransGenB.vrand("B",0,0,0);
-	       TransGenC.vrand("C",0,0,0);
+	       TransGenA.SetRandomTrans();
+	       TransGenB.SetRandomTrans();
+	       TransGenC.SetRandomTrans();
 	       //;}
 
 	       // drive data bus
