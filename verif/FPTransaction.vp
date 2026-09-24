@@ -695,9 +695,6 @@ endfunction // SetTransSignInc
    // Weighted-random selection of sign bit combined with true-random assignment of inc bit
    function automatic bit pick_sign_and_inc();
       // E.g. if SignIsPos_w=30 there will be 30% chance that Sign=0
-//      int unsigned r;
-//      r = $urandom_range(0, 99);
-//      Sign = (r < SignIsPos_w) ? 1'b0 : 1'b1;
       Sign = ($urandom_range(0, 99) < SignIsPos_w) ? 1'b0 : 1'b1;
       Inc = $urandom_range(0, 1);
    endfunction // pick_sign_and_inc
