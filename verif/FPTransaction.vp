@@ -168,8 +168,8 @@ class `mname`;
       {Sign,Inc} = $urandom_range(0,3);  // Default is random values for both
 //; if ($rand_mode =~ /YES/){
       // If rand_mode, then use constrained random for default TransType and Sign
-      TransType = pick_trans_type2();
-      Sign = pick_sign2();
+      TransType = pick_trans_type();
+      Sign = pick_sign();
 //; }
       case (ABCDE)
         "A","B","C": begin  // Default is randomize() all three TransType, Sign, Inc
@@ -564,10 +564,9 @@ class `mname`;
    endfunction // if
 
 
-   
-   constraint order1 { 
-      solve TransType before Fraction, Exponent, Sign, Inc;
-   }
+//   constraint order1 { 
+//      solve TransType before Fraction, Exponent, Sign, Inc;
+//   }
 
    
 //;# TODO Random Mode not vetted for verilator yet; would need to rewrite the constraints etc. also see "pick_trans_type2" below
@@ -596,18 +595,14 @@ class `mname`;
    
 //;# Random Mode apparently enabled for operands A and B (unq1) but not C or D (unq2) (???) - dunno about E yet maybe
 //;# In Random Mode ONLY:
+
    // The following are constraints blocks for controling and generating
    // meaningful transactions.
-   constraint pick_sign{ 
+
+/*
+   constraint pick_sign {
       Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
    }
-   function automatic bit pick_sign2();
-      int unsigned r;
-      r = $urandom_range(0, 99);
-      return (r < SignIsPos_w) ? 1'b0 : 1'b1;
-   endfunction // pick_trans_type
-   
-
    constraint pick_trans_type{
       TransType dist {Zero := Zero_w, 
 		      Denorm100 := Denorm100_w, 
@@ -624,11 +619,18 @@ class `mname`;
 		      EzAndSml := EzAndSml_w,
 		      Random := Random_w };
    }
+*/
 
+   function automatic bit pick_sign();
+      int unsigned r;
+      r = $urandom_range(0, 99);
+      return (r < SignIsPos_w) ? 1'b0 : 1'b1;
+   endfunction // pick_trans_type
+   
 //;# In Random Mode ONLY:
    // claude-opus-4-8 wrote the first draft of this one
    typedef struct { FPTransType val; int unsigned wt; } trans_weights;
-   function automatic FPTransType pick_trans_type2();
+   function automatic FPTransType pick_trans_type();
       trans_weights w[] = '{
                             '{Zero,           Zero_w},
                             '{Denorm100,      Denorm100_w},
