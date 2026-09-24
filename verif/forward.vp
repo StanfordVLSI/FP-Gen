@@ -90,18 +90,34 @@ class `mname`;
    endfunction; // vrand
 
    // VCS can just use randomize+constraints right out of the box
-   function void vrandvcs(string ABC); randomize(); endfunction
+   function void vrandvcs(string ABC);
+      // randomize();
+      GetForward();
+      GetHotbit();
+      post_randomize();
+   endfunction
+/*
    constraint pick_forward{
       forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
    }
    constraint pick_hotbit {
       hotbit>=0 && hotbit<`$width`;
    }
+*/
+   function automatic bit GetForward();
+      // E.g. if $weight=30 there will be 30% chance that Forward=Zero
+      forwardType = ($urandom_range(0, 99) < `$weight`) ? OneHot : Zero;
+   endfunction // GetForward
+                     
+   function automatic bit GetHotbit();
+      hotbit = $urandom_range(0, `$width`-1);
+   endfunction // GetHotbit
+
    function void post_randomize;
       forward = `$width`'b0;
       if(forwardType == OneHot) begin
 	 forward[hotbit] = 1'b1;
       end
    endfunction 
-   
+
 endclass : `mname`
