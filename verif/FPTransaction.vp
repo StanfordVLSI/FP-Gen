@@ -158,6 +158,7 @@ class `mname`;
 
    // if $rand_mode is NO, all values are random
    // if $rand_mode is YES, transtype and sign are constrained by weights (see $rand_mode below)
+
    function void vrand(
                        string ABCDE,
                        int    transtype_int,
@@ -176,7 +177,7 @@ class `mname`;
 //; }
 */
       // Note, transtype must be picked BEFORE doing pick_fraction() and pick_exponent()...
-      TransType = pick_trans_type();
+      TransType = pick_transtype(); 
       pick_sign_and_inc();  // Default before possible override below
 
       // Potentially overrides transtype, sign and/or inc
@@ -196,13 +197,39 @@ class `mname`;
         end
       endcase // case (ABCDE)
           
-      // Choose fraction and exponent depending on which TransType we ended up with
-      pick_fraction();  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
-      pick_exponent();  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+      // Choose random fraction and exponent, and then clean up possible errors
       post_randomize();
    endfunction
 
 // TODO maybe three separate functions random_trans, choose_trans_and_sign_and_inc, choose_trans_and_sign
+/*
+   function void random();
+      TransType = pick_transtype(); 
+      pick_sign_and_inc();  // Default before possible override below
+//      pick_fraction(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+//      pick_exponent(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+      post_randomize();
+   endfunction // random
+
+   function void random_exc_trans_and_sign(FPTransType transtype, bit sign);
+      TransType = transtype;
+      pick_sign_and_inc();
+      Sign = sign;
+//      pick_fraction(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+//      pick_exponent(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+      post_randomize();
+   endfunction // random_exc_trans_and_sign
+   
+   //function void random_exc_trans_and_sign_and_inc(FPTransType transtype, bit sign, bit inc);
+   function void random_exc_trans_and_sign_and_inc(FPTransType transtype, bit sign, inc);
+      TransType = transtype;
+      Sign = sign;
+      Inc = inc;
+//      pick_fraction(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+//      pick_exponent(TransType);  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+      post_randomize();
+endfunction // random_exc_trans_and_sign_and_inc
+*/   
 
 
    // --------------------------------------------------------------------------
@@ -533,8 +560,7 @@ class `mname`;
    // Generate a random fractional part
    function automatic logic [FWIDTH-1:0] frand();
       logic [FWIDTH-1:0] r;
-      for (int i = 0; i < (FWIDTH+31)/32; i++)
-        r = (r << 32) | $urandom();
+      for (int i = 0; i < (FWIDTH+31)/32; i++) r = (r << 32) | $urandom();
       return r;
    endfunction // frand
 
@@ -546,14 +572,17 @@ class `mname`;
       return r;
    endfunction // erand
 
-
    // A one-bit function is a boolean
    function bit fraction_all_ones(); return ( Fraction == {(`$frac_width`){1'b1}} ); endfunction // fraction_all_ones
    function bit fraction_is_zero();  return ( Fraction ==    `$frac_width`'b0     ); endfunction // fraction_is_zero
 
-
-   //workaround for the bug of Random TransType
    function void post_randomize;
+
+      // Pick random-or-not fraction and exponent according to TransType
+      pick_fraction();
+      pick_exponent();
+
+      // Workaround for bugs in Random TransType
       if (TransType == Random) begin
 	 
 	 if (fraction_all_ones() && (Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0}))  begin
@@ -573,7 +602,7 @@ class `mname`;
 	    TransType = PointOneOneOne;
 	 end
       end    
-   endfunction // if
+   endfunction // post_randomize
 
 
 //   constraint order1 { 
@@ -721,7 +750,7 @@ class `mname`;
               
    // Weighted-random selection of transaction type (claude-opus-4-8 wrote the first draft)
    typedef struct { FPTransType val; int unsigned wt; } trans_weights;
-   function automatic FPTransType pick_trans_type();
+   function automatic FPTransType pick_transtype();
       trans_weights w[] = '{
                             '{Zero,           Zero_w},
                             '{Denorm100,      Denorm100_w},
@@ -752,17 +781,17 @@ class `mname`;
          acc += w[i].wt;
          if (r < acc) return w[i].val;
       end
-      $display("WARNING pick_trans_type() FAILED see FPTransaction.vp");
+      $display("WARNING pick_transtype() FAILED see FPTransaction.vp");
       return Random; // unreachable
-   endfunction // pick_trans_type
+   endfunction // pick_transtype
 
 //; } else { 
    // NOT Random Mode (FIXME maybe it should be called "Weighted-Random mode" instead of Random Mode...)
 
    // True-random transtype
-   function automatic FPTransType pick_trans_type();
+   function automatic FPTransType pick_transtype();
       TransType = FPTransType'( $urandom_range(0, TransType.num()-1) );
-   endfunction // pick_trans_type
+   endfunction // pick_transtype
 
    // True-random sign and inc
    function automatic bit pick_sign_and_inc();
