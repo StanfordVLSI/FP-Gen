@@ -257,6 +257,7 @@ module `mname`
       
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 int i=0;
+         int rfoo = $random(); // mix it up
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
@@ -291,7 +292,7 @@ module `mname`
 	       // store the forward_a signal in the queue
 	       forward_a_q = {forward_a_q, FPGen_bus.forward_a};
 
-               $display("%0t FOO 294 btype=%s", $time, TransGenB.TransType.name());
+               //$display("%0t FOO 294 btype=%s", $time, TransGenB.TransType.name());
 
 	       // $display("%t: i=%0d forwardb=%b", $time, i, ForwardB.forward);
 	       if ( `$forward_B->iname()`.forward
@@ -300,18 +301,13 @@ module `mname`
 		  FPGen_bus.forward_b = 1'b1;
                 //; if ($forward_cycle_b==$pipeline_depth){   
 		  TransGenB.ForceFPNum( expectedZ);
-                  $display("%0t FOO 301 btype=%s", $time, TransGenB.TransType.name());
                 //; } else {
 		  TransGenB.ForceFPNum( expected_q[`$pipeline_depth-$forward_cycle_b-1`]);
-                  $display("%0t FOO 304 btype=%s", $time, TransGenB.TransType.name());
                 //; }
 	       end 
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
-
-                  $display("%0t FOO 311 btype=%s", $time, TransGenB.TransType.name());
 		  TransGenB.vrand("B",0,0,0);
-                  $display("%0t FOO 313 btype=%s", $time, TransGenB.TransType.name());
                   // \`showtransX(284,B);
 
 	       end // else: !if( `$forward_B->iname()`.forward...
@@ -340,19 +336,14 @@ module `mname`
 	       TransGenB.vrand("B",0,0,0);
 	       TransGenC.vrand("C",0,0,0);
 	       //;}
-               $display("%0t FOO 336 btype=%s", $time, TransGenB.TransType.name());
 
 	       // drive data bus
                FPGen_bus.a = TransGenA.GetFPNum();
                FPGen_bus.b = TransGenB.GetFPNum();	
 	       FPGen_bus.c = TransGenC.GetFPNum();
 
-               $display("%0t FOO 343 btype=%s", $time, TransGenB.TransType.name());
-
 	       // $display( "%t: FOO 321 setting a=0x%h b=0x%h a=0x%h", $time, FPGen_bus.a, FPGen_bus.b, FPGen_bus.c);
-
-               $display("%0t FOO 353 pushing %h => b_q", $time, FPGen_bus.b);
-
+               // $display("%0t FOO 353 pushing %h => b_q", $time, FPGen_bus.b);
 
 	       // store all the numbers in queques
 	       a_q = {a_q, FPGen_bus.a};
@@ -369,14 +360,11 @@ module `mname`
 	       // HACK overwrite b or c for adder and mul mode
 	       //; if ($pipeline_depth>0){
                if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FADD) begin
-                  $display("%0t FOO forcing a B", $time);
                  TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
                end
 	       if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FMUL)
                  TransGenC.ForceFPNum(0);
 	       //; }
-
-               $display("%0t FOO 369 btype=%s", $time, TransGenB.TransType.name());
 
 	       
 	       // calculate the expected result
@@ -460,8 +448,7 @@ module `mname`
 	       expected_q = expected_q[1:$];
 	       opcode_q = opcode_q[1:$];
 	       
-               $display("%0t FOO 455 retrieved b_q[0] = r_b num = %h", $time, r_b);
-
+               // $display("%0t FOO 455 retrieved b_q[0] = r_b num = %h", $time, r_b);
 
 	       // restore FP models
 	       TransRes.ForceFPNum(FPGen_bus.z);
@@ -470,8 +457,7 @@ module `mname`
 	       TransGenC.ForceFPNum(r_c);
 	       TransExpected.ForceFPNum(expectedZ);
 	       //TransExpected.ForceFPNum(0);  // USE THIS TO FORCE AN ERROR MAYBE
-               $display("%0t FOO 455 retrieved r_b TransGenB.TransType = %s", $time, TransGenB.TransType.name());
-
+               // $display("%0t FOO 455 retrieved r_b TransGenB.TransType = %s", $time, TransGenB.TransType.name());
 	     
                // $display("%t: FOO q0 = (%h,%h,%h)", $time, a_q[0], b_q[0], c_q[0]);
 	       // $display("FOO result %h = f(%h,%h,%h)", FPGen_bus.z, r_a, r_b, r_c);
@@ -499,7 +485,7 @@ module `mname`
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
-               $display("%0t FOO SENT TransGenB.TransType = %s", $time, TransGenB.TransType.name());
+               // $display("%0t FOO SENT TransGenB.TransType = %s", $time, TransGenB.TransType.name());
 	       
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
