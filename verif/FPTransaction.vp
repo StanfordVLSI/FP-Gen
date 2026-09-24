@@ -156,6 +156,8 @@ class `mname`;
    rand bit              Sign;
    rand bit              Inc; // only used to test cascaded architecrures
 
+   // if $rand_mode is NO, all values are random
+   // if $rand_mode is YES, transtype and sign are constrained by weights (see $rand_mode below)
    function void vrand(
                        string ABCDE,
                        int    transtype_int,
@@ -163,6 +165,7 @@ class `mname`;
                        bit    inc
                        );
 
+/*
       // Choose TransType, Sign, Inc: default is random
       TransType = FPTransType'( $urandom_range(0, TransType.num()-1) );
       {Sign,Inc} = $urandom_range(0,3);  // Default is random values for both
@@ -171,6 +174,12 @@ class `mname`;
       TransType = pick_trans_type();
       Sign = pick_sign();
 //; }
+*/
+      // Note, transtype must be picked BEFORE doing pick_fraction() and pick_exponent()...
+      TransType = pick_trans_type();
+      pick_sign_and_inc();  // Default before possible override below
+
+      // Potentially overrides transtype, sign and/or inc
       case (ABCDE)
         "A","B","C": begin  // Default is randomize() all three TransType, Sign, Inc
            $display("%0t: FOO %s fake-o randomize() gave us %s\n", $time, ABCDE, TransType.name());
@@ -188,10 +197,13 @@ class `mname`;
       endcase // case (ABCDE)
           
       // Choose fraction and exponent depending on which TransType we ended up with
-      pick_fraction();
-      pick_exponent();
+      pick_fraction();  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
+      pick_exponent();  // FIXME should probably be pick_fraction(transtype) to emphasize dependence on transtype
       post_randomize();
    endfunction
+
+// TODO maybe three separate functions random_trans, choose_trans_and_sign_and_inc, choose_trans_and_sign
+
 
    // --------------------------------------------------------------------------
    // Some setters:
@@ -204,7 +216,7 @@ class `mname`;
       
    endfunction // ForceFPNum
    
-   // Kind of C'tor for a regular, NON-Random transaction
+   // Kind of constructor for a regular, NON-Random transaction
    function void ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, 
     			     logic [`$frac_width - 1`:0] Frac, logic Inc);
       this.Fraction = Frac;
@@ -264,7 +276,7 @@ class `mname`;
    
 
    
-   // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
+   // Kind of constructor for a regular, NON-Random transaction using Mantissa instead of Fraction
    // IMPORTANT: This function was custom built for the FPMult format
    function void FPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
     		 			 logic NaN, logic Inf, logic Zero);
@@ -569,13 +581,17 @@ class `mname`;
 //   }
 
    
-//;# TODO Random Mode not vetted for verilator yet; would need to rewrite the constraints etc. also see "pick_trans_type2" below
+//;# Random Mode apparently enabled for operands A and B (unq1)
+//;# but not C or D (unq2) (???) - dunno about E yet maybe
+
 //;# In Random Mode ONLY:
 //; if ($rand_mode =~ /YES/){
+
    /* The following class members hold the DEFAULT weights 
     * for the various transaction types.
     * However, they may be overwritten by the user at runtime
     * using the "+Zero_w=newWeight" notation */
+
    static bit 	AllWeightsInitialized = 0;	
    static int 	SignIsPos_w = `$SignIsPos_w`;
    static int 	Zero_w = `$Zero_w`;
@@ -593,81 +609,7 @@ class `mname`;
    static int 	EzAndSml_w =`$EzAndSml_w`;
    static int 	Random_w = `$Random_w`;
    
-//;# Random Mode apparently enabled for operands A and B (unq1) but not C or D (unq2) (???) - dunno about E yet maybe
-//;# In Random Mode ONLY:
-
-   // The following are constraints blocks for controling and generating
-   // meaningful transactions.
-
-/*
-   constraint pick_sign {
-      Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
-   }
-   constraint pick_trans_type{
-      TransType dist {Zero := Zero_w, 
-		      Denorm100 := Denorm100_w, 
-		      DenormFFF := DenormFFF_w, 
-		      Denorm001 := Denorm001_w,
-		      DenormRnd := DenormRnd_w,
-		      QuietNaN := QuietNaN_w, 
-		      SignalingNaN := SignalingNaN_w, 
-		      Min := Min_w, 
-		      Max := Max_w, 
-		      Inf := Inf_w, 
-		      One := One_w, 
-		      PointOneOneOne := PointOneOneOne_w,
-		      EzAndSml := EzAndSml_w,
-		      Random := Random_w };
-   }
-*/
-
-   function automatic bit pick_sign();
-      int unsigned r;
-      r = $urandom_range(0, 99);
-      return (r < SignIsPos_w) ? 1'b0 : 1'b1;
-   endfunction // pick_trans_type
-   
-//;# In Random Mode ONLY:
-   // claude-opus-4-8 wrote the first draft of this one
-   typedef struct { FPTransType val; int unsigned wt; } trans_weights;
-   function automatic FPTransType pick_trans_type();
-      trans_weights w[] = '{
-                            '{Zero,           Zero_w},
-                            '{Denorm100,      Denorm100_w},
-                            '{DenormFFF,      DenormFFF_w},
-                            '{Denorm001,      Denorm001_w},
-                            '{DenormRnd,      DenormRnd_w},
-                            '{QuietNaN,       QuietNaN_w},
-                            '{SignalingNaN,   SignalingNaN_w},
-                            '{Min,            Min_w},
-                            '{Max,            Max_w},
-                            '{Inf,            Inf_w},
-                            '{One,            One_w},
-                            '{PointOneOneOne, PointOneOneOne_w},
-                            '{EzAndSml,       EzAndSml_w},
-                            '{Random,         Random_w}
-                            };
-      int unsigned total=0, r, acc=0;
-
-      // Calculate total of all weights T = summa(*_w)
-      foreach (w[i]) total += w[i].wt;
-      if (total == 0) begin $error("all weights zero"); return Zero; end
-
-      // Choose a number between 0 and T-1 inclusive
-      r = $urandom_range(0, total - 1);
-
-      // Walk through the array and return first type that satisfies weight requirement      
-      foreach (w[i]) begin
-         acc += w[i].wt;
-         if (r < acc) return w[i].val;
-      end
-      $display("WARNING pick_trans_type() FAILED see FPTransaction.vp");
-      return Random; // unreachable
-   endfunction // pick_trans_type
-
-
-//;# In Random Mode ONLY:
-     // C'tor for a Random transaction
+     // Constructor for a random transactions
      // The constructor also reads user defined, per simulation, weights
      function new();
 	if (! AllWeightsInitialized) begin
@@ -741,9 +683,94 @@ class `mname`;
 	   end
 	end // if (! AllWeightsInitialized)
      endfunction // new
-//; } # End of "if ($rand_mode =~ /YES/)..."
 
-   // For debugging maybe
+//;# Random Mode apparently enabled for operands A and B (unq1) but not C or D (unq2) (???) - dunno about E yet maybe
+//;# In Random Mode ONLY:
+
+   // Constraint blocks for controling and generating meaningful transactions.
+/*
+   constraint pick_sign {
+      Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
+   }
+   constraint pick_trans_type{
+      TransType dist {Zero := Zero_w, 
+		      Denorm100 := Denorm100_w, 
+		      DenormFFF := DenormFFF_w, 
+		      Denorm001 := Denorm001_w,
+		      DenormRnd := DenormRnd_w,
+		      QuietNaN := QuietNaN_w, 
+		      SignalingNaN := SignalingNaN_w, 
+		      Min := Min_w, 
+		      Max := Max_w, 
+		      Inf := Inf_w, 
+		      One := One_w, 
+		      PointOneOneOne := PointOneOneOne_w,
+		      EzAndSml := EzAndSml_w,
+		      Random := Random_w };
+   }
+*/
+   // Weighted-random selection of sign bit combined with true-random assignment of inc bit
+   function automatic bit pick_sign_and_inc();
+      // E.g. if SignIsPos_w=30 there will be 30% chance that Sign=0
+//      int unsigned r;
+//      r = $urandom_range(0, 99);
+//      Sign = (r < SignIsPos_w) ? 1'b0 : 1'b1;
+      Sign = ($urandom_range(0, 99) < SignIsPos_w) ? 1'b0 : 1'b1;
+      Inc = $urandom_range(0, 1);
+   endfunction // pick_sign_and_inc
+              
+   // Weighted-random selection of transaction type (claude-opus-4-8 wrote the first draft)
+   typedef struct { FPTransType val; int unsigned wt; } trans_weights;
+   function automatic FPTransType pick_trans_type();
+      trans_weights w[] = '{
+                            '{Zero,           Zero_w},
+                            '{Denorm100,      Denorm100_w},
+                            '{DenormFFF,      DenormFFF_w},
+                            '{Denorm001,      Denorm001_w},
+                            '{DenormRnd,      DenormRnd_w},
+                            '{QuietNaN,       QuietNaN_w},
+                            '{SignalingNaN,   SignalingNaN_w},
+                            '{Min,            Min_w},
+                            '{Max,            Max_w},
+                            '{Inf,            Inf_w},
+                            '{One,            One_w},
+                            '{PointOneOneOne, PointOneOneOne_w},
+                            '{EzAndSml,       EzAndSml_w},
+                            '{Random,         Random_w}
+                            };
+      int unsigned total=0, r, acc=0;
+
+      // Calculate total of all weights T = summa(*_w)
+      foreach (w[i]) total += w[i].wt;
+      if (total == 0) begin $error("all weights zero"); return Zero; end
+
+      // Choose a number between 0 and T-1 inclusive
+      r = $urandom_range(0, total - 1);
+
+      // Walk through the array and return first type that satisfies weight requirement      
+      foreach (w[i]) begin
+         acc += w[i].wt;
+         if (r < acc) return w[i].val;
+      end
+      $display("WARNING pick_trans_type() FAILED see FPTransaction.vp");
+      return Random; // unreachable
+   endfunction // pick_trans_type
+
+//; } else { 
+   // NOT Random Mode (FIXME maybe it should be called "Weighted-Random mode" instead of Random Mode...)
+
+   // True-random transtype
+   function automatic FPTransType pick_trans_type();
+      TransType = FPTransType'( $urandom_range(0, TransType.num()-1) );
+   endfunction // pick_trans_type
+
+   // True-random sign and inc
+   function automatic bit pick_sign_and_inc();
+      {Sign,Inc} = $urandom_range(0,3);  // Default is random values for both
+   endfunction // pick_sign_and_inc
+//; } # End of "if ($rand_mode =~ /YES/) {} else {}"
+
+   // Usefule for debugging maybe
    function showtrans(int lno);
       $display("%0t FOOFPT-%0d Sign %b; Exponent 0x%h; Fraction 10'h%h; Inc %b; %s",
                $time,  lno, Sign,    Exponent,      Fraction,        Inc, TransType.name());
