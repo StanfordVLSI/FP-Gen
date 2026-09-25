@@ -28,69 +28,9 @@ class `mname`;
    rand SignalType forwardType;
    rand int hotbit;
    logic [`$width-1`:0] forward;
-/*
-   \`include "verif/vrand_macros.vh"
-   // vrand() redirects to whatever randomization method is most approprate...
-   function void vrand(string ABC);
-      \`VRAND(ABC);
-      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
-               ABC, $time, forward,  hotbit, forwardType.name());
-   endfunction
 
-   // Instead of actual random, vrandk() supplies predetermined values that match VCS randomize()
-   // Designed to work with config bf-cma ONLY
-
-   int unsigned idxA = 0;
-   int unsigned idxB = 0;
-   int unsigned idxC = 0;
-   function void vrandk(string ABC);
-      if (ABC == "A") begin
-         case (idxA)
-           0: begin forward=0; hotbit=0; forwardType=Zero; end
-           1: begin forward=0; hotbit=0; forwardType=Zero; end
-           2: begin forward=1; hotbit=0; forwardType=OneHot; end
-           3: begin forward=0; hotbit=0; forwardType=Zero; end
-           4: begin forward=1; hotbit=0; forwardType=OneHot; end
-           5: begin forward=0; hotbit=0; forwardType=Zero; end
-           6: begin forward=0; hotbit=0; forwardType=Zero; end
-           7: begin forward=0; hotbit=0; forwardType=Zero; end
-           8: begin forward=1; hotbit=0; forwardType=OneHot; end
-           9: begin forward=0; hotbit=0; forwardType=Zero; end
-         endcase
-         idxA = idxA + 1;
-      end else if (ABC == "B") begin
-         case (idxB)
-           0: begin forward=0; hotbit=0; forwardType=Zero; end
-           1: begin forward=1; hotbit=0; forwardType=OneHot; end
-           2: begin forward=1; hotbit=0; forwardType=OneHot; end
-           3: begin forward=0; hotbit=0; forwardType=Zero; end
-           4: begin forward=1; hotbit=0; forwardType=OneHot; end
-           5: begin forward=0; hotbit=0; forwardType=Zero; end
-           6: begin forward=0; hotbit=0; forwardType=Zero; end
-           7: begin forward=1; hotbit=0; forwardType=OneHot; end
-           8: begin forward=0; hotbit=0; forwardType=Zero; end
-           9: begin forward=0; hotbit=0; forwardType=Zero; end
-         endcase
-         idxB = idxB + 1;
-      end else if (ABC == "C") begin
-         case (idxC)
-           0: begin forward=0; hotbit=2; forwardType=Zero; end
-           1: begin forward=0; hotbit=3; forwardType=Zero; end
-           2: begin forward=0; hotbit=2; forwardType=Zero; end
-           3: begin forward=0; hotbit=0; forwardType=Zero; end
-           4: begin forward=0; hotbit=4; forwardType=Zero; end
-           5: begin forward=0; hotbit=4; forwardType=Zero; end
-           6: begin forward=0; hotbit=4; forwardType=Zero; end
-           7: begin forward=0; hotbit=4; forwardType=Zero; end
-           8: begin forward=0; hotbit=4; forwardType=Zero; end
-           9: begin forward=0; hotbit=2; forwardType=Zero; end
-         endcase
-         idxC = idxC + 1;
-      end
-   endfunction; // vrand
-*/
+   // Randomly set values for class variables, with an option for weighted-random hotbit
    function void set_random();
-
       // randomize();  // Verilator is not good with randomize() and constraints
       GetHotbit();
       GetForward();
@@ -99,30 +39,13 @@ class `mname`;
                "X", $time, forward,  hotbit, forwardType.name());
    endfunction
 
-/*
-   // Verilator is not good with randomize() and constraints
-   function void vrandvcs(string ABC);
-      // randomize();
-      GetForward();
-      GetHotbit();
-      post_randomize();
-   endfunction
-*/
-/*
-   constraint pick_forward{
-      forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
-   }
-   constraint pick_hotbit {
-      hotbit>=0 && hotbit<`$width`;
-   }
-*/
    function automatic bit GetForward();
       // E.g. if $weight=30 there will be 30% chance that Forward=Zero
       forwardType = ($urandom_range(0, 99) < `$weight`) ? OneHot : Zero;
    endfunction // GetForward
                      
-   // Hotbit default weight appears to be "1" for operands A and B, thus always hotbit=0 for these
-   // Whereas op C gets between 0 and 4 (inclusive) at random
+   // Hotbit default weight appears to be "1" for operands A and B, thus generally hotbit=0 for A and B
+   // ...whereas op C gets e.g. between 0 and 4 (inclusive) at random
    function automatic bit GetHotbit();
       hotbit = $urandom_range(0, `$width`-1);
       // $display("%0t randomly setting hotbit=%0d which should be between 0 and %0d", $time,  hotbit, `$width`-1);
@@ -134,5 +57,15 @@ class `mname`;
 	 forward[hotbit] = 1'b1;
       end
    endfunction 
+/*
+   // Keeping the (commented-out) original constraints for historical reasons...
+
+   constraint pick_forward{
+      forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
+   }
+   constraint pick_hotbit {
+      hotbit>=0 && hotbit<`$width`;
+   }
+*/
 
 endclass : `mname`
