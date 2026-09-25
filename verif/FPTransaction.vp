@@ -698,7 +698,7 @@ endfunction // SetTransSignInc
       Sign = ($urandom_range(0, 99) < SignIsPos_w) ? 1'b0 : 1'b1;
       Inc = $urandom_range(0, 1);
    endfunction // pick_sign_and_inc
-              
+
    // Weighted-random selection of transaction type (claude-opus-4-8 wrote the first draft)
    typedef struct { FPTransType val; int unsigned wt; } trans_weights;
    function automatic FPTransType pick_transtype();

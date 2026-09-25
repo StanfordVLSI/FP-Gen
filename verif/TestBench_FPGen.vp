@@ -262,7 +262,7 @@ module `mname`
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-               `$FPGenControl_obj->iname()`.vrand();
+               `$FPGenControl_obj->iname()`.set_random();  // Randomly choose one of NOP,FADD,FMUL,FMADD
                FPGen_bus.opcode = `$FPGenControl_obj->iname()`.opcode;
                //; }
 	       i++;
