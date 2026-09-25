@@ -210,8 +210,8 @@ program automatic `mname` (
 	    
 	    //; if ($enable_forwarding eq 'YES'){
 	    // FIXME we are not verifying forwarding logic of this fake FPMult
-	    //`$forward_A->iname()`.randomize();
-	    //`$forward_B->iname()`.randomize();
+	    //`$forward_A->iname()`.set_random();
+	    //`$forward_B->iname()`.set_random();
 	    TransGenA.SetRandomTrans();
 	    TransGenB.SetRandomTrans();
 	    a = TransGenA.GetFPNum();
