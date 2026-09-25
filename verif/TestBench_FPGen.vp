@@ -186,7 +186,7 @@ module `mname`
    // MAIN: Main flow of test
    //-------------------------------------------------------------------------//
    initial begin
-      void'($urandom(13));  // Because I didn't like current default-seed results :(
+      void'($urandom(15));  // Because I didn't like what I was getting before...
       get_command_line_args();
       start_up_testbench();
 
@@ -258,7 +258,6 @@ module `mname`
       
       if (vector_file == "") begin   // if there is no input test file, then use our own transaction and gold model
 	 int i=0;
-         int rfoo = $random(); // mix it up
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){

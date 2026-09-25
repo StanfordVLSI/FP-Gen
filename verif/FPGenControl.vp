@@ -27,33 +27,6 @@
 class `mname`;
 
    rand FPGenPkg::InstructionType opcode;
-/*
-   \`include "verif/vrand_macros.vh"
-   // vrand() redirects to whatever randomization method is most approprate...
-   function void vrand();
-      \`VRAND();
-      $display("%t: FPGenControl opcode=%s", $time, opcode.name());
-   endfunction
-
-   // Instead of actual random, supply predetermined values that match VCS randomize()
-   // Designed to work with config bf-cma ONLY
-   int unsigned iv = 0;
-   function void vrandk();
-      case (iv)
-        0: opcode=FMADD;
-        1: opcode=FMUL;
-        2: opcode=FMUL;
-        3: opcode=FMADD;
-        4: opcode=FMUL;
-        5: opcode=FMADD;
-        6: opcode=FADD;
-        7: opcode=FADD;
-        8: opcode=FADD;
-        9: opcode=FADD;
-      endcase
-      iv = iv + 1;
-   endfunction
-*/
 
    static int add_weight = `$add_weight`;
    static int mul_weight = `$mul_weight`;
@@ -65,6 +38,7 @@ class `mname`;
    // Default weights are maybe 40% add, 0% nop, 30% mul (implied 30% fmadd)
 
    function void set_random();
+/*
       int unsigned acc=0, r; r = $urandom_range(0, 99);  // Implies weights should sum to 100
       acc += nop_weight; if (r < acc) opcode = NOP;  else begin
       acc += add_weight; if (r < acc) opcode = FADD; else begin
@@ -72,6 +46,17 @@ class `mname`;
                          else         opcode = FMADD;
       end
       end
+*/
+      int unsigned r = $urandom_range(0, 99);  // Implies weights should sum to 100
+      if      (r < nop_weight)                       opcode = NOP;
+      else if (r < nop_weight+add_weight)            opcode = FADD;
+      else if (r < nop_weight+add_weight+mul_weight) opcode = FMUL;
+      else                                           opcode = FMADD;
+      
+
+
+
+
 
       // $display("%0t FOO I see r=%0d, nopw=%0d, addw=%0d, mulw=%0d",
       //          $time, nop_weight, add_weight, mul_weight);
@@ -79,84 +64,6 @@ class `mname`;
 
    endfunction // set_random
 
-
-/*
-      int add_weight = `$add_weight`;
-      int mul_weight = `$mul_weight`;
-      int nop_weight = `$nop_weight`;
-
-      acc += Zero_w;           if (r < acc) return Zero;
-      acc += Zero_w;           if (r < acc) return Zero;
-      acc += Zero_w;           if (r < acc) return Zero;
-      acc += Zero_w;           if (r < acc) return Zero;
-
-
-      GetHotbit();
-      GetForward();
-      post_randomize();
-      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
-               "X", $time, forward,  hotbit, forwardType.name());
-   endfunction
-
-
-   // Weighted-random selection of transaction type (claude-opus-4-8 wrote the first draft)
-   function automatic FPTransType pick_transtype();
-      typedef struct { FPTransType val; int unsigned wt; } trans_weights;
-      trans_weights w[] = '{
-                            '{Zero,           Zero_w},
-                            '{Denorm100,      Denorm100_w},
-                            '{DenormFFF,      DenormFFF_w},
-                            '{Denorm001,      Denorm001_w},
-                            '{DenormRnd,      DenormRnd_w},
-                            '{QuietNaN,       QuietNaN_w},
-                            '{SignalingNaN,   SignalingNaN_w},
-                            '{Min,            Min_w},
-                            '{Max,            Max_w},
-                            '{Inf,            Inf_w},
-                            '{One,            One_w},
-                            '{PointOneOneOne, PointOneOneOne_w},
-                            '{EzAndSml,       EzAndSml_w},
-                            '{Random,         Random_w}
-                            };
-      int unsigned total=0, r, acc=0;
-
-      // Calculate total of all weights T = summa(*_w)
-      foreach (w[i]) total += w[i].wt;
-      if (total == 0) begin $error("all weights zero"); return Zero; end
-
-      // Choose a number between 0 and T-1 inclusive
-      r = $urandom_range(0, total - 1);
-
-      // Walk through the array and return first type that satisfies weight requirement      
-      foreach (w[i]) begin
-         acc += w[i].wt;
-         if (r < acc) return w[i].val;
-      end
-      $display("WARNING pick_transtype() FAILED see FPTransaction.vp");
-      return Random; // unreachable
-   endfunction // pick_transtype
-*/
-
-
-/*
-   int add_weight = `$add_weight`;
-   int mul_weight = `$mul_weight`;
-   int nop_weight = `$nop_weight`;
-
-   // VCS can just use randomize+constraints right out of the box
-   function void vrandvcs(); randomize(); endfunction
-   constraint pick_inst_type{
-      // Assumes that the various weights all add to 100
-      // What happens if this gets violated and FMADD<0? FMADD never selected I guess
-      // Should issue a warning I suppose
-      opcode dist {
-		   FPGenPkg::FMADD := 100-mul_weight-add_weight-nop_weight, 
-		   FPGenPkg::FADD := add_weight, 
-		   FPGenPkg::FMUL := mul_weight, 
-		   FPGenPkg::NOP := nop_weight
-		   };
-   }
-*/   
      // Constructor for a Random transaction
      // The constructor also reads user defined, per simulation, weights
      function new();
@@ -175,4 +82,21 @@ class `mname`;
      endfunction // new
 
 endclass : `mname`
+
+/*
+   // For reference, this is the original constraint-based code, which
+   // had to be replaced b/c Verilator does not handle it well.
+
+   constraint pick_inst_type{
+      // Assumes that the various weights all add to 100
+      // What happens if this gets violated and FMADD<0? FMADD never selected I guess
+      // Should issue a warning I suppose
+      opcode dist {
+		   FPGenPkg::FMADD := 100-mul_weight-add_weight-nop_weight, 
+		   FPGenPkg::FADD := add_weight, 
+		   FPGenPkg::FMUL := mul_weight, 
+		   FPGenPkg::NOP := nop_weight
+		   };
+   }
+*/   
    
