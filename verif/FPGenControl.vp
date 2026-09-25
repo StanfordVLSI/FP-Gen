@@ -5,9 +5,6 @@
  * Parameters:
  * * AddWeight, MulWeight, 
  * 
- *  
- * 
- * 
  * Change bar:
  * -----------
  * Date          Author    Description
@@ -25,47 +22,28 @@
 //;	  		      Doc=>"Distribution weight for mul instruction to be 1 (range is 0..100-`$add_weight`-`$nop_weight`)");
 
 class `mname`;
+     rand FPGenPkg::InstructionType opcode;
 
-   rand FPGenPkg::InstructionType opcode;
+     // Weighted-random selection of opcode (claude-opus-4-8 wrote the first draft)
+     // Assumes nop, add, mul weights are percent probabilities
+     // and so i.e. the implied madd weight is 100-(nop+add+mul)
+     // Default weights are maybe 40% add, 0% nop, 30% mul (implied 30% fmadd)
 
-   static int add_weight = `$add_weight`;
-   static int mul_weight = `$mul_weight`;
-   static int nop_weight = `$nop_weight`;
+     static int add_weight = `$add_weight`;
+     static int mul_weight = `$mul_weight`;
+     static int nop_weight = `$nop_weight`;
 
-   // Weighted-random selection of opcode (claude-opus-4-8 wrote the first draft)
-   // Assumes nop, add, mul weights are percent probabilities
-   // and so i.e. the implied madd weight is 100-(nop+add+mul)
-   // Default weights are maybe 40% add, 0% nop, 30% mul (implied 30% fmadd)
+     function void set_random();
+        int unsigned r = $urandom_range(0, 99);  // Implies weights should sum to 100
+        if      (r < nop_weight)                       opcode = NOP;
+        else if (r < nop_weight+add_weight)            opcode = FADD;
+        else if (r < nop_weight+add_weight+mul_weight) opcode = FMUL;
+        else                                           opcode = FMADD;
+        // $display("%0t FOO r=%0d, nopw=%0d, addw=%0d, mulw=%0d", $time, nop_weight, add_weight, mul_weight);
+        // $display("%0t FOO I chose opcode=%s", $time, opcode.name());
+     endfunction // set_random
 
-   function void set_random();
-/*
-      int unsigned acc=0, r; r = $urandom_range(0, 99);  // Implies weights should sum to 100
-      acc += nop_weight; if (r < acc) opcode = NOP;  else begin
-      acc += add_weight; if (r < acc) opcode = FADD; else begin
-      acc += mul_weight; if (r < acc) opcode = FMUL; 
-                         else         opcode = FMADD;
-      end
-      end
-*/
-      int unsigned r = $urandom_range(0, 99);  // Implies weights should sum to 100
-      if      (r < nop_weight)                       opcode = NOP;
-      else if (r < nop_weight+add_weight)            opcode = FADD;
-      else if (r < nop_weight+add_weight+mul_weight) opcode = FMUL;
-      else                                           opcode = FMADD;
-      
-
-
-
-
-
-      // $display("%0t FOO I see r=%0d, nopw=%0d, addw=%0d, mulw=%0d",
-      //          $time, nop_weight, add_weight, mul_weight);
-      // $display("%0t FOO I choose opcode=%s", $time, opcode.name());
-
-   endfunction // set_random
-
-     // Constructor for a Random transaction
-     // The constructor also reads user defined, per simulation, weights
+     // Constructor reads user defined per-simulation, weights
      function new();
 	if ($test$plusargs("AddWeight")) begin
 	   $value$plusargs("AddWeight=%d",  add_weight);
@@ -82,21 +60,3 @@ class `mname`;
      endfunction // new
 
 endclass : `mname`
-
-/*
-   // For reference, this is the original constraint-based code, which
-   // had to be replaced b/c Verilator does not handle it well.
-
-   constraint pick_inst_type{
-      // Assumes that the various weights all add to 100
-      // What happens if this gets violated and FMADD<0? FMADD never selected I guess
-      // Should issue a warning I suppose
-      opcode dist {
-		   FPGenPkg::FMADD := 100-mul_weight-add_weight-nop_weight, 
-		   FPGenPkg::FADD := add_weight, 
-		   FPGenPkg::FMUL := mul_weight, 
-		   FPGenPkg::NOP := nop_weight
-		   };
-   }
-*/   
-   
