@@ -209,17 +209,17 @@ program automatic `mname` (
 	    dumptolog = 1'b0;
 	    
 	    //; if ($enable_forwarding eq 'YES'){
-	    // we are not verifying forwarding logic of this fake FPMult
+	    // FIXME we are not verifying forwarding logic of this fake FPMult
 	    //`$forward_A->iname()`.randomize();
 	    //`$forward_B->iname()`.randomize();
-	    TransGenA.vrand("A",0,0,0);
-	    TransGenB.vrand("B",0,0,0);
+	    TransGenA.SetRandomTrans();
+	    TransGenB.SetRandomTrans();
 	    a = TransGenA.GetFPNum();
 	    b = TransGenB.GetFPNum();
 	    
 	    //; } else {  # No forwarding
-	    TransGenA.vrand("A",0,0,0);
-	    TransGenB.vrand("B",0,0,0);
+	    TransGenA.SetRandomTrans();
+	    TransGenB.SetRandomTrans();
 	    a = TransGenA.GetFPNum();
 	    b = TransGenB.GetFPNum();
 	    //;}
