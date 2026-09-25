@@ -67,5 +67,4 @@ class `mname`;
       hotbit>=0 && hotbit<`$width`;
    }
 */
-
 endclass : `mname`
