@@ -270,9 +270,9 @@ module `mname`
 	       // Assign values to the lines
 	       // FPGen_bus.dumptolog = 1'b0;
 	       //; if ($enable_forwarding eq 'YES'){
-	       `$forward_A->iname()`.vrand("A");
-	       `$forward_B->iname()`.vrand("B");
-	       `$forward_C->iname()`.vrand("C");
+	       `$forward_A->iname()`.set_random();
+	       `$forward_B->iname()`.set_random();
+	       `$forward_C->iname()`.set_random();
 	       
 	       if ( `$forward_A->iname()`.forward
 		    // check the if there is result in pipeline for forwarding

@@ -28,7 +28,7 @@ class `mname`;
    rand SignalType forwardType;
    rand int hotbit;
    logic [`$width-1`:0] forward;
-
+/*
    \`include "verif/vrand_macros.vh"
    // vrand() redirects to whatever randomization method is most approprate...
    function void vrand(string ABC);
@@ -39,7 +39,7 @@ class `mname`;
 
    // Instead of actual random, vrandk() supplies predetermined values that match VCS randomize()
    // Designed to work with config bf-cma ONLY
-/*
+
    int unsigned idxA = 0;
    int unsigned idxB = 0;
    int unsigned idxC = 0;
@@ -89,21 +89,25 @@ class `mname`;
       end
    endfunction; // vrand
 */
-   function void vrandk(string ABC);
-      // randomize();
-      GetForward();
+   function void set_random();
+
+      // randomize();  // Verilator is not good with randomize() and constraints
       GetHotbit();
+      GetForward();
       post_randomize();
+      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
+               "X", $time, forward,  hotbit, forwardType.name());
    endfunction
 
-
-   // VCS can just use randomize+constraints right out of the box
+/*
+   // Verilator is not good with randomize() and constraints
    function void vrandvcs(string ABC);
       // randomize();
       GetForward();
       GetHotbit();
       post_randomize();
    endfunction
+*/
 /*
    constraint pick_forward{
       forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
@@ -117,8 +121,11 @@ class `mname`;
       forwardType = ($urandom_range(0, 99) < `$weight`) ? OneHot : Zero;
    endfunction // GetForward
                      
+   // Hotbit default weight appears to be "1" for operands A and B, thus always hotbit=0 for these
+   // Whereas op C gets between 0 and 4 (inclusive) at random
    function automatic bit GetHotbit();
       hotbit = $urandom_range(0, `$width`-1);
+      // $display("%0t randomly setting hotbit=%0d which should be between 0 and %0d", $time,  hotbit, `$width`-1);
    endfunction // GetHotbit
 
    function void post_randomize;
