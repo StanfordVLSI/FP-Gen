@@ -107,7 +107,7 @@ class `mname`;
 	  transB.TransType == `$typeB`::QuietNaN || transB.TransType == `$typeB`::SignalingNaN) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.vrand("E",                       `$typeRes`::QuietNaN,             SignExpected);  // untested!! FIXME
+	 Expected.SetTransSign(`$typeRes`::QuietNaN, SignExpected);  // untested!! FIXME
 
       end 
       
@@ -117,18 +117,18 @@ class `mname`;
 		(transB.TransType == `$typeB`::Zero && transA.TransType == `$typeA`::Inf) ) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.vrand("E",                       `$typeRes`::QuietNaN,             SignExpected);  // untested!! FIXME
+	 Expected.SetTransSign(`$typeRes`::QuietNaN, SignExpected);  // untested!! FIXME
 
       end
       
       // 3. num*Inf or Inf*Inf                        Result is signed Inf
       else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf) begin
-	 Expected.vrand("E",                       `$typeRes`::Inf,             SignExpected);  // untested!! FIXME
+	 Expected.SetTransSign(`$typeRes`::Inf, SignExpected);  // untested!! FIXME
       end
 
       // 4. 0*num or 0*0 or num*o
       else if (transA.TransType == `$typeA`::Zero || transB.TransType == `$typeB`::Zero) begin
-	 Expected.vrand("E",                       `$typeRes`::Zero,             SignExpected);  // untested!! FIXME
+	 Expected.SetTransSign(`$typeRes`::Zero, SignExpected);  // untested!! FIXME
       end
 
 //; if ($test_denormals =~ /NO/){
@@ -137,7 +137,7 @@ class `mname`;
 	       transA.TransType == `$typeA`::Denorm001 || transA.TransType == `$typeA`::DenormRnd || 
 	       transB.TransType == `$typeB`::Denorm100 || transB.TransType == `$typeB`::DenormFFF || 
 	       transB.TransType == `$typeB`::Denorm001 || transB.TransType == `$typeB`::DenormRnd) begin
-	 Expected.vrand("E",                       `$typeRes`::Zero,             SignExpected);  // untested!! FIXME
+	 Expected.SetTransSign(`$typeRes`::Zero, SignExpected);  // untested!! FIXME
       end
 //; }      
       
@@ -225,10 +225,10 @@ class `mname`;
 	 $display("DEBUG: Exp_internal=0x%h Man_internal=0x%h overflow=%b underflow=%b",
 		  Exp_internal,Man_internal, overflow, underflow);
 	 if (overflow)
-	   Expected.vrand("E",                       `$typeRes`::Inf,             SignExpected);  // untested!! FIXME
+	   Expected.SetTransSign(`$typeRes`::Inf, SignExpected);  // untested!! FIXME
 	 else if (underflow) 
 	   //; if ($test_denormals =~ /NO/){
-	   Expected.vrand("E",                       `$typeRes`::Zero,             SignExpected);  // untested!! FIXME
+	   Expected.SetTransSign(`$typeRes`::Zero, SignExpected);  // untested!! FIXME
 
          //; } else {
 	 begin 	
@@ -237,7 +237,7 @@ class `mname`;
 	       FracExpected = sticky;
 	       Expected.ForceSignExpFrac(SignExpected, ExpExpected, FracExpected, 1'b0);
 	    end else 
-	      Expected.vrand("E",                       `$typeRes`::Zero,             SignExpected);  // untested!! FIXME
+	      Expected.SetTransSign(`$typeRes`::Zero, SignExpected);  // untested!! FIXME
 	 end
 	 //; }
 	 else begin
@@ -248,7 +248,7 @@ class `mname`;
 	    $display("DEBUG: Denorm result found.");
 	    
 	      //; if ($test_denormals =~ /NO/){
-	      Expected.vrand("E",                       `$typeRes`::Zero,             SignExpected);  // untested!! FIXME
+	      Expected.SetTransSign(`$typeRes`::Zero, SignExpected);  // untested!! FIXME
               //; } else {
 	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected, 1'b0);
 	      //; }

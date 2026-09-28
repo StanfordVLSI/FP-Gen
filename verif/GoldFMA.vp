@@ -97,7 +97,7 @@ class `mname`;
       FracExpected = '0;
       ExpExpected = '0;
       SignExpected = '0;
-     
+      //$display("FOO i see a=%s and b=%s and c=%s", transA.TransType.name(), transB.TransType.name(), transC.TransType.name());
       
       // First we calculate the expected sign, since it used in both regular and corner cases
       // plus x plus ==> plus; plus x minus ==> minus; minus x minus ==> minus; 
@@ -112,7 +112,7 @@ class `mname`;
 	  transC.TransType == `$typeC`::QuietNaN || transC.TransType == `$typeC`::SignalingNaN) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.vrand("D", `$typeRes`::QuietNaN, 1'b0, 1'b0);
+	 Expected.SetTransSignInc(`$typeRes`::QuietNaN, 1'b0, 1'b0);
       end 
       
       // 2. 0*Inf                                     Result is NaN
@@ -121,7 +121,7 @@ class `mname`;
 		(transB.TransType == `$typeB`::Zero && transA.TransType == `$typeA`::Inf) ) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.vrand("D", `$typeRes`::QuietNaN, 1'b0, 1'b0);
+	 Expected.SetTransSignInc(`$typeRes`::QuietNaN, 1'b0, 1'b0);
       end
 
 	  // 3. AB is +-Inf and C is -+Inf                 Result is NaN
@@ -129,7 +129,7 @@ class `mname`;
       else if ( (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf) && transC.TransType == `$typeC`::Inf && (SignProduct != transC.Sign)) begin
 
 	 // FIXME: Shouldn't we also check for qNaN vs. sNaN?
-	 Expected.vrand("D", `$typeRes`::QuietNaN, 1'b0, 1'b0);
+	 Expected.SetTransSignInc(`$typeRes`::QuietNaN, 1'b0, 1'b0);
       end
       
 	  
@@ -137,7 +137,7 @@ class `mname`;
 	 
       // 4. Either input is Inf                        Result is signed Inf
       else if (transA.TransType == `$typeA`::Inf || transB.TransType == `$typeB`::Inf || transC.TransType == `$typeC`::Inf) begin
-	 Expected.vrand("D", `$typeRes`::Inf, SignInfinity, 1'b0);
+	 Expected.SetTransSignInc(`$typeRes`::Inf, SignInfinity, 1'b0);
       end
 
       // 5. 0*num or 0*0 or num*o                      Result is C
@@ -227,6 +227,9 @@ class `mname`;
 	 end // else: !if(ManProduct[`$product_width`] == 1'b1)
 
 //----------------------
+
+//      $display("and so maybe now I have set expected transtype=%s", expected.TransType);
+
 
 	 /* Now we do AB+C
 	  */
@@ -356,12 +359,12 @@ end
 	 overflow = (ExpSum > Exp_max+Exp_offset) ? 1'b1 : 1'b0;
 	 underflow = (ExpSum < Exp_offset+1) ? 1'b1 : 1'b0;
 	 if (overflow)
-	   Expected.vrand("D", `$typeRes`::Inf, SignExpected, 1'b0);
+	   Expected.SetTransSignInc(`$typeRes`::Inf, SignExpected, 1'b0);
 	 else if (underflow) begin
 		guard = ManSum[`$sum_width-$fracRes_width-2`];
 		LSB = ManSum[`$sum_width-$fracRes_width-1`];
 		IncExpected = guard & (sticky | LSB);
-           Expected.vrand("D", `$typeRes`::Zero, SignExpected, IncExpected);
+           Expected.SetTransSignInc(`$typeRes`::Zero, SignExpected, IncExpected);
 	 end 
 	 else begin
 	    ExpExpected = ExpSum - Exp_offset;
@@ -372,7 +375,7 @@ end
 	//	$display("DEBUG: guard=%b LSB=%b sticky=%b IncExpected=%b",guard, LSB, sticky, IncExpected);
 	    if (ExpExpected==1 && ManSum[`$sum_width-1`]==1'b0) // Denorm case ==> zero the exp
 	      //; if ($test_denormals =~ /NO/){
-	      Expected.vrand("D", `$typeRes`::Zero, SignExpected, 1'b0);
+	      Expected.SetTransSignInc(`$typeRes`::Zero, SignExpected, 1'b0);
               //; } else {
 	      Expected.ForceSignExpFrac(SignExpected, `$exp_width`'b0, FracExpected, IncExpected);
 	      //; }

@@ -147,143 +147,47 @@ class `mname`;
    typedef enum {Zero, Denorm100, DenormFFF, Denorm001, DenormRnd, QuietNaN, 
 		 SignalingNaN, Min, Max, Inf, One, PointOneOneOne, EzAndSml, Random} FPTransType;
 
-   rand FPTransType TransType;
-   rand bit [`$frac_width - 1`:0] 	Fraction;
-   rand bit [`$exp_width - 1`:0] 	Exponent;
-   rand bit 				Sign;
-   rand bit 				Inc; // only used to test cascaded architecrures
-
-   // vrand() redirects to whatever randomization method is most approprate...
-   \`include "verif/vrand_macros.vh"
-   function void vrand(
-                       string ABCD,
-                       int    transtype_int,
-                       bit    sign,
-                       bit    inc
-                       );
-      \`VRAND(ABCD, transtype_int, sign, inc);
-      // $display("%t: FPGenControl opcode=%s", $time, opcode.name());
-   endfunction
-
-   // Transaction counters vor verilator vrand()
-   int unsigned idxA = 0;
-   int unsigned idxB = 0;
-   int unsigned idxC = 0;
-   int unsigned idxD = 0;
-
-\`ifndef verilator
-   // Verilator dies if it sees this function, thus the "ifndef", also see comment below
-   //localparam int unsigned NUM_SETS = 4;
-   function void vrandvcs(
-                       string ABCD,
-                       FPTransType transtype,
-                       bit sign,
-                       bit inc
-                       );
-      case (ABCD)
-        "A": randomize();
-        "B": randomize();
-        "C": randomize();
-        "D": randomize() with { (TransType == transtype) && (Sign == sign) && (Inc == inc); };
-        "E": randomize() with { (TransType == transtype) && (Sign == sign); };
-      endcase
-      /*
-      // included for historical reasons, should probably delete tho
-      if (ABCD == "D") begin
-         $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-                  $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
-         idxD = idxD + 1;
-      // included for historical reasons, should probably delete tho
-      end else if (ABCD == "C") begin
-         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
-         idxC = idxC + 1;
-      end
-      */
-   endfunction // vrandvcs
-\`endif
+   parameter FWIDTH = `$frac_width`;
+   parameter EWIDTH = `$exp_width`;
    
-   // Support for verilator, which has problems with constrained randomize().
-   // This vrand() function provides predetermined values such that verilator
-   // gives exact same results as vcs using randomize() with seed 12345 maybe
-   // Currently only works for bf-cma maybe
-
-   function void vrandk(
-                           string ABC,
-                           int transtype_int,
-                           bit sign,
-                           bit inc
-                          );
-      FPTransType transtype = FPTransType'(transtype_int);
-
-      if (ABC == "A") begin
-         // -------- OPERAND A --------
-         assert (idxA<=8);
-         case (idxA)
-           0: begin Sign= 0; Exponent= 5'h09; Fraction= 10'h116; Inc= 1; TransType= Random         ; end
-           1: begin Sign= 0; Exponent= 5'h0e; Fraction= 10'h3ff; Inc= 0; TransType= PointOneOneOne ; end
-           2: begin Sign= 1; Exponent= 5'h1e; Fraction= 10'h3ff; Inc= 0; TransType= Max            ; end
-           3: begin Sign= 0; Exponent= 5'h11; Fraction= 10'h3dd; Inc= 1; TransType= Random         ; end
-           4: begin Sign= 0; Exponent= 5'h15; Fraction= 10'h3b2; Inc= 1; TransType= Random         ; end
-           5: begin Sign= 0; Exponent= 5'h00; Fraction= 10'h200; Inc= 1; TransType= Denorm100      ; end
-           6: begin Sign= 0; Exponent= 5'h1e; Fraction= 10'h3ff; Inc= 1; TransType= Max            ; end
-           7: begin Sign= 1; Exponent= 5'h09; Fraction= 10'h285; Inc= 0; TransType= Random         ; end
-           8: begin Sign= 1; Exponent= 5'h16; Fraction= 10'h0f2; Inc= 0; TransType= Random         ; end
-         endcase
-         idxA = idxA + 1;
-
-      end else if (ABC == "B") begin
-         // -------- OPERAND B --------
-         assert (idxB<=8);
-         case (idxB)
-           0: begin Sign= 0; Exponent= 5'h1f; Fraction= 10'h000; Inc= 0; TransType= Inf            ; end
-           1: begin Sign= 0; Exponent= 5'h0e; Fraction= 10'h3ff; Inc= 1; TransType= PointOneOneOne ; end
-           2: begin Sign= 1; Exponent= 5'h1f; Fraction= 10'h1f4; Inc= 1; TransType= SignalingNaN   ; end
-           3: begin Sign= 1; Exponent= 5'h1e; Fraction= 10'h3ff; Inc= 0; TransType= Max            ; end
-           4: begin Sign= 1; Exponent= 5'h01; Fraction= 10'h000; Inc= 0; TransType= Min            ; end
-           5: begin Sign= 0; Exponent= 5'h1f; Fraction= 10'h298; Inc= 0; TransType= QuietNaN       ; end
-           6: begin Sign= 1; Exponent= 5'h00; Fraction= 10'h000; Inc= 0; TransType= Zero           ; end
-           7: begin Sign= 1; Exponent= 5'h1f; Fraction= 10'h273; Inc= 1; TransType= QuietNaN       ; end
-           8: begin Sign= 1; Exponent= 5'h08; Fraction= 10'h2ed; Inc= 0; TransType= Random         ; end
-         endcase
-         idxB = idxB + 1;
-
-      end else if (ABC == "C") begin
-         // -------- OPERAND C --------
-         assert (idxC<=9);
-         case (idxC)
-           0: begin Sign= 1; Exponent= 5'h0e; Fraction= 10'h3ff; Inc= 1; TransType= PointOneOneOne ; end
-           1: begin Sign= 0; Exponent= 5'h1e; Fraction= 10'h3ff; Inc= 1; TransType= Max            ; end
-           2: begin Sign= 0; Exponent= 5'h11; Fraction= 10'h3ed; Inc= 0; TransType= Random         ; end
-           3: begin Sign= 0; Exponent= 5'h1f; Fraction= 10'h20f; Inc= 1; TransType= QuietNaN       ; end
-           4: begin Sign= 1; Exponent= 5'h1f; Fraction= 10'h2de; Inc= 1; TransType= QuietNaN       ; end
-           5: begin Sign= 0; Exponent= 5'h1e; Fraction= 10'h3ff; Inc= 1; TransType= Max            ; end
-           6: begin Sign= 0; Exponent= 5'h07; Fraction= 10'h1dd; Inc= 0; TransType= Random         ; end
-           7: begin Sign= 0; Exponent= 5'h04; Fraction= 10'h244; Inc= 1; TransType= Random         ; end
-           8: begin Sign= 1; Exponent= 5'h0f; Fraction= 10'h000; Inc= 0; TransType= One            ; end
-           9: begin Sign= 1; Exponent= 5'h0f; Fraction= 10'h000; Inc= 1; TransType= One            ; end
-         endcase // case (idxC)
-         $display("%0t FPTransaction vrandC() idxC=%0d setting Inc=%0d", $time, idxC, Inc);
-         idxC = idxC + 1;
-
-      end else if (ABC == "D") begin
-         Exponent=5'h1f; Sign=sign; Inc=inc; TransType=transtype;  // Why? dunno
-         case (idxD)
-           0: Fraction = 10'h000;
-           1: Fraction = 10'h31f;
-           2: Fraction = 10'h247;
-           3: Fraction = 10'h336;
-         endcase
-         $display("FPTV %0t: %0d: begin Fraction=%h; Exponent=%h; Sign=%h; Inc=%h; TransType=%s; end",
-                  $time, idxD, Fraction, Exponent, Sign, Inc, TransType.name());
-         idxD = (idxD + 1); // % NUM_SETS;
-
-      // Don't need "E" b/c that is TestMult, not TestFPGen
-
-      end // if (ABC == "D")
-   endfunction // vrandk
+   rand FPTransType      TransType;
+   rand bit [FWIDTH-1:0] Fraction;
+   rand bit [EWIDTH-1:0] Exponent;
+   rand bit              Sign;
+   rand bit              Inc; // only used to test cascaded architecrures
 
    // --------------------------------------------------------------------------
-   // Some setters:
+   // functions for setting the "rand" objects TransType, Fraction, Exponent, Sign, Inc
+   // if $rand_mode is NO, all values are random
+   // if $rand_mode is YES, transtype and sign are constrained by weights (see $rand_mode below)
+   // --------------------------------------------------------------------------
+
+   // Used by TestBench_FPGen
+   function void SetRandomTrans();
+      TransType = pick_transtype();
+      pick_sign_and_inc();  // Choose random sign and inc
+      post_randomize();     // Choose random frac and exp depending on transtype, then cleanup
+   endfunction // SetRandomTrans
+
+   // Used by GoldMultiplier
+   function void SetTransSign(FPTransType transtype, bit sign);
+      TransType = transtype;
+      pick_sign_and_inc();  // Choose random sign and inc
+      Sign = sign;          // Override random sign with directive
+      post_randomize();     // Choose random frac and exp depending on transtype, then cleanup
+   endfunction // SetTransSign
+   
+   // Used by GoldFMA
+   function void SetTransSignInc(FPTransType transtype, bit sign, inc);
+      TransType = transtype;
+      Sign = sign;
+      Inc = inc;
+      post_randomize();     // Choose random frac and exp depending on transtype, then cleanup
+endfunction // SetTransSignInc
+
+
+   // --------------------------------------------------------------------------
+   // Some more setters:
    // --------------------------------------------------------------------------
    function void ForceFPNum(logic [`$frac_width+$exp_width` : 0] num);
       this.ForceSignExpFrac(num[`$frac_width + $exp_width`], 
@@ -293,7 +197,7 @@ class `mname`;
       
    endfunction // ForceFPNum
    
-   // Kind of C'tor for a regular, NON-Random transaction
+   // Kind of constructor for a regular, NON-Random transaction
    function void ForceSignExpFrac(logic Sign, logic [`$exp_width - 1`:0] Exp, 
     			     logic [`$frac_width - 1`:0] Frac, logic Inc);
       this.Fraction = Frac;
@@ -353,7 +257,7 @@ class `mname`;
    
 
    
-   // Kind of C'tor for a regular, NON-Random transaction using Mantissa instead of Fraction
+   // Kind of constructor for a regular, NON-Random transaction using Mantissa instead of Fraction
    // IMPORTANT: This function was custom built for the FPMult format
    function void FPMultResult_to_FPTrans(logic Sign, logic [`$exp_width + 1`:0] Exp, logic [`$frac_width`:0] Man, 
     		 			 logic NaN, logic Inf, logic Zero);
@@ -523,79 +427,154 @@ class `mname`;
    // Constraints for random generation
    // --------------------------------------------------------------------------
    // To make auto generation of special cases easier:
-   constraint pick_fraction_val{
-      (TransType == Zero) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == Denorm100) -> 	{ Fraction == {1'b1, `$frac_width-1`'b0} };
-      (TransType == DenormFFF) -> 	{ Fraction == {(`$frac_width`){1'b1}} };
-      (TransType == Denorm001) -> 	{ Fraction == {`$frac_width-1`'b0, 1'b1} };
-      (TransType == DenormRnd) -> 	{ Fraction != `$frac_width`'b0 
-					  && Fraction != {1'b1, `$frac_width-1`'b0} 
-					  && Fraction != {(`$frac_width`){1'b1}} 
-					  && Fraction != {`$frac_width-1`'b0, 1'b1} };
-      (TransType == QuietNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b1 };
-      (TransType == SignalingNaN) -> 	{ Fraction[`$frac_width-1`] == 1'b0 && Fraction[`$frac_width-2`:0] != `$frac_width-1`'b0 };
-      (TransType == Min) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == Max) -> 		{ Fraction == {(`$frac_width`){1'b1}} };
-      (TransType == Inf) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == One) -> 		{ Fraction == `$frac_width`'b0 };
-      (TransType == PointOneOneOne) -> 	{ Fraction == {(`$frac_width`){1'b1}}  };
-      (TransType == EzAndSml) ->	{ Fraction inside {[1:10]} };
-      (TransType == Random) -> 		{ 1'b1 /* No constraint */ };
-   }
-     
-   constraint pick_exponent_val{
-      (TransType == Zero) -> 		{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm100) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormFFF) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == Denorm001) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == DenormRnd) -> 	{ Exponent == `$exp_width`'b0 };
-      (TransType == QuietNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == SignalingNaN) -> 	{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == Min) -> 		{ Exponent == `$exp_width`'b1 };
-      (TransType == Max) -> 		{ Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0} };
-      (TransType == Inf) -> 		{ Exponent == {(`$exp_width`){1'b1}} };
-      (TransType == One) -> 		{ Exponent == {  1'b0, {(`$exp_width-1`){1'b1}}  } };
-      (TransType == PointOneOneOne) -> 	{ Exponent == {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0} } ;
-      (TransType == EzAndSml) ->	{ Exponent[`$exp_width-1`] == 1'b1 && Exponent[`$exp_width-2`:2] == `$exp_width-3`'b0 };
-      (TransType == Random) -> 		{ Exponent != `$exp_width`'b0 && Exponent != {(`$exp_width`){1'b1}} };//not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
-   }
 
-   //workaround for the bug of Random TransType
+   // This replaces "constraint pick_fraction_val" b/c verilator is not good with constraints
+   function automatic void pick_fraction();
+      logic [FWIDTH-1:0] F0 = Fraction;
+
+      unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
+        // ---- Fixed-value cases -------------------------------------------
+        Zero, Min, Inf, One:            Fraction = '0; // all zeroes
+        DenormFFF, Max, PointOneOneOne: Fraction = '1; // all ones ('1 means *all* ones, sez chatty bot)
+
+        Denorm100: Fraction = {1'b1, {(FWIDTH-1){1'b0}}};  // 100...0
+        Denorm001: Fraction = {{(FWIDTH-1){1'b0}}, 1'b1};  // 00...01
+
+        // ---- Random-with-constraints cases -------------------------------
+        DenormRnd: begin                                     // Denorm with no special frac pattern
+           do Fraction = frand();
+           while (Fraction == '0 || Fraction == '1  ||       // All zeroes or all ones => try again
+                  Fraction == {1'b1, {(FWIDTH-1){1'b0}}} ||  // 100* => try again
+                  Fraction == {{(FWIDTH-1){1'b0}}, 1'b1});   // 011* => try again
+        end
+        QuietNaN: begin                                 // 1xx...x
+           Fraction = frand();
+           Fraction[FWIDTH-1] = 1'b1;
+        end
+        SignalingNaN: begin                             // 01x...x (MSB=0, rest!=0)
+           do Fraction = frand();
+           while (Fraction[FWIDTH-2:0] == '0);
+           Fraction[FWIDTH-1] = 1'b0;
+        end
+        EzAndSml: Fraction = FWIDTH'($urandom_range(1, 10));  // Easy and small
+        Random:   Fraction = frand();                         // no constraint. to be precise, one has no frets
+        default:  Fraction = frand();                         // no constraint
+      endcase // unique case (trans_type)
+
+      // if (Fraction != F0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), F0, Fraction);
+   endfunction // pick_fraction
+   
+
+   function automatic void pick_exponent();
+      logic [FWIDTH-1:0] E0 = Exponent;
+
+      unique case (TransType)  // "unique" => all case choices fully covered and mutually exclusive
+        // ---- Fixed-value cases -------------------------------------------
+
+        Zero, Denorm100, DenormFFF:  Exponent = '0; // all zeroes
+        Denorm001, DenormRnd:        Exponent = '0; // all zeroes
+        QuietNaN, SignalingNaN:      Exponent = '1; // all ones
+
+        Min: Exponent = EWIDTH'(1);
+        Max: Exponent = { {(EWIDTH-1){1'b1}}, 1'b0};
+        Inf: Exponent = {(`$exp_width`){1'b1}};
+        One: Exponent = {  1'b0, {(`$exp_width-1`){1'b1}}  };
+
+        PointOneOneOne: begin
+             Exponent = {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0};
+        end
+
+        EzAndSml: begin
+           Exponent = erand();
+           Exponent[`$exp_width-1`] = 1'b1;
+           Exponent[`$exp_width-2`:2] = `$exp_width-3`'b0;
+        end
+        
+        //not denorm, not zero, not inf,not nan, BUT could be Max, Min, One or PointOneOneOne!!!
+        Random: begin // Denorm with no special frac pattern
+           // do Exponent = erand(); while (Exponent == '0 || Exponent == '1);
+
+           // Mr. Paranoia thinks erand() could break and put us into an infinite loop haha
+           Exponent = erand();
+           if (Exponent == '0 || Exponent == '1) Exponent = erand();
+           if (Exponent == '0 || Exponent == '1) Exponent = erand();
+           if (Exponent == '0 || Exponent == '1) Exponent = erand();
+           if (Exponent == '0 || Exponent == '1)
+             $fatal(2, "ERROR FPTransaction*.v got multiple unlikely values in a row");
+        end
+
+        default: Exponent = erand();
+
+      endcase // unique case (trans_type)
+
+      // if (Exponent != E0) $display("WARNING %s changed fraction value from %h to %h", TransType.name(), E0, Exponent);
+   endfunction // pick_exponent
+   
+
+   // Generate a random fractional part
+   function automatic logic [FWIDTH-1:0] frand();
+      logic [FWIDTH-1:0] r;
+      for (int i = 0; i < (FWIDTH+31)/32; i++) r = (r << 32) | $urandom();
+      return r;
+   endfunction // frand
+
+   // Generate a random exponent part
+   function automatic logic [EWIDTH-1:0] erand();
+      logic [EWIDTH-1:0] r;
+      for (int i = 0; i < (EWIDTH+31)/32; i++)
+        r = (r << 32) | $urandom();
+      return r;
+   endfunction // erand
+
+   // A one-bit function is a boolean
+   function bit fraction_all_ones(); return ( Fraction == {(`$frac_width`){1'b1}} ); endfunction // fraction_all_ones
+   function bit fraction_is_zero();  return ( Fraction ==    `$frac_width`'b0     ); endfunction // fraction_is_zero
+
    function void post_randomize;
+
+      // Pick random-or-not fraction and exponent according to TransType
+      pick_fraction();
+      pick_exponent();
+
+      // Workaround for bugs in Random TransType
       if (TransType == Random) begin
 	 
-	 // if it is actually Max
-	 if((Fraction == {(`$frac_width`){1'b1}}) && (Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0}))  begin
+	 if (fraction_all_ones() && (Exponent == { {(`$exp_width-1`){1'b1}}, 1'b0}))  begin
+	    // Should not be Random, should instead be Max
 	    TransType = Max;
 	 end
-	  // if it is actually Min
-	 if((Fraction == `$frac_width`'b0) && (Exponent == `$exp_width`'b1))  begin
+	 if (fraction_is_zero() && (Exponent == `$exp_width`'b1))  begin
+	    // Should not be Random, should instead be Min
 	    TransType = Min;
 	 end
-	 // if it is actually One
-	 if((Fraction == `$frac_width`'b0) && (Exponent ==  {  1'b0, {(`$exp_width-1`){1'b1}}  }))  begin
+	 if (fraction_is_zero() && (Exponent ==  {  1'b0, {(`$exp_width-1`){1'b1}}  }))  begin
+	    // Should not be Random, should instead be One
 	    TransType = One;
 	 end
-	 // if it is actually PointOneOneOne
-	 if((Fraction ==  {(`$frac_width`){1'b1}} ) && (Exponent ==  {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0}))  begin
+	 if (fraction_all_ones() && (Exponent ==  {  1'b0, {(`$exp_width-2`){1'b1}}, 1'b0}))  begin
+	    // Should not be Random, should instead be PointOneOneOne
 	    TransType = PointOneOneOne;
 	 end
       end    
-   endfunction // if
+   endfunction // post_randomize
 
+
+//   constraint order1 { 
+//      solve TransType before Fraction, Exponent, Sign, Inc;
+//   }
 
    
-   constraint order1 { 
-      solve TransType before Fraction, Exponent, Sign, Inc;
-   }
+//;# Random Mode apparently enabled for operands A and B (unq1)
+//;# but not C or D (unq2) (???) - dunno about E yet maybe
 
-   
 //;# In Random Mode ONLY:
 //; if ($rand_mode =~ /YES/){
+
    /* The following class members hold the DEFAULT weights 
     * for the various transaction types.
     * However, they may be overwritten by the user at runtime
     * using the "+Zero_w=newWeight" notation */
+
    static bit 	AllWeightsInitialized = 0;	
    static int 	SignIsPos_w = `$SignIsPos_w`;
    static int 	Zero_w = `$Zero_w`;
@@ -613,34 +592,7 @@ class `mname`;
    static int 	EzAndSml_w =`$EzAndSml_w`;
    static int 	Random_w = `$Random_w`;
    
-   // The following are constraints blocks for controling and generating
-   // meaningful transactions.
-   constraint pick_sign{ 
-      Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
-   }
-       
- 
-     
-   constraint pick_trans_type{
-      TransType dist {Zero := Zero_w, 
-		      Denorm100 := Denorm100_w, 
-		      DenormFFF := DenormFFF_w, 
-		      Denorm001 := Denorm001_w,
-		      DenormRnd := DenormRnd_w,
-		      QuietNaN := QuietNaN_w, 
-		      SignalingNaN := SignalingNaN_w, 
-		      Min := Min_w, 
-		      Max := Max_w, 
-		      Inf := Inf_w, 
-		      One := One_w, 
-		      PointOneOneOne := PointOneOneOne_w,
-		      EzAndSml := EzAndSml_w,
-		      Random := Random_w };
-   }
-
-     
-
-     // C'tor for a Random transaction
+     // Constructor for a random transactions
      // The constructor also reads user defined, per simulation, weights
      function new();
 	if (! AllWeightsInitialized) begin
@@ -714,5 +666,94 @@ class `mname`;
 	   end
 	end // if (! AllWeightsInitialized)
      endfunction // new
-//; } # End of "if ($rand_mode =~ /YES/)..."
+
+//;# Random Mode apparently enabled for operands A and B (unq1) but not C or D (unq2) (???) - dunno about E yet maybe
+//;# In Random Mode ONLY:
+
+   // Constraint blocks for controling and generating meaningful transactions.
+/*
+   constraint pick_sign {
+      Sign dist { 0 := SignIsPos_w, 1 := 100-SignIsPos_w }; 
+   }
+   constraint pick_trans_type{
+      TransType dist {Zero := Zero_w, 
+		      Denorm100 := Denorm100_w, 
+		      DenormFFF := DenormFFF_w, 
+		      Denorm001 := Denorm001_w,
+		      DenormRnd := DenormRnd_w,
+		      QuietNaN := QuietNaN_w, 
+		      SignalingNaN := SignalingNaN_w, 
+		      Min := Min_w, 
+		      Max := Max_w, 
+		      Inf := Inf_w, 
+		      One := One_w, 
+		      PointOneOneOne := PointOneOneOne_w,
+		      EzAndSml := EzAndSml_w,
+		      Random := Random_w };
+   }
+*/
+   // Weighted-random selection of sign bit combined with true-random assignment of inc bit
+   function automatic bit pick_sign_and_inc();
+      // E.g. if SignIsPos_w=30 there will be 30% chance that Sign=0
+      Sign = ($urandom_range(0, 99) < SignIsPos_w) ? 1'b0 : 1'b1;
+      Inc = $urandom_range(0, 1);
+   endfunction // pick_sign_and_inc
+
+   // Weighted-random selection of transaction type (claude-opus-4-8 wrote the first draft)
+   typedef struct { FPTransType val; int unsigned wt; } trans_weights;
+   function automatic FPTransType pick_transtype();
+      trans_weights w[] = '{
+                            '{Zero,           Zero_w},
+                            '{Denorm100,      Denorm100_w},
+                            '{DenormFFF,      DenormFFF_w},
+                            '{Denorm001,      Denorm001_w},
+                            '{DenormRnd,      DenormRnd_w},
+                            '{QuietNaN,       QuietNaN_w},
+                            '{SignalingNaN,   SignalingNaN_w},
+                            '{Min,            Min_w},
+                            '{Max,            Max_w},
+                            '{Inf,            Inf_w},
+                            '{One,            One_w},
+                            '{PointOneOneOne, PointOneOneOne_w},
+                            '{EzAndSml,       EzAndSml_w},
+                            '{Random,         Random_w}
+                            };
+      int unsigned total=0, r, acc=0;
+
+      // Calculate total of all weights T = summa(*_w)
+      foreach (w[i]) total += w[i].wt;
+      if (total == 0) begin $error("all weights zero"); return Zero; end
+
+      // Choose a number between 0 and T-1 inclusive
+      r = $urandom_range(0, total - 1);
+
+      // Walk through the array and return first type that satisfies weight requirement      
+      foreach (w[i]) begin
+         acc += w[i].wt;
+         if (r < acc) return w[i].val;
+      end
+      $display("WARNING pick_transtype() FAILED see FPTransaction.vp");
+      return Random; // unreachable
+   endfunction // pick_transtype
+
+//; } else { 
+   // NOT Random Mode (FIXME maybe it should be called "Weighted-Random mode" instead of Random Mode...)
+
+   // True-random transtype
+   function automatic FPTransType pick_transtype();
+      TransType = FPTransType'( $urandom_range(0, TransType.num()-1) );
+   endfunction // pick_transtype
+
+   // True-random sign and inc
+   function automatic bit pick_sign_and_inc();
+      {Sign,Inc} = $urandom_range(0,3);  // Default is random values for both
+   endfunction // pick_sign_and_inc
+//; } # End of "if ($rand_mode =~ /YES/) {} else {}"
+
+   // Usefule for debugging maybe
+   function showtrans(int lno);
+      $display("%0t FOOFPT-%0d Sign %b; Exponent 0x%h; Fraction 10'h%h; Inc %b; %s",
+               $time,  lno, Sign,    Exponent,      Fraction,        Inc, TransType.name());
+   endfunction // showtrans
+
 endclass : `mname`
