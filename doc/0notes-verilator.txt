@@ -3,25 +3,29 @@ Still to do: incorporate into Makefile
 
 WHAT I DO / WHAT WORKS ATM
 
-  # Compare vcs vs. verilator testbenches
-  # Builds e.g. steveri/{vcs,ver}.log6 and compares to prev log5 etc.
-  i=2; (make clean run GENESIS_CFG_SCRIPT=SysCfgs/$cfg.cfg) |& tee steveri/tmp-bf-cma.log$i | less -r
-  i=7; (dover $i | tail -10; diff steveri/ver.log{$((i-1)),$i}) |& less -r
-  i=7; (dovcs $i | tail -10; diff steveri/vcs.log{$((i-1)),$i}) |& less -r
+  # Default run using VERILATOR
+  make clean run SIMULATOR=VERILATOR
 
+  # Quick bfloat runs you can use to to compare vcs vs. verilator testbenches
+  # Builds e.g. steveri/{vcs,ver}.log1 and compares to prev log0 etc.
+  i=1; (make clean run GENESIS_CFG_SCRIPT=SysCfgs/$cfg.cfg) |& tee steveri/tmp-bf-cma.log$i | less -r
+  i=1; (dover $i | tail -10; diff steveri/ver.log{$((i-1)),$i}) |& less -r
+  i=1; (dovcs $i | tail -10; diff steveri/vcs.log{$((i-1)),$i}) |& less -r
 
 
 # function "dover" creates a log file e.g. "steveri/ver.log$i"
 # Should see result "PASSED" and a variety of different ops/types/operands, not just mostly zeroes!
-function dover { (
-    i=$1; log=steveri/ver.log$i; /bin/rm -rf obj_dir; TOP=top_FPGen
-    PARMS='-f /nobackup/steveri/github/FP-Gen/genesis_vlog.vf -y /nobackup/steveri/github/FP-Gen/rtl/dwsub/'
-    verilator --binary -j 0 -Wno-fatal --top-module $TOP $PARMS && obj_dir/Vtop_FPGen 2>&1 | tee $log;
-    echo $log ) 2>&1 | less -r
+function dover { 
+  ( i=$1; log=steveri/ver.log$i; /bin/rm -rf obj_dir; export SIMULATOR=VERILATOR
+    make comp; make run | tee $log   # Do comp separately so as not to pollute the log
+    mv -f comp_bb.log steveri/comp_bb.log$i
+    mv -f  run_bb.log steveri/run_bb.log$i
+    echo $log
+  ) |& less -r
 }
 
-# Can do this to compare to previous logs i.e. compare log6 vs. log5
-i=6; (dover $i | tail -10; diff steveri/ver.log{$((i-1)),$i}) |& less -r
+# Can do this to compare to previous logs i.e. compare log1 vs. log0
+i=1; (dover $i | tail -10; diff steveri/ver.log{$((i-1)),$i}) |& less -r
 
 # Do this to review type distribution among files e.g. steveri/ver.log[4567]
 # There should be twice as many "Random" types as any other given type
@@ -48,8 +52,7 @@ sdiff -w 140 <(filter FOUND steveri/ver.log$((i-1))) <(filter FOUND steveri/ver.
 
 # Comparable vcs test generates e.g. "steveri/vcs.log6" for comparison with e.g. steveri/ver.log6"
 function dovcs { 
-  ( i=$1; log=steveri/vcs.log$i; 
-    /bin/rm -rf csrc simv simv.daidr
+  ( i=$1; log=steveri/vcs.log$i; /bin/rm -rf csrc simv simv.daidr; export SIMULATOR=VCS
     make comp; make run | tee $log  # Do comp separately so as not to pollute the log
     mv -f comp_bb.log steveri/comp_bb.log$i
     mv -f  run_bb.log steveri/run_bb.log$i
