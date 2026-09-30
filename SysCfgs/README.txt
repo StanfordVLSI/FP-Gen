@@ -1,4 +1,11 @@
-### Sample configurations that might be useful:
+Note there are several ways to use the configs and/or otherwise set specific Genesis parameters, e.g.
+```
+make run GENESIS_CFG_SCRIPT=SysCfgs/cma.cfg
+make gen GEN="-parameter top_FPGen.WHICH_DW=DW"
+make gen GENESIS_PARAMS="top_FPGen.WHICH_DW=DWSUB"
+```
+
+### Sample single- and double-precision configurations
 ```
 cma.cfg - "CMA" architecture + "Wallace" trees, everything else default
 dp-cma.cfg - 5-cy 64-bit CMA, 2-cycle mul, denorm, forwarding, Wallace trees, Booth-3
@@ -7,7 +14,7 @@ sp-cma.cfg - 6-cy 32-bit CMA, 3-cycle mul, denorm, forwarding, Wallace trees, Bo
 sp-fma.cfg - 4-cy 32-bit FMA, 2-cycle mul, denorm, forwarding, "ZM" trees, Booth-3
 ```
 
-#### bfloat configs - these build and run extremely quickly!
+#### bfloat16 configs - these build and run extremely quickly!
 ```
 bf-fma.cfg   - uses default pipeline (3-cy mul, 7-cy mul-add?)
 bf-cma00.cfg - unpipelined 16-bit (bfloat) CMA
