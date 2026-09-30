@@ -126,6 +126,20 @@ GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
 			-unqstyle numeric                                       \
 			$(GENESIS_CFG)
 
+# TODO would maybe prefer the default to be DESIGNWARE=NO !!!
+DESIGNWARE ?= YES
+
+# Do not allow designware with verilator. I mean that's just *wrong*.
+ifeq ($(SIMULATOR), VERILATOR)
+   DESIGNWARE = NO
+  $(warning WARNING: Setting DESIGNWARE=NO because SIMULATOR==VERILATOR)
+  GENESIS_PARAMS += top_FPGen.WHICH_DW=DWSUB
+else
+  $(warning WARNING: using designware libraries, this will FAIL if you do not have a Synopsys license)
+  $(warning to avoid this warning, you can do "make DESIGNWARE=NO" and/or "make GENESIS_PARAMS='top_FPGen.WHICH_DW=DWSUB'")
+  GENESIS_PARAMS += top_FPGen.WHICH_DW=DW
+endif
+
 ifneq ($(strip $(GENESIS_CFG_SCRIPT)),)
   GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -cfg $(GENESIS_CFG_SCRIPT)
   $(warning WARNING: GENESIS_CFG_SCRIPT set to $(GENESIS_CFG_SCRIPT))
@@ -142,22 +156,16 @@ endif
 
 ##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
 ##############################################
-SIMV = $(RUNDIR)/simv
-
+SIMV    = $(RUNDIR)/simv
 SIM_TOP = top_$(FPPRODUCT)
-
-VERILOG_ENV :=		 
-
+VERILOG_ENV    :=		 
 VERILOG_DESIGN :=	
-
-VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
-
+VERILOG_FILES  := $(VERILOG_ENV) $(VERILOG_DESIGN)
 ifdef SYNOPSYS
-SYNOPSYS := $(SYNOPSYS)
+      SYNOPSYS := $(SYNOPSYS)
 else
-SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
+      SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
 endif
-
 VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/dw/sim_ver/			\
 			+incdir+$(SYNOPSYS)/dw/sim_ver/			\
@@ -220,6 +228,12 @@ VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
 
+##### FLAGS FOR VERILATOR COMPILATION #####
+##############################################
+VERILATOR_LIBS          := -y /nobackup/steveri/github/FP-Gen/rtl/dwsub/
+VERILATOR_COMPILE_FLAGS :=                         \
+  --binary -j 0 -Wno-fatal --top-module $(SIM_TOP) \
+  $(VERILOG_FILES) $(VERILATOR_LIBS)  
 
 
 ##### FLAGS FOR IBM's FPGEN #####
@@ -411,20 +425,36 @@ genesis_clean:
 ###### END OF Genesis2 Rules #######
 
 
+# SIMULATOR can be one of "VCS", "VERILATOR", or null (defaults to VCS)
+SIMULATOR ?= VCS
+
+ifeq ($(SIMULATOR), VCS)
+    SIM_COMPILE = vcs $(VERILOG_COMPILE_FLAGS)
+    SIM_CMD = $(SIMV)
+    SIM_RUN = $(SIMV) $(VERILOG_SIMULATION_FLAGS)
+else ifeq ($(SIMULATOR), VERILATOR)
+    SIM_COMPILE = verilator $(VERILATOR_COMPILE_FLAGS)
+    SIM_CMD = $(RUNDIR)/obj_dir/Vtop_FPGen
+    SIM_RUN = $(SIM_CMD)
+else
+    @echo "ERROR Found SIMULATOR env var '$(SIMULATOR)'; should instead be one of: 'VCS' (default) or 'VERILATOR'"
+endif
+
 
 # VCS compile rules:
 #####################
 # compile rules:
 # use "make COMP=+define+<compile_time_flag[=value]>" to add compile time flags
 .PHONY: comp
-comp: $(SIMV)
+comp: $(SIM_CMD)
 
-$(SIMV):$(GENESIS_VLOG_LIST)
+$(SIM_CMD):$(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
 	sleep 1;
-	vcs  $(VERILOG_COMPILE_FLAGS) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log 
+	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) |& tee comp_bb.log
+        # vcs  $(VERILOG_COMPILE_FLAGS) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log 
 
 
 # IBM's fpgen rules:
@@ -456,12 +486,12 @@ $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE): $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 #####################
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
 .PHONY: run run_ibm
-run: $(SIMV)
+run: $(SIM_CMD)
 	@/bin/rm -f TEST_PASS TEST_FAIL
 	@echo ""
-	@echo Now Running simv
+	@echo Now Running $(SIM_CMD)
 	@echo ==================================================
-	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) -l run_bb.log
+	$(SIM_RUN) $(RUN) |& tee run_bb.log
 	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
 	@test -f TEST_PASS || exit 13
 
@@ -824,13 +854,11 @@ eval4: gen comp run gen_syn run_dc
 .PHONY: clean cleanall 
 clean: genesis_clean synthesis_clean
 	@echo ""
-	@echo Cleanning old files, objects, logs and garbage
+	@echo Cleaning old files, objects, logs and garbage
 	@echo ==================================================
-	\rm -rf $(SIMV) simv.*
+	\rm -rf $(SIMV) simv.* csrc *.daidr obj_dir
 	\rm -f *.tcl
 	\rm -f *.info
-	\rm -rf csrc
-	\rm -rf *.daidir
 	\rm -rf *.log
 	\rm -rf *.pvl
 	\rm -rf *.syn
