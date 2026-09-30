@@ -453,7 +453,7 @@ $(SIM_CMD):$(GENESIS_VLOG_LIST)
 	@echo Making $@ because of $?
 	@echo ==================================================
 	sleep 1;
-	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) |& tee comp_bb.log
+	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log
         # vcs  $(VERILOG_COMPILE_FLAGS) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log 
 
 
@@ -491,7 +491,7 @@ run: $(SIM_CMD)
 	@echo ""
 	@echo Now Running $(SIM_CMD)
 	@echo ==================================================
-	$(SIM_RUN) $(RUN) |& tee run_bb.log
+	$(SIM_RUN) $(RUN) 2>&1 | tee run_bb.log
 	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
 	@test -f TEST_PASS || exit 13
 
