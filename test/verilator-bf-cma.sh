@@ -30,8 +30,11 @@ test -f TEST_PASS && rm TEST_PASS
 test -f TEST_FAIL && rm TEST_FAIL
 
 # New run
-PARMS='--timing --timescale 1ps/1ps --cc -y rtl/dwsub -f genesis_vlog.vf'
-verilator --binary -j 0 -Wno-fatal --top-module top_FPGen $PARMS && obj_dir/Vtop_FPGen
+# Alternatively, it should work just to do "make run SIMULATOR=VERILATOR"
+# PARMS='--timing --timescale 1ps/1ps --cc -y rtl/dwsub -f genesis_vlog.vf'
+# verilator --binary -j 0 -Wno-fatal --top-module top_FPGen $PARMS && obj_dir/Vtop_FPGen
+make run SIMULATOR=VERILATOR
+
 
 # Check the result
 # FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp
