@@ -126,19 +126,21 @@ GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
 			-unqstyle numeric                                       \
 			$(GENESIS_CFG)
 
+##### Do this in the Genesis code! See top_FPGEN.vp ###
+# 
 # TODO would maybe prefer the default to be DESIGNWARE=NO !!!
-DESIGNWARE ?= YES
-
-# Do not allow designware with verilator. I mean that's just *wrong*.
-ifeq ($(SIMULATOR), VERILATOR)
-   DESIGNWARE = NO
-  $(warning WARNING: Setting DESIGNWARE=NO because SIMULATOR==VERILATOR)
-  GENESIS_PARAMS += top_FPGen.WHICH_DW=DWSUB
-else
-  $(warning WARNING: using designware libraries, this will FAIL if you do not have a Synopsys license)
-  $(warning to avoid this warning, you can do "make DESIGNWARE=NO" and/or "make GENESIS_PARAMS='top_FPGen.WHICH_DW=DWSUB'")
-  GENESIS_PARAMS += top_FPGen.WHICH_DW=DW
-endif
+# DESIGNWARE ?= YES
+# 
+# # Do not allow designware with verilator. I mean that's just *wrong*.
+# ifeq ($(SIMULATOR), VERILATOR)
+#    DESIGNWARE = NO
+#   $(warning WARNING: Setting DESIGNWARE=NO because SIMULATOR==VERILATOR)
+#   GENESIS_PARAMS += top_FPGen.WHICH_DW=DWSUB
+# else
+#   $(warning WARNING: using designware libraries, this will FAIL if you do not have a Synopsys license)
+#   $(warning to avoid this warning, you can do "make DESIGNWARE=NO" and/or "make GENESIS_PARAMS='top_FPGen.WHICH_DW=DWSUB'")
+#   GENESIS_PARAMS += top_FPGen.WHICH_DW=DW
+# endif
 
 ifneq ($(strip $(GENESIS_CFG_SCRIPT)),)
   GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -cfg $(GENESIS_CFG_SCRIPT)
@@ -156,9 +158,9 @@ endif
 
 ##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
 ##############################################
-SIMV    = $(RUNDIR)/simv
+SIMV = $(RUNDIR)/simv
 SIM_TOP = top_$(FPPRODUCT)
-VERILOG_ENV    :=		 
+VERILOG_ENV :=		 
 VERILOG_DESIGN :=	
 VERILOG_FILES  := $(VERILOG_ENV) $(VERILOG_DESIGN)
 ifdef SYNOPSYS

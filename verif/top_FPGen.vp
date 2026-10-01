@@ -38,6 +38,15 @@
 //;                          Doc=>"Use Synopsys (DW) or local FOSS (DWSUB) libraries to build the multiplier?".
 //;                               " (Still uses DW for testbench gold model, though).");
 //; 
+//; # Override WHICH_DW settings when/if SIMULATOR=VERILATOR
+//; # This snippet authored by duckybot using GPT-5.6 Luna
+//; if (exists $ENV{SIMULATOR}
+//;     && $ENV{SIMULATOR} eq 'VERILATOR'
+//;     && (!defined($which_dw) || $which_dw ne 'DWSUB')) {
+//;       # "warn" writes stderr, adds filename and lno (unless warn msg ends w newline)
+//;       warn "Warning: SIMULATOR=VERILATOR requires which_dw=DWSUB; changing it.\n";
+//;       $which_dw = 'DWSUB';
+//; }
 
 \`define DUT(mod) \`ifndef GATES  mod  \`else  mod\`\`_svsim  \`endif 
 
