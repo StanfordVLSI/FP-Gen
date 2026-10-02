@@ -439,7 +439,7 @@ else ifeq ($(SIMULATOR), VERILATOR)
     SIM_CMD = $(RUNDIR)/obj_dir/Vtop_FPGen
     SIM_RUN = $(SIM_CMD)
 else
-    @echo "ERROR Found SIMULATOR env var '$(SIMULATOR)'; should instead be one of: 'VCS' (default) or 'VERILATOR'"
+    $(error ERROR Env var SIMULATOR="$(SIMULATOR)", should instead be one of: "VCS" (default) or "VERILATOR")
 endif
 
 
