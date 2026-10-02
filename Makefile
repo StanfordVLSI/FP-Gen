@@ -18,6 +18,14 @@ $(warning FPGEN home set to $(DESIGN_HOME))
 RUNDIR := $(realpath ./)
 $(warning Work started at $(RUNDIR)) 
 
+# Note the Makefile will probably FAIL if RUNDIR != DESIGN_HOME
+# (FIXME maybe this should be an ERROR!!!)
+ifneq ( $(DESIGN_HOME), $(RUNDIR) )
+  $(warning WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING)
+  $(warning WARNING: RUNDIR "$(RUNDIR)" != DESIGN_HOME "$(DESIGN_HOME)", Makefile will likely FAIL)
+  $(warning WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING)
+endif
+
 # Set defaut technology library to TSMC45
 TECH := 45
 $(warning Technology set to $(TECH) nm ) 
@@ -216,7 +224,7 @@ VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 
 ##### FLAGS FOR VERILATOR COMPILATION #####
 ##############################################
-VERILATOR_LIBS          :=   -y /nobackup/steveri/github/FP-Gen/rtl/dwsub/
+VERILATOR_LIBS          :=   -y $(DESIGN_HOME)/rtl/dwsub/
 VERILATOR_COMPILE_FLAGS :=   --binary -j 0 -Wno-fatal --top-module $(SIM_TOP) \
                              $(VERILOG_FILES) $(VERILATOR_LIBS)  
 
