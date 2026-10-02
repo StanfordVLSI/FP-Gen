@@ -400,7 +400,7 @@ $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST) $(GENESIS_CONST
 
 genesis_clean:
 	@echo ""
-	@echo Cleanning previous runs of Genesis
+	@echo Cleaning previous runs of Genesis
 	@echo ===================================
 	@if test -f "genesis_clean.cmd"; then 	\
 		 ./genesis_clean.cmd;		\

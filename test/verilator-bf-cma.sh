@@ -12,20 +12,12 @@ function INFO { printf '\n[VBC] %s\n' "$*"; }
 INFO 'Install genesis if it is not there already'
 source scripts/setup.sh --genesis-only
 
-INFO 'Generate the verilog'
-make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
-echo Wait...
-sleep 10
-pwd; ls -l
-if ! grep "Genesis Finished Generating Your Design" genesis.log; then
-    echo "ERROR looks like verilog generation failed"
-    exit 13
-fi
-
 INFO 'Run the test'
-make clean run SIMULATOR=VERILATOR
+export SIMULATOR=VERILATOR
+make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
 
 # Check the result
 # FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp
+# FIXME can remove these FIXME comments by filing an issue, say
 test -e TEST_PASS || exit 13  # FAIL
 exit                          # PASS
