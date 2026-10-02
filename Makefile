@@ -126,22 +126,6 @@ GENESIS_GEN_FLAGS :=	-gen -top $(GENESIS_TOP) 				\
 			-unqstyle numeric                                       \
 			$(GENESIS_CFG)
 
-##### Do this in the Genesis code! See top_FPGEN.vp ###
-# 
-# TODO would maybe prefer the default to be DESIGNWARE=NO !!!
-# DESIGNWARE ?= YES
-# 
-# # Do not allow designware with verilator. I mean that's just *wrong*.
-# ifeq ($(SIMULATOR), VERILATOR)
-#    DESIGNWARE = NO
-#   $(warning WARNING: Setting DESIGNWARE=NO because SIMULATOR==VERILATOR)
-#   GENESIS_PARAMS += top_FPGen.WHICH_DW=DWSUB
-# else
-#   $(warning WARNING: using designware libraries, this will FAIL if you do not have a Synopsys license)
-#   $(warning to avoid this warning, you can do "make DESIGNWARE=NO" and/or "make GENESIS_PARAMS='top_FPGen.WHICH_DW=DWSUB'")
-#   GENESIS_PARAMS += top_FPGen.WHICH_DW=DW
-# endif
-
 ifneq ($(strip $(GENESIS_CFG_SCRIPT)),)
   GENESIS_GEN_FLAGS	:= $(GENESIS_GEN_FLAGS) -cfg $(GENESIS_CFG_SCRIPT)
   $(warning WARNING: GENESIS_CFG_SCRIPT set to $(GENESIS_CFG_SCRIPT))
@@ -162,11 +146,11 @@ SIMV = $(RUNDIR)/simv
 SIM_TOP = top_$(FPPRODUCT)
 VERILOG_ENV :=		 
 VERILOG_DESIGN :=	
-VERILOG_FILES  := $(VERILOG_ENV) $(VERILOG_DESIGN)
+VERILOG_FILES :=       $(VERILOG_ENV)  $(VERILOG_DESIGN)                                       
 ifdef SYNOPSYS
-      SYNOPSYS := $(SYNOPSYS)
+  SYNOPSYS := $(SYNOPSYS)
 else
-      SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
+  SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
 endif
 VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/dw/sim_ver/			\
@@ -232,11 +216,9 @@ VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 
 ##### FLAGS FOR VERILATOR COMPILATION #####
 ##############################################
-VERILATOR_LIBS          := -y /nobackup/steveri/github/FP-Gen/rtl/dwsub/
-VERILATOR_COMPILE_FLAGS :=                         \
-  --binary -j 0 -Wno-fatal --top-module $(SIM_TOP) \
-  $(VERILOG_FILES) $(VERILATOR_LIBS)  
-
+VERILATOR_LIBS          :=   -y /nobackup/steveri/github/FP-Gen/rtl/dwsub/
+VERILATOR_COMPILE_FLAGS :=   --binary -j 0 -Wno-fatal --top-module $(SIM_TOP) \
+                             $(VERILOG_FILES) $(VERILATOR_LIBS)  
 
 ##### FLAGS FOR IBM's FPGEN #####
 #################################
@@ -456,7 +438,6 @@ $(SIM_CMD):$(GENESIS_VLOG_LIST)
 	@echo ==================================================
 	sleep 1;
 	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log
-        # vcs  $(VERILOG_COMPILE_FLAGS) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log 
 
 
 # IBM's fpgen rules:

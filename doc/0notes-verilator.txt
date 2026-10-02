@@ -1,5 +1,6 @@
+# NOTES ON USING VERILATOR WITH FP-GEN (instead of the default VCS).
+
 Verilator path seems to work now.
-Still to do: incorporate into Makefile
 
 WHAT I DO / WHAT WORKS ATM
 

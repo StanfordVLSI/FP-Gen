@@ -23,18 +23,7 @@ if ! grep "Genesis Finished Generating Your Design" genesis.log; then
 fi
 
 INFO 'Run the test'
-
-# Clean up from possible previous runs
-/bin/rm -rf obj_dir
-test -f TEST_PASS && rm TEST_PASS
-test -f TEST_FAIL && rm TEST_FAIL
-
-# New run
-# Alternatively, it should work just to do "make run SIMULATOR=VERILATOR"
-# PARMS='--timing --timescale 1ps/1ps --cc -y rtl/dwsub -f genesis_vlog.vf'
-# verilator --binary -j 0 -Wno-fatal --top-module top_FPGen $PARMS && obj_dir/Vtop_FPGen
-make run SIMULATOR=VERILATOR
-
+make clean run SIMULATOR=VERILATOR
 
 # Check the result
 # FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp

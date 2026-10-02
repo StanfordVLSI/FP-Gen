@@ -1,8 +1,8 @@
 Note there are several ways to use the configs and/or otherwise set specific Genesis parameters, e.g.
 ```
-make run GENESIS_CFG_SCRIPT=SysCfgs/cma.cfg
 make gen GEN="-parameter top_FPGen.WHICH_DW=DW"
 make gen GENESIS_PARAMS="top_FPGen.WHICH_DW=DWSUB"
+make run GENESIS_CFG_SCRIPT=SysCfgs/cma.cfg
 ```
 
 ### Sample single- and double-precision configurations
