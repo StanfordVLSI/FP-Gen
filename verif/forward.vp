@@ -35,8 +35,8 @@ class `mname`;
       GetHotbit();
       GetForward();
       post_randomize();
-      $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
-               "X", $time, forward,  hotbit, forwardType.name());
+      // $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
+      //         "X", $time, forward,  hotbit, forwardType.name());
    endfunction
 
    function automatic bit GetForward();

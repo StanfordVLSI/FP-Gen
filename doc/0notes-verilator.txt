@@ -1,62 +1,78 @@
-This works I think, i.e. "works" as in compiles without errors. Have not yet tried running the resulting binary though.
-```
-/bin/rm -rf obj_dir
+# NOTES ON USING VERILATOR WITH FP-GEN (instead of the default VCS).
 
-TOP=top_FPGen
+Verilator path seems to work now.
 
-PARMS1='--timing --timescale 1ps/1ps --cc -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/'
+WHAT I DO / WHAT WORKS ATM
 
-PARMS2='/nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f /nobackup/steveri/github/FP-Gen/genesis_vlog.vf'
+  # Default run using VERILATOR
+  make clean run SIMULATOR=VERILATOR
 
-verilator -Wno-fatal --top-module $TOP $PARMS1 $PARMS2 |& tee tmp.log
-```
-
-########################################################################
-FULL TESTING
-
-#######################
-# Build the verilog
-i=1; cfg=bf-cma; (make clean run GENESIS_CFG_SCRIPT=SysCfgs/$cfg.cfg) |& tee steveri/tmp-$cfg.log$i | tail -20
-gdiff -b $v steveri/snapshot4-work/$v
-
-#######################
-# Capture a vcs run
-i=4; dovcs $i | tail -20
-diff steveri/vcs.log[34]
-
-#######################
-# Capture a verilator run
-i=4; dover $i | tail -20
-diff steveri/ver.log[34]
-
-#######################
-# Compare the two
-diff steveri/{vcs,ver}.log4
+  # Quick bfloat runs you can use to to compare vcs vs. verilator testbenches
+  # Builds e.g. steveri/{vcs,ver}.log1 and compares to prev log0 etc.
+  i=1; (make clean run GENESIS_CFG_SCRIPT=SysCfgs/$cfg.cfg) |& tee steveri/tmp-bf-cma.log$i | less -r
+  i=1; (dover $i | tail -10; diff steveri/ver.log{$((i-1)),$i}) |& less -r
+  i=1; (dovcs $i | tail -10; diff steveri/vcs.log{$((i-1)),$i}) |& less -r
 
 
-##############################################################################
-% which dover
-dover is a function
-dover () 
-{ 
-    ( i=$1;
-    log=steveri/ver.log$i;
-    /bin/rm -rf obj_dir;
-    verilator --binary -j 0 -Wno-fatal --top-module $TOP $PARMS1 $PARMS2 && obj_dir/Vtop_FPGen 2>&1 | tee $log;
-    echo $log ) 2>&1 | less
+# function "dover" creates a log file e.g. "steveri/ver.log$i"
+# Should see result "PASSED" and a variety of different ops/types/operands, not just mostly zeroes!
+function dover { 
+  ( i=$1; log=steveri/ver.log$i; /bin/rm -rf obj_dir; export SIMULATOR=VERILATOR
+    make comp; make run | tee $log   # Do comp separately so as not to pollute the log
+    mv -f comp_bb.log steveri/comp_bb.log$i
+    mv -f  run_bb.log steveri/run_bb.log$i
+    echo $log
+  ) |& less -r
 }
-TOP=top_FPGen
-PARMS1='--timing --timescale 1ps/1ps --cc -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/'
-PARMS2='/nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f /nobackup/steveri/github/FP-Gen/genesis_vlog.vf'
 
-##############################################################################
-% which dovcs
-dovcs is a function
-dovcs () 
-{ 
-    ( i=$1;
-    log=steveri/vcs.log$i;
-    delete csrc simv simv.daidr;
-    vcs -sverilog +cli +memcbk +lint=PCWM +libext+.v -notice -full64 +v2k -debug_pp -timescale=1ps/1ps +noportcoerce +vcs+lic+wait +notimingcheck +delay_mode_zero -licqueue -ld gcc -top top_FPGen -y /nobackup/steveri/github/FP-Gen +incdir+/nobackup/steveri/github/FP-Gen -y /cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/dw/sim_ver/ -y /cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ +incdir+/cad/synopsys/syn/U-2022.12-SP1/packages/gtech/src_ver/ /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_add.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB01_csa.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_decode_en.v /nobackup/steveri/github/FP-Gen/rtl/dwsub/DWSUB_lzd.v -f $VF 2>&1 | tee steveri/comp_bb.log$i && ./simv -l simv.log +vcs+lic+wait +vpdbufsize+100 +vpdfileswitchsize+100 -l steveri/run_bb.log$i 2>&1 | tee $log;
-    echo $log ) 2>&1 | less
+# Can do this to compare to previous logs i.e. compare log1 vs. log0
+i=1; (dover $i | tail -10; diff steveri/ver.log{$((i-1)),$i}) |& less -r
+
+# Do this to review type distribution among files e.g. steveri/ver.log[4567]
+# There should be twice as many "Random" types as any other given type
+function types { 
+   sed 's/= */=/g' $1 | xargs -n 1 | awk -F= '/^Type/{print $2}' | sort | uniq -c | sort -nr
 }
+i=7; types steveri/vcs.log$i
+for f in steveri/ver.log?; do (echo $f; types $f ; echo ""); done | less
+            #    steveri/ver.log0
+            #      20 Random
+            #      10 QuietNaN
+            #       7 Max
+            #       4 Inf
+            #       ...
+
+# Compare generated test vectors for two different log files
+function filter { grep $1 $2 | column -t; }
+filter FOUND steveri/ver.log$i
+sdiff -w 140 <(filter FOUND steveri/ver.log$((i-1))) <(filter FOUND steveri/ver.log$i) | cat -n
+     # 28000:  FOUND:  Sign=  0  Exp=  0x1f...Type=  Inf          28000:  FOUND:  Sign=  0  Exp=  0x1f...Type=  Inf
+     # 29000:  FOUND:  Sign=  1  Exp=  0x06...Type=  Random       29000:  FOUND:  Sign=  1  Exp=  0x06...Type=  Random
+     # 30000:  FOUND:  Sign=  0  Exp=  0x1f...Type=  QuietNaN     30000:  FOUND:  Sign=  0  Exp=  0x1f...Type=  QuietNaN
+     # ...
+
+# Comparable vcs test generates e.g. "steveri/vcs.log6" for comparison with e.g. steveri/ver.log6"
+function dovcs { 
+  ( i=$1; log=steveri/vcs.log$i; /bin/rm -rf csrc simv simv.daidr; export SIMULATOR=VCS
+    make comp; make run | tee $log  # Do comp separately so as not to pollute the log
+    mv -f comp_bb.log steveri/comp_bb.log$i
+    mv -f  run_bb.log steveri/run_bb.log$i
+    echo $log
+  ) |& less -r
+}
+
+# TYPE DISTRIBUTION TEST should be 2x weighted towards "Random" type
+function types { awk -F= '/Type.=/{print $NF}' $1 | sort | uniq -c | sort -nr; }
+i=7; types steveri/ver.log$i
+i=7; types steveri/vcs.log$i
+for f in steveri/vcs.log[3456]; do (echo $f; types $f ; echo ""); done
+for f in steveri/ver.log[3456]; do (echo $f; types $f ; echo ""); done
+
+# OPCODE DISTRIBUTION TEST (00,01,10,11) = (NOP,MUL,ADD,MAD)
+function opcodes { awk '/opcode:/{print $NF}' $1 | sort | uniq -c | sort -nr; }
+opcodes steveri/ver.log$i
+for f in steveri/ver.log?; do (echo $f; opcodes $f ; echo ""); done
+for f in steveri/vcs.log?; do (echo $f; opcodes $f ; echo ""); done
+
+# HOTBIT DISTRIBUTION should be heavily weighted towards hotbit=0
+for f in steveri/vcs.log?; do (echo $f; grep hotbit= $f | xargs -n 1 | grep hotbit | sort | uniq -c; echo ""); done
