@@ -413,7 +413,7 @@ genesis_clean:
 	@if test -f "genesis_clean.cmd"; then 	\
 		 ./genesis_clean.cmd;		\
 	fi
-	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
+	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST) genesis.log
 ###### END OF Genesis2 Rules #######
 
 
@@ -850,7 +850,6 @@ clean: genesis_clean synthesis_clean
 	\rm -rf $(SIMV) simv.* csrc *.daidr obj_dir
 	\rm -f *.tcl
 	\rm -f *.info
-	\rm -rf *.log
 	\rm -rf *.pvl
 	\rm -rf *.syn
 	\rm -rf *.mr
@@ -865,6 +864,7 @@ clean: genesis_clean synthesis_clean
 	\rm -f $(SAIF_FILE)
 
 cleanall: clean 
+	\rm -rf *.log
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
 	\rm -rf genesis*
