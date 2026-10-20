@@ -1,18 +1,42 @@
-This is a Floating Point Adder/Multiplier/Multiply-Accumulate generator and testbench
+This is a floating-point multiplier-adder generator and testbench.
 
 ### QUICK DEMO
 
-For a quick demo, run the command below. In about 3 minutes, you should
-have a set of verilog files "genesis_{synth,verif}/*.v" that implement
-the default configuration: a double-precision 7-cycle FMA (fused mul-add)
-unit with 3-cycle pipelined Wallace-tree Booth-2 multiplier.
+For a quick demo, run the command below. In about 3 minutes, it should
+produce a set of verilog files `"genesis_{synth,verif}/*.v"` that implement
+
+a fast 16-bit bfloat [cascade multiply add unit (CMA).](doc/FPGen_user_guide.pdf)
 ```
-    % make clean gen
+    make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
 ```
+
+### QUICK DEMO 2: QUICK VERIFICATION
+
+If you have the Synopsys VCS verilog simulator installed, you can
+verify your design by simply doing
+```
+    make run
+```
+
+foo[^*]
+bar[^1]
+
+If you do not have access to VCS, you can install [Verilator](https://www.veripool.org/verilator),
+a FOSS verilog simulator. You will need to generate a verilator-compatible<sup>*</sup> version of the RTL
+by setting the SIMULATOR environment variable. The command below will do that, and then it will verify
+the design, using Verilator instead of VCS.
+```
+    SIMULATOR=VERILATOR make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg 
+```
+<sup>*</sup>The default RTL and testbench link to the Synopsys-proprietary IP (Designware)
+that gets installed along with VCS. When you specify `"SIMULATOR=VERILATOR,"`
+it uses custom handwritten substitutes instead.
+
+
 
 ### QUICK DEMO 2: QUICK TAPEOUT
 
-If you have docker installed in your system, the script `test/tapeout-fma00bf.sh` 
+If you have [docker](https://www.docker.com) installed in your system, the script `"test/tapeout-fma00bf.sh"` 
 will build a single-cycle bfloat mul-add unit, install librelane FOSS tools in a
 docker container, and use them to produce a GDS-II tape for the librelane default
 process (skywater 130 maybe).
@@ -24,41 +48,54 @@ For details, see `test/README.txt`.
 
 ### DETAILED INFO
 
-To run the generator:
+#### To run the generator:
+```
   make clean [gen|run] [SIM_ENGINE=synopsys] [GENESIS_HIERARCHY=new.xml] [GENESIS_CFG_XML=SysCfgs/changefile.xml]
+```
+#### Examples:
+```
+  make clean run                                         # Build and verify default mul-add unit
+  make clean gen                                         # Build default mul-add unit, no verification
+  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # Build and verify a 64-bit FMA
+```
+The default configuration is a double-precision 7-cycle FMA (fused mul-add)
+unit with 3-cycle pipelined Wallace-tree Booth-2 multiplier.
 
-Example:
-  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # Recommended: build and verify a 64-bit FMA
-  make clean gen GENESIS_CFG_XML=SysCfgs/my_config.xml   # Build default mul-add unit, no verification
-  make clean run GENESIS_CFG_XML=SysCfgs/my_config.xml   # Build and verify the default mul-add unit
 
-Explanation:
-* gen|run -- choose to either just generate the design or also run the testbench
-* Replace SIM_ENGINE=synopsys with SIM_ENGINE=mentor to use mentor simulation tools.
-* GENESIS_HIERARCHY=new.xml redirect the OUTPUT xml file to file 'new.xml' (important for the gui)
-* GENESIS_CFG_XML=SysCfgs/changefile.xml tells genesis to use the design configuration specified in 'changefile.xml'
-* GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg an alternative way to load a script for setting configuration
+#### Explanation:
 
-Environment:
-You can use the command
+* `"gen|run"` just generate the design (gen) or generate and then also run a testbench (gen)
+* `"GENESIS_HIERARCHY=new.xml"` redirect the output xml file to file `new.xml` (important for the (unsupported) gui)
+* `"GENESIS_CFG_XML=SysCfgs/changefile.xml"` tells genesis to use the design configuration specified in `changefile.xml`
+* `"GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg"` -- an alternative way to load a script for setting configuration
+<!-- * Replace `SIM_ENGINE=synopsys` with `SIM_ENGINE=mentor` to use mentor simulation tools. -->
 
+#### Environment:
+You can do this to help prepare your environment:
+```
     source scripts/setup.sh
-
-to help prepare your environment. The script will check to see if you have the necessary generator
-"Genesis2.pl" and, if not, will attempt to install it locally for you. It will also check your
+```
+The script will check to see if you have the necessary generator
+"Genesis2" and, if not, will attempt to install it locally for you. It will also check your
 environment for the conditions described below.
 
-For everything to work as intended, you'll need at least two CAD tools in your path: `Genesis2.pl`,
-the generator tool, and `vcs`, the Synopsys Verilog simulator. That is, if you do "command -v" for
-each, you should get a valid result, e.g.
+For everything to work as intended, you'll need at least two CAD tools in your path:
+`Genesis2`, the generator tool, and a supported Verilog simulator. We currently support
+Synopsys "vcs" and a FOSS alternative, "verilator."
 
-    % command -v Genesis2.pl
-      /usr/local/bin/Genesis2Tools//bin/Genesis2.pl
+That is, if you do "command -v" for
+each, you should get a valid result, e.g.
+```
+    % command -v Genesis2
+      /usr/local/bin/Genesis2
 
     % command -v vcs
       /cad/synopsys/vcs/Q-2020.03-SP2/bin/vcs
 
-(Without vcs you can still generate Verilog, but you'll be on your own
+    % command -v verilator
+      /usr/local/bin/verilator
+```
+(Without a simulator, you can still generate Verilog, but you'll be on your own
 for running the simulation test afterwards.)
 
 Also (for vcs): you'll need to locate the libraries that vcs uses for testing. Default locations are
@@ -69,7 +106,7 @@ Also (for vcs): you'll need to locate the libraries that vcs uses for testing. D
 where SYNOPSYS=/hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
 
 If this is not where they exist on your system, you will need to locate them and then set the
-SYNOPSYS makefile variable appropriately when running the make command.
+SYNOPSYS environment/makefile variable appropriately when running the make command.
 
 E.g. on your system suppose you find the designware libraries here:
 ```
@@ -85,14 +122,31 @@ you would do
        SYNOPSYS=/mycaddir/synopsys/dc_shell/J-2014.09-SP3
 ```
 
-Compare:
+### Compare:
 
 For comparison, the directory `examples` contains the results of a successful `make clean run`
-for the dp-fma config (which I guess is some kind of double-precision multiply-add unit).
-Verilog for the generated FMA is in the examples/genesis_verif directory and standard-output
-from running the make command is in `examples/make.log`.
+for the "dp-fma" config (a double-precision fused-multiply-add unit).
+Verilog for the generated FMA is in the `examples/genesis_verif` directory and standard-output
+from running the `make` command is in `examples/make.log`.
 
+#### Designware
 
+The main build is supposed to be free of proprietary software e.g. Designware, but apparently some of it snuck in.
+
+Rather than rewrite the existing rtl, I made some clean lookalike modules and put them in the local directory "rtl/dwsub".
+```
+% (cd rtl/dwsub/; ls -1 *.v | sed 's/^/    /')
+    DWSUB01_add.v
+    DWSUB01_csa.v
+    DWSUB_decode_en.v
+    DWSUB_lzd.v
+```
+To use the clean version, specify parameter top_FPGen.WHICH_DW=DWSUB in your cfg file. And/or you can specify it on the command line like so:
+```
+  make clean run GEN="-parameter top_FPGen.WHICH_DW=DWSUB"
+```
+
+```
 ------------------------------------------------------------------------
 EXTRAS
 
@@ -156,20 +210,4 @@ To use perl script to run jobs and to plot graphs, do following step:
 	-n, --nodisplay: do not launch MATLAB GUI
 	--Vdd: the Vdd we use to plot the graph. The default is 1.0.
 	--Vth: the Vth we use to plot the graph. The default is lvt.
-
-#### Designware
-
-The main build is supposed to be free of proprietary software e.g. Designware, but apparently some of it snuck in.
-
-Rather than rewrite the existing rtl, I made some clean lookalike modules and put them in the local directory "rtl/dwsub".
-```
-% (cd rtl/dwsub/; ls -1 *.v | sed 's/^/    /')
-    DWSUB01_add.v
-    DWSUB01_csa.v
-    DWSUB_decode_en.v
-    DWSUB_lzd.v
-```
-To use the clean version, specify parameter top_FPGen.WHICH_DW=DWSUB in your cfg file. And/or you can specify it on the command line like so:
-```
-  make clean run SYNOPSYS=$SYNOPSYS GEN="-parameter top_FPGen.WHICH_DW=DWSUB"
 ```
