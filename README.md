@@ -1,18 +1,23 @@
+<br/>
+<br/>
 ![mul,fma,cma block diagrams](doc/multipliers2.png)
+<br/>
+# FP-Gen Floating-Point-Unit Generator
 
-FP-Gen is a floating-point multiplier-adder generator and testbench.
+FP-Gen is a floating-point multiply-adder generator and testbench.
 It can build and verify pipelined multipliers and/or multiply-add units
 of any given exponent/fraction sizes.
 Also see [this brief overview](doc/FPGen_user_guide.pdf).
 
 ### QUICK DEMO I: QUICK RTL
 
-For a quick demo, run the command below. In about 3 minutes, it should
-produce a set of verilog files `"genesis_{synth,verif}/*.v"` that implement
+For a quick demo, run the command below. It should very quickly produce a set
+of verilog files `"genesis_{synth,verif}/*.v"` that implement a fast 16-bit
+bfloat [cascade multiply add unit (CMA)](doc/FPGen_user_guide.pdf) and testbench.
 
-a fast 16-bit bfloat [cascade multiply add unit (CMA)](doc/FPGen_user_guide.pdf) and testbench.
 ```
-    make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
+    source scripts/setup.sh  # Verify requirements and install Genesis if needed
+    make clean gen           # Build the verilog
 ```
 
 ### QUICK DEMO II: QUICK VERIFICATION with VCS or Verilator
