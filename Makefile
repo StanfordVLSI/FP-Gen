@@ -430,7 +430,8 @@ genesis_clean:
 
 
 # SIMULATOR can be one of "VCS", "VERILATOR", or null (defaults to VCS)
-SIMULATOR ?= VCS
+# SIMULATOR ?= VCS
+SIMULATOR ?= VERILATOR
 
 ifeq ($(SIMULATOR), VCS)
     SIM_COMPILE = vcs $(VERILOG_COMPILE_FLAGS)
