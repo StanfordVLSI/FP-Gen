@@ -1,4 +1,9 @@
-This is a floating-point multiplier-adder generator and testbench.
+![mul,fma,cma block diagrams](doc/multipliers2.png)
+
+FP-Gen is a floating-point multiplier-adder generator and testbench.
+It can build and verify pipelined multipliers and/or multiply-add units
+of any given exponent/fraction sizes.
+Also see [this brief overview](doc/FPGen_user_guide.pdf).
 
 ### QUICK DEMO I: QUICK RTL
 
@@ -10,19 +15,19 @@ a fast 16-bit bfloat [cascade multiply add unit (CMA)](doc/FPGen_user_guide.pdf)
     make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
 ```
 
-### QUICK DEMO II: QUICK VERIFICATION
+### QUICK DEMO II: QUICK VERIFICATION with VCS or Verilator
 
 If you have the Synopsys VCS verilog simulator installed, you can run the testbench and
 verify your design by simply doing
 ```
-    make run
+    make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
 ```
 If you do not have access to VCS, you can install [Verilator](https://www.veripool.org/verilator),
 a FOSS simulator. You will need to generate a verilator-compatible(*) version of the RTL
 by setting the SIMULATOR environment variable. The command below will do that, and then it will verify
 the design, using Verilator instead of VCS.
 ```
-    SIMULATOR=VERILATOR make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg 
+    make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg SIMULATOR=VERILATOR
 ```
 > (\*) *Default `"make gen"` RTL has links to proprietary IP (Designware)*
 > *available only to people with a valid Synopsys license.*<br/>
