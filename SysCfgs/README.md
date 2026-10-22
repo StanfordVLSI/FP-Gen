@@ -1,13 +1,39 @@
+Available pre-built configs in this directory, as of October 2026:
+```
+bf-cma.cfg    # Pipelined   16-bit bfloat CMA w/Sklansky adder
+bf-cma00.cfg  # Unpipelined 16-bit bfloat CMA
+bf-fma.cfg    # Pipelined   16-bit bfloat FMA
+bf-fma00.cfg  # Unpipelined 16-bit bfloat FMA
+booth3.cfg    # Default config exc. uses Booth type 3 instead of default type 2
+cma.cfg       # Default CMA with Wallace trees
+dp-cma.cfg    # 64-bit DP CMA w/ denorm, forwarding, Wallace trees, Booth 3
+dp-fma.cfg    # 64-bit DP FMA w/ denorm, forwarding, array trees,   Booth 3, pipedepth 2
+sp-cma.cfg    # 32-bit SP CMA w/ denorm, forwarding, Wallace trees, Booth 3, pipedepth 3
+sp-fma.cfg    # 32-bit SP FMA w/ denorm, forwarding, ZM trees(?),   Booth 3, pipedepth 2
+```
+The default configuration, if no configuration file is specified, is a
+double-precision 7-cycle FMA (fused mul-add) unit with 3-cycle pipelined
+Booth-2 multiplier and Wallace summation trees (also see [default.txt](default.txt).
+
+If you run "`make gen`" from the top level, it uses config "`bf-cma.cfg`"
+i.e. it will do "`Genesis2 -cfg SysCfgs/bf-cma.cfg`". If you want the FP-Gen
+native defaults described above, you would specify something like
+```
+   make gen GENESIS_CFG_SCRIPT=DEFAULT    # Option 1 for default config
+   make gen GENESIS_CFG_SCRIPT=/dev/null  # Option 2 for default config
+```
+
 Note there are several ways to use the configs and/or otherwise set specific Genesis parameters, e.g.
 ```
-make gen GEN="-parameter top_FPGen.WHICH_DW=DW"
-make gen GENESIS_PARAMS="top_FPGen.WHICH_DW=DWSUB"
+make gen GEN="-parameter top_FPGen.FPGen.Architecture=CMA"
+make gen GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA"
 make run GENESIS_CFG_SCRIPT=SysCfgs/cma.cfg
 ```
 
+<!--
 ### Sample single- and double-precision configurations
 ```
-cma.cfg - "CMA" architecture + "Wallace" trees, everything else default
+cma.cfg    - "CMA" architecture + "Wallace" trees, everything else default
 dp-cma.cfg - 5-cy 64-bit CMA, 2-cycle mul, denorm, forwarding, Wallace trees, Booth-3
 dp-fma.cfg - 6-cy 64-bit FMA, 2-cycle mul, denorm, forwarding, "Array" trees, Booth-3
 sp-cma.cfg - 6-cy 32-bit CMA, 3-cycle mul, denorm, forwarding, Wallace trees, Booth-2
@@ -20,6 +46,7 @@ bf-fma.cfg   - uses default pipeline (3-cy mul, 7-cy mul-add?)
 bf-cma00.cfg - unpipelined 16-bit (bfloat) CMA
 bf-fma00.cfg - unpipelined 16-bit (bfloat) FMA
 ```
+-->
 
 ### What else is here
 ```
@@ -30,9 +57,6 @@ default.txt - lists default system parameters, it was found by doing this:
 Can turn default.txt into config-style parameters using the txt2cfg function described below, farther along in this README.
 
 empty.xml - old-style "empty" config for building default config
-
-booth3.cfg - sets CMA booth type to "3"
-  - probably not very useful on its own, since default config is FMA!!!?
 ```
 
 ### Example configs
