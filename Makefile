@@ -20,7 +20,8 @@ $(warning Work started at $(RUNDIR))
 
 # Note the Makefile will probably FAIL if RUNDIR != DESIGN_HOME
 # (FIXME maybe this should be an ERROR!!!)
-ifneq ( $(DESIGN_HOME), $(RUNDIR) )
+# Note CANNOT HAVE UNMATCHED SPACES INSIDE THE IFNEQ PARENS!!?
+ifneq ($(DESIGN_HOME),$(RUNDIR))
   $(warning WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING)
   $(warning WARNING: RUNDIR "$(RUNDIR)" != DESIGN_HOME "$(DESIGN_HOME)", Makefile will likely FAIL)
   $(warning WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING)
@@ -83,8 +84,19 @@ GENESIS_VERIF_LIST := $(GENESIS_VLOG_LIST:%.vf=%.verif.vf)
 
 # Input xml/cfg files, input parameters
 GENESIS_CFG_XML	:=
-GENESIS_CFG_SCRIPT	:=
 GENESIS_PARAMS	:=
+GENESIS_CFG_SCRIPT	:=
+
+# If no config script specified, default to bf-cma
+ifeq ($(strip $(GENESIS_CFG_SCRIPT)),)
+    GENESIS_CFG_SCRIPT := SysCfgs/bf-cma.cfg
+    $(warning WARNING: GENESIS_CFG_SCRIPT set to $(GENESIS_CFG_SCRIPT); for native defaults use GENESIS_CFG_SCRIPT=DEFAULT)
+
+# If config script is "DEFAULT", use FP-Gen native parm defaults
+else ifeq ($(strip $(GENESIS_CFG_SCRIPT)),DEFAULT)
+    override GENESIS_CFG_SCRIPT :=
+    $(warning WARNING: GENESIS_CFG_SCRIPT=DEFAULT so we use native defaults for everything)
+endif           
 
 # output xml hierarchy file
 ifndef GENESIS_HIERARCHY
@@ -418,7 +430,8 @@ genesis_clean:
 
 
 # SIMULATOR can be one of "VCS", "VERILATOR", or null (defaults to VCS)
-SIMULATOR ?= VCS
+# SIMULATOR ?= VCS
+SIMULATOR ?= VERILATOR
 
 ifeq ($(SIMULATOR), VCS)
     SIM_COMPILE = vcs $(VERILOG_COMPILE_FLAGS)
