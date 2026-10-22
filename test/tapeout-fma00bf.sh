@@ -12,8 +12,8 @@ function INFO { printf '\n[BFTEST] %s\n' "$*"; }
 INFO 'Install genesis if it is not there already'
 source scripts/setup.sh --genesis-only
 
-INFO 'Generate the verilog'
-make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma00.cfg |& tee $testdir/make-gen.log
+INFO 'Generate the verilog, record to /tmp/make-gen.log'
+make clean gen GENESIS_CFG_SCRIPT=SysCfgs/bf-fma00.cfg |& tee /tmp/make-gen.log
 if ! grep "Genesis Finished Generating Your Design" genesis.log; then
     echo "ERROR looks like verilog generation failed"
     exit 13
