@@ -38,10 +38,22 @@
 //;                          Doc=>"Use Synopsys (DW) or local FOSS (DWSUB) libraries to build the multiplier?".
 //;                               # " (Still uses DW for testbench gold model, though).");  ?? does it tho ??
 //;                               "");
-
+//; 
+//; # "warn" writes stderr, adds filename and lno (unless warn msg ends w newline)
+//; if (! exists $ENV{SIMULATOR}) { warn "INFO: SIMULATOR environment variable is not set"; }
+//; else                          { warn "INFO: Found env var SIMULATOR=".$ENV{SIMULATOR};  }
+//; 
+//; # (This snippet first-draft authored by duckybot @ GPT-5.6 Luna)
+//; warn "INFO: Found WHICH_DW=$which_dw";
+//; if ($which_dw eq 'DW') {
+//;     if (! ((exists $ENV{SIMULATOR}) && ($ENV{SIMULATOR} eq 'VCS'))) {
+//;         warn "Warning: WHICH_DW=DW is only allowed when env var SIMULATOR=VCS";
+//;         warn "Warning: Changing to WHICH_DW=DWSUB";
+//;         $which_dw = 'DWSUB';
+//;     }
+//; }
 
 \`define DUT(mod) \`ifndef GATES  mod  \`else  mod\`\`_svsim  \`endif 
-
 
 module `mname` ();   
    //; # Generate the DUT here and get the pipeline depth
