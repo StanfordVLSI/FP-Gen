@@ -9,8 +9,8 @@ Note there are several ways to use the configs and/or otherwise set specific Gen
 #### Pre-built config files
 ```
   bf-cma.cfg    # Pipelined   16-bit bfloat CMA w/Sklansky adder
-  bf-cma00.cfg  # Unpipelined 16-bit bfloat CMA
   bf-fma.cfg    # Pipelined   16-bit bfloat FMA
+  bf-cma00.cfg  # Unpipelined 16-bit bfloat CMA
   bf-fma00.cfg  # Unpipelined 16-bit bfloat FMA
   cma.cfg       # Default CMA with Wallace trees (might be same as dp-cma.cfg?)
   dp-cma.cfg    # 64-bit DP CMA w/ denorm, forwarding, Wallace trees, Booth 3
@@ -18,6 +18,8 @@ Note there are several ways to use the configs and/or otherwise set specific Gen
   sp-cma.cfg    # 32-bit SP CMA w/ denorm, forwarding, Wallace trees, Booth 3, pipedepth 3
   sp-fma.cfg    # 32-bit SP FMA w/ denorm, forwarding, ZM trees(?),   Booth 3, pipedepth 2
 ```
+NOTE: Unpipelined configs generate verilog but are not supported by the current testbench,
+e.g. "make gen" works for these configs, but "make run" will seg fault.
 
 #### Default configuration
 The default configuration, if no configuration file is specified, is a
