@@ -495,7 +495,7 @@ run: $(SIM_CMD)
 	@echo ""
 	@echo Now Running $(SIM_CMD)
 	@echo ==================================================
-	$(SIM_RUN) $(RUN) 2>&1 | tee run_bb.log
+	(stdbuf -oL -eL $(SIM_RUN) $(RUN); [ $?==139 ] && echo "Segmentation fault") 2>&1 | tee run_bb.log
 	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
 	@test -f TEST_PASS || exit 13
 
