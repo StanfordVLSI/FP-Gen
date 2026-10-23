@@ -12,8 +12,7 @@ Note there are several ways to use the configs and/or otherwise set specific Gen
   bf-cma00.cfg  # Unpipelined 16-bit bfloat CMA
   bf-fma.cfg    # Pipelined   16-bit bfloat FMA
   bf-fma00.cfg  # Unpipelined 16-bit bfloat FMA
-  booth3.cfg    # Default config exc. uses Booth type 3 instead of default type 2
-  cma.cfg       # Default CMA with Wallace trees
+  cma.cfg       # Default CMA with Wallace trees (might be same as dp-cma.cfg?)
   dp-cma.cfg    # 64-bit DP CMA w/ denorm, forwarding, Wallace trees, Booth 3
   dp-fma.cfg    # 64-bit DP FMA w/ denorm, forwarding, array trees,   Booth 3, pipedepth 2
   sp-cma.cfg    # 32-bit SP CMA w/ denorm, forwarding, Wallace trees, Booth 3, pipedepth 3
