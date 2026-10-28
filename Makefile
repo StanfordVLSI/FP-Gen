@@ -446,6 +446,17 @@ else
 endif
 
 
+# Librelane tapeout rules:
+#####################
+.PHONY: tapeout
+
+# E.g. make clean tapeout GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
+tapeout: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
+	@echo ""
+	@echo Making $@ because of $?
+	SIMULATOR=VERILATOR scripts/librelane.sh --container fpgen-$USER
+
+
 # VCS compile rules:
 #####################
 # compile rules:
