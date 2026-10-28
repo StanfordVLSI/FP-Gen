@@ -454,7 +454,7 @@ endif
 tapeout: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
 	@echo ""
 	@echo Making $@ because of $?
-	SIMULATOR=VERILATOR scripts/librelane.sh --container fpgen-$USER
+	SIMULATOR=VERILATOR scripts/librelane.sh --container fpgen-$(USER)
 
 
 # VCS compile rules:
