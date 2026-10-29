@@ -19,8 +19,8 @@ HELP='
       bash '$cmd' *.log*          # Process ALL logs
 
   EXAMPLES - from outside the container
-      '$cmd' mycontainer:/my_design/build.log  # Process log in container "mycontainer"
-      '$cmd' mycontainer:/my_design/\*.log     # Process all indicated logs (note escaped "*")
+      '$cmd' mycontainer:/my_designs/fpgen/build.log  # Process log in container "mycontainer"
+      '$cmd' mycontainer:/my_designs/fpgen/\*.log     # Process all indicated logs (note escaped "*")
 '
 if [ "$1" == "--help" ]; then echo "$HELP"; exit; fi
 if [ "$1" == ""       ]; then echo "$HELP"; exit; fi
@@ -64,13 +64,14 @@ function name_proc { printf "%s (%s)" $(design_name) $(std_cell_library); }
 function design_name      { getconf DESIGN_NAME      | awk '{print $NF}'; }
 function std_cell_library { getconf STD_CELL_LIBRARY | awk '{print $NF}'; }
 
-# E.g. "15.0ns (66MHz)"
-function clock_period { getconf CLOCK_PERIOD | awk '{printf("%.1fns (%dMHz)\n",$2,1000/$2)}'; }
+function clock_period { getconf CLOCK_PERIOD; }  # E.g. "CLOCK_PERIOD   50"
 
 # Find most-recent $1 subdir containing $2 pattern
 # E.g. `latest runs/RUN_2026-08-19_15-50-26 dpnr` => "43-openroad-stamidpnr-3"
 function latest { \ls -d $1/* | grep "$2" | tail -1; }
-function critpath0 { cat $(latest $run dpnr)/max.rpt | awk '/arrival/{print $1;exit}'; }
+
+# E.g. "17.772785 data arrival time"
+function critpath { grep -m 1 arrival $(latest $run dpnr)/max.rpt; }
 
 # Complexity in terms of nwires, area
 function complexity {
@@ -133,6 +134,13 @@ function finalerr { echo "$deferred_errors"; }
 # Get the run dir associated with log file $1 e.g. `getrun fpgen.log` => "runs/RUN_2026-08-27_23-57-26"
 function getrun { echo -n runs/; grep -m 1 RUN $1 | tr "'." ' ' | xargs -n 1 | grep RUN; }
 
+# E.g. "echo '33 wires'   | fmt1 COMPLEXITY"      # => "    COMPLEXITY  33 wires"
+function fmt1 { awk -v lbl="$1" '{printf("%17s  %s\n", lbl, $0)}'; }
+
+# echo 'CLOCK_PERIOD 50'  | fmt2 CLOCK_PERIOD 2   # => "  CLOCK_PERIOD  50.00ns ( 20MHz )"
+# echo '17.7727 arr time' | fmt2 'Crit path'  1   # => "     Crit path  17.77ns ( 56MHz )"
+fmt2() { awk -v lbl="$1" -v fld=$2 '{ns=$fld; printf("%17s  %.2fns ( %dMHz )\n", lbl, ns, 1000/ns)}'; }
+
 topdir=$(pwd)
 for log in $*; do
     cd $topdir          # Back to safety
@@ -143,11 +151,11 @@ for log in $*; do
     blog=$(basename $log)
 
     if test -d $run; then
-        name_proc    | awk '{printf("%17s  %s\n",      "DESIGN",        $0)}'
-        clock_period | awk '{printf("%17s  %s\n",      "CLOCK_PERIOD",  $0)}'
-        critpath0    | awk '{printf("%17s  %.2fns\n", "Critical path", $1)}'
-        tt_set_hold  | awk '{printf("%17s  %s\n",      "Setup/Hold",    $0)}'
-        complexity   | awk '{printf("%17s  %s\n",      "Complexity",    $0)}'
+        name_proc    | fmt1 "DESIGN"
+        clock_period | fmt2 "CLOCK_PERIOD"  2
+        critpath     | fmt2 "Critical path" 1
+        tt_set_hold  | fmt1 "Setup/Hold"
+        complexity   | fmt1 "Complexity"
     else
         echo "          WARNING  Cannot find run directory $run"
     fi
