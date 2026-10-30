@@ -81,12 +81,11 @@ function complexity {
     # (FIXME Treating $run as a global, FIXME should be capitalized I spose)
     function nwires { tac $run/*/yosys-synthesis.log | awk '/[-] wires$/{printf $1;exit}'; }
 
-    # How many std cells / seq elements as % of total area etc.
-    # E.g. `area runs/RUN_2026-08-19_15-50-26` => "13429 33.00%"
-    # extracted from matched line e.g. "of which used for sequential elements: 13429 (33.00%)"
-    function area { tac $run/*/yosys-synthesis.log | sed -n '/of which/{s/[.][0-9]*//;s/.*: //;s/[()]//g;p;q}'; }
-
-    printf "%s wires, cell_area %su (%s of total)" $(nwires) $(area)
+    # Area after synthesis
+    # E.g. `area runs/RUN_2026-08-19_15-50-26` => "13429"
+    # extracted from matched line e.g. "Chip area for module '\FMA_unq1': 40694.028800"
+    function area { tac $run/*/yosys-synthesis.log | awk '/area.for.module/{printf("%d",$NF);exit}'; }
+    printf "%s wires, cell_area %su" $(nwires) $(area)
 }
 
 # nom_tt_ws: Find worst-case max/min (setup/hold) slack in nom_tt corner (pos or neg)

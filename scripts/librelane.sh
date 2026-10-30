@@ -187,7 +187,7 @@ fi
 
 scripts/libresum.sh $container:./my_designs/fpgen/$log
     #             Clock 100.0ns (10MHz)
-    #     Critical path  36.89ns
+    #     Critical path  36.89ns ( 27MHz )
     #        Setup/Hold  42.86ns 40.73ns
     #           WARNING  Max Slew violations found
     #            PASSED  Antenna LVS DRC
