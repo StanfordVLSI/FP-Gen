@@ -7,9 +7,11 @@
 FP-Gen is a floating-point multiply-adder generator and testbench.
 It can build and verify pipelined multipliers and/or multiply-add units
 of any given exponent/fraction sizes.
-Also see [this brief overview](doc/FPGen_user_guide.pdf).
+You can tapeout to GDS with a simple `"make tapeout"` command as described further below.
 
-### QUICK DEMO I: QUICK RTL
+Also see this [user guide](doc/FPGen_user_guide.pdf) 
+
+## QUICK DEMO I: RTL
 
 For a quick demo, run the command below. It should very quickly produce a set
 of verilog files `"genesis_{synth,verif}/*.v"` that implement a fast 16-bit
@@ -20,61 +22,60 @@ bfloat [cascade multiply add unit (CMA)](doc/FPGen_user_guide.pdf) and testbench
     make clean gen           # Build the verilog
 ```
 
-### QUICK DEMO II: QUICK VERIFICATION with VCS or Verilator
+## QUICK DEMO II: Verification with VCS or Verilator
 
 Default verification uses Verilator, a FOSS verilog simulator
 [freely available online](https://www.veripool.org/verilator).
 Once Verilator is installed, you can run the testbench and
-verify your design by simply doing `make clean run`.
+verify your design by doing `"make clean run"`.
 
 Or, if you have access to the Synopsys VCS verilog simulator and
-would prefer to use that, you can use the SIMULATOR option.
-(VCS-based verification may require setting a `"SYNOPSYS"` environment variable,
-see the *Environment* section below for more information.)
+would prefer to use that, you can use the `"SIMULATOR=VCS"` option.
+VCS-based verification may require setting a `"SYNOPSYS"` environment variable,
+see the *Environment* section below for more information.
 ```
-    make clean run                # Uses default Verilator simulator
-    make clean run SIMULATOR=VCS  # Uses Synopsys VCS simulator
+    make clean run                # Option 1: Use default Verilator simulator
+    make clean run SIMULATOR=VCS  # Option 2: Use Synopsys VCS simulator
 ```
 
 
-### QUICK DEMO III: QUICK TAPEOUT
+## QUICK DEMO III: Tapeout
 
-If you have [Docker](https://www.docker.com) installed in your system, the script
-`"test/tapeout-fma00bf.sh"` will build a single-cycle bfloat mul-add unit, install
-librelane FOSS tools in a docker container, and use them to produce a GDS-II tape
-for the librelane default process (skywater 130 maybe).
+If you have [Docker](https://www.docker.com) installed in your system,
+"`make tapeout`" will install librelane FOSS tools in a docker
+container and use them to produce a GDS-II tape for the librelane
+default process (skywater 130 maybe).
 
 The process is definitely "quick" for a tapeout, historically, but it's still going to
-take awhile, maybe 30 minutes to an hour depending on your system. The final tape will
-be in a docker container in a directory called something like `"my_designs/fpgen/runs/RUN*/final/"`,
+take at least 10-20 minutes to build the default bfloat CMA configuration.
+The final tape will be in a docker container in a directory called something
+like `"my_designs/fpgen/runs/RUN*/final/"` --
 you should be able to find it by doing `"docker ps"` etc.
-
-For more details, see `test/README.txt`.
 ```
-    % ./test/tapeout-fma00bf.sh
+    make clean tapeout                # Option 1: Build the default pipelined bfloat CMA
+    make clean tapeout SIMULATOR=VCS  # Option 2: Use Synopsys VCS simulator
 ```
 
+## DETAILED INFO
 
-### DETAILED INFO
-
-#### To run the generator:
+### To run the generator:
 ```
-  make clean [gen|run] [GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg] [SIMULATOR=VERILATOR]
+  make clean gen|run|tapeout [ GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg ] [ SIMULATOR=VCS ]
 ```
 #### Examples:
 ```
-  # Build default[*] mul-add unit, no verification
+  # Build default mul-add unit, no verification [1]
   make clean gen              
 
   # Build and verify default mul-add unit
-  export SIMULATOR=VERILATOR    # Use Verilator to verify the RTL testbench
-  export SIMULATOR=VCS          # Use VCS to verify the RTL testbench OR
+  export SIMULATOR=VERILATOR    # Use Verilator to verify the RTL testbench OR
+  export SIMULATOR=VCS          # Use VCS to verify the RTL testbench
   make clean run                # Build and verify
 
   # Build and verify a 32-bit single-precision cascaded multiply-add unit
   make clean run GENESIS_CFG_SCRIPT=SysCfgs/sp-cma.cfg
 ```
-_[*] The default configuration is a double-precision 7-cycle FMA (fused mul-add)
+_[1] The default configuration is a double-precision 7-cycle FMA (fused mul-add)
 unit with 3-cycle pipelined Wallace-tree Booth-2 multiplier._
 
 
@@ -88,14 +89,14 @@ XXX * Replace `SIM_ENGINE=synopsys` with `SIM_ENGINE=mentor` to use mentor simul
 XXX * `"GENESIS_HIERARCHY=new.xml"` redirect the output xml file to file `new.xml` (important for the (unsupported) gui)
 -->
 
-#### Environment:
+### Environment:
 You can do this to help prepare your environment:
 ```
     source scripts/setup.sh
 ```
 Among other things, the script will check to see if you have
 `"Genesis2"` and, if not, will attempt to install it locally for you.
-`"Genesis2"` is based on Perl 5, so you need to have that installed
+`"Genesis2"` is based on Perl_5, so you need to have that installed
 on your system. A standard linux environment should already have it..
 
 Along with `Genesis2`, the generator tool, you'll need at least one other CAD tool
@@ -156,7 +157,7 @@ So, rather than rewrite the existing RTL, I made some clean lookalike modules an
         DWSUB_lzd.v
 ```
 To use the original Designware version, specify parameter `"top_FPGen.WHICH_DW=DW"`
-in your cfg file. By default, FP-Gen uses the Designware-free version a.k.a.
+in your cfg file. By default, FP-Gen uses the Designware-free version i.e.
 `"top_FPGen.WHICH_DW=DWSUB"`.
 
 <!--
@@ -176,6 +177,8 @@ Also, certain configurations set this parameter by default, e.g. `"SysCfgs/bf-cm
 
 For comparison, the `"examples/"` subdirectory contains the results of a successful
 `"make clean run"` building and verifying a double-precision FMA.
+The example may not be up to date with the latest version, so it's always better to do
+your own local `"make clean gen"` from scratch.
 <!-- Verilog for the generated FMA is in the `"examples/genesis_verif"` directory and
 standard-output from running the `"make"` command is in `"examples/make.log"`. -->
 ```
@@ -187,7 +190,7 @@ standard-output from running the `"make"` command is in `"examples/make.log"`. -
 
 
 ## EXTRAS
-(Use with caution, these extras have not been tested in years!)
+(Use with caution, these extras have not been updated or tested in many years!)
 ```
 To use perl script to run jobs and to plot graphs, do following step:
 
