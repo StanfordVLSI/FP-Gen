@@ -1,28 +1,24 @@
-From the top-level directory, you can run this test script
+From the top-level directory, you can run e.g.
 ```
-    test/tapeout-fma00bf.sh |& tee test/tmp.log
+    test/tapeout.sh |& tee test/tmp.log  # Option 1
+    test/tapeout.sh SysCfgs/bf-cma.cfg   # Option 2, same thing (i.e. default is bf-fma00)
 ```
 
 ### Q-and-A
 
-Q. What does the test script do?
+Q. What will the test script do?
 ```
-  * build verilog for a one-cycle (non-pipelined) fused multiply-add
-    unit (FMA) for 16-bit bfloat numbers
+  * build verilog for a pipelined 16-bit (bfloat) cascade multiply-add unit (CMA)
 
   * build and launch a librelane docker instance for physical design
 
-  * use the librelane instance to build a GDS-II tape for the FMA
-    based on the librelane default process (sky130 maybe)
+  * inside the instance, build a GDS-II tape for the mul-add unit,
+    using librelane default process (sky130 maybe)
 ```
 
 Q. How do you know if it worked?
 A. Look for something like this at the end of the output log:
 ```
-        * Antenna Passed
-        * LVS Passed
-        * DRC Passed
-
         librelane.log runs/RUN_2026-08-11_15-48-53
                     Clock 100.0ns (10MHz)
             Critical path  36.89ns
