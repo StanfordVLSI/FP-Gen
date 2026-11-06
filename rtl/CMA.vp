@@ -83,13 +83,39 @@
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>$default_mul_pipeline_depth, Min=>$min_mul_pipeline_depth, Max=> $muladd_pipeline_depth  ,
 //;                       Doc=>"Multiplier Part Pipeline depth" , Opt=>'No');
 //; my $add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth;
+//;
+//;
+//;
+//; # min value = $add_pipeline_depth, max value = $add_pipeline_depth ???
+//; # What's going on here?
 //; parameter(Name=>'AddPipelineDepth', Val=>$add_pipeline_depth, Min=>$add_pipeline_depth, Max=> $add_pipeline_depth,
 //;                       Doc=>"Adder Part Pipeline depth");
+//;
+//; # TODO need assertion i guess ??? add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth
+//;
+//;
 //;
 //; # And some local variables
 //; my $product_width = 2 * $frac_width + 2;
 //; my $ExtendedExp_width = $exp_width + 2;
 //;
+
+
+//; print STDERR "\n";
+//; warn  "INFO $enable_forwarding"          ." enable_forwarding          ";
+//; warn  "INFO $pipeline_depth"             ." pipeline_depth            ";
+//; warn  "INFO $muladd_pipeline_depth"      ." muladd_pipeline_depth     ";
+//; warn  "INFO $default_mul_pipeline_depth" ." default_mul_pipeline_depth";
+//; warn  "INFO $min_mul_pipeline_depth"     ." min_mul_pipeline_depth    ";
+//; warn  "INFO $mul_pipeline_depth"         ." mul_pipeline_depth        ";
+//; warn  "INFO $add_pipeline_depth"         ." add_pipeline_depth        ";
+//; print STDERR "\n";
+
+//; if ( ($pipeline_depth == 0) && ($enable_forwarding =~ /YES/) ) {
+//;     warn "WARNING Changing enable_forwarding from YES to NO b/c pipeline_depth > 0";
+//;     $enable_forwarding = "NO";
+//;     print STDERR "\n";
+//; }
 
 
 module `mname` (
