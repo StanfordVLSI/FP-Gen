@@ -82,14 +82,39 @@
 //; }
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>$default_mul_pipeline_depth, Min=>$min_mul_pipeline_depth, Max=> $muladd_pipeline_depth  ,
 //;                       Doc=>"Multiplier Part Pipeline depth" , Opt=>'No');
+//;
+//;
+//;
+//; # min value = $add_pipeline_depth, max value = $add_pipeline_depth ???
+//; # What's going on here?
 //; my $add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth;
 //; parameter(Name=>'AddPipelineDepth', Val=>$add_pipeline_depth, Min=>$add_pipeline_depth, Max=> $add_pipeline_depth,
 //;                       Doc=>"Adder Part Pipeline depth");
+//;
+//; # TODO need assertion i guess ??? add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth
+//;
+//;
 //;
 //; # And some local variables
 //; my $product_width = 2 * $frac_width + 2;
 //; my $ExtendedExp_width = $exp_width + 2;
 //;
+
+
+//; print STDERR "\n";
+//; warn  "INFO $enable_forwarding"          ." enable_forwarding          ";
+//; warn  "INFO $pipeline_depth"             ." pipeline_depth            ";
+//; warn  "INFO $muladd_pipeline_depth"      ." muladd_pipeline_depth     ";
+//; warn  "INFO $default_mul_pipeline_depth" ." default_mul_pipeline_depth";
+//; warn  "INFO $min_mul_pipeline_depth"     ." min_mul_pipeline_depth    ";
+//; warn  "INFO $mul_pipeline_depth"         ." mul_pipeline_depth        ";
+//; warn  "INFO $add_pipeline_depth"         ." add_pipeline_depth        ";
+//; print STDERR "\n";
+
+//; # if enable-forwarding YES but pipedepth=0, add a warning and reset forwarding to NO
+//; $enable_forwarding = "NO";
+
+
 
 
 module `mname` (
@@ -113,14 +138,13 @@ module `mname` (
    );
 
    
-   //; if ($pipeline_depth == 0){
+//; if ($pipeline_depth == 0){
    logic  valid_in, adder_mode, multiplier_mode, stall_in;
    assign valid_in = 1'b1;
    assign adder_mode = 1'b0;
    assign multiplier_mode = 1'b0;
    assign stall_in = 1'b0;
-   
-   //; }
+//; }
 
 //; #  /* synopsys dc_tcl_script_begin
 //; #    set_ungroup [current_design] true
@@ -194,6 +218,10 @@ module `mname` (
 //; } else {
    assign {denormA_P1, denormC} = 0;
 //; }
+
+
+
+//; # What is pipe_A1,pipe_Arest and what does it mean if pipe_A1_depth is zero???
 
 //; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
 //;   my $pipe_A1 = generate(  'FF_pipeline',  'pipe_A1',  
@@ -365,9 +393,35 @@ module `mname` (
 
   assign denormZ = ~ManZ[`$frac_width`];
 
-//; if ($add_pipeline_depth==0){
+
+
+
+
+
+
+
+
+
+//; # FIXME there is no valid_mul in the case where $pipeline_depth==0 and $mul_pipeline_depth==0
+//; # b/c above: if ($pipeline_depth>0 && $mul_pipeline_depth==0){ assign valid_mul = valid_in; ...
+
+//; # if ($add_pipeline_depth==0){
+//; if ($pipeline_depth>0 && $add_pipeline_depth==0){
   assign valid_add = valid_mul | valid_A_adder_mode;
 //; }
+
+//; # pd   mpd   apd  valid_mul
+//; # x    gt0    x    CMA(.valid_out(valid_mul)
+//; # gt0   0     x    valid_in  (note valid_in only exists if pd>0
+//; # 
+
+
+
+// TODO/FIXME I am very suspicious about this section of code i.e. the next three lines of verilog
+// I'm thinking they are not needed when $add_pipeline_depth==0 and/or $pipeline_depth==0
+// (In the original genesis code CMA.vp)
+
+//; if ($pipeline_depth>0){
 
    logic      valid_out_might_stall;
    
@@ -380,9 +434,14 @@ module `mname` (
        .out({SignZm, ExpZm, ManZm, denormZm, IncZm, status}),
        .valid_out(valid_out_might_stall) );
 
-   assign valid_out = valid_out_might_stall & (~stall); // when CMA stalled, valid_out is low
-   
-   
+   assign valid_out = valid_out_might_stall & (~stall); // when CMA stalled, valid_out is low  
+
+//; } else {
+    // AI: heyyyy ducky does this look like a valid verilog statement to you?
+    assign {SignZm, ExpZm, ManZm, denormZm, IncZm, status} = {SignZ, ExpZ, ManZ, denormZ, IncZ, status_init};
+//; }
+
+
 //;  my $fma_increment = generate('FPIncrementer','Incrementer', FractionWidth=> $frac_width , ExponentWidth=> $exp_width );
 
   `$fma_increment->instantiate()` (
