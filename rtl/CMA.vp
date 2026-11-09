@@ -201,6 +201,10 @@ module `mname` (
    assign {denormA_P1, denormC} = 0;
 //; }
 
+//; # This needs to be *outside of the if-clauses, at least for now.
+//; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
+
+
 //; if ($pipeline_depth>0){
 
    //; # This thing is a mess, maybe this truth table will help a bit i dunno
@@ -224,7 +228,6 @@ module `mname` (
 
 //; # What is pipe_A1,pipe_Arest and what does it mean if pipe_A1_depth is zero???
 
-//; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
 //;   my $pipe_A1 = generate(  'FF_pipeline',  'pipe_A1',  
 //;                             Width=> $exp_width+$frac_width+1,
 //;                             PipelineDepth => $pipe_A1_depth, Retime=>'YES');
@@ -233,8 +236,6 @@ module `mname` (
                                .out(A_in_P1),
                                .valid_out(valid_A1) );
 //; }
-
-
 
 //; if ($pipeline_depth>0){
 
