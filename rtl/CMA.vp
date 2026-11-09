@@ -201,12 +201,10 @@ module `mname` (
    assign {denormA_P1, denormC} = 0;
 //; }
 
-//; # This needs to be *outside of the if-clauses, at least for now.
+//; # This needs to be *outside of the if-clauses, at 
 //; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
 
-
 //; if ($pipeline_depth>0){
-
    //; # This thing is a mess, maybe this truth table will help a bit i dunno
    //; #
    //; #     en_fo  fo_P1  pd  => A_P1
@@ -235,9 +233,6 @@ module `mname` (
                                .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
                                .out(A_in_P1),
                                .valid_out(valid_A1) );
-//; }
-
-//; if ($pipeline_depth>0){
 
    assign SignA_P1 = A_P1[ `$exp_width + $frac_width` ];
    assign ZeroExpA_P1  = ~|A_P1[`$exp_width + $frac_width - 1` :`$frac_width`] ;
@@ -249,6 +244,9 @@ module `mname` (
    assign ZeroA_P1     =  zeroSigA_P1 & ZeroExpA_P1;
    assign InfA_P1      =  zeroSigA_P1 & NANorInfA_P1;
    assign NANA_P1      = ~zeroSigA_P1 & NANorInfA_P1;
+//; }
+
+//; if ($pipeline_depth>0){
 
 //;   my $pipe_Arest = generate(  'FF_pipeline',  'pipe_Arest',  
 //;                             Width=> $frac_width+$exp_width+5,
@@ -258,9 +256,9 @@ module `mname` (
                                .out({SignA_PEnd, ExpA_PEnd, ManA_PEnd, InfA_PEnd, NANA_PEnd, ZeroA_PEnd}),
                                .valid_out(valid_A_adder_mode) );
 
-   assign {InfAB_final,NANAB_final, ZeroAB_final, SignAB_final,                ExpAB_final, ManAB_final} = valid_A_adder_mode? 
-          {InfA_PEnd,  NANA_PEnd,   ZeroA_PEnd,   SignA_PEnd,{2'b0,ExpA_PEnd}, {1'b0, ManA_PEnd, `$frac_width`'b0}} :
-          {InfAB,      NANAB,       ZeroAB,       SignAB,                      ExpAB,       ManAB};
+   assign {InfAB_final,NANAB_final, ZeroAB_final, SignAB_final, ExpAB_final,      ManAB_final} = valid_A_adder_mode? 
+          {InfA_PEnd,  NANA_PEnd,   ZeroA_PEnd,   SignA_PEnd,  {2'b0,ExpA_PEnd}, {1'b0, ManA_PEnd, `$frac_width`'b0} }:
+          {InfAB,      NANAB,       ZeroAB,       SignAB,       ExpAB,            ManAB                              };
 
 //; } else {
 
