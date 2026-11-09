@@ -317,11 +317,25 @@ module `mname` (
 
                                   );
 
+
+
+
+
+
+
+//; # TODO/FIXME THIS MUST BE DELETED AND TESTED!!! (redundant with below. RIGHT?)
 //; if ($pipeline_depth>0 && $mul_pipeline_depth==0){
    assign valid_mul = valid_in;
    assign stall_request = 1'b0;
    assign stall = stall_in;
 //; }
+
+
+
+
+
+
+
 
 
 // tt for stall signal
