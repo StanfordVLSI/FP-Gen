@@ -1,25 +1,45 @@
-#### How to configure FP-Gen
+#### Status
+
+At last check (nov 2026), all configs passed the `"make clean run"` test except for bf-fma00 (unpipelined bfloat FMA):
+```
+  E.g. "make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg | grep PASS"
+
+  bf-cma     50000: TESTBENCH IS DONE -- TEST PASS
+  sp-cma     48000: TESTBENCH IS DONE -- TEST PASS
+  dp-cma     45000: TESTBENCH IS DONE -- TEST PASS
+  bf-cma00   40000: TESTBENCH IS DONE -- TEST PASS
+
+  bf-fma     47000: TESTBENCH IS DONE -- TEST PASS
+  sp-fma     44000: TESTBENCH IS DONE -- TEST PASS
+  dp-fma     46000: TESTBENCH IS DONE -- TEST PASS
+  bf-fma00   ERROR Cannot find a TEST_PASS file, test must have failed
+```
+
+#### Pre-built config files
+```
+  CMA
+  bf-cma.cfg    # Pipelined 16-bit bfloat CMA w/Sklansky adder
+  sp-cma.cfg    # 32-bit SP CMA w/ denorm, forwarding, Wallace trees, Booth 3, pipedepth 3
+  dp-cma.cfg    # 64-bit DP CMA w/ denorm, forwarding, Wallace trees, Booth 3
+  bf-cma00.cfg  # Unpipelined 16-bit bfloat CMA
+
+  FMA
+  bf-fma.cfg    # Pipelined 16-bit bfloat FMA
+  sp-fma.cfg    # 32-bit SP FMA w/ denorm, forwarding, ZM trees(?),   Booth 3, pipedepth 2
+  dp-fma.cfg    # 64-bit DP FMA w/ denorm, forwarding, array trees,   Booth 3, pipedepth 2
+  bf-fma00.cfg  # Unpipelined 16-bit bfloat FMA
+  cma.cfg       # Default CMA with Wallace trees (might be same as dp-cma.cfg?)
+```
+NOTE: Unpipelined configs generate verilog but are not supported by the current testbench,
+e.g. "make gen" works for these configs, but "make run" will seg fault.
+
+#### How to use config files to configure FP-Gen
 Note there are several ways to use the configs and/or otherwise set specific Genesis parameters, e.g.
 ```
   make gen GENESIS_CFG_SCRIPT=SysCfgs/cma.cfg                 # Config file
   make gen GENESIS_PARAMS="top_FPGen.FPGen.Architecture=CMA"  # Cmd line option 1
   make gen GEN="-parameter top_FPGen.FPGen.Architecture=CMA"  # Cmd line option 2
 ```
-
-#### Pre-built config files
-```
-  bf-cma.cfg    # Pipelined   16-bit bfloat CMA w/Sklansky adder
-  bf-fma.cfg    # Pipelined   16-bit bfloat FMA
-  bf-cma00.cfg  # Unpipelined 16-bit bfloat CMA
-  bf-fma00.cfg  # Unpipelined 16-bit bfloat FMA
-  cma.cfg       # Default CMA with Wallace trees (might be same as dp-cma.cfg?)
-  dp-cma.cfg    # 64-bit DP CMA w/ denorm, forwarding, Wallace trees, Booth 3
-  dp-fma.cfg    # 64-bit DP FMA w/ denorm, forwarding, array trees,   Booth 3, pipedepth 2
-  sp-cma.cfg    # 32-bit SP CMA w/ denorm, forwarding, Wallace trees, Booth 3, pipedepth 3
-  sp-fma.cfg    # 32-bit SP FMA w/ denorm, forwarding, ZM trees(?),   Booth 3, pipedepth 2
-```
-NOTE: Unpipelined configs generate verilog but are not supported by the current testbench,
-e.g. "make gen" works for these configs, but "make run" will seg fault.
 
 #### Default configuration
 The default configuration, if no configuration file is specified, is a
