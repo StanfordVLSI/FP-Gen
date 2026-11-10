@@ -15,20 +15,17 @@ By default, the tools use 20MHz as their target frequency.
     --------   -------------  -----   ---------------  -------
     bf-cma     12.3ns 81MHz     57K   Antenna LVS DRC   0h12m
     bf-fma     17.8ns 56MHz     41K   Antenna LVS DRC   0h44m
-    bf-cma00   [1]
+    bf-cma00   25.3ns 40MHz     22K   Antenna LVS DRC   0h05m
     bf-fma00   25.0ns 40MHz     17K   Antenna LVS DRC   0h05m
     --------   -------------  -----   ---------------  -------
     sp-cma     12.5ns 79MHz    105K   Antenna LVS DRC   0h18m
     sp-fma     24.9ns 40MHz     71K   Antenna LVS DRC   0h16m
     dp-cma     26.2ns 38MHz    237K           LVS DRC   3h18m
-    dp-fma     [2]
-
-    [1] bf-cma00 ERROR in generated RTL
-    [2] dp-fma FAILED b/c congestion in OpenROAD.GlobalRouting
+    dp-fma     FAILED b/c congestion in OpenROAD.GlobalRouting
 ```
 
 
-#### Notes to self (some of these resources are not available in the repo).
+#### Notes to self (some of these resources are not available in the repo)
 
 What I did to make the data:
 ```

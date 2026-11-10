@@ -69,12 +69,12 @@ module `mname`(
  // ExpA_ExpB_2_pp0 + ExpA_ExpB_2_pp1 = (ExpA-1)  + ~ExpB = ExpA - ExpB - 2 
 
 
-//; my $CompoundAdder_obj = generate('CompoundAdder', 'CA0', 
+//; my $CompoundAdder_obj0 = generate('CompoundAdder', 'CA0', 
 //;                                                 , Width =>$ExtendedExp_width
 //;                                                 , EnableCarryIn => 'OFF'
 //;                                                 , ZeroWidth => 0);
 
-  `$CompoundAdder_obj->instantiate()`  (
+  `$CompoundAdder_obj0->instantiate()`  (
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }
@@ -86,12 +86,12 @@ module `mname`(
   assign ExpA_ExpB_pp0 = { ExpA_ExpB_2_pp1[`$ExtendedExp_width-1`:1]^ExpA_ExpB_2_pp0[`$ExtendedExp_width-1`:1], ExpA_ExpB_2_pp0[0]};
   assign ExpA_ExpB_pp1 = { ExpA_ExpB_2_pp1[`$ExtendedExp_width-2`:1]&ExpA_ExpB_2_pp0[`$ExtendedExp_width-2`:1] , 1'b1, ExpA_ExpB_2_pp1[0]};
 
-//; my $CompoundAdder_obj = generate('CompoundAdder', 'CA1', 
+//; my $CompoundAdder_obj1 = generate('CompoundAdder', 'CA1', 
 //;                                                 , Width =>$ExtendedExp_width
 //;                                                 , EnableCarryIn => 'OFF'
 //;                                                 , ZeroWidth => 0);
 
-  `$CompoundAdder_obj->instantiate()`  (
+  `$CompoundAdder_obj1->instantiate()`  (
       //; if ($verif_mode =~ /ON/){
        .dumptolog(dumptolog),
       //; }

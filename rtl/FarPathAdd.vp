@@ -179,7 +179,9 @@ assign smallerFraction_P2   = subtract_P2 ? ~shift_out_P2 : shift_out_P2;
 
   assign ZeroSum_P2 = (ZeroA_P2 & ZeroB_P2) | (subtract_P2 & ~RSticky_P2 & ZeroSumMiddle_P2 );
 
+//;  # if ($enable_denormals =~ /YES/) {  # FIXME it breaks if we do this; but the other way is WRONG! someone should fix :(
 //;if ($enable_denormals==1) {
+  //;  # FIXME I think this block is never manifested...see above...
   assign {sumUpper_P2,sumMiddle_P2, sumMiddleSticky_P2} =  subtract_P2 ?
                                                                 ( (~RSticky_P2 & ~shift_out_ci_P2)?
                                                                             {co1_P2^subtract_P2,sum1_P2, ~zero1_P2}
