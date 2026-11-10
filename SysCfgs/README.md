@@ -90,6 +90,10 @@ You can turn "`default.txt`" into a "`*.cfg`" style config file by doing somethi
     }'  | sed "s/SSSQQQ/'/g" | tee tmp.cfg
 ```
 <!--
+empty.xml - old-style "empty" config for building default config
+booth3.cfg - sets CMA booth type to "3"
+  - probably not very useful on its own, since default config is FMA!!!?
+
 ### Example configs
 
 A guide to some of the major top-level parameters
@@ -159,4 +163,3 @@ OUTPUT: "
     configure( 'top_FPGen.FPGen.Architecture' , 'FMA' );
 "
 -->
-
