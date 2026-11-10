@@ -1,7 +1,18 @@
-# First you'll need Genesis2 in your path
-# If we can't find one, we'll build it in /tmp
+# Nothing works without Perl 5!!!
 
-if [ `command -v Genesis2.pl` ]; then
+if ! (perl -v | grep -qi 'perl 5') >& /dev/null; then
+    echo ""
+    echo "*** ERROR must have Perl 5 installed for FP-Gen to work"
+    echo "*** Maybe try something like 'apt-get install perl'"
+    echo "*** and/or see https://learn.perl.org/installing"
+    echo ""
+    return 13
+fi
+
+# Now we need Genesis2 in our path
+# If we can't find it, we'll build it in /tmp
+
+if command -v Genesis2.pl; then
     echo "Found existing Genesis2 command in your path:"
     echo "  `command -v Genesis2.pl`"
 else

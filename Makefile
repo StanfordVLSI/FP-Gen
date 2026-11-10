@@ -18,6 +18,15 @@ $(warning FPGEN home set to $(DESIGN_HOME))
 RUNDIR := $(realpath ./)
 $(warning Work started at $(RUNDIR)) 
 
+# Note the Makefile will probably FAIL if RUNDIR != DESIGN_HOME
+# (FIXME maybe this should be an ERROR!!!)
+# Note CANNOT HAVE UNMATCHED SPACES INSIDE THE IFNEQ PARENS!!?
+ifneq ($(DESIGN_HOME),$(RUNDIR))
+  $(warning WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING)
+  $(warning WARNING: RUNDIR "$(RUNDIR)" != DESIGN_HOME "$(DESIGN_HOME)", Makefile will likely FAIL)
+  $(warning WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING)
+endif
+
 # Set defaut technology library to TSMC45
 TECH := 45
 $(warning Technology set to $(TECH) nm ) 
@@ -75,8 +84,19 @@ GENESIS_VERIF_LIST := $(GENESIS_VLOG_LIST:%.vf=%.verif.vf)
 
 # Input xml/cfg files, input parameters
 GENESIS_CFG_XML	:=
-GENESIS_CFG_SCRIPT	:=
 GENESIS_PARAMS	:=
+GENESIS_CFG_SCRIPT	:=
+
+# If no config script specified, default to bf-cma
+ifeq ($(strip $(GENESIS_CFG_SCRIPT)),)
+    GENESIS_CFG_SCRIPT := SysCfgs/bf-cma.cfg
+    $(warning WARNING: GENESIS_CFG_SCRIPT set to $(GENESIS_CFG_SCRIPT); for native defaults use GENESIS_CFG_SCRIPT=DEFAULT)
+
+# If config script is "DEFAULT", use FP-Gen native parm defaults
+else ifeq ($(strip $(GENESIS_CFG_SCRIPT)),DEFAULT)
+    override GENESIS_CFG_SCRIPT :=
+    $(warning WARNING: GENESIS_CFG_SCRIPT=DEFAULT so we use native defaults for everything)
+endif           
 
 # output xml hierarchy file
 ifndef GENESIS_HIERARCHY
@@ -143,21 +163,15 @@ endif
 ##### FLAGS FOR SYNOPSYS VCS COMPILATION #####
 ##############################################
 SIMV = $(RUNDIR)/simv
-
 SIM_TOP = top_$(FPPRODUCT)
-
 VERILOG_ENV :=		 
-
 VERILOG_DESIGN :=	
-
-VERILOG_FILES :=  	$(VERILOG_ENV)	$(VERILOG_DESIGN)					
-
+VERILOG_FILES :=       $(VERILOG_ENV)  $(VERILOG_DESIGN)                                       
 ifdef SYNOPSYS
-SYNOPSYS := $(SYNOPSYS)
+  SYNOPSYS := $(SYNOPSYS)
 else
-SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
+  SYNOPSYS := /hd/cad/synopsys/dc_shell/G-2012.06-SP5-1
 endif
-
 VERILOG_LIBS := 	-y $(RUNDIR) +incdir+$(RUNDIR)			\
 			-y $(SYNOPSYS)/dw/sim_ver/			\
 			+incdir+$(SYNOPSYS)/dw/sim_ver/			\
@@ -220,7 +234,11 @@ VERILOG_SIMULATION_FLAGS := 	$(VERILOG_SIMULATION_FLAGS) 			\
 ##### END OF FLAGS FOR SYNOPSYS COMPILATION ####
 
 
-
+##### FLAGS FOR VERILATOR COMPILATION #####
+##############################################
+VERILATOR_LIBS          :=   -y $(DESIGN_HOME)/rtl/dwsub/
+VERILATOR_COMPILE_FLAGS :=   --binary -j 0 -Wno-fatal --top-module $(SIM_TOP) \
+                             $(VERILOG_FILES) $(VERILATOR_LIBS)  
 
 ##### FLAGS FOR IBM's FPGEN #####
 #################################
@@ -402,14 +420,41 @@ $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST) $(GENESIS_CONST
 
 genesis_clean:
 	@echo ""
-	@echo Cleanning previous runs of Genesis
+	@echo Cleaning previous runs of Genesis
 	@echo ===================================
 	@if test -f "genesis_clean.cmd"; then 	\
 		 ./genesis_clean.cmd;		\
 	fi
-	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
+	\rm -rf $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST) genesis.log
 ###### END OF Genesis2 Rules #######
 
+
+# SIMULATOR can be one of "VCS", "VERILATOR", or null (defaults to VCS)
+# SIMULATOR ?= VCS
+SIMULATOR ?= VERILATOR
+
+ifeq ($(SIMULATOR), VCS)
+    SIM_COMPILE = vcs $(VERILOG_COMPILE_FLAGS)
+    SIM_CMD = $(SIMV)
+    SIM_RUN = $(SIMV) $(VERILOG_SIMULATION_FLAGS)
+else ifeq ($(SIMULATOR), VERILATOR)
+    SIM_COMPILE = verilator $(VERILATOR_COMPILE_FLAGS)
+    SIM_CMD = $(RUNDIR)/obj_dir/Vtop_FPGen
+    SIM_RUN = $(SIM_CMD)
+else
+    $(error ERROR Env var SIMULATOR="$(SIMULATOR)", should instead be one of: "VCS" (default) or "VERILATOR")
+endif
+
+
+# Librelane tapeout rules:
+#####################
+.PHONY: tapeout
+
+# E.g. make clean tapeout GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
+tapeout: $(GENESIS_VLOG_LIST) $(GENESIS_SYNTH_LIST) $(GENESIS_VERIF_LIST)
+	@echo ""
+	@echo Making $@ because of $?
+	SIMULATOR=VERILATOR scripts/librelane.sh --container fpgen-$(USER)
 
 
 # VCS compile rules:
@@ -417,14 +462,14 @@ genesis_clean:
 # compile rules:
 # use "make COMP=+define+<compile_time_flag[=value]>" to add compile time flags
 .PHONY: comp
-comp: $(SIMV)
+comp: $(SIM_CMD)
 
-$(SIMV):$(GENESIS_VLOG_LIST)
+$(SIM_CMD):$(GENESIS_VLOG_LIST)
 	@echo ""
 	@echo Making $@ because of $?
 	@echo ==================================================
 	sleep 1;
-	vcs  $(VERILOG_COMPILE_FLAGS) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log 
+	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log
 
 
 # IBM's fpgen rules:
@@ -456,17 +501,24 @@ $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE): $(IBM_TRGT_DIR)/$(IBM_FPRES_FILE)
 #####################
 # use "make run RUN=+<runtime_flag[=value]>" to add runtime flags
 .PHONY: run run_ibm
-run: $(SIMV)
+run: $(SIM_CMD)
+	@/bin/rm -f TEST_PASS TEST_FAIL
 	@echo ""
-	@echo Now Running simv
+	@echo Now Running $(SIM_CMD)
 	@echo ==================================================
-	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) -l run_bb.log
+#	# gittybot says to use "-eq" instead of "==" for POSIX compliance
+	(stdbuf -oL -eL $(SIM_RUN) $(RUN); [ $? -eq 139 ] && echo "Segmentation fault") 2>&1 | tee run_bb.log
+	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
+	@test -f TEST_PASS || exit 13
 
 run_ibm: $(SIMV) $(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE)
+	@/bin/rm -f TEST_PASS TEST_FAIL
 	@echo ""Architecture
 	@echo Now Running simv using IBM\'s fpgen generated vectors
 	@echo ==================================================
 	$(SIMV) $(VERILOG_SIMULATION_FLAGS) $(RUN) +File=$(IBM_TRGT_DIR)/$(IBM_TESTVEC_FILE) -l run_bb.log
+	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
+	@test -f TEST_PASS || exit 13
 
 
 # DC & ICC Run rules:
@@ -818,14 +870,11 @@ eval4: gen comp run gen_syn run_dc
 .PHONY: clean cleanall 
 clean: genesis_clean synthesis_clean
 	@echo ""
-	@echo Cleanning old files, objects, logs and garbage
+	@echo Cleaning old files, objects, logs and garbage
 	@echo ==================================================
-	\rm -rf $(SIMV) simv.*
+	\rm -rf $(SIMV) simv.* csrc *.daidr obj_dir
 	\rm -f *.tcl
 	\rm -f *.info
-	\rm -rf csrc
-	\rm -rf *.daidir
-	\rm -rf *.log
 	\rm -rf *.pvl
 	\rm -rf *.syn
 	\rm -rf *.mr
@@ -840,6 +889,7 @@ clean: genesis_clean synthesis_clean
 	\rm -f $(SAIF_FILE)
 
 cleanall: clean 
+	\rm -rf *.log
 	\rm -rf DVE*
 	\rm -rf vcdplus.vpd
 	\rm -rf genesis*

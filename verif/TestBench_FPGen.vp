@@ -57,10 +57,11 @@
 //;                         ExponentWidth => $exp_width, EnableForwarding=> $enable_forwarding, PipelineDepth =>$pipeline_depth,
 //;                         MulPipelineDepth=>$mul_pipeline_depth);
 
-
-program automatic `mname` (input logic 				       clk, reset,
-			   `$FPGen_ifc->mname`.Controller FPGen_bus
-			   );
+module `mname`
+  (
+   input logic clk, reset,
+   `$FPGen_ifc->mname`.Controller FPGen_bus
+   );
 
    // Local variables and handles for controlling the simulation
    int 								       seed=`$seed`;
@@ -74,6 +75,15 @@ program automatic `mname` (input logic 				       clk, reset,
    
    
 
+   // Useful for debugging maybe
+   \`define showtransX(n, X) $display( \
+        "%0t FOO-%1s %0d %s; Sign=%b; Exponent=0x%h; Fraction=10'h%h; Inc=%b; end", \
+        $time, \`"X\`", n, \
+        TransGen\`\`X\`\`.TransType.name(), \
+        TransGen\`\`X\`\`.Sign, \
+        TransGen\`\`X\`\`.Exponent, \
+        TransGen\`\`X\`\`.Fraction, \
+        TransGen\`\`X\`\`.Inc)
 
    // Local variables and macros for controlling the input file and local memory
    parameter MEM_SIZE = 1000000;
@@ -165,6 +175,7 @@ program automatic `mname` (input logic 				       clk, reset,
    `$forward_B->instantiate()`; 
    //; $forward_C = generate('forward', 'ForwardC', Width=>$mul_pipeline_depth+1);
    `$forward_C->instantiate()`;
+   
    logic							       forward_a_q[$], forward_b_q[$];
    logic [`$mul_pipeline_depth`:0] 				       forward_c_q[$];
    
@@ -175,6 +186,7 @@ program automatic `mname` (input logic 				       clk, reset,
    // MAIN: Main flow of test
    //-------------------------------------------------------------------------//
    initial begin
+      void'($urandom(15));  // Because I didn't like what I was getting before...
       get_command_line_args();
       start_up_testbench();
 
@@ -249,7 +261,7 @@ program automatic `mname` (input logic 				       clk, reset,
 	 while (i<num_trans) begin
 	    if(!stall_requested) begin
                //; if ($pipeline_depth>0){
-               `$FPGenControl_obj->iname()`.randomize();
+               `$FPGenControl_obj->iname()`.set_random();  // Randomly choose one of NOP,FADD,FMUL,FMADD
                FPGen_bus.opcode = `$FPGenControl_obj->iname()`.opcode;
                //; }
 	       i++;
@@ -257,9 +269,9 @@ program automatic `mname` (input logic 				       clk, reset,
 	       // Assign values to the lines
 	       // FPGen_bus.dumptolog = 1'b0;
 	       //; if ($enable_forwarding eq 'YES'){
-	       `$forward_A->iname()`.randomize();
-	       `$forward_B->iname()`.randomize();
-	       `$forward_C->iname()`.randomize();
+	       `$forward_A->iname()`.set_random();
+	       `$forward_B->iname()`.set_random();
+	       `$forward_C->iname()`.set_random();
 	       
 	       if ( `$forward_A->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
@@ -273,12 +285,17 @@ program automatic `mname` (input logic 				       clk, reset,
 	       end 
 	       else  begin
 		  FPGen_bus.forward_a = 1'b0;
-		  TransGenA.randomize();
+		  TransGenA.SetRandomTrans();
+                  // \`showtransX(262,A);
+
 	       end // else: !if( `$forward_A->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_a_q = {forward_a_q, FPGen_bus.forward_a};
 
-               if ( `$forward_B->iname()`.forward
+               //$display("%0t FOO 294 btype=%s", $time, TransGenB.TransType.name());
+
+	       // $display("%t: i=%0d forwardb=%b", $time, i, ForwardB.forward);
+	       if ( `$forward_B->iname()`.forward
 		    // check the if there is result in pipeline for forwarding
 		    && i > `$forward_cycle_b` ) begin
 		  FPGen_bus.forward_b = 1'b1;
@@ -290,7 +307,9 @@ program automatic `mname` (input logic 				       clk, reset,
 	       end 
 	       else  begin
 		  FPGen_bus.forward_b = 1'b0;
-		  TransGenB.randomize();
+		  TransGenB.SetRandomTrans();
+                  // \`showtransX(284,B);
+
 	       end // else: !if( `$forward_B->iname()`.forward...
 	       // store the forward_b signal in the queue
 	       forward_b_q = {forward_b_q, FPGen_bus.forward_b};
@@ -306,15 +325,16 @@ program automatic `mname` (input logic 				       clk, reset,
 	       end 
 	       else  begin
 		  FPGen_bus.forward_c = 0;
-		  TransGenC.randomize();
+	          TransGenC.SetRandomTrans();
+
 	       end // else: !if( `$forward_C->iname()`.forward...
 	       // store the forward_a signal in the queue
 	       forward_c_q = {forward_c_q, FPGen_bus.forward_c};
-	       
+
 	       //; } else {
-	       TransGenA.randomize();
-	       TransGenB.randomize();	
-	       TransGenC.randomize();
+	       TransGenA.SetRandomTrans();
+	       TransGenB.SetRandomTrans();
+	       TransGenC.SetRandomTrans();
 	       //;}
 
 	       // drive data bus
@@ -322,11 +342,15 @@ program automatic `mname` (input logic 				       clk, reset,
                FPGen_bus.b = TransGenB.GetFPNum();	
 	       FPGen_bus.c = TransGenC.GetFPNum();
 
+	       // $display( "%t: FOO 321 setting a=0x%h b=0x%h a=0x%h", $time, FPGen_bus.a, FPGen_bus.b, FPGen_bus.c);
+               // $display("%0t FOO 353 pushing %h => b_q", $time, FPGen_bus.b);
+
 	       // store all the numbers in queques
 	       a_q = {a_q, FPGen_bus.a};
 	       b_q = {b_q, FPGen_bus.b};
 	       c_q = {c_q, FPGen_bus.c};
-	       
+	       // $display( "%t: FOO 320 a_q[0]=0x%h exp=0x%h", $time, a_q[0], a_q[0][14:10]);
+
                //; if ($pipeline_depth>0){
 	       opcode_q = {opcode_q, FPGen_bus.opcode};
 	       //; }
@@ -335,12 +359,12 @@ program automatic `mname` (input logic 				       clk, reset,
 	       
 	       // HACK overwrite b or c for adder and mul mode
 	       //; if ($pipeline_depth>0){
-               if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FADD)
+               if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FADD) begin
                  TransGenB.ForceFPNum({ 2'b0, {(`$exp_width-1`){1'b1}}, `$frac_width`'b0 });
+               end
 	       if (`$FPGenControl_obj->iname()`.opcode == FPGenPkg::FMUL)
                  TransGenC.ForceFPNum(0);
 	       //; }
-
 
 	       
 	       // calculate the expected result
@@ -376,8 +400,19 @@ program automatic `mname` (input logic 				       clk, reset,
       end // else: !if(vector_file == "")
    endtask // drive_dut
    
-   
-   
+   task print_some_transaction_information;
+      $display( "%t: SENT:     SignA=%b ExpA=0x%h FracA=0x%h TypeA=%s", $time,
+		TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction, TransGenA.TransType.name());
+      $display( "%t:           SignB=%b ExpB=0x%h FracB=0x%h TypeB=%s", $time,
+		TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction, TransGenB.TransType.name());
+      $display( "%t:           SignC=%b ExpC=0x%h FracC=0x%h TypeC=%s", $time,
+		TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction, TransGenC.TransType.name());  
+      $display( "%t: EXPECTED: Sign= %1b Exp= 0x%h Frac= 0x%h Type= %s", $time,
+		TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction, TransExpected.TransType.name());
+      $display( "%t: FOUND:    Sign= %1b Exp= 0x%h Frac= 0x%h Type= %s", $time,
+		TransRes.Sign, TransRes.Exponent, TransRes.Fraction, TransRes.TransType.name());
+   endtask // print_some_transaction_information
+
    //-------------------------------------------------------------------------//
    // Monitor: every clk*$pipeline_depth+clk*k, check results	
    //-------------------------------------------------------------------------//
@@ -413,13 +448,20 @@ program automatic `mname` (input logic 				       clk, reset,
 	       expected_q = expected_q[1:$];
 	       opcode_q = opcode_q[1:$];
 	       
+               // $display("%0t FOO 455 retrieved b_q[0] = r_b num = %h", $time, r_b);
+
 	       // restore FP models
 	       TransRes.ForceFPNum(FPGen_bus.z);
 	       TransGenA.ForceFPNum(r_a);
 	       TransGenB.ForceFPNum(r_b);
 	       TransGenC.ForceFPNum(r_c);
 	       TransExpected.ForceFPNum(expectedZ);
+	       //TransExpected.ForceFPNum(0);  // USE THIS TO FORCE AN ERROR MAYBE
+               // $display("%0t FOO 455 retrieved r_b TransGenB.TransType = %s", $time, TransGenB.TransType.name());
 	     
+               // $display("%t: FOO q0 = (%h,%h,%h)", $time, a_q[0], b_q[0], c_q[0]);
+	       // $display("FOO result %h = f(%h,%h,%h)", FPGen_bus.z, r_a, r_b, r_c);
+
 	       //; if ($enable_forwarding eq 'YES'){
 	       // Print the forwarding information
 	       if(verb) begin
@@ -443,47 +485,32 @@ program automatic `mname` (input logic 				       clk, reset,
 	       forward_b_q = forward_b_q[1:$];
 	       forward_c_q = forward_c_q[1:$];
 	       //; }
+               // $display("%0t FOO SENT TransGenB.TransType = %s", $time, TransGenB.TransType.name());
 	       
 	       // now check results...
 	       if ( !ignore_errors   &&  !GoldRef.CheckMultResult(TransRes, TransExpected) ) begin
 		  //FPGen_bus.dumptolog = 1'b1;
-		  #1;	      
-		  // Print some transaction information
-		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
-			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
-		  $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
-			    TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
-		  $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
-			    TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
-		  $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
-			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
-		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
-			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
+		  //#1;	      // WHYYY?
+                  print_some_transaction_information();
 		  $display("%t: %hx%h+%h = %h (%h) WRONG", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  $display("%t: \033[0;31mERROR Found\033[0m", $time);
+
+                  // We signal failure by creating a file "TEST_FAIL" :(
 		  result_tag = $fopen("TEST_FAIL","w");
 		  $fclose(result_tag);
-                  @(negedge clk); #1;		// wait a clock cycle
-		  $finish(2);
+		  @(negedge clk); #1;		// wait a clock cycle (why?)
+		  $finish(2);                   // note the "2" is not an exit code, see SV syntax docs
 	       end
 	       else begin
 		  // Print some transaction information
 		  if (verb) begin
-		  $display( "%t: SENT:   TypeA=%s SignA=%b ExpA=0x%h FracA=0x%h", $time,
-			    TransGenA.TransType.name(), TransGenA.Sign, TransGenA.Exponent, TransGenA.Fraction);
-		  $display( "%t:         TypeB=%s SignB=%b ExpB=0x%h FracB=0x%h", $time,
-			    TransGenB.TransType.name(), TransGenB.Sign, TransGenB.Exponent, TransGenB.Fraction);
-		  $display( "%t:         TypeC=%s SignC=%b ExpC=0x%h FracC=0x%h", $time,
-			    TransGenC.TransType.name(), TransGenC.Sign, TransGenC.Exponent, TransGenC.Fraction);  
-		  $display( "%t: EXPECTED: Type=%s Sign=%1b Exp=0x%h Frac=0x%h", $time,
-			    TransExpected.TransType.name(), TransExpected.Sign, TransExpected.Exponent, TransExpected.Fraction);
-		  $display( "%t: FOUND:   Type=%s Sign=%b Exp=0x%h Frac=0x%h", $time,
-			    TransRes.TransType.name(), TransRes.Sign, TransRes.Exponent, TransRes.Fraction);
-		  $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
+                     print_some_transaction_information();
+		     $display("%t: %hx%h+%h = %h (%h) Checked", $time, r_a, r_b, r_c, FPGen_bus.z, expectedZ);
 		  end // if (verb)
 	       end 
 	    end
-            @(posedge clk);		// wait a clock cycle
+            @(negedge clk);         // full cycle maybe?          27000=>28000 => GOOOOOD!
+
     	 end // for (int i=0; i<num_trans; i++)
       end // if (vector_file == "")
       else begin // use the input test file
@@ -569,7 +596,7 @@ program automatic `mname` (input logic 				       clk, reset,
    //-------------------------------------------------------------------------//
    // general runtime argument parsing procedure
    //-------------------------------------------------------------------------//
-   task get_command_line_args;
+   task automatic get_command_line_args;
       int 	wave=0;
       int 	wave_delay=0;
       // if this is a "+wave" run, it must record all signals      
@@ -615,12 +642,21 @@ program automatic `mname` (input logic 				       clk, reset,
       if(wave_delay)	
 	repeat(wave_delay) @(posedge clk);
       $display("\t%t:\tStarting signal and memory wave capture",$time);
-      $vcdpluson(   0  , `($self->get_top())->mname`);
+      \`ifdef verilator
+          // In verilator, use cli --trace options to enable tracing maybe
+      \`else
+          $vcdpluson(   0  , `($self->get_top())->mname`);
+      \`endif
    endtask // start_wave
 
+// Note verilator does not support this level of SAIF generation;
+// instead, must make do with CLI option --trace-saif
    
    // Activity factor tasks
    task start_saif;
+   \`ifdef verilator
+        $display("\t%t:\tSAIF begins here if --trace-saif was enabled",$time);
+   \`else
       if ( $test$plusargs("SAIF") ) begin
          $display("\t%t:\tStarting SAIF (Switching Activity Interchange Format)",$time);
 	 // setup SAIF: https://solvnet.synopsys.com/retrieve/029417.html
@@ -630,14 +666,19 @@ program automatic `mname` (input logic 				       clk, reset,
 	 @(posedge reset);
 	 $toggle_start;
       end
+   \`endif
    endtask // start_saif
 
    task finish_saif;
+   \`ifdef verilator
+      $display("\t%t:\tSAIF ends here if --trace-saif was enabled",$time);
+   \`else
       if ( $test$plusargs("SAIF") ) begin
          $display("\t%t:\tFinalizing SAIF (Switching Activity Interchange Format)",$time);
 	 $toggle_stop();
 	 $toggle_report ("`$FP_obj->iname()`.saif",1.0e-12,`$FP_obj->get_instance_path()`);
       end
+   \`endif
    endtask // finish_saif
    
-endprogram : `mname`
+endmodule

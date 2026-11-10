@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Make sure you're in the right place maybe, using the dumbest possible test maybe
+if ! test -f scripts/librelane.sh; then
+    echo "ERROR: Must run test from top-level FPGen dir"
+    exit 13
+fi
+
+# Helper function
+function INFO { printf '\n[VBC] %s\n' "$*"; }
+
+INFO 'Install genesis if it is not there already'
+source scripts/setup.sh --genesis-only
+
+INFO 'Run the test'
+export SIMULATOR=VERILATOR
+make clean run GENESIS_CFG_SCRIPT=SysCfgs/bf-cma.cfg
+
+# Check the result
+# FIXME "TEST_FAIL" file in curdir is the horrible way we chose to tell if test passed, see TestBench_FPGen.vp
+# FIXME can remove these FIXME comments by filing an issue, say
+test -e TEST_PASS || exit 13  # FAIL
+exit                          # PASS

@@ -82,14 +82,35 @@
 //; }
 //; my $mul_pipeline_depth = parameter(Name=>'MulPipelineDepth', Val=>$default_mul_pipeline_depth, Min=>$min_mul_pipeline_depth, Max=> $muladd_pipeline_depth  ,
 //;                       Doc=>"Multiplier Part Pipeline depth" , Opt=>'No');
+//;
+//; # min value = $add_pipeline_depth, max value = $add_pipeline_depth ??? (below)
+//; # What's going on here?
+//;
 //; my $add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth;
 //; parameter(Name=>'AddPipelineDepth', Val=>$add_pipeline_depth, Min=>$add_pipeline_depth, Max=> $add_pipeline_depth,
 //;                       Doc=>"Adder Part Pipeline depth");
 //;
+//; # TODO need assertion i guess ??? add_pipeline_depth = $muladd_pipeline_depth-$mul_pipeline_depth
+//;
 //; # And some local variables
 //; my $product_width = 2 * $frac_width + 2;
 //; my $ExtendedExp_width = $exp_width + 2;
-//;
+
+//; print STDERR "\n";
+//; warn  "INFO $enable_forwarding"          ." enable_forwarding          ";
+//; warn  "INFO $pipeline_depth"             ." pipeline_depth            ";
+//; warn  "INFO $muladd_pipeline_depth"      ." muladd_pipeline_depth     ";
+//; warn  "INFO $default_mul_pipeline_depth" ." default_mul_pipeline_depth";
+//; warn  "INFO $min_mul_pipeline_depth"     ." min_mul_pipeline_depth    ";
+//; warn  "INFO $mul_pipeline_depth"         ." mul_pipeline_depth        ";
+//; warn  "INFO $add_pipeline_depth"         ." add_pipeline_depth        ";
+//; print STDERR "\n";
+
+//; if ( ($pipeline_depth == 0) && ($enable_forwarding =~ /YES/) ) {
+//;     warn "WARNING Changing enable_forwarding from YES to NO b/c pipeline_depth > 0";
+//;     $enable_forwarding = "NO";
+//;     print STDERR "\n";
+//; }
 
 
 module `mname` (
@@ -113,14 +134,13 @@ module `mname` (
    );
 
    
-   //; if ($pipeline_depth == 0){
+//; if ($pipeline_depth == 0) {
    logic  valid_in, adder_mode, multiplier_mode, stall_in;
    assign valid_in = 1'b1;
    assign adder_mode = 1'b0;
    assign multiplier_mode = 1'b0;
    assign stall_in = 1'b0;
-   
-   //; }
+//; }
 
 //; #  /* synopsys dc_tcl_script_begin
 //; #    set_ungroup [current_design] true
@@ -173,11 +193,48 @@ module `mname` (
                                .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
                                .out(forward_a_P1),
                                .valid_out(valid_forward_a1) );
-   
-   assign A_P1 = forward_a_P1? z : A_in_P1;
-//; } else {
-   assign A_P1 = A_in_P1;
 //; }
+
+//; if ($enable_denormals=~ /YES/){
+   assign {denormA_P1, denormC} = {ZeroExpA_P1, ZeroExpC};
+   
+//; } else {
+   assign {denormA_P1, denormC} = 0;
+//; }
+
+//; # This needs to be *outside of the if-clauses, at least for now
+//; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
+
+//; if ($pipeline_depth>0){
+   //; # This thing is a mess, maybe this truth table will help a bit i dunno
+   //; #
+   //; #     en_fo  fo_P1  pd  => A_P1
+   //; #     YES      0   [gt0]    z (output of multiplier like)
+   //; #     YES      1   [gt0]    A_in_P1
+   //; #     NO       x    gt0     A_in_P1
+   //; #     NO       x     0      z
+   //; #
+   //; # Note 1: if $enable_forwarding=="YES" then $pipedepth>0
+   //; # Note 2: A_in_P1 no exist when pipdepth==0
+
+   //; if($enable_forwarding =~ /YES/ ){
+      assign A_P1 = forward_a_P1? z : A_in_P1;
+   //; } elsif ($pipeline_depth>0) {
+      assign A_P1 = A_in_P1;
+   //; } else {
+      assign A_P1 = z;
+   //; }
+
+//; # What is pipe_A1,pipe_Arest and what does it mean if pipe_A1_depth is zero???
+
+//;   my $pipe_A1 = generate(  'FF_pipeline',  'pipe_A1',  
+//;                             Width=> $exp_width+$frac_width+1,
+//;                             PipelineDepth => $pipe_A1_depth, Retime=>'YES');
+  `$pipe_A1 ->instantiate()` ( .in(a) ,
+                               .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
+                               .out(A_in_P1),
+                               .valid_out(valid_A1) );
+
    assign SignA_P1 = A_P1[ `$exp_width + $frac_width` ];
    assign ZeroExpA_P1  = ~|A_P1[`$exp_width + $frac_width - 1` :`$frac_width`] ;
    assign ExpA_P1  = {A_P1[`$exp_width + $frac_width - 1` :`$frac_width+1`], A_P1[`$frac_width`] | ZeroExpA_P1} ;
@@ -188,21 +245,9 @@ module `mname` (
    assign ZeroA_P1     =  zeroSigA_P1 & ZeroExpA_P1;
    assign InfA_P1      =  zeroSigA_P1 & NANorInfA_P1;
    assign NANA_P1      = ~zeroSigA_P1 & NANorInfA_P1;
-//; if ($enable_denormals=~ /YES/){
-   assign {denormA_P1, denormC} = {ZeroExpA_P1, ZeroExpC};
-   
-//; } else {
-   assign {denormA_P1, denormC} = 0;
 //; }
 
-//; my $pipe_A1_depth = ($enable_forwarding eq 'YES') ? 1 : 0;
-//;   my $pipe_A1 = generate(  'FF_pipeline',  'pipe_A1',  
-//;                             Width=> $exp_width+$frac_width+1,
-//;                             PipelineDepth => $pipe_A1_depth, Retime=>'YES');
-  `$pipe_A1 ->instantiate()` ( .in(a) ,
-                               .valid_in(valid_in & adder_mode), .clk(clk) , .stall(stall), .reset(reset), 
-                               .out(A_in_P1),
-                               .valid_out(valid_A1) );
+//; if ($pipeline_depth>0){
 
 //;   my $pipe_Arest = generate(  'FF_pipeline',  'pipe_Arest',  
 //;                             Width=> $frac_width+$exp_width+5,
@@ -212,13 +257,15 @@ module `mname` (
                                .out({SignA_PEnd, ExpA_PEnd, ManA_PEnd, InfA_PEnd, NANA_PEnd, ZeroA_PEnd}),
                                .valid_out(valid_A_adder_mode) );
 
+   assign {InfAB_final,NANAB_final, ZeroAB_final, SignAB_final, ExpAB_final,      ManAB_final}    = valid_A_adder_mode? 
+          {InfA_PEnd,  NANA_PEnd,   ZeroA_PEnd,   SignA_PEnd,  {2'b0,ExpA_PEnd}, {1'b0, ManA_PEnd, `$frac_width`'b0} }:
+          {InfAB,      NANAB,       ZeroAB,       SignAB,       ExpAB,            ManAB                              };
 
-   assign {InfAB_final,NANAB_final, ZeroAB_final, SignAB_final, ExpAB_final, ManAB_final} = valid_A_adder_mode? 
-                  {InfA_PEnd,NANA_PEnd, ZeroA_PEnd, SignA_PEnd,{2'b0,ExpA_PEnd}, {1'b0, ManA_PEnd, `$frac_width`'b0}}
-                : {InfAB, NANAB, ZeroAB, SignAB, ExpAB, ManAB};
+//; } else {
 
-//; if ($pipeline_depth>0){
-  assign stall = stall_request | stall_in;
+   assign {InfAB_final,NANAB_final, ZeroAB_final, SignAB_final, ExpAB_final, ManAB_final} =
+          {InfAB,      NANAB,       ZeroAB,       SignAB,       ExpAB,       ManAB};
+
 //; }
 
 //; my $CascadeMUL_obj = generate('FPMult', 'MUL', FractionWidth=>$frac_width 
@@ -247,10 +294,28 @@ module `mname` (
 
                                   );
 
-//; if ($pipeline_depth>0 && $mul_pipeline_depth==0){
-   assign valid_mul = valid_in;
+//; # tt for stall signal
+//; #      pd  mpd   stall
+//; #      --- ---   ----------------------
+//; #      gt0  0    stall_in
+//; #      gt0 gt0   stall_in|stall_request
+//; #       0   x    stall_in
+
+//; if ($pipeline_depth == 0) {
+   //; # no mul pipe logic and also stall_request not exists
+   //; # BUT 
+   //; # FIXME stall signal should not be needed if pipedepth==0
+   //; # Unfortunately, for some reason, we instantiate a couple of
+   //; # forwarding regs regardless of pipe depth e.g. "pipe_exp_forward"
+   assign stall = stall_in;
+//; } elsif ($mul_pipeline_depth == 0) {  # I.e. add_pipeline_depth>0
+   //; # no mul pipe logic, but remaining pipe needs stall signal; stall_request not used but exists anyway
    assign stall_request = 1'b0;
-   
+   assign stall = stall_in;
+   assign valid_mul = valid_in;
+//; } else {
+   //; # valid_mul and stall_request will be set by mul pipe logic
+   assign stall = stall_request | stall_in;
 //; }
 
    // Calculations for c
@@ -280,6 +345,8 @@ module `mname` (
 //;                              PipelineDepth => $mul_pipeline_depth, Retime=>'YES',
 //;                              EnableForwarding => $enable_forwarding);
   `$pipe_forward->instantiate()` ( .in({ExpC_pp0_init, ExpC_pp1_init, ExpC_ci_init, ExpCdec}) ,
+
+//; # ??? why would we even have a forwarding pipeline if forwarding not enabled???
 //;     if ($enable_forwarding =~ /YES/) {
                                .forwarded_in({ExpZ_pp0, ExpZ_pp1, ExpZ_ci, ExpZDecrementWhenShifting}),
                                .forward(forward_c_eff[`$mul_pipeline_depth`:1]),
@@ -314,6 +381,7 @@ module `mname` (
                                .valid_in(valid_in), .clk(clk) , .stall(stall), .reset(reset), 
                                .out({ExpC2, ManC2, SignC2, InfC2, NANC2, ZeroC2, IncC2, ShiftC2}),
                                .valid_out(valid_c) );
+
 //; if ($enable_forwarding =~ /YES/){
   assign {ExpC_final, ManC_final, SignC_final, InfC_final, NANC_final, ZeroC_final, IncC_final, ShiftC_final} =
                         forward_c_out[`$mul_pipeline_depth-1`]?
@@ -365,15 +433,27 @@ module `mname` (
 
   assign denormZ = ~ManZ[`$frac_width`];
 
-//; if ($add_pipeline_depth==0){
+//; # FIXME there is no valid_mul in the case where $pipeline_depth==0 and $mul_pipeline_depth==0
+//; # b/c above: if ($pipeline_depth>0 && $mul_pipeline_depth==0){ assign valid_mul = valid_in; ...
+
+//; if ($pipeline_depth>0 && $add_pipeline_depth==0){
   assign valid_add = valid_mul | valid_A_adder_mode;
 //; }
 
+//; # truth table maybe
+//; # pd   mpd   apd  valid_mul
+//; # x    gt0    x    CMA(.valid_out(valid_mul)
+//; # gt0   0     x    valid_in  (note valid_in only exists if pd>0
+
+// TODO/FIXME I am very suspicious about this section of code i.e. the next three lines of verilog
+// I'm thinking they are not needed when $add_pipeline_depth==0 and/or $pipeline_depth==0
+// (In the original genesis code CMA.vp)
+
+//; if ($pipeline_depth>0){
    logic      valid_out_might_stall;
    
-
-//;    my $inc_pipe = generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 12 ,
-//;                           PipelineDepth=> ($enable_forwarding =~ /YES/)?1:0, Retime=> 'YES');
+  //;    my $inc_pipe = generate('FF_pipeline','inc_pipe', Width=> $exp_width + $frac_width + 12 ,
+  //;                           PipelineDepth=> ($enable_forwarding =~ /YES/)?1:0, Retime=> 'YES');
   `$inc_pipe ->instantiate()` (
        .in({SignZ, ExpZ, ManZ, denormZ, IncZ, status_init}) , 
        .valid_in(valid_add), .clk(clk) , .stall(stall), .reset(reset), 
@@ -381,8 +461,12 @@ module `mname` (
        .valid_out(valid_out_might_stall) );
 
    assign valid_out = valid_out_might_stall & (~stall); // when CMA stalled, valid_out is low
-   
-   
+
+//; } else {
+    assign {SignZm, ExpZm, ManZm, denormZm, IncZm, status} = {SignZ, ExpZ, ManZ, denormZ, IncZ, status_init};
+//; }
+
+
 //;  my $fma_increment = generate('FPIncrementer','Incrementer', FractionWidth=> $frac_width , ExponentWidth=> $exp_width );
 
   `$fma_increment->instantiate()` (

@@ -1,0 +1,76 @@
+PARM top_FPGen.VERIF_MODE = OFF
+PARM Verification mode determines whether or not monitors and drivers are on. Possible values are ON or Off. 
+PARM
+PARM top_FPGen.SYNTH_MODE = ON
+PARM Synthesis mode determines whether or not special synthesis constructs are used. Possible values are ON or Off. 
+PARM
+PARM top_FPGen.FPGen.Architecture = FMA
+PARM Which architecture implements Multiply Add? Cascade multiply accumulate or Fused or Designware component? (Pick:CMA/FMA) 
+PARM
+PARM top_FPGen.FPGen.FMA.FractionWidth = 52
+PARM Width of the Fraction for the multiplier (default is IEEE Double, 52 bit) 
+PARM
+PARM top_FPGen.FPGen.FMA.ExponentWidth = 11
+PARM Width of the exponent for the multiplier (default is IEEE Double, 11 bit) 
+PARM
+PARM top_FPGen.FPGen.FMA.EnableDenormals = YES
+PARM Enable denormals parameters to enable handling denormal values of inputs A and B correctly (YES/NO) 
+PARM
+PARM top_FPGen.FPGen.FMA.EnableForwarding = YES
+PARM Pick 'NO' for A*B or pick 'YES' for (A+ainc)*(B+binc) 
+PARM
+PARM top_FPGen.FPGen.FMA.PipelineDepth = 7
+PARM Pipeline depth 
+PARM
+PARM top_FPGen.FPGen.FMA.MulpPipelineDepth = 3
+PARM Pipeline depth of the multiplier tree 
+PARM
+PARM top_FPGen.FPGen.FMA.EnableMultiplePumping = NO
+PARM Use parallel MultiplierP unit 
+PARM
+PARM top_FPGen.FPGen.FMA.Retiming = 1
+PARM Should retiming be run in synthesis 
+PARM
+PARM top_FPGen.FPGen.FMA.SmartRetiming = 0
+PARM Retiming Should Force Multp to one cycle 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.PipelineDepth = 3
+PARM Pipeline depth 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.PipelineDepth = 3
+PARM Pipeline depth 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.Width = 53
+PARM Signal bit widths 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.WidthSub = 24
+PARM Sub signal bit widths 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.Designware_MODE = OFF
+PARM Designware mode determines whether or not designware codes are used instead of our design. 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.MultP.BoothType = 2
+PARM Booth type. (1 for no booth, 2 is default, 3 and 4 may sometimes be useful when Width is very large) 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.MultP.Designware_MODE = OFF
+PARM Designware mode determines whether or not designware codes are used instead of our design. 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.MultP.TreeType = Wallace
+PARM Summation tree type. (Supported trees: Wallace, Array, ZM) (Soon:OS1Tree, OS2Tree) 
+PARM
+PARM top_FPGen.FPGen.FMA.MulShift.MUL0.MultP.Width = 53
+PARM Signal bit widths 
+PARM
+PARM top_FPGen.FPGen.FMA.add.CADD.EnableCarryIn = OFF
+PARM Enables a carry in bit at the LSB in addition to the 2 addends 
+PARM
+PARM top_FPGen.FPGen.FMA.add.CADD.Width = 110
+PARM Width of signals to be added 
+PARM
+PARM top_FPGen.FPGen.FMA.add.CADD.ZeroWidth = 0
+PARM checks the lower ZeroWidth bits of sum and sum+1 if they are zero 
+PARM
+
+Found 24 legit parms; bypassed 14 parms; total 38 parms
+Should be 38 parms
+WE GOOD

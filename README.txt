@@ -2,10 +2,10 @@ This is a Floating Point Adder/Multiplier/Multiply-Accumulate generator and test
 
 ### QUICK DEMO
 
-For a quick demo, run the command below. In about 3 minutes, you should
-have a set of verilog files "genesis_{synth,verif}/*.v" that implement
-the default configuration: a double-precision 7-cycle FMA (fused mul-add)
-unit with 3-cycle pipelined Wallace-tree Booth-2 multiplier.
+For a quick demo, run the command below. This should quickly produce
+a set of verilog files "genesis_{synth,verif}/*.v" that implement
+the default configuration: a 16-bit "bfloat" cascaded multiply-add
+unit (also see doc/FPGen_user_guide.pdf).
 ```
     % make clean gen
 ```
@@ -27,17 +27,17 @@ For details, see `test/README.txt`.
 To run the generator:
   make clean [gen|run] [SIM_ENGINE=synopsys] [GENESIS_HIERARCHY=new.xml] [GENESIS_CFG_XML=SysCfgs/changefile.xml]
 
-Example:
-  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # Recommended: build and verify a 64-bit FMA
-  make clean gen GENESIS_CFG_XML=SysCfgs/my_config.xml   # Build default mul-add unit, no verification
-  make clean run GENESIS_CFG_XML=SysCfgs/my_config.xml   # Build and verify the default mul-add unit
+Examples:
+  make clean gen   # Build simple bfloat mul-add unit, no verification
+  make clean run   # Build and verify simple bfloat mul-add unit
 
-Explanation:
-* gen|run -- choose to either just generate the design or also run the testbench
-* Replace SIM_ENGINE=synopsys with SIM_ENGINE=mentor to use mentor simulation tools.
-* GENESIS_HIERARCHY=new.xml redirect the OUTPUT xml file to file 'new.xml' (important for the gui)
-* GENESIS_CFG_XML=SysCfgs/changefile.xml tells genesis to use the design configuration specified in 'changefile.xml'
-* GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg an alternative way to load a script for setting configuration
+  make clean run SIMULATOR=VCS                           # Use VCS for verification instead of Verilator
+  make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg   # Build and verify a double-precision (64-bit) FMA
+  make clean run GENESIS_CFG_SCRIPT=DEFAULT              # Build using native default parameters(*).
+
+(*) Native default parameters yield a double-precision 7-cycle FMA (fused mul-add)
+unit with 3-cycle pipelined Wallace-tree Booth-2 multiplier.
+
 
 Environment:
 You can use the command
@@ -45,23 +45,24 @@ You can use the command
     source scripts/setup.sh
 
 to help prepare your environment. The script will check to see if you have the necessary generator
-"Genesis2.pl" and, if not, will attempt to install it locally for you. It will also check your
+"Genesis2" and, if not, will attempt to install it locally for you. It will also check your
 environment for the conditions described below.
 
 For everything to work as intended, you'll need at least two CAD tools in your path: `Genesis2.pl`,
 the generator tool, and `vcs`, the Synopsys Verilog simulator. That is, if you do "command -v" for
 each, you should get a valid result, e.g.
 
-    % command -v Genesis2.pl
-      /usr/local/bin/Genesis2Tools//bin/Genesis2.pl
+    % command -v Genesis2
+      /usr/local/bin/Genesis2
 
-    % command -v vcs
-      /cad/synopsys/vcs/Q-2020.03-SP2/bin/vcs
+    % command -v verilator
+      /usr/local/bin/verilator
 
-(Without vcs you can still generate Verilog, but you'll be on your own
+(Without Verilator you can still generate Verilog, but you'll be on your own
 for running the simulation test afterwards.)
 
-Also (for vcs): you'll need to locate the libraries that vcs uses for testing. Default locations are
+You can use the SIMULATOR=VCS option for verification, instead of Verilator, but
+you might need to locate the libraries that VCS uses for testing. Default locations are
 ```
   $SYNOPSYS/dw/sim_ver
   $SYNOPSYS/packages/gtech/src_ver
@@ -81,16 +82,15 @@ Then, instead of
 ```
 you would do
 ```
-   % make clean run GENESIS_CFG_SCRIPT=SysCfgs/dp-fma.cfg \
-       SYNOPSYS=/mycaddir/synopsys/dc_shell/J-2014.09-SP3
+   % make clean run SYNOPSYS=/mycaddir/synopsys/dc_shell/J-2014.09-SP3
 ```
 
 Compare:
 
-For comparison, the directory `examples` contains the results of a successful `make clean run`
-for the dp-fma config (which I guess is some kind of double-precision multiply-add unit).
-Verilog for the generated FMA is in the examples/genesis_verif directory and standard-output
-from running the make command is in `examples/make.log`.
+For comparison, the directory `examples` contains the results of a
+successful `make clean run` for the dp-fma config.  Verilog for the
+generated FMA is in the examples/genesis_verif directory and
+standard-output from running the make command is in `examples/make.log`.
 
 
 ------------------------------------------------------------------------

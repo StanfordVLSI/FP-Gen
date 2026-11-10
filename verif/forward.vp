@@ -23,22 +23,33 @@
 //;                           Min=>1, Step=>1, 
 //;                           Doc=>"Width of the forwarding signal");
 
-
-
 class `mname`;
    typedef enum {Zero, OneHot} SignalType;
    rand SignalType forwardType;
    rand int hotbit;
    logic [`$width-1`:0] forward;
 
+   // Randomly set values for class variables, with an option for weighted-random hotbit
+   function void set_random();
+      // randomize();  // Verilator is not good with randomize() and constraints
+      GetHotbit();
+      GetForward();
+      post_randomize();
+      // $display("forward.vp vrand() %s %0t: begin forward=%0d; hotbit=%0d; forwardType=%s; end",
+      //         "X", $time, forward,  hotbit, forwardType.name());
+   endfunction
 
-   constraint pick_forward{
-      forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
-   }
-
-   constraint pick_hotbit {
-      hotbit>=0 && hotbit<`$width`;
-   }
+   function automatic bit GetForward();
+      // E.g. if $weight=30 there will be 30% chance that Forward=Zero
+      forwardType = ($urandom_range(0, 99) < `$weight`) ? OneHot : Zero;
+   endfunction // GetForward
+                     
+   // Hotbit default weight appears to be "1" for operands A and B, thus generally hotbit=0 for A and B
+   // ...whereas op C gets e.g. between 0 and 4 (inclusive) at random
+   function automatic bit GetHotbit();
+      hotbit = $urandom_range(0, `$width`-1);
+      // $display("%0t randomly setting hotbit=%0d which should be between 0 and %0d", $time,  hotbit, `$width`-1);
+   endfunction // GetHotbit
 
    function void post_randomize;
       forward = `$width`'b0;
@@ -46,7 +57,14 @@ class `mname`;
 	 forward[hotbit] = 1'b1;
       end
    endfunction 
-   
+/*
+   // Keeping the (commented-out) original constraints for historical reasons...
 
+   constraint pick_forward{
+      forwardType dist {OneHot := `$weight`, Zero := `100-$weight`};
+   }
+   constraint pick_hotbit {
+      hotbit>=0 && hotbit<`$width`;
+   }
+*/
 endclass : `mname`
-   

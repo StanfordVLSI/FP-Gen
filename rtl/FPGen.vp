@@ -9,6 +9,7 @@
 //; my $verif_mode = $self->get_top_param('VERIF_MODE'); # Reads this parameter from the top level
 //; my $synth_mode = $self->get_top_param('SYNTH_MODE'); # Reads this parameter from the top level
 //;
+//; # Swap "real" designware mods (DW) with handwritten substitutes (DWSUB) where appropriate
 //; my $which_dw = $self->get_top_param('WHICH_DW');
 //; my $DW01_add     = ${which_dw}."01_add";
 //; my $DW01_csa     = ${which_dw}."01_csa";

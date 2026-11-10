@@ -28,8 +28,13 @@
 //; my $GROUPNAME = parameter( name=>'GroupName', 
 //;                            val=>("Adder" . "_" . $BW . "_" . $ORIENTATION . "_" . $DATADIRECTION ),
 //;                            doc=>'!placement! GroupName is used as the synopsys groupname.  The purpose of this argument is to uniquify the instances such that they can be uniquly placed.  This name can be used when creating relative placements in the parent.  Legal Values: a unique name without white space or special characters  !PHYSICAL!' );
- 
-
+//;
+//; # get some values from the top, set DW to either true ("which_dw=DW") or fake ("which_dw=DWSUB")
+//; my $which_dw = $self->get_top_param('WHICH_DW');
+//; my $DW01_add     = ${which_dw}."01_add";
+//; my $DW01_csa     = ${which_dw}."01_csa";
+//; my $DW_decode_en = ${which_dw}."_decode_en";
+//; my $DW_lzd       = ${which_dw}."_lzd";
 
 //  ... Wrapper for the Various Adder Designs ... //
 module `mname()` 
@@ -64,8 +69,9 @@ module `mname()`
 //;                                                   );
 
 //; if( $AdderType eq 'DesignWare' ){
-   
-  DW01_add #(`$BW`)
+//; # Note: WHICH_DW==DWSUB will override AdderType==DesignWare maybe
+
+  `$DW01_add` #(`$BW`)
             U1 (.A(a), .B(b), .CI(ci), .SUM(s), .CO(co) );
 
 //; } else {
