@@ -507,7 +507,7 @@ run: $(SIM_CMD)
 	@echo Now Running $(SIM_CMD)
 	@echo ==================================================
 #	# gittybot says to use "-eq" instead of "==" for POSIX compliance
-	(stdbuf -oL -eL $(SIM_RUN) $(RUN); [ $? -eq 139 ] && echo "Segmentation fault") 2>&1 | tee run_bb.log
+	(stdbuf -oL -eL $(SIM_RUN) $(RUN); [ $$? -eq 139 ] && echo "Segmentation fault") 2>&1 | tee run_bb.log
 	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
 	@test -f TEST_PASS || exit 13
 
