@@ -30,7 +30,7 @@ jobs:
       - run: echo Action = ${{ github.event_name }}, branch = ${{ github.ref }}
 
       - name: Check out repo '${{ github.repository }}', branch '${{ github.ref }}'
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: 1) Need ccache for Verilator build 2) coreutils ensures that we have 'stdbuf'
         run: |
