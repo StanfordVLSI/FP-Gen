@@ -29,8 +29,13 @@ jobs:
       # Action, branch, and repo information.
       - run: echo Action = ${{ github.event_name }}, branch = ${{ github.ref }}
 
-      - name: Install '${{ github.repository }}', branch '${{ github.ref }}'
-        uses: actions/checkout@v2
+      - name: Check out repo '${{ github.repository }}', branch '${{ github.ref }}'
+        uses: actions/checkout@v6
+
+      - name: 1) Need ccache for Verilator build 2) coreutils ensures that we have 'stdbuf'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache coreutils
 
       - name: Install verilator 5.028
         uses: veryl-lang/setup-verilator@v1
