@@ -469,7 +469,8 @@ $(SIM_CMD):$(GENESIS_VLOG_LIST)
 	@echo Making $@ because of $?
 	@echo ==================================================
 	sleep 1;
-	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) 2>&1 | tee comp_bb.log
+	$(SIM_COMPILE) -f $(RUNDIR)/$(GENESIS_VLOG_LIST) $(COMP) > comp_bb.log 2>&1; \
+	  status=$$?; cat comp_bb.log; exit $$status
 
 
 # IBM's fpgen rules:
@@ -507,7 +508,8 @@ run: $(SIM_CMD)
 	@echo Now Running $(SIM_CMD)
 	@echo ==================================================
 #	# gittybot says to use "-eq" instead of "==" for POSIX compliance
-	(stdbuf -oL -eL $(SIM_RUN) $(RUN); [ $? -eq 139 ] && echo "Segmentation fault") 2>&1 | tee run_bb.log
+#	# 2. gittybot says to use "$$?" instead of "$?" and i believe it
+	(stdbuf -oL -eL $(SIM_RUN) $(RUN); [ $$? -eq 139 ] && echo "Segmentation fault") 2>&1 | tee run_bb.log
 	@test -f TEST_PASS || echo ERROR Cannot find a TEST_PASS file, test must have failed
 	@test -f TEST_PASS || exit 13
 
