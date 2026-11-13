@@ -1,9 +1,6 @@
-<br/>
-<br/>
 ![mul,fma,cma block diagrams](doc/multipliers2.png)
-<br/>
-# FP-Gen Floating-Point-Unit Generator
 
+# FP-Gen Floating-Point-Unit Generator
 FP-Gen is a floating-point multiply-adder generator and testbench.
 It can build and verify pipelined multipliers and/or multiply-add units
 of any given exponent/fraction sizes.
